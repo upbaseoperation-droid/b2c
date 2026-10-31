@@ -62,9 +62,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     platformKey: 'TIKTOK',
     shortDesc: 'KOC TikTok có chi phí cast (KL1 → KL7)',
     unitLabel: 'Khung lương KL1 – KL7',
-    colorClass: 'border-blue-300 text-blue-950',
-    activeBgClass: 'bg-accent-soft border-blue-500 ring-2 ring-blue-500/20',
-    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+    colorClass: 'border-accent/30 text-accent-hover',
+    activeBgClass: 'bg-accent-soft border-accent ring-2 ring-accent/20',
+    badgeClass: 'bg-accent-soft text-accent-hover border-accent/30',
     sliderAccent: 'accent-blue-600',
     sliderColor: 'var(--color-accent)',
   },
@@ -75,9 +75,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     platformKey: 'SELF_CHANNEL',
     shortDesc: 'Sản xuất video kênh thương hiệu (Voice, Nhạc text, Remix, POV...)',
     unitLabel: 'Định dạng video kênh thương hiệu',
-    colorClass: 'border-emerald-300 text-emerald-950',
-    activeBgClass: 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20',
-    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    colorClass: 'border-positive/30 text-positive',
+    activeBgClass: 'bg-positive-soft/90 border-positive ring-2 ring-positive/20',
+    badgeClass: 'bg-positive-soft text-positive border-positive/30',
     sliderAccent: 'accent-emerald-600',
     sliderColor: 'var(--color-positive)',
   },
@@ -87,9 +87,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     shortLabel: 'Mẫu FOC',
     shortDesc: 'Suất gửi mẫu miễn phí cho KOC / TAP (0đ chi phí cast)',
     unitLabel: 'Nguồn mẫu FOC 0đ',
-    colorClass: 'border-emerald-300 text-emerald-950',
-    activeBgClass: 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20',
-    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    colorClass: 'border-positive/30 text-positive',
+    activeBgClass: 'bg-positive-soft/90 border-positive ring-2 ring-positive/20',
+    badgeClass: 'bg-positive-soft text-positive border-positive/30',
     sliderAccent: 'accent-emerald-600',
     sliderColor: 'var(--color-positive)',
     isFreeCast: true,
@@ -101,9 +101,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     platformKey: 'FACEBOOK',
     shortDesc: 'Facebook Reels & bài đăng gắn link',
     unitLabel: 'Hạng mục Facebook',
-    colorClass: 'border-blue-300 text-blue-950',
-    activeBgClass: 'bg-blue-50/90 border-blue-500 ring-2 ring-blue-500/20',
-    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+    colorClass: 'border-accent/30 text-accent-hover',
+    activeBgClass: 'bg-accent-soft/90 border-accent ring-2 ring-accent/20',
+    badgeClass: 'bg-accent-soft text-accent-hover border-accent/30',
     sliderAccent: 'accent-blue-600',
     sliderColor: 'var(--color-accent)',
   },
@@ -114,9 +114,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     platformKey: 'THREADS',
     shortDesc: 'Bài đăng thảo luận & gắn link trên Threads',
     unitLabel: 'Hạng mục Threads',
-    colorClass: 'border-slate-300 text-slate-900',
-    activeBgClass: 'bg-slate-100 border-slate-700 ring-2 ring-slate-500/20',
-    badgeClass: 'bg-slate-200 text-slate-800 border-slate-300',
+    colorClass: 'border-line-strong text-ink',
+    activeBgClass: 'bg-sunken border-line-strong ring-2 ring-line-strong/20',
+    badgeClass: 'bg-sunken text-ink border-line-strong',
     sliderAccent: 'accent-slate-800',
     sliderColor: 'var(--color-ink)',
   },
@@ -127,9 +127,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     platformKey: 'INSTA',
     shortDesc: 'Instagram Reels & Story gắn thẻ thương hiệu',
     unitLabel: 'Hạng mục Instagram',
-    colorClass: 'border-rose-300 text-rose-950',
-    activeBgClass: 'bg-rose-50/90 border-rose-500 ring-2 ring-rose-500/20',
-    badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
+    colorClass: 'border-critical/30 text-critical',
+    activeBgClass: 'bg-critical-soft/90 border-critical ring-2 ring-critical/20',
+    badgeClass: 'bg-critical-soft text-critical border-critical/30',
     sliderAccent: 'accent-rose-600',
     sliderColor: 'var(--color-critical)',
   },
@@ -140,9 +140,9 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     platformKey: 'SHOPEE',
     shortDesc: 'Video gắn giỏ hàng Shopee',
     unitLabel: 'Hạng mục Shopee Video',
-    colorClass: 'border-amber-300 text-amber-950',
-    activeBgClass: 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/20',
-    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+    colorClass: 'border-warning/30 text-warning',
+    activeBgClass: 'bg-warning-soft/90 border-warning ring-2 ring-warning/20',
+    badgeClass: 'bg-warning-soft text-warning border-warning/30',
     sliderAccent: 'accent-amber-600',
     sliderColor: 'var(--color-warning)',
   },
@@ -153,10 +153,10 @@ export function renderBranchIcon(branch: BranchMetadata, className = 'w-4 h-4 sh
     return <PlatformLogo platform={branch.platformKey} className={className} />;
   }
   if (branch.id === 'SELF_CHANNEL') {
-    return <Video className={`${className} text-emerald-600`} />;
+    return <Video className={`${className} text-positive`} />;
   }
   if (branch.id === 'FOC') {
-    return <Package className={`${className} text-emerald-600`} />;
+    return <Package className={`${className} text-positive`} />;
   }
   return <TikTokLogo className={className} />;
 }
@@ -771,21 +771,21 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
           <div className="flex items-center gap-4 flex-wrap text-xs font-mono">
             <div>
-              <span className="text-ink-3 mr-1.5">Ngân sách:</span>
+              <span className="text-ink-3 mr-2">Ngân sách:</span>
               <strong className={storeTotals.budgetHeadroom < 0 ? 'text-critical' : 'text-positive'}>
                 {formatVndShort(storeTotals.combinedBudget)}
               </strong>
               <span className="text-ink-3"> / {formatVndShort(planState.totalTargetBudget)}</span>
             </div>
             <div>
-              <span className="text-ink-3 mr-1.5">Tổng video:</span>
+              <span className="text-ink-3 mr-2">Tổng video:</span>
               <strong className="text-accent">{storeTotals.allocatedVideos}</strong>
               <span className="text-ink-3"> / {planState.totalTargetContents} video</span>
             </div>
             <button
               type="button"
               onClick={() => setIsFullscreen(false)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sunken hover:bg-slate-200/70 text-ink text-xs font-semibold border border-line transition cursor-pointer"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-sunken hover:bg-sunken/70 text-ink text-xs font-semibold border border-line transition cursor-pointer"
               title="Thoát toàn màn hình (Phím Esc)"
             >
               <Minimize2 className="w-3.5 h-3.5" />
@@ -815,15 +815,15 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           }
         }}
         className={`grid grid-cols-1 lg:grid-cols-12 gap-4 items-start rounded-xl transition ${
-          isOverCanvasDropzone ? 'ring-2 ring-blue-500 bg-accent-soft p-2' : ''
+          isOverCanvasDropzone ? 'ring-2 ring-accent bg-accent-soft p-2' : ''
         }`}
       >
         {/* ===================================================================== */}
         {/* CỘT TRÁI (4/12): CÁC NHÁNH TRIỂN KHAI CỦA GIAN HÀNG                   */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-4 bg-surface rounded-xl border border-line p-3.5 space-y-3">
+        <div className="lg:col-span-4 bg-surface rounded-xl border border-line p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-accent" />
               <span className="text-xs font-semibold text-ink">
                 Nhánh triển khai ({activeBranches.length}/7)
@@ -837,12 +837,12 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
             >
               {isFullscreen ? (
                 <>
-                  <Minimize2 className="w-3 h-3" />
+                  <Minimize2 className="w-3.5 h-3.5" />
                   <span>Thu nhỏ</span>
                 </>
               ) : (
                 <>
-                  <Maximize2 className="w-3 h-3 text-accent" />
+                  <Maximize2 className="w-3.5 h-3.5 text-accent" />
                   <span>Toàn màn hình</span>
                 </>
               )}
@@ -850,7 +850,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           </div>
 
           {/* DANH SÁCH NHÁNH ĐANG BẬT */}
-          <div className="relative pl-4 space-y-2 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-3 before:w-0.5 before:bg-blue-200">
+          <div className="relative pl-4 space-y-2 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-3 before:w-0.5 before:bg-accent-soft">
             {activeBranches.map(branch => {
               const stat = branchStatsMap[branch.id];
               const isSelected = selectedBranchId === branch.id;
@@ -870,20 +870,20 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                 <div
                   key={branch.id}
                   onClick={() => setSelectedBranchId(branch.id)}
-                  className={`relative rounded-xl border p-2.5 transition cursor-pointer ${
-                    isSelected ? branch.activeBgClass : 'bg-surface border-line hover:border-blue-300'
+                  className={`relative rounded-xl border p-3 transition cursor-pointer ${
+                    isSelected ? branch.activeBgClass : 'bg-surface border-line hover:border-accent/30'
                   }`}
                 >
                   <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-0.5 bg-blue-300" />
                   <span
                     className={`absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ${
-                      isSelected ? 'bg-primary ring-2 ring-blue-200' : 'bg-blue-300'
+                      isSelected ? 'bg-primary ring-2 ring-accent/30' : 'bg-blue-300'
                     }`}
                   />
 
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         {renderBranchIcon(branch, 'w-4 h-4 shrink-0')}
                         <span className="font-semibold text-xs text-ink truncate">{branch.label}</span>
                         {!branch.isFreeCast && budgetSharePct > 0 && (
@@ -894,7 +894,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-1.5 shrink-0">
+                    <div className="flex items-start gap-2 shrink-0">
                       <div className="text-right">
                         <div className="font-mono font-semibold text-xs text-ink">
                           {branch.isFreeCast ? '0 đ' : formatVndShort(stat.totalBudget)}
@@ -918,7 +918,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
                   {/* THANH KÉO TRỰC QUAN NGAY TRÊN NHÁNH */}
                   <div
-                    className="mt-2 pt-1.5 border-t border-line flex items-center gap-2 select-none"
+                    className="mt-2 pt-2 border-t border-line flex items-center gap-2 select-none"
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     onDragStart={(e) => {
@@ -962,21 +962,21 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
           {/* KHU VỰC BẬT THÊM NHÁNH CHƯA TRIỂN KHAI (KHÔNG LẶP LẠI NHÁNH ĐÃ BẬT) */}
           {inactiveBranches.length > 0 && (
-            <div className="pt-2.5 border-t border-line space-y-1.5">
+            <div className="pt-3 border-t border-line space-y-2">
               <span className="text-2xs font-medium text-ink-3 block">
                 Bật thêm nhánh kênh cho gian hàng:
               </span>
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 {inactiveBranches.map(branch => (
                   <button
                     key={branch.id}
                     type="button"
                     disabled={disabled}
                     onClick={() => handleEnableBranch(branch.id)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-dashed border-line-strong bg-canvas hover:border-blue-400 hover:bg-surface text-ink-2 text-2xs font-medium transition cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-dashed border-line-strong bg-canvas hover:border-accent hover:bg-surface text-ink-2 text-2xs font-medium transition cursor-pointer disabled:opacity-50"
                     title={`Thêm nhánh ${branch.label} (${branch.shortDesc})`}
                   >
-                    <Plus className="w-3 h-3 text-accent" />
+                    <Plus className="w-3.5 h-3.5 text-accent" />
                     {renderBranchIcon(branch, 'w-3.5 h-3.5 shrink-0')}
                     <span>{branch.shortLabel || branch.label}</span>
                   </button>
@@ -993,7 +993,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           {/* Header gọn của Nhánh đang chọn */}
           <div className="px-4 py-3 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                 {renderBranchIcon(selectedBranchMeta, 'w-3.5 h-3.5 shrink-0')}
                 <span>{selectedBranchMeta.label}</span>
               </span>
@@ -1001,7 +1001,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
               <span className="text-xs font-medium text-ink-2">{selectedBranchMeta.unitLabel}</span>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <span className="font-mono text-xs text-ink-2">
                 Tổng nhánh: <strong className="text-ink">{selectedBranchStats.totalQty} video</strong> ·{' '}
                 <strong className="text-accent">
@@ -1012,7 +1012,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                 <button
                   type="button"
                   onClick={handleAddSubItemToSelectedBranch}
-                  className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1 transition cursor-pointer shrink-0"
+                  className="px-3 py-1 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1 transition cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Thêm mục con</span>
@@ -1022,20 +1022,20 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           </div>
 
           {/* DANH SÁCH NHÁNH CON (SUB-NODES) CỦA NHÁNH ĐANG CHỌN */}
-          <div className="p-4 space-y-2.5 max-h-[640px] overflow-y-auto">
+          <div className="p-4 space-y-3 max-h-[640px] overflow-y-auto">
             {selectedBranchStats.items.length === 0 ? (
               <div className="py-10 text-center text-ink-3 space-y-2">
                 <p className="text-xs font-medium">Nhánh {selectedBranchMeta.label} chưa có hạng mục phân rã.</p>
                 <button
                   type="button"
                   onClick={() => handleEnableBranch(selectedBranchId)}
-                  className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition cursor-pointer"
+                  className="px-3 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition cursor-pointer"
                 >
                   Khởi tạo các mục con cho nhánh {selectedBranchMeta.label}
                 </button>
               </div>
             ) : (
-              <div className="relative pl-4 space-y-2.5 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-4 before:w-0.5 before:bg-slate-200">
+              <div className="relative pl-4 space-y-3 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-4 before:w-0.5 before:bg-sunken">
                 {selectedBranchStats.items.map(item => {
                   const isDragOver = dragOverItemId === item.id;
                   const baseMaxItem = selectedBranchId === 'FOC' ? 200 : 80;
@@ -1074,19 +1074,19 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                       }}
                       className={`relative rounded-xl border p-3 transition ${
                         isDragOver
-                          ? 'bg-accent-soft border-blue-500 ring-2 ring-blue-400'
+                          ? 'bg-accent-soft border-accent ring-2 ring-accent'
                           : item.qty > 0
                           ? 'bg-surface border-line hover:border-line-strong'
                           : 'bg-canvas/60 border-line opacity-80 hover:opacity-100'
                       }`}
                     >
                       {/* Đường nối nhánh con */}
-                      <span className="absolute -left-2.5 top-6 w-2.5 h-0.5 bg-slate-300" />
+                      <span className="absolute -left-2.5 top-6 w-2.5 h-0.5 bg-line-strong" />
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                         {/* Cột 1 (4/12): Tên bậc / hạng mục + Định dạng & Nhân sự */}
-                        <div className="md:col-span-5 min-w-0 space-y-1.5">
-                          <div className="flex items-center gap-1.5">
+                        <div className="md:col-span-5 min-w-0 space-y-2">
+                          <div className="flex items-center gap-2">
                             <span className="text-xs font-mono font-semibold text-ink-2 shrink-0">
                               {item.tierCode}
                             </span>
@@ -1096,7 +1096,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <select
                               value={item.contentFormat}
                               onChange={(e) => handleUpdateSubItemField(item.id, 'contentFormat', e.target.value)}
@@ -1111,7 +1111,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                             <select
                               value={item.assignedStaff || planState.pic}
                               onChange={(e) => handleUpdateSubItemField(item.id, 'assignedStaff', e.target.value)}
-                              className="w-full text-2xs font-semibold px-2 py-1 bg-accent-soft hover:bg-blue-50 border border-line rounded-md text-accent truncate"
+                              className="w-full text-2xs font-semibold px-2 py-1 bg-accent-soft hover:bg-accent-soft border border-line rounded-md text-accent truncate"
                               title="Chọn nhân sự thực thi (hoặc kéo thẻ nhân sự thả vào đây)"
                             >
                               {picOptions.map(st => (
@@ -1123,7 +1123,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
                         {/* Cột 2 (4/12): Thanh kéo số lượng trực tiếp + nút +/- */}
                         <div
-                          className="md:col-span-4 space-y-1.5 select-none"
+                          className="md:col-span-4 space-y-2 select-none"
                           onPointerDown={(e) => e.stopPropagation()}
                           onDragStart={(e) => {
                             e.preventDefault();
@@ -1138,7 +1138,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                                 onClick={() => handleUpdateSubItemQty(item.id, item.qty - 1, true)}
                                 className="w-5 h-5 rounded border border-line bg-surface hover:bg-sunken flex items-center justify-center text-ink-2"
                               >
-                                <Minus className="w-3 h-3" />
+                                <Minus className="w-3.5 h-3.5" />
                               </button>
                               <input
                                 type="number"
@@ -1152,7 +1152,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                                 onClick={() => handleUpdateSubItemQty(item.id, item.qty + 1, true)}
                                 className="w-5 h-5 rounded border border-line bg-surface hover:bg-sunken flex items-center justify-center text-ink-2"
                               >
-                                <Plus className="w-3 h-3" />
+                                <Plus className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1194,7 +1194,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleFillHeadroomToSubItem(item)}
-                                  className="mt-1 text-2xs font-semibold px-2 py-0.5 rounded bg-positive-soft text-positive border border-line hover:bg-emerald-100"
+                                  className="mt-1 text-2xs font-semibold px-2 py-0.5 rounded bg-positive-soft text-positive border border-line hover:bg-positive-soft"
                                 >
                                   + Bù {storeTotals.videoHeadroom} video thiếu
                                 </button>
@@ -1210,10 +1210,10 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                                   min={0}
                                   value={item.unitCost}
                                   onChange={(e) => handleUpdateSubItemCost(item.id, Number(e.target.value))}
-                                  className="w-20 text-right font-mono text-2xs px-1.5 py-0.5 border border-line rounded bg-surface text-ink"
+                                  className="w-20 text-right font-mono text-2xs px-2 py-0.5 border border-line rounded bg-surface text-ink"
                                 />
                               </div>
-                              <div className="flex items-baseline justify-end gap-1.5">
+                              <div className="flex items-baseline justify-end gap-2">
                                 <span className="font-mono font-semibold text-xs text-ink">
                                   {formatVndShort(item.totalBudget)}
                                 </span>

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureServiceAccountLoaded, parseSpreadsheetId, getAccessToken } from '@/lib/server/googleSheets';
+import {
+  ensureServiceAccountLoaded,
+  parseSpreadsheetId,
+  getAccessToken,
+  invalidateSpreadsheetCache,
+} from '@/lib/server/googleSheets';
+import { getPlanActor, unauthorized } from '../../monthly-plans/_shared';
 import {
   BOOKING_REPORT_COLUMNS,
   BOOKING_REPORT_HEADERS,
@@ -15,6 +21,11 @@ import {
 export const dynamic = 'force-dynamic';
 
 const REPORT_TAB_NAME = 'Báo cáo & Nghiệm thu';
+
+function encodeSheetRange(tabTitle: string, cellRange: string): string {
+  const escapedTab = tabTitle.replace(/'/g, "''");
+  return encodeURIComponent(`'${escapedTab}'!${cellRange}`);
+}
 
 export interface IncomingDealReportPayload {
   thang?: string;
@@ -247,6 +258,9 @@ function buildFormattingBatchRequests(sheetId: number, totalDataRows: number) {
 }
 
 export async function GET(request: NextRequest) {
+  const actor = await getPlanActor(request);
+  if (!actor) return unauthorized();
+
   const sa = await ensureServiceAccountLoaded();
   if (!sa.configured) {
     return NextResponse.json({ error: 'Service Account chưa được cấu hình.', code: 'UNCONFIGURED' }, { status: 400 });
@@ -262,7 +276,7 @@ export async function GET(request: NextRequest) {
   try {
     const token = await getAccessToken();
     const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${encodeURIComponent(targetTab)}'!A1:CD500`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeSheetRange(targetTab, 'A1:CD500')}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -362,6 +376,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const actor = await getPlanActor(request);
+  if (!actor) return unauthorized();
+
   const sa = await ensureServiceAccountLoaded();
   if (!sa.configured) {
     return NextResponse.json({ error: 'Service Account chưa được cấu hình.', code: 'UNCONFIGURED' }, { status: 400 });
@@ -375,6 +392,12 @@ export async function POST(request: NextRequest) {
     formatTemplate?: boolean;
     dryRun?: boolean;
   };
+  if (!dryRun && actor.role === 'BRAND_PARTNER') {
+    return NextResponse.json(
+      { error: 'Đại diện Nhãn hàng chỉ được xem đối soát, không được ghi đè bảng Báo cáo & Nghiệm thu.' },
+      { status: 403 }
+    );
+  }
   const targetTab = (tabName || REPORT_TAB_NAME).trim() || REPORT_TAB_NAME;
 
   const spreadsheetId = parseSpreadsheetId(sheetUrl);
@@ -409,7 +432,7 @@ export async function POST(request: NextRequest) {
 
     if (tabExistedBefore) {
       const existingRes = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${encodeURIComponent(targetTab)}'!A1:CD500`,
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeSheetRange(targetTab, 'A1:CD500')}`,
         { headers: { Authorization: `Bearer ${token}` } }
       ).catch(() => null);
 
@@ -701,10 +724,11 @@ export async function POST(request: NextRequest) {
     );
 
     const allValues = [BOOKING_REPORT_LEGEND_ROW, BOOKING_REPORT_HEADERS, ...serializedRows];
-    const range = `'${encodeURIComponent(targetTab)}'!A1:AB${allValues.length}`;
+    const displayRange = `'${targetTab}'!A1:AB${allValues.length}`;
+    const encodedRange = encodeSheetRange(targetTab, `A1:AB${allValues.length}`);
 
     const putRes = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -716,6 +740,8 @@ export async function POST(request: NextRequest) {
       const errData = await putRes.json().catch(() => null);
       return NextResponse.json({ error: 'Lỗi ghi dữ liệu Google Sheet', details: errData }, { status: 500 });
     }
+
+    invalidateSpreadsheetCache(spreadsheetId);
 
     if (formatTemplate && sheetId !== null) {
       const formatRequests = buildFormattingBatchRequests(sheetId, serializedRows.length);
@@ -737,7 +763,7 @@ export async function POST(request: NextRequest) {
       unchangedCount,
       preservedSheetOnlyCount,
       diffItems,
-      updatedRange: range,
+      updatedRange: displayRange,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

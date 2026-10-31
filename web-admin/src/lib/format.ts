@@ -142,6 +142,15 @@ export function getVietnamIsoString(d: Date = new Date()): string {
 
 
 /**
+ * Bóc tách số nguyên từ chuỗi nhập tiền tệ có dấu chấm/phẩy phân cách hàng nghìn (VD: "10.000.000" -> 10000000).
+ */
+export function parseThousandNumberInput(raw?: string | number | null): number {
+  if (typeof raw === 'number') return Number.isFinite(raw) ? Math.round(raw) : 0;
+  const digits = String(raw || '').replace(/[^\d]/g, '');
+  return digits ? Number(digits) || 0 : 0;
+}
+
+/**
  * Che mờ dữ liệu nhạy cảm của KOC (Số CCCD, Số tài khoản ngân hàng, Số điện thoại):
  * Chỉ hiển thị 4 ký tự cuối (`****5678`) trừ khi được mở quyền xem chi tiết (`canUnmask = true`).
  */

@@ -346,7 +346,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                 {/* Header gọn gàng: Mã HSPL, Tên chủ thể, Loại pháp nhân, Trạng thái & tối đa 2 nút chính */}
                 <div className="px-4 py-3 border-b border-line bg-sunken/35 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-surface border border-line text-ink">
+                    <span className="font-code text-xs font-semibold px-2 py-0.5 rounded-md bg-surface border border-line text-ink">
                       {p.profileCode || `HSPL-0${idx + 1}`}
                     </span>
                     <span className="text-sm font-semibold text-ink">{p.holderName}</span>
@@ -368,13 +368,13 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                         title={`Cần bổ sung: ${readiness.missingFields.join(', ')}`}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning-soft text-warning border border-warning/30 text-2xs font-medium hover:bg-warning-soft/80 cursor-pointer"
                       >
-                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                         <span>Thiếu {readiness.missingFields.length} trường HĐ</span>
                       </button>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
                     {onUpdateKoc && (
                       <Button
                         size="sm"
@@ -407,12 +407,12 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                 {/* Body 3 cột rõ ràng, không viết hoa toàn bộ tiêu đề */}
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-line text-xs">
                   {/* Cột 1: Định danh Pháp lý & Thuế */}
-                  <div className="p-4 space-y-2.5">
-                    <div className="flex items-center gap-1.5 font-semibold text-ink">
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2 font-semibold text-ink">
                       <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span>1. Định danh pháp nhân &amp; thuế</span>
                     </div>
-                    <dl className="grid gap-1.5">
+                    <dl className="grid gap-2">
                       <div className="flex justify-between gap-2">
                         <dt className="text-ink-3">Chế độ thuế</dt>
                         <dd className="font-medium text-ink text-right">{p.taxAccountType}</dd>
@@ -470,9 +470,9 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                   </div>
 
                   {/* Cột 2: Tài khoản Ngân hàng Thụ hưởng */}
-                  <div className="p-4 space-y-2.5">
+                  <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 font-semibold text-ink">
+                      <div className="flex items-center gap-2 font-semibold text-ink">
                         <CreditCard className="w-3.5 h-3.5 text-positive shrink-0" />
                         <span>2. Tài khoản nhận thanh toán</span>
                       </div>
@@ -482,12 +482,12 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                           onClick={() => setQrTargetProfile(p)}
                           className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                         >
-                          <QrCode className="w-3 h-3" />
+                          <QrCode className="w-3.5 h-3.5" />
                           Mã QR
                         </button>
                       )}
                     </div>
-                    <dl className="grid gap-1.5">
+                    <dl className="grid gap-2">
                       <div className="flex justify-between gap-2">
                         <dt className="text-ink-3">Ngân hàng</dt>
                         <dd className="font-semibold text-ink">{p.bankName || 'Chưa cập nhật'}</dd>
@@ -521,12 +521,12 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                   </div>
 
                   {/* Cột 3: Hợp đồng Nguyên tắc (HĐNT) & Lịch sử sử dụng */}
-                  <div className="p-4 space-y-2.5">
-                    <div className="flex items-center gap-1.5 font-semibold text-ink">
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2 font-semibold text-ink">
                       <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span>3. Hợp đồng nguyên tắc (HĐNT)</span>
                     </div>
-                    <dl className="grid gap-1.5">
+                    <dl className="grid gap-2">
                       <div className="flex justify-between items-center gap-2">
                         <dt className="text-ink-3">Trạng thái HĐNT</dt>
                         <dd>
@@ -550,7 +550,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                       {p.frameworkContractCode && (
                         <div className="flex justify-between gap-2">
                           <dt className="text-ink-3">Mã HĐNT</dt>
-                          <dd className="font-mono font-semibold text-ink">
+                          <dd className="font-code font-semibold text-ink">
                             {p.frameworkContractCode}
                           </dd>
                         </div>
@@ -570,7 +570,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 text-accent hover:underline font-medium text-2xs"
                           >
-                            <FileText className="w-3 h-3" />
+                            <FileText className="w-3.5 h-3.5" />
                             Mở thư mục hợp đồng Drive
                             <ExternalLink className="w-2.5 h-2.5" />
                           </a>
@@ -671,7 +671,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                 {LEGAL_TYPE_LABEL[qrTargetProfile.legalType]} · {qrTargetProfile.taxAccountType}
               </Status>
               <p className="font-semibold text-ink pt-1">{qrTargetProfile.holderName}</p>
-              <p className="font-mono text-sm text-ink font-semibold tabular-nums">
+              <p className="font-code text-sm text-ink font-semibold tabular-nums">
                 {qrTargetProfile.bankAccount}
               </p>
               <p className="text-ink-3">{qrTargetProfile.bankName}</p>
@@ -1186,7 +1186,7 @@ function LegalProfileFormModal({
 function CopyableCode({ text, raw }: { text: string; raw?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <span className="inline-flex items-center gap-1 font-mono font-semibold text-ink tabular-nums">
+    <span className="inline-flex items-center gap-1 font-code font-semibold text-ink tabular-nums">
       {text}
       {raw && (
         <button
@@ -1199,7 +1199,7 @@ function CopyableCode({ text, raw }: { text: string; raw?: string }) {
           className="p-0.5 rounded text-ink-3 hover:text-ink"
           title="Sao chép"
         >
-          {copied ? <Check className="w-3 h-3 text-positive" /> : <Copy className="w-3 h-3" />}
+          {copied ? <Check className="w-3.5 h-3.5 text-positive" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       )}
     </span>
@@ -1333,7 +1333,7 @@ export function KocContractLegalPickerModal({
       >
         <div className="space-y-4 text-xs">
           {/* Bước 1: Chọn Hồ sơ pháp lý đứng tên ký hợp đồng */}
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-ink">
                 1. Chọn hồ sơ pháp lý đứng tên ký hợp đồng ({profiles.length} hồ sơ)
@@ -1359,7 +1359,7 @@ export function KocContractLegalPickerModal({
                 }
               />
             ) : (
-              <div className="grid gap-2.5">
+              <div className="grid gap-3">
                 {profiles.map((p) => {
                   const isSelected = p.id === selectedProfile?.id;
                   const readiness = evaluateLegalProfileContractReadiness(p, koc);
@@ -1372,7 +1372,7 @@ export function KocContractLegalPickerModal({
                     <div
                       key={p.id}
                       onClick={() => setSelectedProfileId(p.id)}
-                      className={`p-3.5 rounded-xl border transition-colors cursor-pointer space-y-2.5 ${
+                      className={`p-4 rounded-xl border transition-colors cursor-pointer space-y-3 ${
                         isSelected
                           ? 'border-primary bg-sunken/70'
                           : 'border-line bg-surface hover:border-line-strong'
@@ -1387,7 +1387,7 @@ export function KocContractLegalPickerModal({
                             onChange={() => setSelectedProfileId(p.id)}
                             className="h-4 w-4 text-primary border-line-strong focus:ring-0"
                           />
-                          <span className="font-mono font-semibold text-ink">{p.profileCode}</span>
+                          <span className="font-code font-semibold text-ink">{p.profileCode}</span>
                           <span className="font-semibold text-ink">{p.holderName}</span>
                           <Status
                             tone={
@@ -1435,12 +1435,12 @@ export function KocContractLegalPickerModal({
                           <span className="text-ink-3">
                             {p.legalType === 'INDIVIDUAL' ? 'Số CCCD:' : 'Mã số thuế:'}{' '}
                           </span>
-                          <strong className="font-mono text-ink">{showNumber(legalIdVal)}</strong>
+                          <strong className="font-code text-ink">{showNumber(legalIdVal)}</strong>
                         </div>
                         <div>
                           <span className="text-ink-3">Tài khoản: </span>
                           <strong className="text-ink">{p.bankName || '—'}</strong> ·{' '}
-                          <strong className="font-mono text-ink">{showNumber(bankAcc)}</strong>
+                          <strong className="font-code text-ink">{showNumber(bankAcc)}</strong>
                         </div>
                         <div>
                           <span className="text-ink-3">Thuế: </span>
@@ -1455,7 +1455,7 @@ export function KocContractLegalPickerModal({
                       )}
 
                       {docs.length > 0 && (
-                        <div className="pl-6 pt-1 flex flex-wrap items-center gap-1.5">
+                        <div className="pl-6 pt-1 flex flex-wrap items-center gap-2">
                           <span className="text-2xs text-ink-3">Giấy tờ đính kèm:</span>
                           {docs.map((doc) => (
                             <button
@@ -1471,7 +1471,7 @@ export function KocContractLegalPickerModal({
                               }}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line bg-surface text-ink hover:border-accent hover:text-accent font-medium text-2xs transition-colors"
                             >
-                              <Eye className="w-3 h-3 text-accent shrink-0" />
+                              <Eye className="w-3.5 h-3.5 text-accent shrink-0" />
                               <span>{doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType]}</span>
                             </button>
                           ))}
@@ -1485,13 +1485,13 @@ export function KocContractLegalPickerModal({
           </div>
 
           {/* Bước 2: Phạm vi các kênh của KOC kết nối với hợp đồng */}
-          <div className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5">
+          <div className="p-4 rounded-xl border border-line bg-surface space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-ink">
                 2. Các tài khoản kênh áp dụng trong hợp đồng ({activeChannelKeys.length}/
                 {connectedChannels.length} kênh)
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -1527,7 +1527,7 @@ export function KocContractLegalPickerModal({
                 return (
                   <label
                     key={key}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-2xs cursor-pointer transition-colors ${
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-2xs cursor-pointer transition-colors ${
                       checked
                         ? 'border-primary bg-sunken text-ink font-semibold'
                         : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
@@ -1540,7 +1540,7 @@ export function KocContractLegalPickerModal({
                       className="h-3.5 w-3.5 rounded border-line-strong text-primary focus:ring-0"
                     />
                     <span>{platLabel}:</span>
-                    <span className="font-mono">@{ch.handle}</span>
+                    <span className="font-code">@{ch.handle}</span>
                     {ch.isPrimary && ch.platform === 'TIKTOK' && (
                       <span className="text-positive font-medium">(Kênh chính)</span>
                     )}

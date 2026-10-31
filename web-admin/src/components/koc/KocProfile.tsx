@@ -326,13 +326,13 @@ export function KocProfile({
                 </Button>
               </>
             ) : (
-              <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack} className="-ml-2.5">
+              <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack} className="-ml-3">
                 Danh bạ KOC
               </Button>
             )}
           </div>
           {(nav.onPrev || nav.onNext) && (
-            <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+            <div className="flex items-center gap-2 text-2xs text-ink-3">
               {nav.position && nav.total ? (
                 <span className="tabular-nums font-figure mr-1">
                   {formatNumber(nav.position)} / {formatNumber(nav.total)}
@@ -371,7 +371,7 @@ export function KocProfile({
                 {channelDuplicates.length > 0 && <Status tone="warning">Trùng kênh</Status>}
               </div>
             )}
-            <p className="text-ctl text-ink-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            <p className="text-ctl text-ink-2 flex flex-wrap items-center gap-x-2 gap-y-1">
               <a
                 href={koc.channelLink || `https://www.tiktok.com/@${handle}`}
                 target="_blank"
@@ -454,7 +454,7 @@ export function KocProfile({
 
       {/* Trùng kênh thật (cùng @handle) mới cảnh báo */}
       {channelDuplicates.length > 0 && (
-        <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl border border-line text-ctl text-ink">
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-line text-ctl text-ink">
           <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
           <p>
             Trùng kênh với{' '}
@@ -769,7 +769,7 @@ function TikTokSellerMetricsSection({
             className="text-xs font-medium text-ink hover:text-accent line-clamp-2 leading-snug inline-flex items-start gap-1"
           >
             <span>{v.caption}</span>
-            <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
+            <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5 text-ink-3" />
           </a>
           <span className="text-2xs text-ink-3 truncate">
             {v.hashtags.length > 0 ? v.hashtags.join(' ') : '—'}
@@ -785,7 +785,7 @@ function TikTokSellerMetricsSection({
         <div className="grid gap-0.5 min-w-0">
           <span className="text-xs text-ink tabular-nums">{formatDate(v.publishedAt)}</span>
           <span className="text-2xs text-ink-3 truncate inline-flex items-center gap-1" title={v.musicTitle}>
-            <Music className="w-3 h-3 shrink-0" />
+            <Music className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{v.musicTitle}</span>
           </span>
         </div>
@@ -857,7 +857,7 @@ function TikTokSellerMetricsSection({
               </span>
               {koc.tiktokAccountHealth && (
                 <span className="inline-flex items-center gap-1 text-2xs font-medium text-positive">
-                  <CheckCircle2 className="w-3 h-3" /> {koc.tiktokAccountHealth}
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {koc.tiktokAccountHealth}
                 </span>
               )}
             </div>
@@ -893,7 +893,7 @@ function TikTokSellerMetricsSection({
 
       {/* Tiểu sử kênh TikTok (Bio) nếu đã thu thập */}
       {bioToShow && (
-        <div className="p-3.5 rounded-xl border border-line bg-surface space-y-1">
+        <div className="p-4 rounded-xl border border-line bg-surface space-y-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-2xs font-medium text-ink-3">Tiểu sử kênh TikTok (Bio)</span>
             {(totalLikesToShow || videoCountToShow) && (
@@ -921,7 +921,7 @@ function TikTokSellerMetricsSection({
               note={
                 koc.tiktokFollowerGrowth30d ? (
                   <span className="text-positive font-medium inline-flex items-center gap-0.5">
-                    <TrendingUp className="w-3 h-3" /> +{formatNumber(koc.tiktokFollowerGrowth30d)} 30 ngày qua
+                    <TrendingUp className="w-3.5 h-3.5" /> +{formatNumber(koc.tiktokFollowerGrowth30d)} 30 ngày qua
                   </span>
                 ) : undefined
               }
@@ -958,7 +958,7 @@ function TikTokSellerMetricsSection({
 
       {/* Phễu tương tác & Chuyển đổi TikTok Seller */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl border border-line bg-surface">
+        <div className="p-4 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">Tỷ lệ tương tác kênh (ER)</span>
           <span className="text-lg font-semibold text-ink">
             {erToShow !== undefined && erToShow > 0 ? `${erToShow}%` : '—'}
@@ -969,21 +969,21 @@ function TikTokSellerMetricsSection({
               : 'Thích, bình luận & chia sẻ'}
           </span>
         </div>
-        <div className="p-3.5 rounded-xl border border-line bg-surface">
+        <div className="p-4 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">CTR nhấp giỏ hàng</span>
           <span className="text-lg font-semibold text-accent">
             {koc.tiktokAvgCtr !== undefined && koc.tiktokAvgCtr > 0 ? `${koc.tiktokAvgCtr}%` : '—'}
           </span>
           <span className="text-2xs text-ink-3 block mt-0.5">Nhấp xem thẻ sản phẩm</span>
         </div>
-        <div className="p-3.5 rounded-xl border border-line bg-surface">
+        <div className="p-4 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">CVR chuyển đổi đơn</span>
           <span className="text-lg font-semibold text-positive">
             {koc.tiktokAvgCvr !== undefined && koc.tiktokAvgCvr > 0 ? `${koc.tiktokAvgCvr}%` : '—'}
           </span>
           <span className="text-2xs text-ink-3 block mt-0.5">Tỷ lệ chốt đơn mua</span>
         </div>
-        <div className="p-3.5 rounded-xl border border-line bg-surface">
+        <div className="p-4 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">Hoa hồng Affiliate trung bình</span>
           <span className="text-lg font-semibold text-ink">
             {koc.tiktokAvgCommissionRate !== undefined && koc.tiktokAvgCommissionRate > 0
@@ -1086,8 +1086,8 @@ function TikTokSellerMetricsSection({
 
             {locations.length > 0 && (
               <div className="pt-2 border-t border-line">
-                <span className="text-2xs text-ink-3 block mb-1.5">Địa bàn tập trung khán giả</span>
-                <div className="grid gap-1.5">
+                <span className="text-2xs text-ink-3 block mb-2">Địa bàn tập trung khán giả</span>
+                <div className="grid gap-2">
                   {locations.map((loc) => (
                     <div key={loc.city} className="flex items-center justify-between text-2xs">
                       <span className="text-ink-2">{loc.city}</span>
@@ -1327,7 +1327,7 @@ function DealChannelScopeModal({
         </div>
 
         {/* Chọn chế độ: Riêng 1 kênh hoặc Đa kênh */}
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => {
@@ -1337,7 +1337,7 @@ function DealChannelScopeModal({
               }
             }}
             className={cx(
-              'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
+              'flex items-center justify-between gap-2 rounded-lg border px-3 py-3 text-left transition-colors',
               scopeMode === 'SINGLE'
                 ? 'border-accent bg-accent-soft/40'
                 : 'border-line bg-surface hover:border-line-strong',
@@ -1351,7 +1351,7 @@ function DealChannelScopeModal({
             type="button"
             onClick={() => setScopeMode('MULTI')}
             className={cx(
-              'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
+              'flex items-center justify-between gap-2 rounded-lg border px-3 py-3 text-left transition-colors',
               scopeMode === 'MULTI'
                 ? 'border-accent bg-accent-soft/40'
                 : 'border-line bg-surface hover:border-line-strong',
@@ -1383,13 +1383,13 @@ function DealChannelScopeModal({
                   type="button"
                   onClick={() => handleToggleChannel(ch.key)}
                   className={cx(
-                    'flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors',
+                    'flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-left transition-colors',
                     checked
                       ? 'border-accent bg-accent-soft/30'
                       : 'border-line bg-surface hover:border-line-strong',
                   )}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-sunken">
                       <PlatformChannelIcon platform={ch.platform} className="h-4 w-4" />
                     </span>
@@ -1600,8 +1600,8 @@ function CollaborationHistorySection({
       render: (d) => {
         const bd = getDealChannelBreakdown(d, koc);
         return (
-          <div className="grid gap-1.5 justify-items-start max-w-[215px]">
-            <div className="flex flex-wrap items-center gap-1.5">
+          <div className="grid gap-2 justify-items-start max-w-[215px]">
+            <div className="flex flex-wrap items-center gap-2">
               <Status tone={bd.isMultiChannel ? 'info' : 'neutral'}>{bd.scopeLabel}</Status>
               <button
                 type="button"
@@ -1623,9 +1623,9 @@ function CollaborationHistorySection({
                     type="button"
                     onClick={() => setEditingChannelDeal(d)}
                     title={`Bấm để cấu hình kênh cho ${d.dealCode}`}
-                    className="inline-flex items-center gap-1 rounded border border-line bg-sunken/50 px-1.5 py-0.5 font-mono text-2xs text-ink hover:border-line-strong"
+                    className="inline-flex items-center gap-1 rounded border border-line bg-sunken/50 px-2 py-0.5 font-mono text-2xs text-ink hover:border-line-strong"
                   >
-                    <PlatformChannelIcon platform={ch.platform} className="h-3 w-3 shrink-0" />
+                    <PlatformChannelIcon platform={ch.platform} className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate max-w-[130px]">
                       {prefix}{ch.handle}
                     </span>
@@ -1696,7 +1696,7 @@ function CollaborationHistorySection({
             <div className="flex items-center gap-1 text-2xs">
               {rating ? (
                 <span className="inline-flex items-center gap-0.5 text-warning font-semibold">
-                  <Star className="w-3 h-3 fill-current" />
+                  <Star className="w-3.5 h-3.5 fill-current" />
                   {rating}
                 </span>
               ) : (
@@ -1726,7 +1726,7 @@ function CollaborationHistorySection({
       align: 'right',
       width: 110,
       render: (d) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center justify-end gap-2">
           <Button size="sm" variant="ghost" onClick={() => onViewDetail(d)}>
             Chi tiết
           </Button>
@@ -1735,7 +1735,7 @@ function CollaborationHistorySection({
               href={d.tiktokVideoUrl}
               target="_blank"
               rel="noreferrer"
-              className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-sunken"
+              className="p-2 rounded text-ink-3 hover:text-ink hover:bg-sunken"
               title="Xem video trên TikTok"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -1745,7 +1745,7 @@ function CollaborationHistorySection({
             <button
               type="button"
               onClick={() => setAskDeal(d)}
-              className="p-1.5 rounded text-ink-3 hover:text-accent hover:bg-sunken"
+              className="p-2 rounded text-ink-3 hover:text-accent hover:bg-sunken"
               title={`Hỏi ${picOfDeal(d)} về lần hợp tác này`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -1792,7 +1792,7 @@ function CollaborationHistorySection({
               type="button"
               onClick={() => setSelectedChannelFilter('ALL')}
               className={cx(
-                'flex items-center justify-between rounded-lg border px-3.5 py-2 text-left transition-colors',
+                'flex items-center justify-between rounded-lg border px-4 py-2 text-left transition-colors',
                 selectedChannelFilter === 'ALL'
                   ? 'border-accent bg-accent-soft/40'
                   : 'border-line bg-surface hover:border-line-strong',
@@ -1812,7 +1812,7 @@ function CollaborationHistorySection({
                 )
               }
               className={cx(
-                'flex items-center justify-between rounded-lg border px-3.5 py-2 text-left transition-colors',
+                'flex items-center justify-between rounded-lg border px-4 py-2 text-left transition-colors',
                 selectedChannelFilter === 'SINGLE_CHANNEL'
                   ? 'border-accent bg-accent-soft/40'
                   : 'border-line bg-surface hover:border-line-strong',
@@ -1832,7 +1832,7 @@ function CollaborationHistorySection({
                 )
               }
               className={cx(
-                'flex items-center justify-between rounded-lg border px-3.5 py-2 text-left transition-colors',
+                'flex items-center justify-between rounded-lg border px-4 py-2 text-left transition-colors',
                 selectedChannelFilter === 'MULTI_CHANNEL'
                   ? 'border-accent bg-accent-soft/40'
                   : 'border-line bg-surface hover:border-line-strong',
@@ -1873,18 +1873,18 @@ function CollaborationHistorySection({
                     }
                   }}
                   className={cx(
-                    'flex items-center justify-between gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors',
+                    'flex items-center justify-between gap-3 rounded-lg border px-3 py-3 cursor-pointer transition-colors',
                     isActive
                       ? 'border-accent bg-accent-soft/40'
                       : 'border-line bg-sunken/30 hover:border-line-strong hover:bg-surface',
                   )}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface">
                       <PlatformChannelIcon platform={ch.platform} className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <span className="truncate font-mono text-xs font-semibold text-ink">
                           {prefix}{ch.handle}
                         </span>
@@ -1897,11 +1897,11 @@ function CollaborationHistorySection({
                             className="text-ink-3 hover:text-accent shrink-0"
                             title="Mở trang kênh"
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-2xs text-ink-3 mt-0.5">
+                      <div className="flex items-center gap-2 text-2xs text-ink-3 mt-0.5">
                         <span>{roleTag}</span>
                         {gmv > 0 && (
                           <>
@@ -1964,7 +1964,7 @@ function CollaborationHistorySection({
           displayStats.uniqueBrands.length ? ` · ${displayStats.uniqueBrands.join(', ')}` : ''
         }`}
         actions={
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {onOpenHistoryEvaluation && (
               <Button size="sm" variant="ghost" icon={FileText} onClick={onOpenHistoryEvaluation}>
                 Đánh giá lịch sử &amp; rủi ro
@@ -2035,7 +2035,7 @@ function CollaborationHistorySection({
           }
         />
         {summaryDeals > 0 && (
-          <p className="px-4 py-2.5 border-t border-line text-2xs text-ink-3">
+          <p className="px-4 py-3 border-t border-line text-2xs text-ink-3">
             +{formatNumber(summaryDeals)} đợt chỉ có số tổng từ Master KOC, chưa có chi tiết trên hệ thống.
           </p>
         )}
@@ -2119,7 +2119,7 @@ function ActiveDealsSection({
         return (
           <div className="grid gap-1 justify-items-start">
             <Status tone={s.tone}>{s.label}</Status>
-            <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+            <div className="flex items-center gap-2 text-2xs text-ink-3">
               <span>{step}</span>
               {d.deadlinePost && (
                 <>
@@ -2325,7 +2325,7 @@ function ShippingAndContactPanel({
     >
       <dl className="grid gap-3 text-xs">
         {/* Kênh mạng xã hội: hiển thị toàn bộ kênh TikTok (kênh chính + kênh phụ) & các nền tảng kết nối */}
-        <div className="grid gap-1.5 text-2xs">
+        <div className="grid gap-2 text-2xs">
           <div className="flex items-center justify-between gap-2 pb-1">
             <span className="font-semibold text-ink">
               Tài khoản kênh liên kết ({socialLinks.length})
@@ -2342,7 +2342,7 @@ function ShippingAndContactPanel({
           </div>
           {socialLinks.map((c) => (
             <div key={c.key} className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-ink-3">
+              <span className="inline-flex items-center gap-2 text-ink-3">
                 <c.Logo className="w-3.5 h-3.5 shrink-0" />
                 {c.name}
               </span>
@@ -2353,7 +2353,7 @@ function ShippingAndContactPanel({
                 className="font-figure text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
               >
                 {c.text}
-                <ExternalLink className="w-3 h-3 shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               </a>
             </div>
           ))}
@@ -2373,14 +2373,14 @@ function ShippingAndContactPanel({
         </div>
 
         {isEditingContact ? (
-          <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5">
+          <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-3">
             <Field label="Email làm việc (nhận lời mời & hợp đồng)">
               <input
                 type="email"
                 placeholder="VD: creator@gmail.com"
                 value={draftEmail}
                 onChange={(e) => setDraftEmail(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
               />
             </Field>
             <div className="grid grid-cols-2 gap-2">
@@ -2390,7 +2390,7 @@ function ShippingAndContactPanel({
                   placeholder="09..."
                   value={draftPhone}
                   onChange={(e) => setDraftPhone(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+                  className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
                 />
               </Field>
               <Field label="Zalo trao đổi">
@@ -2399,7 +2399,7 @@ function ShippingAndContactPanel({
                   placeholder="09..."
                   value={draftZalo}
                   onChange={(e) => setDraftZalo(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+                  className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
                 />
               </Field>
             </div>
@@ -2409,7 +2409,7 @@ function ShippingAndContactPanel({
                 placeholder="Hà Nội / TP.HCM..."
                 value={draftLocation}
                 onChange={(e) => setDraftLocation(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
               />
             </Field>
             <div className="border-t border-line pt-2 grid grid-cols-2 gap-2">
@@ -2418,7 +2418,7 @@ function ShippingAndContactPanel({
                   type="text"
                   value={draftRecipient}
                   onChange={(e) => setDraftRecipient(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                  className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
                 />
               </Field>
               <Field label="SĐT nhận hàng">
@@ -2426,7 +2426,7 @@ function ShippingAndContactPanel({
                   type="text"
                   value={draftShippingPhone}
                   onChange={(e) => setDraftShippingPhone(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+                  className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
                 />
               </Field>
             </div>
@@ -2436,7 +2436,7 @@ function ShippingAndContactPanel({
                 placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP..."
                 value={draftShippingAddress}
                 onChange={(e) => setDraftShippingAddress(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
               />
             </Field>
             <Field label="Ghi chú giao hàng">
@@ -2445,10 +2445,10 @@ function ShippingAndContactPanel({
                 placeholder="Giờ nhận hàng, lưu ý lễ tân..."
                 value={draftShippingNotes}
                 onChange={(e) => setDraftShippingNotes(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                className="w-full h-8 px-3 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
               />
             </Field>
-            <div className="flex items-center justify-end gap-1.5 pt-1">
+            <div className="flex items-center justify-end gap-2 pt-1">
               <Button size="sm" variant="ghost" onClick={() => setIsEditingContact(false)}>
                 Hủy
               </Button>
@@ -2463,7 +2463,7 @@ function ShippingAndContactPanel({
             <InfoRow label="Số điện thoại">{koc.phone ? (allowedPii ? koc.phone : mask(koc.phone)) : '—'}</InfoRow>
             <InfoRow label="Zalo trao đổi">
               {koc.zalo ? (
-                <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-2">
                   <span>{allowedPii ? koc.zalo : mask(koc.zalo)}</span>
                   <a
                     href={`https://zalo.me/${koc.zalo.replace(/\D/g, '')}`}
@@ -2493,15 +2493,15 @@ function ShippingAndContactPanel({
             <InfoRow label="Khu vực">{koc.location || '—'}</InfoRow>
 
             {/* Gửi mẫu: chỉ cần khi chuẩn bị gửi hàng nên thu gọn mặc định */}
-            <details className="group border-t border-line pt-2.5">
+            <details className="group border-t border-line pt-3">
               <summary className="flex items-center justify-between gap-2 cursor-pointer list-none text-ctl-sm text-ink">
-                <span className="inline-flex items-center gap-1.5 font-medium">
+                <span className="inline-flex items-center gap-2 font-medium">
                   <Truck className="w-3.5 h-3.5 text-ink-3" />
                   Gửi mẫu
                 </span>
                 <span className="text-2xs text-ink-3 truncate">
                   {koc.shippingAddress ? koc.shippingRecipientName || koc.realName || koc.stageName : 'Chưa có địa chỉ'}
-                  <ChevronRight className="inline w-3 h-3 ml-0.5 transition-transform group-open:rotate-90" />
+                  <ChevronRight className="inline w-3.5 h-3.5 ml-0.5 transition-transform group-open:rotate-90" />
                 </span>
               </summary>
               <dl className="grid gap-3 mt-3">
@@ -2536,7 +2536,7 @@ function ShippingAndContactPanel({
 
         {/* Đặc tính phục vụ chọn mẫu */}
         {prefs && !isEditingContact && (
-          <div className="p-2.5 rounded-lg border border-line bg-sunken/40 space-y-1.5 mt-1">
+          <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2 mt-1">
             <span className="text-2xs font-semibold text-ink-2 block">Thông số chọn sản phẩm mẫu:</span>
             {prefs.skinType && (
               <div className="text-2xs text-ink-2">
@@ -2735,7 +2735,7 @@ function LegalPaymentPanel({
           <InfoRow label="Tài khoản nhận tiền">
             {activeBankAccount ? (
               <div className="grid gap-1">
-                <span className="inline-flex flex-wrap items-center gap-x-1.5">
+                <span className="inline-flex flex-wrap items-center gap-x-2">
                   <SensitiveValue
                     value={show(activeBankAccount)}
                     copyValue={revealed ? activeBankAccount : undefined}
@@ -2748,7 +2748,7 @@ function LegalPaymentPanel({
                     onClick={onOpenQr}
                     className="inline-flex items-center gap-1 text-2xs text-accent font-medium hover:underline w-fit mt-0.5"
                   >
-                    <QrCode className="w-3 h-3" />
+                    <QrCode className="w-3.5 h-3.5" />
                     Quét mã QR thanh toán
                   </button>
                 )}
@@ -2767,7 +2767,7 @@ function LegalPaymentPanel({
           </InfoRow>
           {(defProfile?.legalAttachments || []).length > 0 && (
             <InfoRow label="Giấy tờ CCCD / ĐKKD">
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {(defProfile?.legalAttachments || []).map((doc) => (
                   <button
                     key={doc.id}
@@ -2784,7 +2784,7 @@ function LegalPaymentPanel({
                     title="Ấn vào để xem giấy tờ"
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line bg-sunken/70 text-ink hover:border-accent hover:text-accent font-medium text-2xs transition-colors"
                   >
-                    <Eye className="w-3 h-3 text-accent shrink-0" />
+                    <Eye className="w-3.5 h-3.5 text-accent shrink-0" />
                     <span>{doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType]}</span>
                   </button>
                 ))}
@@ -2802,7 +2802,7 @@ function LegalPaymentPanel({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-accent hover:underline font-medium"
               >
-                <FileText className="w-3 h-3" />
+                <FileText className="w-3.5 h-3.5" />
                 Mở thư mục hợp đồng
                 <ExternalLink className="w-2.5 h-2.5" />
               </a>
@@ -2871,7 +2871,7 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
           )}
         </div>
 
-        <dl className="grid gap-2.5">
+        <dl className="grid gap-3">
           {koc.collabGroupLabel && (
             <InfoRow label="Nhóm hợp tác">{koc.collabGroupLabel}</InfoRow>
           )}
@@ -2956,7 +2956,7 @@ function CollaborationDetailModal({
                 href={deal.tiktokVideoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="h-[34px] px-3.5 rounded-md font-medium text-ctl-md border border-line-strong hover:bg-sunken text-ink inline-flex items-center gap-1.5"
+                className="h-[34px] px-4 rounded-md font-medium text-ctl-md border border-line-strong hover:bg-sunken text-ink inline-flex items-center gap-2"
               >
                 <ExternalLink className="w-4 h-4 text-ink-3" />
                 Xem video trên TikTok
@@ -2971,19 +2971,19 @@ function CollaborationDetailModal({
     >
       <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
         {/* Phạm vi kênh hợp tác (Riêng 1 kênh hoặc Đa kênh) & Hồ sơ pháp lý thanh toán */}
-        <div className="p-3.5 rounded-xl border border-line bg-sunken/50 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="p-4 rounded-xl border border-line bg-sunken/50 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-ink">Phạm vi kênh thực thi:</span>
             <Status tone={channelBreakdown.isMultiChannel ? 'info' : 'neutral'}>
               {channelBreakdown.scopeLabel}
             </Status>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {channelBreakdown.channels.map((ch) => (
                 <span
                   key={ch.key}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-line bg-surface font-mono text-2xs text-ink"
                 >
-                  <PlatformChannelIcon platform={ch.platform} className="h-3 w-3 shrink-0" />
+                  <PlatformChannelIcon platform={ch.platform} className="h-3.5 w-3.5 shrink-0" />
                   {ch.displayLabel}
                 </span>
               ))}
@@ -3091,7 +3091,7 @@ function CollaborationDetailModal({
             {deal.contentHook && (
               <div className="sm:col-span-2">
                 <dt className="text-2xs text-ink-3">Hook 3 giây đầu gợi ý</dt>
-                <dd className="p-2.5 rounded bg-sunken font-mono text-2xs text-ink mt-0.5">{deal.contentHook}</dd>
+                <dd className="p-3 rounded bg-sunken font-mono text-2xs text-ink mt-0.5">{deal.contentHook}</dd>
               </div>
             )}
             {deal.contentNote && (
@@ -3108,7 +3108,7 @@ function CollaborationDetailModal({
           {/* Lộ trình tác nghiệp */}
           <div className="p-4 rounded-xl border border-line bg-surface space-y-3 text-xs">
             <h4 className="text-xs font-semibold text-ink">Lộ trình tác nghiệp</h4>
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Gửi nhận mẫu FOC:</span>
                 <span className="font-medium text-ink">
@@ -3294,8 +3294,8 @@ function TikTokSellerSyncModal({
 
   return (
     <Modal open onClose={onClose} title="Cập nhật & Đồng bộ chỉ số TikTok Seller" size="md">
-      <div className="space-y-3.5 text-xs">
-        <div className="p-2.5 rounded-lg bg-sunken border border-line flex items-center justify-between">
+      <div className="space-y-4 text-xs">
+        <div className="p-3 rounded-lg bg-sunken border border-line flex items-center justify-between">
           <span className="text-ink-2">Kênh TikTok</span>
           <span className="font-code font-semibold text-ink">
             @{koc.channelId.replace(/^@/, '')}

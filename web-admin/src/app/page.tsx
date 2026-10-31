@@ -35,7 +35,7 @@ function ViewLoading() {
       </div>
       <div aria-hidden="true" className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line rounded-xl overflow-hidden">
         {[0, 1, 2, 3].map(i => (
-          <div key={i} className="bg-surface px-4 pt-3.5 pb-4 grid gap-2.5">
+          <div key={i} className="bg-surface px-4 pt-4 pb-4 grid gap-3">
             <Skeleton className="w-24" />
             <Skeleton className="h-7 w-32 rounded-md" />
             <Skeleton className="w-20" />
@@ -51,36 +51,24 @@ function ViewLoading() {
 }
 
 const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
-const BrandView = dynamic(() => import('../components/views/BrandView').then(m => m.BrandView), { loading: ViewLoading });
 const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
 const ContentView = dynamic(() => import('../components/views/ContentView').then(m => m.ContentView), { loading: ViewLoading });
-const BookingView = dynamic(() => import('../components/views/BookingView').then(m => m.BookingView), { loading: ViewLoading });
 const ManagerView = dynamic(() => import('../components/views/ManagerView').then(m => m.ManagerView), { loading: ViewLoading });
-const BrandHubView = dynamic(() => import('../components/views/BrandHubView').then(m => m.BrandHubView), { loading: ViewLoading });
 const InputPlanBreakdownView = dynamic(() => import('../components/views/InputPlanBreakdownView').then(m => m.InputPlanBreakdownView), { loading: ViewLoading });
-const SampleTrackerView = dynamic(() => import('../components/views/SampleTrackerView'), { loading: ViewLoading });
-const PerformanceP3View = dynamic(() => import('../components/views/PerformanceP3View'), { loading: ViewLoading });
-const PushProductsView = dynamic(() => import('../components/views/PushProductsView').then(m => m.PushProductsView), { loading: ViewLoading });
 const SelfChannelCtvHubView = dynamic(() => import('../components/views/SelfChannelCtvHubView').then(m => m.SelfChannelCtvHubView), { loading: ViewLoading });
-const StoreManagementView = dynamic(() => import('../components/views/StoreManagementView').then(m => m.StoreManagementView), { loading: ViewLoading });
 const KocKolHubView = dynamic(() => import('../components/views/KocKolHubView').then(m => m.KocKolHubView), { loading: ViewLoading });
 const CentralizedRbacHubView = dynamic(() => import('../components/views/CentralizedRbacHubView').then(m => m.CentralizedRbacHubView), { loading: ViewLoading });
 const MasterDataHubView = dynamic(() => import('../components/views/MasterDataHubView').then(m => m.MasterDataHubView), { loading: ViewLoading });
 const KocListingBatchHubView = dynamic(() => import('../components/views/KocListingBatchHubView').then(m => m.KocListingBatchHubView), { loading: ViewLoading });
-const ApprovedBookingListView = dynamic(() => import('../components/views/ApprovedBookingListView').then(m => m.ApprovedBookingListView), { loading: ViewLoading });
-const AirBookingReportHubView = dynamic(() => import('../components/views/AirBookingReportHubView').then(m => m.AirBookingReportHubView), { loading: ViewLoading });
 const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(m => m.KocMasterDataView), { loading: ViewLoading });
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
 const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
-const CloudflareAdminView = dynamic(() => import('../components/views/CloudflareAdminView').then(m => m.CloudflareAdminView), { loading: ViewLoading });
-const ZaloBotManagerView = dynamic(() => import('../components/views/ZaloBotManagerView').then(m => m.ZaloBotManagerView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
-const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMapView').then(m => m.Workload3dMapView), { loading: ViewLoading });
-const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
 const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCrawlerHubView').then(m => m.TikTokCrawlerHubView), { loading: ViewLoading });
 const BrandMarketResearchHubView = dynamic(() => import('../components/views/BrandMarketResearchHubView').then(m => m.BrandMarketResearchHubView), { loading: ViewLoading });
+const LarkAcceptancePaymentHubView = dynamic(() => import('../components/views/LarkAcceptancePaymentHubView').then(m => m.LarkAcceptancePaymentHubView), { loading: ViewLoading });
 
 function prefetchViewTab(tab: TabKey) {
   switch (tab) {
@@ -95,10 +83,9 @@ function prefetchViewTab(tab: TabKey) {
     case 'input-plan':
       void import('../components/views/InputPlanBreakdownView');
       break;
-    case 'booking':
-      void import('../components/views/BookingView');
-      break;
     case 'koc-listing':
+    case 'multi-platform-booking':
+    case 'livestream-booking':
       void import('../components/views/KocListingBatchHubView');
       break;
     case 'contracts':
@@ -106,9 +93,6 @@ function prefetchViewTab(tab: TabKey) {
       break;
     case 'brand-knowledge':
       void import('../components/views/BrandProfilesView');
-      break;
-    case 'stores':
-      void import('../components/views/StoreManagementView');
       break;
     case 'master-data':
       void import('../components/views/MasterDataHubView');
@@ -131,20 +115,11 @@ function prefetchViewTab(tab: TabKey) {
     case 'self-channel-hub':
       void import('../components/views/SelfChannelCtvHubView');
       break;
-    case 'sample-tracker':
-      void import('../components/views/SampleTrackerView');
-      break;
-    case 'push-products':
-      void import('../components/views/PushProductsView');
+    case 'lark-settlement':
+      void import('../components/views/LarkAcceptancePaymentHubView');
       break;
     case 'manager':
       void import('../components/views/ManagerView');
-      break;
-    case 'performance-p3':
-      void import('../components/views/PerformanceP3View');
-      break;
-    case 'campaigns':
-      void import('../components/views/BrandView');
       break;
     case 'ads-report':
       void import('../components/views/WeeklyAdsReportHubView');
@@ -155,29 +130,8 @@ function prefetchViewTab(tab: TabKey) {
     case 'partner-access':
       void import('../components/views/CentralizedRbacHubView');
       break;
-    case 'workload-3d':
-      void import('../components/views/Workload3dMapView');
-      break;
-    case 'audit-trail':
-      void import('../components/views/AuditTrailView');
-      break;
     case 'api-settings':
       void import('../components/views/ApiKeySetupView');
-      break;
-    case 'cloudflare-admin':
-      void import('../components/views/CloudflareAdminView');
-      break;
-    case 'zalo-bot':
-      void import('../components/views/ZaloBotManagerView');
-      break;
-    case 'approved-booking-list':
-      void import('../components/views/ApprovedBookingListView');
-      break;
-    case 'store-air-plan-report':
-      void import('../components/views/AirBookingReportHubView');
-      break;
-    case 'brand-hub':
-      void import('../components/views/BrandHubView');
       break;
     case 'koc-hub':
       void import('../components/views/KocKolHubView');
@@ -499,7 +453,7 @@ export default function App() {
     let timerId: number | undefined;
     const prefetchIdle = () => {
       void import('../components/views/InputPlanBreakdownView');
-      void import('../components/views/BookingView');
+      void import('../components/views/KocListingBatchHubView');
     };
     if (typeof idleCallback === 'function') {
       cancelId = idleCallback(prefetchIdle, { timeout: 3500 });
@@ -691,13 +645,28 @@ export default function App() {
     }
   }, [router]);
 
+  const isDeprecatedDemoKoc = useCallback((item?: Partial<KocItem> | null) => {
+    if (!item) return true;
+    const id = (item.id || '').trim();
+    const h = (item.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+    if (/^koc-(?:[1-9]|1\d|20)$/.test(id)) return true;
+    if (h === 'megauriviu' || h === 'chanhbeauty99' || h === 'linhskincare' || h === 'an_nhien_beauty') return true;
+    return false;
+  }, []);
+
   const [kocs, setKocs] = useState<KocItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_KOCS;
     try {
       const raw = localStorage.getItem('upbase_saved_kocs_v1');
       if (!raw) return INITIAL_KOCS;
       const savedMap = JSON.parse(raw) as Record<string, KocItem>;
-      const customItems = Object.values(savedMap || {});
+      const customItems = Object.values(savedMap || {}).filter((item) => {
+        const id = (item?.id || '').trim();
+        const h = (item?.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        if (/^koc-(?:[1-9]|1\d|20)$/.test(id)) return false;
+        if (h === 'megauriviu' || h === 'chanhbeauty99' || h === 'linhskincare' || h === 'an_nhien_beauty') return false;
+        return true;
+      });
       if (customItems.length === 0) return INITIAL_KOCS;
       const byId = new Map<string, KocItem>();
       const byHandle = new Map<string, KocItem>();
@@ -727,12 +696,18 @@ export default function App() {
     }
   });
 
-  const syncCustomKocsIntoState = useCallback((customItems: KocItem[]) => {
-    if (!Array.isArray(customItems) || customItems.length === 0) return;
+  const syncCustomKocsIntoState = useCallback((rawCustomItems: KocItem[]) => {
+    const customItems = Array.isArray(rawCustomItems)
+      ? rawCustomItems.filter((item) => !isDeprecatedDemoKoc(item))
+      : [];
+    if (customItems.length === 0) return;
     try {
       if (typeof window !== 'undefined') {
         const raw = localStorage.getItem('upbase_saved_kocs_v1');
         const map: Record<string, KocItem> = raw ? JSON.parse(raw) : {};
+        for (const [k, v] of Object.entries(map)) {
+          if (isDeprecatedDemoKoc(v)) delete map[k];
+        }
         for (const item of customItems) {
           const key = (item.channelId || item.id || '').trim().toLowerCase().replace(/^@+/, '') || item.id;
           if (!key) continue;
@@ -778,7 +753,7 @@ export default function App() {
       });
       return createdNew.length > 0 ? [...createdNew, ...next] : next;
     });
-  }, []);
+  }, [isDeprecatedDemoKoc]);
 
   const persistKocsToDatabase = useCallback(
     async (payload: { created?: KocItem[]; updated?: KocItem[] }) => {
@@ -1061,7 +1036,7 @@ export default function App() {
         ...params,
         nonce: Date.now(),
       });
-      setActiveTab('booking');
+      setActiveTab('koc-listing');
       showToast(
         `Đang mở Quản lý Booking kỳ ${params.month} ${params.dealCode ? `(Mã deal ${params.dealCode})` : `cho "${params.storeName || params.brandName || ''}"`}`,
         'info',
@@ -1690,19 +1665,19 @@ export default function App() {
               <div className="w-14 h-14 rounded-xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">
                 <ShieldAlert className="w-7 h-7" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="text-lg font-semibold text-ink">Không có quyền truy cập màn hình này</div>
                 <p className="text-xs text-ink-2 leading-relaxed">
                   Tài khoản hiện tại <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-critical font-semibold">{pageTitleOf(activeTab)}</strong>.
                 </p>
-                <div className="p-2.5 rounded-lg bg-sunken border border-line text-2xs text-ink-3">
+                <div className="p-3 rounded-lg bg-sunken border border-line text-2xs text-ink-3">
                   Quy định bảo mật theo <strong className="font-medium">Ma trận phân quyền Upbase</strong>
                 </div>
               </div>
               <div className="pt-2">
                 <Button
                   variant="primary"
-                  onClick={() => setActiveTab(getDefaultLandingTabForRole(currentUser.role))}
+                  onClick={() => handleSelectTab(getDefaultLandingTabForRole(currentUser.role))}
                 >
                   Quay về màn hình chính ({pageTitleOf(getDefaultLandingTabForRole(currentUser.role))})
                 </Button>
@@ -1722,9 +1697,9 @@ export default function App() {
               onSelectDeal={openContractForDeal}
               deals={deals}
               onTaskActionClick={handleTaskActionClick}
-              onNavigateToInputPlan={() => setActiveTab('input-plan')}
-              onNavigateToAirSync={() => setActiveTab('dashboard-air-sync')}
-              onNavigateToTaskDelegation={() => setActiveTab('task-delegation')}
+              onNavigateToInputPlan={() => handleSelectTab('input-plan')}
+              onNavigateToAirSync={() => handleSelectTab('dashboard-air-sync')}
+              onNavigateToTaskDelegation={() => handleSelectTab('task-delegation')}
             />
           </KeepAliveTab>
 
@@ -1754,7 +1729,7 @@ export default function App() {
               storePortfolios={scopedStores}
               activeSidebarTab={activeTab}
               onNotify={showToast}
-              onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
+              onNavigateToTab={(tabKey) => handleSelectTab(tabKey as TabKey)}
               onOpenPlanForStore={handleDrilldownToPlan}
               onOpenListingForStore={handleDrilldownToListing}
             />
@@ -1773,7 +1748,7 @@ export default function App() {
               onGenerateDealsFromPlan={(newSlots) => {
                 setDetailedPlans(prev => [...newSlots, ...prev]);
                 showToast(`Đã tạo ${newSlots.length} slot KOC trong Booking`);
-                setActiveTab('booking');
+                setActiveTab('koc-listing');
               }}
               onApplyPlanToWeeklyStore={(weeklyPlan) => {
                 showToast(`Đã lưu kế hoạch ${weeklyPlan.storeName}, ${weeklyPlan.week}`);
@@ -1797,6 +1772,7 @@ export default function App() {
 
           <KeepAliveTab tabKey="koc-listing" currentTab={activeTab}>
             <KocListingBatchHubView
+              bookingMode="TIKTOK"
               listings={kocListings}
               onUpdateListings={setKocListings}
               onGenerateDeal={handleGenerateDealFromListing}
@@ -1826,53 +1802,20 @@ export default function App() {
                     setApiSettingsSheetSubTab(ctx.sheetTab);
                   }
                   setActiveTab('api-settings');
+                } else if (tab === 'lark-settlement') {
+                  setActiveTab('lark-settlement');
                 }
               }}
               onNotify={showToast}
             />
           </KeepAliveTab>
 
-          <KeepAliveTab tabKey="store-air-plan-report" currentTab={activeTab}>
-            <AirBookingReportHubView
-              currentUser={currentUser}
-              stores={scopedStores}
-              kocs={kocs}
-              deals={scopedDeals}
-              kocListings={kocListings}
-              onNavigateToTab={(tab, ctx) => {
-                const storeName = typeof ctx?.storeName === 'string' ? ctx.storeName : undefined;
-                const monthKey = typeof ctx?.monthKey === 'string' ? ctx.monthKey : undefined;
-                if (tab === 'approved-booking-list') {
-                  setApprovedBookingListContext({
-                    storeName,
-                    monthKey,
-                    nonce: Date.now(),
-                  });
-                  handleSelectTab('approved-booking-list');
-                } else if (tab === 'koc-listing') {
-                  setListingPlanContext({
-                    storeName,
-                    monthKey,
-                    openStaffSheet: true,
-                    nonce: Date.now(),
-                  });
-                  handleSelectTab('koc-listing');
-                } else {
-                  handleSelectTab(tab as TabKey);
-                }
-              }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="approved-booking-list" currentTab={activeTab}>
-            <ApprovedBookingListView
-              kocs={kocs}
-              stores={scopedStores}
-              deals={scopedDeals}
-              currentUserName={currentUser.name}
-              initialStoreName={approvedBookingListContext?.storeName}
-              initialMonthKey={approvedBookingListContext?.monthKey}
+          <KeepAliveTab tabKey="multi-platform-booking" currentTab={activeTab}>
+            <KocListingBatchHubView
+              bookingMode="MULTI_PLATFORM"
+              listings={kocListings}
+              onUpdateListings={setKocListings}
+              onGenerateDeal={handleGenerateDealFromListing}
               onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
                 setDeals((prev) => {
                   const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
@@ -1883,20 +1826,64 @@ export default function App() {
                 });
               }}
               onOpenContractForDeal={openContractForDeal}
-              onNavigateTab={(targetTab, ctx) => {
-                if (targetTab === 'koc-listing') {
-                  setListingPlanContext({
-                    storeName: ctx?.storeName || approvedBookingListContext?.storeName,
-                    monthKey: ctx?.monthKey || approvedBookingListContext?.monthKey,
-                    openStaffSheet: true,
-                    nonce: Date.now(),
-                  });
-                  handleSelectTab('koc-listing');
-                } else if (targetTab === 'booking') {
-                  handleDrilldownToBooking({
-                    storeName: ctx?.storeName || approvedBookingListContext?.storeName,
-                    month: ctx?.monthKey || approvedBookingListContext?.monthKey || '2026/10',
-                  });
+              currentUser={currentUser}
+              currentRole={currentUser.role}
+              currentUserName={currentUser.name}
+              monthlyPlans={scopedMonthlyPlans}
+              stores={scopedStores}
+              kocs={kocs}
+              deals={scopedDeals}
+              activePlanContext={listingPlanContext}
+              onOpenPlanStudio={() => setActiveTab('input-plan')}
+              onOpenContractForPlanDeal={openContractForPlanDeal}
+              onNavigateTab={(tab, ctx) => {
+                if (tab === 'api-settings') {
+                  if (ctx?.sheetTab) {
+                    setApiSettingsSheetSubTab(ctx.sheetTab);
+                  }
+                  setActiveTab('api-settings');
+                } else if (tab === 'lark-settlement') {
+                  setActiveTab('lark-settlement');
+                }
+              }}
+              onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="livestream-booking" currentTab={activeTab}>
+            <KocListingBatchHubView
+              bookingMode="LIVESTREAM"
+              listings={kocListings}
+              onUpdateListings={setKocListings}
+              onGenerateDeal={handleGenerateDealFromListing}
+              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
+                setDeals((prev) => {
+                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
+                  const existingCodes = new Set(prev.map((d) => d.dealCode));
+                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
+                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
+                  return [...brandNew, ...updatedExisting];
+                });
+              }}
+              onOpenContractForDeal={openContractForDeal}
+              currentUser={currentUser}
+              currentRole={currentUser.role}
+              currentUserName={currentUser.name}
+              monthlyPlans={scopedMonthlyPlans}
+              stores={scopedStores}
+              kocs={kocs}
+              deals={scopedDeals}
+              activePlanContext={listingPlanContext}
+              onOpenPlanStudio={() => setActiveTab('input-plan')}
+              onOpenContractForPlanDeal={openContractForPlanDeal}
+              onNavigateTab={(tab, ctx) => {
+                if (tab === 'api-settings') {
+                  if (ctx?.sheetTab) {
+                    setApiSettingsSheetSubTab(ctx.sheetTab);
+                  }
+                  setActiveTab('api-settings');
+                } else if (tab === 'lark-settlement') {
+                  setActiveTab('lark-settlement');
                 }
               }}
               onNotify={showToast}
@@ -1929,12 +1916,13 @@ export default function App() {
                 if (storeName) {
                   setSelectedStoreContext(storeName);
                 }
-                setActiveTab('stores');
+                setActiveTab('master-data');
               }}
               onNavigateToCtvProfile={(ctvId) => {
                 setSelectedCtvContext(ctvId || null);
                 setActiveTab('self-channel-hub');
               }}
+              onOpenKocDirectory={() => setActiveTab('koc-master')}
               ctvAccess={ctvDirectory.access}
               partnershipStaff={ctvDirectory.partnershipStaff}
               onSavePartnershipStaff={ctvDirectory.savePartnershipStaff}
@@ -1943,21 +1931,6 @@ export default function App() {
                 setActiveTab('koc-hub');
               }}
               onSelectDealForContract={openContractForDeal}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="push-products" currentTab={activeTab}>
-            <PushProductsView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              onNotify={showToast}
-              onOpenBookingWithProduct={(product) => {
-                if (product.brandName) {
-                  setSelectedBrandContext(product.brandName);
-                }
-                setActiveTab('booking');
-                showToast(`Đã mở Quản lý Booking cho SKU ${product.sku} (${product.brandName})`);
-              }}
             />
           </KeepAliveTab>
 
@@ -1970,49 +1943,84 @@ export default function App() {
               onContributorUpdated={handleContributorUpdated}
               ctvAccess={ctvDirectory.access}
               focusCtvId={selectedCtvContext}
+              onOpenLarkSettlement={() => setActiveTab('lark-settlement')}
               onNotify={showToast}
             />
           </KeepAliveTab>
 
-          <KeepAliveTab tabKey="stores" currentTab={activeTab}>
-            <StoreManagementView
+          <KeepAliveTab tabKey="lark-settlement" currentTab={activeTab}>
+            <LarkAcceptancePaymentHubView
               currentUser={currentUser}
-              selectedStore={selectedStoreContext}
+              currentRole={currentUser.role}
+              currentUserName={currentUser.name}
+              kocs={kocs}
               stores={scopedStores}
-              brands={scopedBrands}
               deals={scopedDeals}
               monthlyPlans={scopedMonthlyPlans}
+              contributors={contributors}
+              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
+                setDeals((prev) => {
+                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
+                  const existingCodes = new Set(prev.map((d) => d.dealCode));
+                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
+                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
+                  return [...brandNew, ...updatedExisting];
+                });
+              }}
+              onOpenContractForDeal={openContractForDeal}
+              onNavigateSourceModule={(module, ctx) => {
+                if (module === 'TIKTOK_KOC_32') {
+                  window.dispatchEvent(
+                    new CustomEvent('upbase-navigate-tab', {
+                      detail: {
+                        tab: 'approved-booking-list',
+                        storeName: ctx?.storeName,
+                        monthKey: ctx?.monthKey,
+                        dealCode: ctx?.dealCode,
+                      },
+                    }),
+                  );
+                  setActiveTab('koc-listing');
+                } else if (module === 'MULTI_PLATFORM') {
+                  window.dispatchEvent(
+                    new CustomEvent('upbase-navigate-tab', {
+                      detail: {
+                        tab: 'multi-platform-booking',
+                        storeName: ctx?.storeName,
+                        monthKey: ctx?.monthKey,
+                        dealCode: ctx?.dealCode,
+                      },
+                    }),
+                  );
+                  setActiveTab('multi-platform-booking');
+                } else if (module === 'LIVESTREAM_DEAL') {
+                  window.dispatchEvent(
+                    new CustomEvent('upbase-navigate-tab', {
+                      detail: {
+                        tab: 'livestream-booking',
+                        storeName: ctx?.storeName,
+                        monthKey: ctx?.monthKey,
+                        dealCode: ctx?.dealCode,
+                      },
+                    }),
+                  );
+                  setActiveTab('livestream-booking');
+                } else if (module === 'SELF_CHANNEL_CTV') {
+                  window.dispatchEvent(
+                    new CustomEvent('upbase-navigate-tab', {
+                      detail: {
+                        tab: 'self-channel-hub',
+                        storeName: ctx?.storeName,
+                        monthKey: ctx?.monthKey,
+                        dealCode: ctx?.dealCode,
+                        planId: ctx?.planId,
+                      },
+                    }),
+                  );
+                  setActiveTab('self-channel-hub');
+                }
+              }}
               onNotify={showToast}
-              onUpdateStore={handleUpdateStore}
-              onDrilldownToPlan={handleDrilldownToPlan}
-              onDrilldownToListing={handleDrilldownToListing}
-              onDrilldownToBooking={handleDrilldownToBooking}
-              onSelectDealForContract={openContractForDeal}
-              onNavigateToBrandProfile={(brandName) => {
-                if (brandName && brandName !== 'ALL') {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
-              onNavigateBackToMaster={() => {
-                setActiveTab('master-data');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="campaigns" currentTab={activeTab}>
-            <BrandView
-              campaigns={campaigns}
-              onCampaignsChange={setCampaigns}
-              onCampaignCreatedNotification={handleCampaignCreatedNotification}
-              onTriggerHandoffNotification={handleTriggerHandoffNotification}
-              onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
-              onNavigateToBrandKnowledge={(brandName) => {
-                if (brandName) {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
             />
           </KeepAliveTab>
 
@@ -2026,7 +2034,7 @@ export default function App() {
               monthlyPlans={scopedMonthlyPlans}
               initialDetailTab={brandInitialDetailTab}
               onNotify={showToast}
-              onOpenBooking={() => setActiveTab('booking')}
+              onOpenBooking={() => setActiveTab('koc-listing')}
               onUpdateStore={handleUpdateStore}
               onDrilldownToPlan={handleDrilldownToPlan}
               onDrilldownToListing={handleDrilldownToListing}
@@ -2036,7 +2044,7 @@ export default function App() {
                 if (storeName) {
                   setSelectedStoreContext(storeName);
                 }
-                setActiveTab('stores');
+                setActiveTab('master-data');
               }}
             />
           </KeepAliveTab>
@@ -2062,36 +2070,6 @@ export default function App() {
               brands={brands}
               kocs={kocs}
               onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="booking" currentTab={activeTab}>
-            <BookingView 
-              deals={scopedDeals}
-              kocs={kocs}
-              currentUser={currentUser}
-              selectedBrand={selectedBrandContext}
-              onNotify={showToast}
-              bookingDrilldownIntent={bookingDrilldownIntent}
-              onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
-              onOpenQuickBook={() => {
-                setPreselectedKoc(null);
-                setIsQuickBookOpen(true);
-              }}
-              onOpenImport={() => setIsImportOpen(true)}
-              onSelectDealForContract={openContractForDeal}
-              onUpdateDeal={handleUpdateDeal}
-              onKocCreated={handleKocCreated}
-              onKocUpdated={handleKocUpdated}
-              planItems={detailedPlans}
-              onAddPlanItem={handleAddPlanItem}
-              onUpdatePlanItem={handleUpdatePlanItem}
-              onDeletePlanItem={handleDeletePlanItem}
-              onSubmitPlanToLead={handleSubmitPlanToLead}
-              onConvertPlanItemToDeal={handleConvertPlanItemToDeal}
-              staffAllocations={staffAllocations['2026/10'] || staffAllocations['2026/09']}
-              currentUserName={currentUser.name}
-              onOpenInputPlan={() => setActiveTab('input-plan')}
             />
           </KeepAliveTab>
 
@@ -2145,6 +2123,7 @@ export default function App() {
 
           <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
             <ContractManagementView
+              key={currentUser?.id || 'contracts-root'}
               deals={scopedDeals}
               kocs={kocs}
               intent={contractIntent}
@@ -2219,23 +2198,6 @@ export default function App() {
             />
           </KeepAliveTab>
 
-          <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>
-            <SampleTrackerView
-              deals={scopedDeals}
-              currentUser={currentUser}
-              onNotify={showToast}
-              onUpdateDeal={handleUpdateDeal}
-              onUpdateDealWithSparkAds={(dealCode, sparkCode) => {
-                setDeals(prev => prev.map(d => d.dealCode === dealCode ? {
-                  ...d,
-                  adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-                  sparkAdsCode: sparkCode,
-                  pipelineText: 'Đã có Spark Ads'
-                } : d));
-              }}
-            />
-          </KeepAliveTab>
-
           <KeepAliveTab tabKey="manager" currentTab={activeTab}>
             <ManagerView
               currentUser={currentUser}
@@ -2260,7 +2222,7 @@ export default function App() {
               onUpdateStore={handleUpdateStore}
               tasks={tasks}
               onAddTask={handleAddTask}
-              onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
+              onNavigateToTab={(tabKey) => handleSelectTab(tabKey as TabKey)}
             />
           </KeepAliveTab>
 
@@ -2275,104 +2237,6 @@ export default function App() {
               onUpdateTask={handleUpdateTask}
               onPingStaff={handlePingStaffNotification}
               onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="workload-3d" currentTab={activeTab}>
-            <Workload3dMapView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              storePortfolios={scopedStores}
-              tasks={tasks}
-              deals={scopedDeals}
-              onUpdateBrand={handleUpdateBrand}
-              onUpdateStore={handleUpdateStore}
-              onAddTask={handleAddTask}
-              onPingStaff={handlePingStaffNotification}
-              onNotify={showToast}
-              onNavigateToTab={(tabKey) => setActiveTab(tabKey)}
-              onNavigateToBrandProfile={(brandName) => {
-                if (brandName && brandName !== 'ALL') {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
-              onNavigateToStoreProfile={(storeName) => {
-                if (storeName) {
-                  setSelectedStoreContext(storeName);
-                }
-                setActiveTab('stores');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="performance-p3" currentTab={activeTab}>
-            <PerformanceP3View
-              storePortfolios={scopedStores}
-              deals={scopedDeals}
-              currentUser={currentUser}
-              onNotify={showToast}
-              onUpdateStoreDifficulty={(storeId, multiplier, tier) => {
-                setStorePortfolios(prev => prev.map(s => {
-                  if (s.id !== storeId) return s;
-                  const nextStore: StorePortfolioItem = {
-                    ...s,
-                    difficultyMultiplier: multiplier,
-                    difficultyTier: tier
-                  };
-                  try {
-                    const raw = localStorage.getItem('upbase_store_overrides_v1');
-                    const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
-                    overrides[storeId] = nextStore;
-                    localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
-                    pushSharedStateToDb('store-overrides-v1', overrides);
-                  } catch {
-                    // ignore
-                  }
-                  return nextStore;
-                }));
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="brand-hub" currentTab={activeTab}>
-            <BrandHubView
-              currentUser={currentUser}
-              deals={scopedDeals}
-              brands={scopedBrands}
-              stores={scopedStores}
-              onUpdateStore={handleUpdateStore}
-              onOpenBooking={() => setActiveTab('booking')}
-              onNavigateToBrandProfile={(brandName: string) => {
-                if (brandName && brandName !== 'ALL') {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
-              onNavigateToStoreProfile={(storeName: string) => {
-                if (storeName) {
-                  setSelectedStoreContext(storeName);
-                }
-                setActiveTab('stores');
-              }}
-              selectedBrand={selectedBrandContext}
-              onNotify={showToast}
-              onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
-              onNavigateToKocHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('koc-hub') : undefined}
-              onBrandApproveDeal={(kocOrDeal) => {
-                setDeals(prev => prev.map(d => 
-                  (d.kocStageName.toLowerCase().includes(kocOrDeal.toLowerCase()) || d.dealCode === kocOrDeal)
-                    ? { ...d, brandApprovalStatus: 'ĐÃ_DUYỆT' }
-                    : d
-                ));
-              }}
-              onBrandRejectDeal={(kocOrDeal) => {
-                setDeals(prev => prev.map(d => 
-                  (d.kocStageName.toLowerCase().includes(kocOrDeal.toLowerCase()) || d.dealCode === kocOrDeal)
-                    ? { ...d, brandApprovalStatus: 'TỪ_CHỐI' }
-                    : d
-                ));
-              }}
             />
           </KeepAliveTab>
 
@@ -2394,7 +2258,6 @@ export default function App() {
                 handleSelectTab('koc-master', { keepReturnContext: true });
               }}
               onNotify={showToast}
-              onNavigateToBrandHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('brand-hub') : undefined}
               onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
             />
           </KeepAliveTab>
@@ -2426,28 +2289,6 @@ export default function App() {
             />
           </KeepAliveTab>
 
-          <KeepAliveTab tabKey="cloudflare-admin" currentTab={activeTab}>
-            <CloudflareAdminView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              onNotify={showToast}
-              onNavigateToBrandProfile={(brandName) => {
-                if (brandName && brandName !== 'ALL') {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="zalo-bot" currentTab={activeTab}>
-            <ApiKeySetupView
-              currentUser={currentUser}
-              initialTab="zalo-bot"
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
           <KeepAliveTab tabKey="knowledge-qa" currentTab={activeTab}>
             <MarketingKnowledgeQaView
               currentUser={currentUser}
@@ -2455,14 +2296,7 @@ export default function App() {
               stores={storePortfolios}
               kocs={kocs}
               onNotify={showToast}
-              onNavigateToTab={(tab) => setActiveTab(tab)}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="audit-trail" currentTab={activeTab}>
-            <AuditTrailView
-              currentUser={currentUser}
-              onNotify={showToast}
+              onNavigateToTab={(tab) => handleSelectTab(tab)}
             />
           </KeepAliveTab>
 

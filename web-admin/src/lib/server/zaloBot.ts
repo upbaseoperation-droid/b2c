@@ -2367,33 +2367,169 @@ export async function captureTikTokProductFrameBuffer(params: {
   captureSec: number;
   frameId?: string | null;
   overlayMeta?: TikTokFrameOverlayMeta;
+  fastMode?: boolean;
 }): Promise<{
   buffer: Buffer | null;
   source: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE';
   resolvedCoverUrl?: string;
 }> {
+  const targetVideoUrl = cleanUrlParam(params.videoUrl) || params.videoUrl;
+  const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
+  const vidFromUrl =
+    targetVideoUrl.match(/\/video\/(\d{15,22})/)?.[1] ||
+    params.frameId?.match(/FRM(?:V[23])?-(\d{15,22})/)?.[1];
+
   let fallbackCoverBuffer: Buffer | null = null;
   if (params.frameId) {
     const cached = await getCachedFrameBuffer(params.frameId);
     if (cached) {
-      if (cached.source === 'FFMPEG_FRAME') {
+      if (cached.source === 'FFMPEG_FRAME' || params.fastMode) {
         return {
           buffer: cached.buffer,
-          source: 'FFMPEG_FRAME',
+          source: cached.source,
           resolvedCoverUrl: params.coverUrl || undefined,
         };
       }
-      fallbackCoverBuffer = cached.buffer;
+      if (vidFromUrl) {
+        try {
+          const bridgeState = await getVnCartBridgeState();
+          const bItem = bridgeState.items?.[vidFromUrl];
+          if (
+            bItem?.cartAnchorTitle &&
+            (!mergedMeta.productTitle ||
+              mergedMeta.productTitle.includes('Sản phẩm gắn trong giỏ hàng'))
+          ) {
+            mergedMeta.productTitle = bItem.cartAnchorTitle;
+          }
+          if (bItem?.cartProductId && !mergedMeta.productId) {
+            mergedMeta.productId = bItem.cartProductId;
+          }
+          if (bItem?.frameJpegBase64) {
+            const bBuf = Buffer.from(bItem.frameJpegBase64, 'base64');
+            if (bBuf.length > 1000 && isJpegOrPngBuffer(bBuf)) {
+              const upgradedBuf = await stampTikTokAcceptanceOverlay(
+                bBuf,
+                params.captureSec,
+                mergedMeta
+              );
+              if (
+                upgradedBuf &&
+                upgradedBuf.length > 500 &&
+                upgradedBuf[0] === 0x89 &&
+                upgradedBuf[1] === 0x50
+              ) {
+                await storeCapturedFrameBuffer(params.frameId, upgradedBuf, 'FFMPEG_FRAME');
+                return {
+                  buffer: upgradedBuf,
+                  source: 'FFMPEG_FRAME',
+                  resolvedCoverUrl: params.coverUrl || undefined,
+                };
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return {
+        buffer: cached.buffer,
+        source: cached.source,
+        resolvedCoverUrl: params.coverUrl || undefined,
+      };
     }
   }
 
-  const targetVideoUrl = cleanUrlParam(params.videoUrl) || params.videoUrl;
   let streamUrl = cleanUrlParam(params.playableUrl) || null;
   let coverUrl = cleanUrlParam(params.coverUrl) || null;
   let tikwmJpegCoverUrl: string | null = null;
   const isWebpCoverUrl = (u?: string | null) => Boolean(u && /\.webp(?:[?#]|$)/i.test(u));
-  const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
   const isTikTokTarget = /tiktok\.com/i.test(targetVideoUrl);
+
+  // 0. Khởi chạy kiểm tra/đợi khung hình từ Cầu nối IP Việt Nam (vn-tiktok-cart-bridge) song song ngay từ đầu
+  const bridgeFramePromise = (async (): Promise<Buffer | null> => {
+    if (!vidFromUrl) return null;
+    try {
+      let bridgeState = await getVnCartBridgeState();
+      let bridgeItem = bridgeState.items?.[vidFromUrl];
+      if (
+        bridgeItem?.cartAnchorTitle &&
+        (!mergedMeta.productTitle ||
+          mergedMeta.productTitle.includes('Sản phẩm gắn trong giỏ hàng'))
+      ) {
+        mergedMeta.productTitle = bridgeItem.cartAnchorTitle;
+      }
+      if (bridgeItem?.cartProductId && !mergedMeta.productId) {
+        mergedMeta.productId = bridgeItem.cartProductId;
+      }
+
+      const isFrameSecMatching =
+        !bridgeItem?.captureSec ||
+        !params.captureSec ||
+        Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
+
+      const hasValidFrame = Boolean(bridgeItem?.frameJpegBase64 && isFrameSecMatching);
+
+      if (!hasValidFrame && isFfmpegUnavailable && !params.fastMode) {
+        await upsertRecord<VnCartBridgeState>(
+          TIKTOK_VN_CART_CACHE_KEY,
+          DEFAULT_VN_CART_BRIDGE_STATE,
+          (cur) => {
+            const nextPending = { ...(cur?.pending || {}) };
+            nextPending[vidFromUrl] = {
+              videoId: vidFromUrl,
+              videoUrl: targetVideoUrl,
+              captureSec: params.captureSec,
+              requestedAt: Date.now(),
+            };
+            return {
+              vnBridgeUrl: cur?.vnBridgeUrl,
+              items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
+              pending: nextPending,
+            };
+          }
+        ).catch(() => {});
+
+        const deadline = Date.now() + 4800;
+        while (Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 300));
+          bridgeState = await getVnCartBridgeState();
+          bridgeItem = bridgeState.items?.[vidFromUrl];
+          if (
+            bridgeItem?.cartAnchorTitle &&
+            (!mergedMeta.productTitle ||
+              mergedMeta.productTitle.includes('Sản phẩm gắn trong giỏ hàng'))
+          ) {
+            mergedMeta.productTitle = bridgeItem.cartAnchorTitle;
+          }
+          if (bridgeItem?.cartProductId && !mergedMeta.productId) {
+            mergedMeta.productId = bridgeItem.cartProductId;
+          }
+          const matchingNow =
+            !bridgeItem?.captureSec ||
+            !params.captureSec ||
+            Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
+          if (bridgeItem?.frameJpegBase64 && matchingNow) break;
+        }
+      }
+
+      if (bridgeItem?.frameJpegBase64) {
+        const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
+        if (buf.length > 1000 && isJpegOrPngBuffer(buf)) {
+          return buf;
+        }
+      }
+
+      if (SNAPSHOT_TIKTOK_FRAMES[vidFromUrl]) {
+        const snapBuf = Buffer.from(SNAPSHOT_TIKTOK_FRAMES[vidFromUrl], 'base64');
+        if (snapBuf.length > 1000 && isJpegOrPngBuffer(snapBuf)) {
+          return snapBuf;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  })();
 
   if (
     !isTikTokTarget &&
@@ -2445,12 +2581,8 @@ export async function captureTikTokProductFrameBuffer(params: {
 
   if (
     isTikTokTarget &&
-    (!streamUrl ||
-      !coverUrl ||
-      isWebpCoverUrl(coverUrl) ||
-      !mergedMeta.kocHandle ||
-      !mergedMeta.productTitle ||
-      !mergedMeta.avatarUrl)
+    !params.fastMode &&
+    (!mergedMeta.kocHandle || !mergedMeta.caption)
   ) {
     try {
       const inspected = await inspectLiveTikTokVideoPage(targetVideoUrl);
@@ -2512,7 +2644,7 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM nếu chưa có sẵn (ưu tiên data.cover JPEG vì next/og không nhận WebP)
+  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM nếu chưa có sẵn (chạy song song với bridgeFramePromise)
   if (isTikTokTarget && (!streamUrl || !coverUrl || isWebpCoverUrl(coverUrl))) {
     try {
       const tikwmRes = await fetch(
@@ -2522,7 +2654,7 @@ export async function captureTikTokProductFrameBuffer(params: {
             'User-Agent': FRAME_CAPTURE_UA,
             Accept: 'application/json',
           },
-          signal: AbortSignal.timeout(4500),
+          signal: AbortSignal.timeout(params.fastMode ? 2200 : 4000),
           cache: 'no-store',
         }
       );
@@ -2568,82 +2700,10 @@ export async function captureTikTokProductFrameBuffer(params: {
   let rawBuffer: Buffer | null = null;
   let rawSource: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE' = 'NONE';
 
-  // 0. Kiểm tra nếu Cầu nối IP Việt Nam (vn-tiktok-cart-bridge) đã trích xuất sẵn khung hình ffmpeg tại mốc giây KOC cầm sản phẩm
-  const vidFromUrl =
-    targetVideoUrl.match(/\/video\/(\d{15,22})/)?.[1] ||
-    params.frameId?.match(/FRM(?:V[23])?-(\d{15,22})/)?.[1];
-  if (vidFromUrl) {
-    try {
-      let bridgeState = await getVnCartBridgeState();
-      let bridgeItem = bridgeState.items?.[vidFromUrl];
-
-      const isFrameSecMatching =
-        !bridgeItem?.captureSec ||
-        !params.captureSec ||
-        Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
-
-      const hasValidFrame = Boolean(bridgeItem?.frameJpegBase64 && isFrameSecMatching);
-
-      // Nếu chưa có frame chuẩn từ cầu nối và đang chạy serverless (không có ffmpeg nội bộ)
-      if (!hasValidFrame && isFfmpegUnavailable) {
-        await upsertRecord<VnCartBridgeState>(
-          TIKTOK_VN_CART_CACHE_KEY,
-          DEFAULT_VN_CART_BRIDGE_STATE,
-          (cur) => {
-            const nextPending = { ...(cur?.pending || {}) };
-            nextPending[vidFromUrl] = {
-              videoId: vidFromUrl,
-              videoUrl: targetVideoUrl,
-              captureSec: params.captureSec,
-              requestedAt: Date.now(),
-            };
-            return {
-              vnBridgeUrl: cur?.vnBridgeUrl,
-              items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
-              pending: nextPending,
-            };
-          }
-        ).catch(() => {});
-
-        // Đợi cầu nối xử lý và đẩy frame lên (chờ tối đa 3.5s)
-        const deadline = Date.now() + 3500;
-        while (Date.now() < deadline) {
-          await new Promise((r) => setTimeout(r, 450));
-          bridgeState = await getVnCartBridgeState();
-          bridgeItem = bridgeState.items?.[vidFromUrl];
-          const matchingNow =
-            !bridgeItem?.captureSec ||
-            !params.captureSec ||
-            Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
-          if (bridgeItem?.frameJpegBase64 && matchingNow) break;
-        }
-      }
-
-      if (bridgeItem?.frameJpegBase64) {
-        const secMatches =
-          !bridgeItem?.captureSec ||
-          !params.captureSec ||
-          Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
-        if (secMatches) {
-          const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
-          if (buf.length > 1000 && isJpegOrPngBuffer(buf)) {
-            rawBuffer = buf;
-            rawSource = 'FFMPEG_FRAME';
-          }
-        }
-      }
-
-      // Snapshot dự phòng trực tiếp nếu có cấu hình sẵn
-      if (!rawBuffer && vidFromUrl && SNAPSHOT_TIKTOK_FRAMES[vidFromUrl]) {
-        const snapBuf = Buffer.from(SNAPSHOT_TIKTOK_FRAMES[vidFromUrl], 'base64');
-        if (snapBuf.length > 1000 && isJpegOrPngBuffer(snapBuf)) {
-          rawBuffer = snapBuf;
-          rawSource = 'FFMPEG_FRAME';
-        }
-      }
-    } catch {
-      // ignore
-    }
+  const bridgeBuf = await bridgeFramePromise;
+  if (bridgeBuf) {
+    rawBuffer = bridgeBuf;
+    rawSource = 'FFMPEG_FRAME';
   }
 
   // 1. Thử trích xuất chính xác khung hình tại giây captureSec bằng ffmpeg
@@ -2912,6 +2972,10 @@ export async function sendZaloPhoto(
 
   const sentPrimary = await trySendSinglePhoto(photoUrl);
   if (sentPrimary) return true;
+
+  const fastPhotoUrl = photoUrl.includes('?') ? `${photoUrl}&fast=1` : `${photoUrl}?fast=1`;
+  const sentFast = await trySendSinglePhoto(fastPhotoUrl);
+  if (sentFast) return true;
 
   if (fallbackPhotoUrl && fallbackPhotoUrl !== photoUrl && /^https?:\/\//i.test(fallbackPhotoUrl)) {
     return trySendSinglePhoto(fallbackPhotoUrl);
@@ -5106,7 +5170,10 @@ export async function processZaloWebhookEvent(
         shares: checkResult.metrics?.shares ?? null,
         saves: checkResult.metrics?.saves ?? null,
         durationSeconds: checkResult.durationSeconds ?? null,
-        productTitle: primaryProd?.title || checkResult.productTitle || undefined,
+        productTitle:
+          primaryProd?.title ||
+          checkResult.productTitle ||
+          (checkResult.hasProductLink ? 'Sản phẩm gắn trong giỏ hàng TikTok Shop' : undefined),
         productId: primaryProd?.productId || checkResult.productId || undefined,
         hashtags:
           checkResult.hashtags && checkResult.hashtags.length > 0
@@ -5263,8 +5330,7 @@ export async function processZaloWebhookEvent(
         await sendZaloPhoto(
           chatId,
           publicZaloPhotoUrl,
-          photoCaption,
-          resolvedCoverUrl
+          photoCaption
         );
       }
 

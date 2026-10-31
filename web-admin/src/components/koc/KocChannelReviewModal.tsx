@@ -118,11 +118,11 @@ export const KocChannelReviewBadge: React.FC<{
             }`}
           >
             {tone === 'critical' ? (
-              <XCircle className="w-3 h-3 shrink-0" />
+              <XCircle className="w-3.5 h-3.5 shrink-0" />
             ) : tone === 'positive' ? (
-              <CheckCircle2 className="w-3 h-3 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             ) : (
-              <History className="w-3 h-3 shrink-0" />
+              <History className="w-3.5 h-3.5 shrink-0" />
             )}
             <span>
               {shortBrand}: {b.verdictLabel}
@@ -134,7 +134,7 @@ export const KocChannelReviewBadge: React.FC<{
         <button
           type="button"
           onClick={onClick}
-          className="inline-flex items-center h-5 px-1.5 rounded-full text-2xs font-semibold bg-sunken text-ink-2 border border-line hover:bg-ink hover:text-white cursor-pointer"
+          className="inline-flex items-center h-5 px-2 rounded-full text-2xs font-semibold bg-sunken text-ink-2 border border-line hover:bg-ink hover:text-white cursor-pointer"
         >
           +{extraCount} Brand
         </button>
@@ -362,7 +362,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
               {r.reasonTags.map((t) => (
                 <span
                   key={t}
-                  className="px-1.5 py-0.5 rounded bg-sunken/80 border border-line text-2xs text-ink-2"
+                  className="px-2 py-0.5 rounded bg-sunken/80 border border-line text-2xs text-ink-2"
                 >
                   {t}
                 </span>
@@ -562,7 +562,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
             <div className="lg:col-span-6 space-y-3">
               <Panel title="Ghi nhận đánh giá mới">
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                     <Field label="Mã kênh (@handle) *">
                       <Input
                         value={channelHandleInput}
@@ -610,7 +610,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                             key={opt.key}
                             type="button"
                             onClick={() => handleSelectVerdict(opt.key)}
-                            className={`h-9 px-2.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1 whitespace-nowrap transition cursor-pointer ${
+                            className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1 whitespace-nowrap transition cursor-pointer ${
                               isSelected
                                 ? opt.tone === 'critical'
                                   ? 'bg-critical text-white border-critical shadow-xs'
@@ -648,7 +648,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                   </Field>
 
                   <Field label="Nhóm lý do đi kèm (chọn một hoặc nhiều)">
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {currentReasonPresets.map((reason) => {
                         const active = selectedReasons.includes(reason);
                         return (
@@ -656,7 +656,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                             key={reason}
                             type="button"
                             onClick={() => toggleReason(reason)}
-                            className={`px-2.5 py-1 rounded-md border text-2xs font-medium transition cursor-pointer ${
+                            className={`px-3 py-1 rounded-md border text-2xs font-medium transition cursor-pointer ${
                               active
                                 ? verdict === 'NOT_SUITABLE'
                                   ? 'bg-critical-soft text-critical border-critical/40 font-semibold'
@@ -720,7 +720,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                       className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline font-code"
                     >
                       <span>Mở TikTok</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   ) : undefined
                 }
@@ -741,10 +741,10 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-sunken/60 border-b border-line text-2xs font-semibold text-ink-2">
-                            <th className="px-2.5 py-1.5">Brand</th>
-                            <th className="px-2.5 py-1.5">Kết luận</th>
-                            <th className="px-2.5 py-1.5">Ý kiến &amp; Lý do</th>
-                            <th className="px-2.5 py-1.5">Người ĐG &amp; Thời gian</th>
+                            <th className="px-3 py-2">Brand</th>
+                            <th className="px-3 py-2">Kết luận</th>
+                            <th className="px-3 py-2">Ý kiến &amp; Lý do</th>
+                            <th className="px-3 py-2">Người ĐG &amp; Thời gian</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-line">
@@ -759,20 +759,20 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                                     : 'hover:bg-sunken/30'
                                 }
                               >
-                                <td className="px-2.5 py-1.5 font-semibold text-ink whitespace-nowrap">
+                                <td className="px-3 py-2 font-semibold text-ink whitespace-nowrap">
                                   {row.brandScope}
                                 </td>
-                                <td className="px-2.5 py-1.5 whitespace-nowrap">
+                                <td className="px-3 py-2 whitespace-nowrap">
                                   <Status tone={getVerdictTone(row.latest.verdict)}>
                                     {row.latest.verdictLabel}
                                   </Status>
                                 </td>
-                                <td className="px-2.5 py-1.5 text-2xs text-ink max-w-[180px]">
+                                <td className="px-3 py-2 text-2xs text-ink max-w-[180px]">
                                   <div className="line-clamp-2 leading-snug">
                                     {row.latest.note || row.latest.reasonTags.join(', ')}
                                   </div>
                                 </td>
-                                <td className="px-2.5 py-1.5 text-2xs text-ink-2 tabular-nums whitespace-nowrap">
+                                <td className="px-3 py-2 text-2xs text-ink-2 tabular-nums whitespace-nowrap">
                                   <div className="font-medium text-ink">
                                     {row.latest.reviewerName}
                                   </div>
@@ -787,7 +787,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                       </table>
                     </div>
 
-                    <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
+                    <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
                       {channelReviews.map((rev) => {
                         const isJustSaved = rev.id === justSavedId;
                         return (
@@ -805,7 +805,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                               <div className="flex items-center gap-2 min-w-0">
                                 <Avatar name={rev.reviewerName} size={28} />
                                 <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-1.5">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-xs font-semibold text-ink">
                                       {rev.reviewerName}
                                     </span>
@@ -815,25 +815,25 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                                       </span>
                                     )}
                                       {isJustSaved && (
-                                        <span className="px-1.5 py-0.5 rounded bg-accent text-white text-3xs font-semibold">
+                                        <span className="px-2 py-0.5 rounded bg-accent text-white text-2xs font-semibold">
                                           Mới lưu
                                         </span>
                                       )}
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 tabular-nums">
-                                    <Clock className="w-3 h-3 text-ink-3 shrink-0" />
+                                  <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
+                                    <Clock className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                                     <span>
                                       {rev.timeLabel} · {rev.dateLabel}
                                     </span>
                                     <span>·</span>
-                                    <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-semibold text-ink">
+                                    <span className="px-2 py-0.5 rounded bg-surface border border-line font-semibold text-ink">
                                       Brand: {rev.brandScope}
                                     </span>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-2 shrink-0">
                                 <Status tone={getVerdictTone(rev.verdict)}>
                                   {rev.verdictLabel}
                                 </Status>
@@ -862,7 +862,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                             )}
 
                             {rev.note && (
-                              <div className="text-xs text-ink leading-relaxed bg-surface/90 px-2.5 py-2 rounded-lg border border-line/70">
+                              <div className="text-xs text-ink leading-relaxed bg-surface/90 px-3 py-2 rounded-lg border border-line/70">
                                 <span className="font-semibold text-ink-2">Ý kiến đánh giá: </span>
                                 <span>{rev.note}</span>
                               </div>
@@ -883,7 +883,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
         ) : (
           /* Tab 2: Danh sách toàn bộ lịch sử đánh giá KOC trên hệ thống */
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 bg-sunken/40 p-2.5 rounded-xl border border-line">
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-sunken/40 p-3 rounded-xl border border-line">
               <Chips<'ALL' | KocChannelReviewVerdict>
                 items={[
                   { key: 'ALL', label: 'Tất cả đánh giá', count: effectiveReviews.length },

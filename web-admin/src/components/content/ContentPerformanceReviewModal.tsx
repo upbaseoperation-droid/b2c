@@ -433,7 +433,7 @@ export function ContentPerformanceReviewModal({
     >
       <div className="space-y-4">
         {/* Bộ lọc & Thống kê tổng hợp */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="w-full sm:w-64">
               <Field label="Thương hiệu">
@@ -460,7 +460,7 @@ export function ContentPerformanceReviewModal({
           </div>
 
           {/* Dải số liệu thống kê */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1 border-t border-line text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1 border-t border-line text-xs">
             <div className="p-2 rounded bg-canvas border border-line">
               <span className="text-ink-3 block">Số bài đăng</span>
               <span className="text-sm font-semibold text-ink">{filteredList.length}</span>
@@ -496,7 +496,7 @@ export function ContentPerformanceReviewModal({
 
         {/* Bảng đối chiếu số liệu bài đăng */}
         <div className="rounded-lg border border-line bg-surface overflow-hidden">
-          <div className="px-3.5 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-line bg-canvas flex items-center justify-between">
             <span className="text-xs font-semibold text-ink">Danh sách bài đăng đã lên sóng</span>
             <span className="text-2xs text-ink-3">Bấm vào từng dòng để chọn góc lưu mẫu</span>
           </div>
@@ -504,7 +504,7 @@ export function ContentPerformanceReviewModal({
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-line bg-sunken/40 text-ink-3 text-3xs font-semibold uppercase">
+                <tr className="border-b border-line bg-sunken/40 text-ink-3 text-2xs font-semibold">
                   <th className="py-2 px-3">KOC / Kênh</th>
                   <th className="py-2 px-3">Góc nội dung & Mở đầu 3s</th>
                   <th className="py-2 px-3 text-right">Lượt xem</th>
@@ -535,9 +535,9 @@ export function ContentPerformanceReviewModal({
                           isSelected ? 'bg-primary/5 font-medium' : 'hover:bg-canvas'
                         }`}
                       >
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="font-medium text-ink">{e.pub.creatorName}</div>
-                          <div className="flex items-center gap-1.5 text-3xs text-ink-3 pt-0.5">
+                          <div className="flex items-center gap-2 text-2xs text-ink-3 pt-0.5">
                             <span>{e.pub.platform}</span>
                             {e.pub.platformPostUrl && (
                               <a
@@ -548,40 +548,40 @@ export function ContentPerformanceReviewModal({
                                 className="text-ink-3 hover:text-ink inline-flex items-center"
                                 title="Xem bài đăng gốc"
                               >
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3 max-w-xs">
+                        <td className="py-3 px-3 max-w-xs">
                           <div className="text-ink line-clamp-1">
                             <span className="font-semibold text-ink-2">{e.pillar}:</span> {e.angle}
                           </div>
-                          <div className="text-ink-3 text-3xs line-clamp-1 italic pt-0.5">
+                          <div className="text-ink-3 text-2xs line-clamp-1 italic pt-0.5">
                             &ldquo;{e.hook}&rdquo;
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-ink">
+                        <td className="py-3 px-3 text-right text-ink">
                           {formatNumber(e.pub.viewsCount)}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-ink">
+                        <td className="py-3 px-3 text-right text-ink">
                           {formatNumber(e.pub.itemsSold)}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right font-medium text-ink">
+                        <td className="py-3 px-3 text-right font-medium text-ink">
                           {formatVnd(e.pub.affiliateGmv)}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-ink-2">
+                        <td className="py-3 px-3 text-right text-ink-2">
                           {formatVnd(e.pub.costAttributed)}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-3 px-3 text-right">
                           <span
-                            className={`inline-block px-1.5 py-0.5 rounded font-semibold text-2xs ${
+                            className={`inline-block px-2 py-0.5 rounded font-semibold text-2xs ${
                               isGoodRoi
                                 ? 'bg-positive-soft text-positive'
                                 : isLowRoi
@@ -603,7 +603,7 @@ export function ContentPerformanceReviewModal({
 
         {/* Khối hiển thị kết quả đánh giá */}
         {reviewSynthesisText && (
-          <div className="rounded-lg border border-line bg-surface p-3.5 space-y-2">
+          <div className="rounded-lg border border-line bg-surface p-4 space-y-2">
             <span className="text-xs font-semibold text-ink">Kết quả đánh giá nội dung</span>
             <div className="p-3 bg-canvas rounded border border-line text-xs text-ink whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
               {reviewSynthesisText}
@@ -612,9 +612,9 @@ export function ContentPerformanceReviewModal({
         )}
 
         {/* Khung 1: Lưu thành góc nội dung mẫu của nhãn */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-line pb-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Bookmark className="w-4 h-4 text-ink-2" />
               <span className="text-sm font-semibold text-ink">
                 Lưu thành góc nội dung mẫu của nhãn
@@ -713,9 +713,9 @@ export function ContentPerformanceReviewModal({
         </div>
 
         {/* Khung 2: Lưu vào Sổ tay quy trình phòng */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-line pb-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-ink-2" />
               <span className="text-sm font-semibold text-ink">
                 Lưu vào Sổ tay quy trình phòng

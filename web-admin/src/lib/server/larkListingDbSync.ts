@@ -20,6 +20,8 @@ import {
 } from '../staffBrandListingSheet';
 import {
   loadApprovedBookingList,
+  isSyntheticApprovedBookingItem,
+  recalculateApprovedBookingItem,
   type ApprovedBookingListItem,
 } from '../approvedBookingList';
 import type { KocListingItem } from '../types';
@@ -61,7 +63,7 @@ function mergeBoardItems(
   }
   // Giữ lại các bản ghi do người dùng thêm thủ công trên web app (không trùng record_id Lark)
   for (const item of existingItems) {
-    if (!item || !item.id) continue;
+    if (!item || !item.id || item.id.startsWith('LISTING-KUTI-') || item.id.startsWith('LISTING-BBB-')) continue;
     const cId = canonicalListingId(item.id);
     if (!byCanonical.has(cId)) {
       byCanonical.set(cId, item);
@@ -146,9 +148,11 @@ function mergeApprovedBookings(
   existing: ApprovedBookingListItem[] | null | undefined,
   seeded: ApprovedBookingListItem[]
 ): ApprovedBookingListItem[] {
-  if (!Array.isArray(existing) || existing.length === 0) {
+  const cleanExisting = Array.isArray(existing) ? existing.filter((i) => !isSyntheticApprovedBookingItem(i)) : [];
+  if (cleanExisting.length === 0) {
     return seeded;
   }
+  existing = cleanExisting;
   const hasRealRows = existing.some(
     (i) => i && typeof i.sourceSheetRowId === 'string' && i.sourceSheetRowId.startsWith('SSR-')
   );
@@ -186,7 +190,7 @@ function mergeApprovedBookings(
       combined.push(item);
     }
   }
-  return combined;
+  return combined.map((item) => recalculateApprovedBookingItem(item));
 }
 
 export async function ensureLarkListingsSyncedToDb(options?: {

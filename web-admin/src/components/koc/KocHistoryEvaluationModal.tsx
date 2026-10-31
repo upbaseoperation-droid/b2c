@@ -222,7 +222,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
       <div className="space-y-5">
         {/* 1. Khối Kết luận Tổng quan Mức độ phù hợp & Rủi ro */}
         <div className="p-4 rounded-xl bg-sunken border border-line flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <Status tone={verdictTone}>{evaluation.suitabilityVerdictLabel}</Status>
               <Status tone={riskTone}>{evaluation.overallRiskLabel}</Status>
@@ -240,14 +240,14 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
           </div>
 
           <div className="flex items-center gap-4 shrink-0">
-            <div className="px-3.5 py-2 rounded-xl bg-surface border border-line text-center">
+            <div className="px-4 py-2 rounded-xl bg-surface border border-line text-center">
               <div className="text-2xs text-ink-3 font-medium">Điểm phù hợp</div>
               <div className="text-xl font-semibold text-ink tabular-nums">
                 {evaluation.suitabilityScore}
                 <span className="text-xs font-normal text-ink-3">/100</span>
               </div>
             </div>
-            <div className="px-3.5 py-2 rounded-xl bg-surface border border-line text-center">
+            <div className="px-4 py-2 rounded-xl bg-surface border border-line text-center">
               <div className="text-2xs text-ink-3 font-medium">Cảnh báo rủi ro</div>
               <div className="text-xl font-semibold text-ink tabular-nums">
                 {evaluation.riskFlags.length}
@@ -378,13 +378,13 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
             <SectionHeader title={`Phân tích rủi ro phát hiện qua lịch sử (${evaluation.riskFlags.length})`} />
             {evaluation.riskFlags.length === 0 ? (
               <Panel>
-                <div className="flex items-center gap-2.5 text-xs text-positive font-medium">
+                <div className="flex items-center gap-3 text-xs text-positive font-medium">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>Không phát hiện rủi ro nghiêm trọng nào về SLA, pháp lý hay lịch sử hợp tác.</span>
                 </div>
               </Panel>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {evaluation.riskFlags.map(flag => {
                   const flagTone =
                     flag.severity === 'HIGH'
@@ -395,7 +395,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
                   return (
                     <div
                       key={flag.id}
-                      className="p-3.5 rounded-xl bg-surface border border-line space-y-1.5"
+                      className="p-4 rounded-xl bg-surface border border-line space-y-2"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -469,7 +469,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
               )}
               {llmReport && (
                 <span className="text-2xs text-ink-3 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3.5 h-3.5" />
                   {llmReport.latencyMs} ms
                 </span>
               )}

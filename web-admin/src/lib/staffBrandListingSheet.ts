@@ -549,11 +549,18 @@ export interface StaffBrandSheetCollection {
 }
 
 const STORAGE_KEY = 'upbase_b2c_staff_brand_listing_sheets_v2';
+const LEGACY_STORAGE_KEY_V1 = 'upbase_b2c_staff_brand_listing_sheets_v1';
 export const STAFF_SHEET_UPDATED_EVENT = 'upbase-staff-brand-sheet-updated';
 
 let memoryCollectionCache: StaffBrandSheetCollection | null = null;
 let lastPersistedSnapshot: StaffBrandSheetCollection | null = null;
 let localStorageSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('upbase:staff-sheet-db-hydrated', () => {
+    memoryCollectionCache = null;
+  });
+}
 
 export function normalizeStaffSheetFieldEditPolicy(
   raw?: Partial<StaffSheetFieldEditPolicy> | null
@@ -1532,7 +1539,9 @@ export function loadStaffSheetCollection(
   }
   const realSheets = getOrBuildRealLarkSheetsMap(kocs, defaultStaffName);
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(STORAGE_KEY) ||
+      window.localStorage.getItem(LEGACY_STORAGE_KEY_V1);
     if (raw) {
       const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
       if (parsed && parsed.sheets && typeof parsed.sheets === 'object' && !Array.isArray(parsed.sheets)) {

@@ -404,7 +404,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
               href={tiktokUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
+              className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Mở kênh TikTok</span>
@@ -418,7 +418,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
     >
       <div className="space-y-4">
         {/* Khối 1: Định danh nhanh KOC & 4 Chỉ số Hiệu suất Kênh + Tỷ lệ Duyệt Book */}
-        <div className="p-3.5 rounded-xl bg-sunken/60 border border-line space-y-3">
+        <div className="p-4 rounded-xl bg-sunken/60 border border-line space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <Avatar
@@ -479,7 +479,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSheetHistoryTable((v) => !v)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken transition-colors"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-accent" />
                 <span>
@@ -529,7 +529,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
         {/* Khối 2: Bảng Lịch sử Listing & Phê duyệt Brand xuyên suốt các Gian hàng B2C */}
         {showSheetHistoryTable && (
 <div className="border border-line rounded-xl overflow-hidden bg-surface">
-            <div className="px-3.5 py-2.5 bg-sunken border-b border-line flex items-center justify-between">
+            <div className="px-4 py-3 bg-sunken border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                 <History className="w-4 h-4 text-accent" />
                 <span>
@@ -547,24 +547,24 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                 <table className="w-full table-fixed text-left text-xs border-collapse">
                   <thead className="sticky top-0 bg-sunken border-b border-line text-2xs font-semibold text-ink-2">
                     <tr>
-                      <th className="py-2.5 px-3 w-[15%]">Tháng / Đợt</th>
-                      <th className="py-2.5 px-3 w-[22%]">Gian hàng</th>
-                      <th className="py-2.5 px-3 w-[21%]">Sản phẩm</th>
-                      <th className="py-2.5 px-3 w-[14%] text-right">Giá Net</th>
-                      <th className="py-2.5 px-3 w-[14%]">Brand chọn</th>
-                      <th className="py-2.5 px-3 w-[14%] text-right">SLA & Air</th>
+                      <th className="py-3 px-3 w-[15%]">Tháng / Đợt</th>
+                      <th className="py-3 px-3 w-[22%]">Gian hàng</th>
+                      <th className="py-3 px-3 w-[21%]">Sản phẩm</th>
+                      <th className="py-3 px-3 w-[14%] text-right">Giá Net</th>
+                      <th className="py-3 px-3 w-[14%]">Brand chọn</th>
+                      <th className="py-3 px-3 w-[14%] text-right">SLA & Air</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {crossSheetHistory.map((item) => (
                       <tr key={`${item.monthKey}-${item.storeName}-${item.rowId}`} className="hover:bg-sunken/40 transition-colors">
-                        <td className="py-2.5 px-3 align-top">
+                        <td className="py-3 px-3 align-top">
                           <div className="font-mono font-semibold text-ink text-xs">{item.monthKey}</div>
                           <div className="text-2xs text-ink-3 mt-0.5 truncate">
                             {item.dot || 'Đợt 1'}{item.nhanSuDien ? ` · ${item.nhanSuDien}` : ''}
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 align-top">
+                        <td className="py-3 px-3 align-top">
                           <div className="font-medium text-ink truncate text-xs" title={item.storeName}>
                             {item.storeName}
                           </div>
@@ -572,12 +572,12 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                             <div className="text-2xs text-ink-3 mt-0.5 truncate">{item.contentTag}</div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 align-top">
+                        <td className="py-3 px-3 align-top">
                           <div className="text-ink text-xs truncate" title={item.sanPham || '—'}>
                             {item.sanPham || '—'}
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono tabular-nums align-top">
+                        <td className="py-3 px-3 text-right font-mono tabular-nums align-top">
                           <div className="font-semibold text-ink text-xs">
                             {formatVnd(item.giaChotCuoi || item.giaNetVideo)}
                           </div>
@@ -587,7 +587,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                             </div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 align-top">
+                        <td className="py-3 px-3 align-top">
                           <Status
                             tone={
                               item.brandChon === 'Yes'
@@ -616,7 +616,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                             </div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-right align-top">
+                        <td className="py-3 px-3 text-right align-top">
                           <div className="text-2xs font-mono tabular-nums text-ink-2">
                             {item.slaLabel ? (
                               <span
@@ -636,7 +636,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                           </div>
                           {item.maBooking && (
                             <div className="mt-1">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-positive-soft border border-positive/30 font-mono text-2xs font-semibold text-positive">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-positive-soft border border-positive/30 font-mono text-2xs font-semibold text-positive">
                                 {item.maBooking}
                               </span>
                             </div>

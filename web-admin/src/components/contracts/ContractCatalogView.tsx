@@ -205,7 +205,7 @@ export function ContractCatalogView({
     { key: 'ALL' as const, label: 'Tất cả nguồn', count: activeCatalogTemplates.length },
     { key: 'GLOBAL' as const, label: 'Bộ mẫu chuẩn Upbase (Ver092026)', count: activeCatalogTemplates.filter(t => (t.scope || 'GLOBAL') === 'GLOBAL').length },
     { key: 'KOC_CUSTOM' as const, label: 'Mẫu duyệt theo KOC', count: data.templates.filter(t => t.scope === 'KOC_CUSTOM').length },
-  ], [data.templates]);
+  ], [activeCatalogTemplates, data.templates]);
 
   const categoryChips = useMemo(() => {
     return [
@@ -430,7 +430,7 @@ export function ContractCatalogView({
     <div className="space-y-4">
       <Panel flush>
         {/* Hàng 1: Tìm kiếm, lọc nguồn & nút thao tác gọn gàng, không khoảng trắng thừa */}
-        <div className="p-2.5 px-3 border-b border-line flex flex-wrap items-center justify-between gap-2.5 bg-surface">
+        <div className="p-3 px-3 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-surface">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <SearchInput
@@ -456,7 +456,7 @@ export function ContractCatalogView({
             )}
           </div>
           {(canManageCatalog || canCreateContract) && (
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Button size="sm" variant="secondary" icon={Upload} onClick={() => openUploadModal('NEW', undefined, 'KOC_CUSTOM')}>
                 Tải mẫu KOC (.docx)
               </Button>
@@ -470,7 +470,7 @@ export function ContractCatalogView({
         </div>
 
         {/* Hàng 2: Nhãn danh mục biểu mẫu (bao gồm Phụ lục hợp đồng & SOW) */}
-        <div className="px-3 py-1.5 border-b border-line bg-surface/50 overflow-x-auto flex items-center gap-1.5">
+        <div className="px-3 py-2 border-b border-line bg-surface/50 overflow-x-auto flex items-center gap-2">
           <Chips items={categoryChips.filter(c => c.key === 'ALL' || c.count > 0)} value={categoryFilter} onChange={setCategoryFilter} />
         </div>
 
@@ -494,13 +494,13 @@ export function ContractCatalogView({
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedId(t.id)}
-                    className={`w-full text-left px-3.5 py-2.5 transition-colors block space-y-1 ${
+                    className={`w-full text-left px-4 py-3 transition-colors block space-y-1 ${
                       isSelected ? 'bg-accent/10 border-l-3 border-l-accent' : 'hover:bg-surface'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-[13px] text-ink truncate">{t.name}</span>
-                      <span className="shrink-0 rounded bg-sunken px-1.5 py-0.5 text-2xs font-code text-ink-2">
+                      <span className="font-semibold text-xs text-ink truncate">{t.name}</span>
+                      <span className="shrink-0 rounded bg-sunken px-2 py-0.5 text-2xs font-code text-ink-2">
                         {t.id}
                       </span>
                     </div>
@@ -525,9 +525,9 @@ export function ContractCatalogView({
           </div>
 
           {/* Cột phải: Chi tiết mẫu hợp đồng */}
-          <div className="p-4 space-y-3.5 min-w-0 bg-surface">
+          <div className="p-4 space-y-4 min-w-0 bg-surface">
             {loadingDetail && !loadedTemplate ? (
-              <div className="py-16 text-center text-[13px] text-ink-3">
+              <div className="py-16 text-center text-xs text-ink-3">
                 Đang tải biểu mẫu…
               </div>
             ) : !loadedTemplate ? (
@@ -537,7 +537,7 @@ export function ContractCatalogView({
                 {/* Thanh tiêu đề & thao tác trên 1 hàng gọn */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    <h3 className="text-[15px] font-semibold text-ink">{loadedTemplate.name}</h3>
+                    <h3 className="text-sm font-semibold text-ink">{loadedTemplate.name}</h3>
                     <span className="text-2xs font-code text-ink-3">
                       {loadedTemplate.id} · {loadedTemplate.version}
                     </span>
@@ -558,7 +558,7 @@ export function ContractCatalogView({
                     />
                     <a
                       href={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
-                      className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken"
+                      className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken"
                     >
                       <Download className="w-3.5 h-3.5 text-ink-3" />
                       Tải .docx
@@ -599,7 +599,7 @@ export function ContractCatalogView({
                 </div>
 
                 {COMPANION_TEMPLATES[loadedTemplate.id] && (
-                  <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-accent-soft/40 border border-accent/20 text-xs text-ink">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent-soft/40 border border-accent/20 text-xs text-ink">
                     <div className="flex items-center gap-2">
                       <FileSpreadsheet className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span>
@@ -646,7 +646,7 @@ export function ContractCatalogView({
                   const signers = flowCfg?.signers || [];
                   return (
                     <div className="space-y-4">
-                      <div className="rounded-lg bg-sunken/70 border border-line px-3.5 py-2 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="rounded-lg bg-sunken/70 border border-line px-4 py-2 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
                         <span>
                           <strong>{dedupedFields.length} trường thông tin</strong> ({dedupedFields.filter(f => f.required).length} bắt buộc)
                         </span>
@@ -657,7 +657,7 @@ export function ContractCatalogView({
 
                       {signers.length > 0 && (
                         <div className="border border-line rounded-xl overflow-hidden">
-                          <div className="bg-sunken px-4 py-2.5 border-b border-line flex flex-wrap items-center justify-between gap-2">
+                          <div className="bg-sunken px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-2">
                             <span className="text-xs font-semibold text-ink">
                               Vị trí chữ ký số tự động tách (Bước 2 & 3 · configureTemplateSigningFlow)
                             </span>
@@ -667,7 +667,7 @@ export function ContractCatalogView({
                           </div>
                           <div className="divide-y divide-line">
                             {signers.map(signer => (
-                              <div key={signer.signTag} className="px-4 py-2.5 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
+                              <div key={signer.signTag} className="px-4 py-3 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
                                 <div className="min-w-0">
                                   <span className="font-medium text-ink block truncate">{signer.role}</span>
                                   <span className="text-2xs text-ink-3 font-code">{signer.signTag}</span>
@@ -696,7 +696,7 @@ export function ContractCatalogView({
                         if (!groupFields.length) return null;
                         return (
                           <div key={g.key} className="border border-line rounded-xl overflow-hidden">
-                            <div className="bg-sunken px-4 py-2.5 border-b border-line flex items-center justify-between">
+                            <div className="bg-sunken px-4 py-3 border-b border-line flex items-center justify-between">
                               <div>
                                 <span className="text-xs font-semibold text-ink">{g.title}</span>
                               </div>
@@ -704,7 +704,7 @@ export function ContractCatalogView({
                             </div>
                             <div className="divide-y divide-line">
                               {groupFields.map(f => (
-                                <div key={f.key} className="px-4 py-2.5 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
+                                <div key={f.key} className="px-4 py-3 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
                                   <div className="min-w-0">
                                     <span className="font-medium text-ink block truncate">{f.title || f.label}</span>
                                     <span className="text-2xs text-ink-3 font-code">{f.key}</span>
@@ -712,7 +712,7 @@ export function ContractCatalogView({
                                   <div>
                                     {f.source ? (
                                       <span className="inline-flex items-center gap-1 text-2xs text-accent font-medium">
-                                        <FileSpreadsheet className="w-3 h-3 shrink-0" />
+                                        <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
                                         {SOURCE_LABELS[f.source] || f.source}
                                       </span>
                                     ) : (
@@ -802,7 +802,7 @@ export function ContractCatalogView({
                         </div>
                         <ul className="divide-y divide-line text-xs">
                           {(loadedTemplate.history || []).map((h, i) => (
-                            <li key={`${h.hash}-${i}`} className="py-2.5 space-y-1">
+                            <li key={`${h.hash}-${i}`} className="py-3 space-y-1">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold text-ink">
                                   {h.version} {i === 0 && <span className="text-2xs text-positive font-normal">(Hiện hành)</span>}
@@ -892,7 +892,7 @@ export function ContractCatalogView({
                     key={role}
                     type="button"
                     onClick={() => toggleRole(editRoles, setEditRoles, role)}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                    className={`px-3 py-2 rounded-lg border text-xs font-medium transition-colors ${
                       checked ? 'bg-accent-soft border-accent text-accent' : 'bg-surface border-line text-ink-2'
                     }`}
                   >
@@ -951,7 +951,7 @@ export function ContractCatalogView({
           )}
 
           <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={editExemptLegalReview}
@@ -959,7 +959,7 @@ export function ContractCatalogView({
                 className="mt-0.5 rounded border-line"
               />
               <div>
-                <span className="font-medium text-[13px] text-ink block">
+                <span className="font-medium text-xs text-ink block">
                   {editScope === 'KOC_CUSTOM' ? 'Mẫu KOC đã duyệt: Miễn bước thẩm định lại của Pháp chế' : 'Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế'}
                 </span>
               </div>
@@ -1110,7 +1110,7 @@ export function ContractCatalogView({
           )}
 
           <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={uploadExemptLegalReview}
@@ -1118,7 +1118,7 @@ export function ContractCatalogView({
                 className="mt-0.5 rounded border-line"
               />
               <div>
-                <span className="font-medium text-[13px] text-ink block">
+                <span className="font-medium text-xs text-ink block">
                   {uploadScope === 'KOC_CUSTOM' ? 'Mẫu KOC đã duyệt: Miễn bước thẩm định lại của Pháp chế' : 'Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế'}
                 </span>
               </div>

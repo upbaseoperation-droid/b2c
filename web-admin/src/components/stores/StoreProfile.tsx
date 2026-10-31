@@ -256,7 +256,7 @@ export function StoreProfile({
         const isSelected = r.month === activeMonth;
         return (
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className={`font-semibold ${isSelected ? 'text-accent' : 'text-ink'}`}>
                 {r.monthLabel}
               </span>
@@ -363,7 +363,7 @@ export function StoreProfile({
       width: 190,
       render: r => (
         <div
-          className="inline-flex items-center justify-end gap-1.5"
+          className="inline-flex items-center justify-end gap-2"
           onClick={e => e.stopPropagation()}
         >
           {onDrilldownToPlan && (
@@ -411,7 +411,7 @@ export function StoreProfile({
       width: 230,
       render: it => (
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-2xs font-code font-semibold text-ink-2">
               {it.tierCode} ·
             </span>
@@ -509,7 +509,7 @@ export function StoreProfile({
       width: 220,
       render: b => (
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-code text-xs font-semibold text-accent">{b.dealCode}</span>
             <span className="text-2xs font-code text-ink-3">
               · {b.kl}
@@ -576,7 +576,7 @@ export function StoreProfile({
             className="text-accent hover:underline inline-flex items-center gap-1 text-2xs font-medium"
           >
             <span>Xem video</span>
-            <ExternalLink className="w-3 h-3 shrink-0" />
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
           </a>
         ) : (
           <span className="text-ink-3 text-2xs">Chưa lên bài</span>
@@ -660,7 +660,7 @@ export function StoreProfile({
             title="Xem trang sản phẩm trên sàn"
           >
             <span>Xem</span>
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
         ) : (
           <span className="text-ink-3">—</span>
@@ -707,7 +707,7 @@ export function StoreProfile({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-ink-2 bg-surface border border-line rounded-md px-2.5 py-1">
+            <div className="flex items-center gap-2 text-xs text-ink-2 bg-surface border border-line rounded-md px-3 py-1">
               <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
               <span className="text-2xs font-medium text-ink-3">Kỳ hồ sơ:</span>
               <Select
@@ -806,7 +806,7 @@ export function StoreProfile({
                 >
                   {store.storeName}
                 </h2>
-                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
                   <ChannelTag channel={store.platform} />
                   {store.operationStatus === 'Live' || store.accountStatus === 'ACTIVE' ? (
                     <Status tone="positive">Đang vận hành</Status>
@@ -819,9 +819,9 @@ export function StoreProfile({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 text-2xs text-ink-3 flex-wrap">
+              <div className="flex items-center gap-2 text-2xs text-ink-3 flex-wrap">
                 <span className="inline-flex items-center gap-1 font-medium text-ink bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap">
-                  <Building2 className="w-3 h-3 text-ink-3 shrink-0" />
+                  <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                   {onNavigateToBrandProfile ? (
                     <button
                       type="button"
@@ -1075,7 +1075,7 @@ export function StoreProfile({
                 }
               >
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                  <div className="p-4 rounded-lg border border-line bg-surface space-y-1">
                     <span className="text-2xs text-ink-3">1. Video KOC Affiliate (Paid)</span>
                     <div className="text-sm font-semibold text-ink">
                       {formatVndShort(currentMonthReport.planAffBudgetNet)}
@@ -1085,7 +1085,7 @@ export function StoreProfile({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                  <div className="p-4 rounded-lg border border-line bg-surface space-y-1">
                     <span className="text-2xs text-ink-3">2. Video kênh Brand (Self-channel)</span>
                     <div className="text-sm font-semibold text-ink">
                       {formatVndShort(currentMonthReport.planSelfBudgetNet)}
@@ -1095,7 +1095,7 @@ export function StoreProfile({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                  <div className="p-4 rounded-lg border border-line bg-surface space-y-1">
                     <span className="text-2xs text-ink-3">3. Suất gửi mẫu miễn phí (FOC)</span>
                     <div className="text-sm font-semibold text-ink">0 đ</div>
                     <div className="text-2xs text-ink-2">
@@ -1103,7 +1103,7 @@ export function StoreProfile({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                  <div className="p-4 rounded-lg border border-line bg-surface space-y-1">
                     <span className="text-2xs text-ink-3">4. Gói ngân sách Media Ads</span>
                     <div className="text-sm font-semibold text-ink">
                       {formatVndShort(currentMonthReport.planAdsBudget)}
@@ -1348,7 +1348,7 @@ export function StoreProfile({
               </div>
 
               {store.handoverEffectiveDate && (
-                <div className="mt-3 p-2.5 rounded-md bg-sunken border border-line text-2xs text-ink-2 space-y-0.5">
+                <div className="mt-3 p-3 rounded-md bg-sunken border border-line text-2xs text-ink-2 space-y-0.5">
                   <span className="font-medium text-ink">Lệnh bàn giao đang áp dụng</span>
                   <p>
                     Từ {store.previousPic || 'Chuyên viên trước'} sang {specialistPic}, hiệu lực từ{' '}
@@ -1362,7 +1362,7 @@ export function StoreProfile({
                   <span className="block text-2xs font-semibold text-ink">
                     Lịch sử phân công & bàn giao ({storeAssignmentHistory.length})
                   </span>
-                  <ol className="space-y-1.5">
+                  <ol className="space-y-2">
                     {storeAssignmentHistory.map((h) => (
                       <li key={h.id} className="text-2xs p-2 rounded bg-sunken/60 border border-line space-y-0.5">
                         <div className="flex items-center justify-between gap-1">
@@ -1442,7 +1442,7 @@ export function StoreProfile({
                 </dd>
               </div>
 
-              <div className="py-2 space-y-1.5">
+              <div className="py-2 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <dt className="text-ink-3">Link Google Sheet</dt>
                   <dd className="flex items-center gap-2">
@@ -1455,7 +1455,7 @@ export function StoreProfile({
                       >
                         <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
                         <span>Mở Google Sheet</span>
-                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                       </a>
                     ) : (
                       <span className="text-ink-3">Chưa gắn link</span>
@@ -1473,7 +1473,7 @@ export function StoreProfile({
                   </dd>
                 </div>
                 {isEditingSheetUrl && (
-                  <div className="flex items-center gap-1.5 pt-1">
+                  <div className="flex items-center gap-2 pt-1">
                     <Input
                       type="url"
                       value={sheetUrlDraft}

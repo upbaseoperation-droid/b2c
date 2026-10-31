@@ -16,6 +16,7 @@ import {
   StatRow,
   Status,
 } from '../ui';
+import { Combobox } from '../ui/Combobox';
 import type { ChipOption, Column } from '../ui';
 import {
   Building,
@@ -59,7 +60,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       const saved = window.localStorage.getItem(THIRD_PARTY_ACCOUNTS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.filter((a: ThirdPartyAccessAccount) => Boolean(a && a.id));
       }
     } catch {
       // Fallback to initial accounts
@@ -80,7 +81,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
     const handleAccountsUpdated = (evt: Event) => {
       const customEvt = evt as CustomEvent<ThirdPartyAccessAccount[]>;
       if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        setAccounts(customEvt.detail);
+        setAccounts(customEvt.detail.filter((a) => Boolean(a && a.id)));
       }
     };
     window.addEventListener('upbase:third-party-accounts-updated', handleAccountsUpdated);
@@ -97,7 +98,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
   // Form State
   const [formGmail, setFormGmail] = useState('');
   const [formDisplayName, setFormDisplayName] = useState('');
-  const [formPartnerType, setFormPartnerType] = useState<'BRAND' | 'KOC' | 'CTV'>('BRAND');
+  const [formPartnerType, setFormPartnerType] = useState<'BRAND' | 'KOC' | 'CTV'>('KOC');
   const [formLinkedEntityId, setFormLinkedEntityId] = useState('');
   const [formLinkedEntityName, setFormLinkedEntityName] = useState('');
   const [formSelectedStores, setFormSelectedStores] = useState<string[]>([]);
@@ -150,11 +151,11 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
     setEditingAccount(null);
     setFormGmail('');
     setFormDisplayName('');
-    setFormPartnerType('BRAND');
-    const firstBrand = brands[0] || { id: 'brand-kutieskin', name: 'Kutieskin Mama & Baby', stores: [] };
-    setFormLinkedEntityId(firstBrand.id);
-    setFormLinkedEntityName(firstBrand.name);
-    setFormSelectedStores(firstBrand.stores ? firstBrand.stores.map((s) => s.storeName) : []);
+    setFormPartnerType('KOC');
+    const firstKoc = kocs[0] || { id: 'koc-1', stageName: 'Mega Uri Review' };
+    setFormLinkedEntityId(firstKoc.id);
+    setFormLinkedEntityName(firstKoc.stageName);
+    setFormSelectedStores([]);
     setFormPermissions({
       canApproveDeals: true,
       canReviewScripts: true,
@@ -267,12 +268,12 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       header: 'Tài khoản & Đối tác',
       width: 220,
       render: (acc) => (
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <Avatar name={acc.displayName} size={28} />
           <div className="min-w-0">
             <div className="font-semibold text-ink text-xs truncate">{acc.displayName}</div>
             <div className="text-2xs text-ink-3 font-mono flex items-center gap-1 truncate mt-0.5">
-              <Mail className="w-3 h-3 text-ink-3 shrink-0" />
+              <Mail className="w-3.5 h-3.5 text-ink-3 shrink-0" />
               <span className="truncate">{acc.gmail}</span>
             </div>
           </div>
@@ -287,13 +288,13 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
         const isBrand = acc.partnerType === 'BRAND';
         const isKoc = acc.partnerType === 'KOC';
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sunken text-ink-2 text-2xs font-medium">
+          <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-sunken text-ink-2 text-2xs font-medium">
             {isBrand ? (
-              <Building className="w-3 h-3 text-accent" />
+              <Building className="w-3.5 h-3.5 text-accent" />
             ) : isKoc ? (
-              <Users className="w-3 h-3 text-accent" />
+              <Users className="w-3.5 h-3.5 text-accent" />
             ) : (
-              <Video className="w-3 h-3 text-positive" />
+              <Video className="w-3.5 h-3.5 text-positive" />
             )}
             <span>{isBrand ? 'Brand' : isKoc ? 'KOC / KOL' : 'CTV'}</span>
           </span>
@@ -343,7 +344,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
               labels.map((lb) => (
                 <span
                   key={lb}
-                  className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-medium"
+                  className="px-2 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-medium"
                 >
                   {lb}
                 </span>
@@ -387,7 +388,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
           <button
             type="button"
             onClick={() => handleOpenEditModal(acc)}
-            className="p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
+            className="p-2 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
             title="Chỉnh sửa phân quyền"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -395,7 +396,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
           <button
             type="button"
             onClick={() => handleToggleStatus(acc)}
-            className={`p-1.5 rounded-md transition ${
+            className={`p-2 rounded-md transition ${
               acc.status === 'ACTIVE'
                 ? 'text-warning hover:bg-warning-soft'
                 : 'text-positive hover:bg-positive-soft'
@@ -407,7 +408,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
           <button
             type="button"
             onClick={() => setDeletingAccount(acc)}
-            className="p-1.5 rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft transition"
+            className="p-2 rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft transition"
             title="Xóa tài khoản"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -528,7 +529,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
         }
       >
         <form id="partner-gmail-access-form" onSubmit={handleSaveAccount} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="font-semibold text-ink-2 block">Địa chỉ Gmail đăng nhập *</label>
               <input
@@ -554,9 +555,9 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <label className="font-semibold text-ink-2 block">Loại đối tác *</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -574,7 +575,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     : 'border-line bg-surface hover:bg-canvas text-ink-2'
                 }`}
               >
-                <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <div className="flex items-center gap-2 font-semibold text-xs">
                   <Building className="w-4 h-4 text-accent" />
                   <span>Đối tác Brand</span>
                 </div>
@@ -605,7 +606,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     : 'border-line bg-surface hover:bg-canvas text-ink-2'
                 }`}
               >
-                <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <div className="flex items-center gap-2 font-semibold text-xs">
                   <Users className="w-4 h-4 text-accent" />
                   <span>Creator / KOC</span>
                 </div>
@@ -633,7 +634,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     : 'border-line bg-surface hover:bg-canvas text-ink-2'
                 }`}
               >
-                <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <div className="flex items-center gap-2 font-semibold text-xs">
                   <Video className="w-4 h-4 text-positive" />
                   <span>Cộng tác viên</span>
                 </div>
@@ -643,7 +644,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
           </div>
 
           {formPartnerType === 'BRAND' && (
-            <div className="space-y-3 p-3.5 bg-canvas rounded-xl border border-line">
+            <div className="space-y-3 p-4 bg-canvas rounded-xl border border-line">
               <div className="space-y-1">
                 <label className="font-semibold text-ink block">Nhãn hàng (Brand) liên kết *</label>
                 <select
@@ -666,9 +667,9 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                 </select>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <label className="text-2xs font-semibold text-ink-2 block">Gian hàng được phép xem số liệu:</label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {(() => {
                     const activeBrand = brands.find((b) => b.id === formLinkedEntityId);
                     const storeList: string[] = activeBrand?.stores?.map((s) => s.storeName) || [
@@ -680,7 +681,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                       return (
                         <label
                           key={idx}
-                          className={`px-2.5 py-1 rounded-lg border text-2xs font-medium flex items-center gap-1.5 cursor-pointer transition ${
+                          className={`px-3 py-1 rounded-lg border text-2xs font-medium flex items-center gap-2 cursor-pointer transition ${
                             isChecked
                               ? 'bg-accent-soft text-accent border-accent/30 font-semibold'
                               : 'bg-surface text-ink-2 border-line'
@@ -709,30 +710,29 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
           )}
 
           {formPartnerType === 'KOC' && (
-            <div className="space-y-1 p-3.5 bg-canvas rounded-xl border border-line">
+            <div className="space-y-1 p-4 bg-canvas rounded-xl border border-line">
               <label className="font-semibold text-ink block">Hồ sơ KOC liên kết *</label>
-              <select
+              <Combobox
                 value={formLinkedEntityId}
-                onChange={(e) => {
-                  const sel = kocs.find((k) => k.id === e.target.value);
+                onChange={(v) => {
+                  const sel = kocs.find((k) => k.id === v);
                   if (sel) {
                     setFormLinkedEntityId(sel.id);
                     setFormLinkedEntityName(sel.stageName);
                   }
                 }}
-                className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-ink font-semibold focus:outline-none focus:border-accent"
-              >
-                {kocs.slice(0, 200).map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.stageName} ({k.channelId}) — {k.salaryGrade} ({k.niche})
-                  </option>
-                ))}
-              </select>
+                placeholder="Tìm theo tên hoặc kênh KOC…"
+                options={kocs.map((k) => ({
+                  value: k.id,
+                  label: `${k.stageName} (${k.channelId})`,
+                  hint: [k.salaryGrade, k.niche].filter(Boolean).join(' · ') || undefined,
+                }))}
+              />
             </div>
           )}
 
           {formPartnerType === 'CTV' && (
-            <div className="space-y-1 p-3.5 bg-canvas rounded-xl border border-line">
+            <div className="space-y-1 p-4 bg-canvas rounded-xl border border-line">
               <label className="font-semibold text-ink block">Cộng tác viên (CTV) *</label>
               <select
                 value={formLinkedEntityId}
@@ -750,7 +750,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
             </div>
           )}
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <label className="font-semibold text-ink-2 block">Quyền hạn chi tiết:</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
@@ -792,7 +792,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
               ].map((perm) => (
                 <label
                   key={perm.key}
-                  className="p-2.5 rounded-lg border border-line hover:bg-canvas flex items-start gap-2 cursor-pointer"
+                  className="p-3 rounded-lg border border-line hover:bg-canvas flex items-start gap-2 cursor-pointer"
                 >
                   <input
                     type="checkbox"

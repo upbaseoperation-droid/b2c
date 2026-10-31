@@ -297,8 +297,8 @@ export const KocChannelBriefMatcherModal: React.FC<
     >
       <div className="space-y-4">
         {/* Khung thiết lập Kênh KOC & Tiêu chí Brief Brand */}
-        <div className="p-3.5 rounded-xl border border-line bg-surface space-y-3">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-2.5 items-start">
+        <div className="p-4 rounded-xl border border-line bg-surface space-y-3">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
             <Textarea
               id="koc-brief-handles-input"
               aria-label="Danh sách kênh KOC"
@@ -323,7 +323,7 @@ export const KocChannelBriefMatcherModal: React.FC<
             </Button>
           </div>
 
-          <div className="pt-2.5 border-t border-line grid sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          <div className="pt-3 border-t border-line grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <label className="grid gap-1 text-2xs font-medium text-ink-2">
               <span>Thương hiệu (Brand Brief)</span>
               <input
@@ -332,7 +332,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
                 placeholder="VD: Cocoon, La Roche-Posay..."
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink"
               />
               <datalist id="b2c-brand-brief-list">
                 {REAL_B2C_42_BRANDS.map((b) => (
@@ -350,7 +350,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
                 placeholder="VD: Nước tẩy trang Bí Đao"
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink"
               />
             </label>
 
@@ -361,7 +361,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 value={requiredUspInput}
                 onChange={(e) => setRequiredUspInput(e.target.value)}
                 placeholder="VD: kiềm dầu, không cồn, da mụn"
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink"
               />
             </label>
 
@@ -372,7 +372,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 value={preferredStyle}
                 onChange={(e) => setPreferredStyle(e.target.value)}
                 placeholder="VD: Test cam thường / Phân tích thành phần"
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink"
               />
             </label>
 
@@ -410,7 +410,7 @@ export const KocChannelBriefMatcherModal: React.FC<
 
         {/* Hàng đợi các tiến trình phân tích chạy ngầm */}
         {jobs.length > 0 && (
-          <div className="rounded-xl border border-line bg-surface-2 p-3 space-y-2.5">
+          <div className="rounded-xl border border-line bg-surface-2 p-3 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-ink">
@@ -432,7 +432,7 @@ export const KocChannelBriefMatcherModal: React.FC<
               </Button>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {jobs.map((j) => {
                 const isSelected = activeJob?.jobId === j.jobId;
                 return (
@@ -443,7 +443,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                       setSelectedJobId(j.jobId);
                       if (j.results[0]) setSelectedHandle(j.results[0].handle);
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg border text-left transition flex items-center gap-2 text-xs ${
+                    className={`px-3 py-2 rounded-lg border text-left transition flex items-center gap-2 text-xs ${
                       isSelected
                         ? 'border-accent bg-accent-soft/40 text-ink font-semibold'
                         : 'border-line bg-surface text-ink-2 hover:text-ink'
@@ -478,9 +478,9 @@ export const KocChannelBriefMatcherModal: React.FC<
             {activeJob &&
               (activeJob.status === 'QUEUED' ||
                 activeJob.status === 'RUNNING') && (
-                <div className="p-2.5 rounded-lg border border-accent/30 bg-surface space-y-1.5">
+                <div className="p-3 rounded-lg border border-accent/30 bg-surface space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-ink inline-flex items-center gap-1.5">
+                    <span className="font-medium text-ink inline-flex items-center gap-2">
                       <RefreshCw className="w-3.5 h-3.5 text-accent animate-spin" />
                       {activeJob.currentStepLabel}
                     </span>
@@ -513,13 +513,13 @@ export const KocChannelBriefMatcherModal: React.FC<
 
         {/* Chọn kênh KOC trong phiên phân tích */}
         {activeJob && activeJob.results.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             {activeJob.results.map((r, i) => (
               <button
                 key={r.id}
                 type="button"
                 onClick={() => setSelectedHandle(r.handle)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition flex items-center gap-2 ${
                   activeReport?.handle === r.handle
                     ? 'bg-accent text-white border-accent'
                     : 'bg-surface text-ink-2 border-line hover:text-ink'
@@ -528,7 +528,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 <span>
                   #{i + 1} @{r.handle}
                 </span>
-                <span className="font-code text-2xs px-1.5 py-0.5 rounded bg-black/15">
+                <span className="font-code text-2xs px-2 py-0.5 rounded bg-black/15">
                   {r.briefMatchEvaluation.totalScore}/100đ
                 </span>
               </button>
@@ -538,9 +538,9 @@ export const KocChannelBriefMatcherModal: React.FC<
 
         {/* Chi tiết Báo cáo Phân tích Kênh & Chấm điểm Khớp Brief */}
         {activeReport && (
-          <div className="space-y-3.5">
+          <div className="space-y-4">
             {/* Tổng quan Kênh & Điểm Khớp Brief */}
-            <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
+            <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -554,7 +554,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                       className="text-xs font-code text-accent hover:underline inline-flex items-center gap-1"
                     >
                       @{activeReport.handle}
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                     <Status tone="neutral">{activeReport.tierLabel}</Status>
                     <Status
@@ -579,7 +579,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 px-3.5 py-2 rounded-xl border border-accent/30 bg-accent-soft/30">
+                <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-accent/30 bg-accent-soft/30">
                   <div className="text-right">
                     <span className="block text-2xs text-ink-3 font-medium">
                       Điểm khớp Brief {activeReport.briefMatchEvaluation.brandName}
@@ -596,7 +596,7 @@ export const KocChannelBriefMatcherModal: React.FC<
 
               {/* 6 Chỉ số Sức khỏe Kênh trên Tập Video Quét Mở Rộng */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                <div className="p-2.5 rounded-lg border border-line bg-surface-2">
+                <div className="p-3 rounded-lg border border-line bg-surface-2">
                   <span className="text-2xs text-ink-3 block">
                     Số video đã quét
                   </span>
@@ -607,7 +607,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                     Tổng kênh: {formatNumber(activeReport.totalChannelVideos)}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface-2">
+                <div className="p-3 rounded-lg border border-line bg-surface-2">
                   <span className="text-2xs text-ink-3 block">
                     View trung vị (Median)
                   </span>
@@ -618,7 +618,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                     TB: {formatNumber(activeReport.videoSampleStats.avgViews)}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface-2">
+                <div className="p-3 rounded-lg border border-line bg-surface-2">
                   <span className="text-2xs text-ink-3 block">
                     Độ ổn định phong độ
                   </span>
@@ -630,7 +630,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                     {formatNumber(activeReport.videoSampleStats.maxViews)}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface-2">
+                <div className="p-3 rounded-lg border border-line bg-surface-2">
                   <span className="text-2xs text-ink-3 block">
                     Tương tác & Đăng bài
                   </span>
@@ -642,7 +642,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                     video/tuần
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface-2">
+                <div className="p-3 rounded-lg border border-line bg-surface-2">
                   <span className="text-2xs text-ink-3 block">
                     Tỷ lệ khách hỏi mua
                   </span>
@@ -654,7 +654,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                     {activeReport.videoSampleStats.affiliateCartRatioPct}% số bài
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface-2">
+                <div className="p-3 rounded-lg border border-line bg-surface-2">
                   <span className="text-2xs text-ink-3 block">
                     Định mức Cast dự kiến
                   </span>
@@ -673,9 +673,9 @@ export const KocChannelBriefMatcherModal: React.FC<
                 {activeReport.briefMatchEvaluation.axisScores.map((ax) => (
                   <div
                     key={ax.axisKey}
-                    className="p-2.5 rounded-lg border border-line bg-surface-2/60 space-y-1"
+                    className="p-3 rounded-lg border border-line bg-surface-2/60 space-y-1"
                   >
-                    <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-2xs font-semibold text-ink">
                         {ax.axisLabel}
                       </span>
@@ -701,7 +701,7 @@ export const KocChannelBriefMatcherModal: React.FC<
 
             {/* Phân tích Văn phong KOC, Tệp Người Xem & Cảnh báo Rủi ro */}
             <div className="grid lg:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5 text-xs">
+              <div className="p-4 rounded-xl border border-line bg-surface space-y-3 text-xs">
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <span className="font-semibold text-ink">
                     Ngách Nội dung, Văn phong KOC & Sản phẩm từng gắn giỏ
@@ -710,7 +710,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                     {activeReport.contentPersonaProfile.dominantHookPatterns[0]}
                   </Status>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div>
                     <span className="text-2xs text-ink-3 font-semibold block">
                       Phong cách chủ đạo:
@@ -750,7 +750,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5 text-xs">
+              <div className="p-4 rounded-xl border border-line bg-surface space-y-3 text-xs">
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <span className="font-semibold text-ink">
                     Tệp Người xem qua Bình luận & Lưu ý Xung đột Đối thủ
@@ -762,7 +762,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                   </Status>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div>
                     <span className="text-2xs text-ink-3 font-semibold block">
                       Chân dung người xem thực tế dưới bình luận:
@@ -784,7 +784,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                       (w, i) => (
                         <p
                           key={i}
-                          className="text-2xs text-ink-2 flex items-start gap-1.5 mt-0.5"
+                          className="text-2xs text-ink-2 flex items-start gap-2 mt-0.5"
                         >
                           <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
                           <span>{w}</span>
@@ -797,7 +797,7 @@ export const KocChannelBriefMatcherModal: React.FC<
             </div>
 
             {/* Đề xuất Kịch bản 4 bước & Câu mở đầu 3s đo ni đóng giày cho KOC */}
-            <div className="p-3.5 rounded-xl border border-accent/30 bg-surface space-y-3">
+            <div className="p-4 rounded-xl border border-accent/30 bg-surface space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-accent" />
@@ -821,8 +821,8 @@ export const KocChannelBriefMatcherModal: React.FC<
                 </Button>
               </div>
 
-              <div className="p-2.5 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-1">
-                <span className="text-2xs font-semibold uppercase tracking-wider text-accent block">
+              <div className="p-3 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-1">
+                <span className="text-2xs font-semibold text-accent block">
                   Góc tiếp cận đề xuất & Câu mở đầu 3 giây đầu (Hook)
                 </span>
                 <p className="text-xs text-ink-2">
@@ -834,12 +834,12 @@ export const KocChannelBriefMatcherModal: React.FC<
                 </p>
               </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {activeReport.briefMatchEvaluation.tailored4StepScript.map(
                   (step) => (
                     <div
                       key={step.stepIndex}
-                      className="p-2.5 rounded-lg border border-line bg-surface-2/60 space-y-1"
+                      className="p-3 rounded-lg border border-line bg-surface-2/60 space-y-1"
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span className="text-xs font-semibold text-ink">
@@ -860,8 +860,8 @@ export const KocChannelBriefMatcherModal: React.FC<
 
             {/* Danh sách toàn bộ các video đã quét trên kênh KOC */}
             <div className="rounded-xl border border-line bg-surface overflow-hidden">
-              <div className="px-3.5 py-2.5 border-b border-line flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+              <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-accent" />
                   Danh sách {activeReport.analyzedVideos.length} video thực tế
                   đã quét trên kênh @{activeReport.handle}
@@ -874,7 +874,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                 {activeReport.analyzedVideos.map((v, idx) => (
                   <div
                     key={v.videoId}
-                    className="px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs hover:bg-surface-2/60"
+                    className="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs hover:bg-surface-2/60"
                   >
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex items-center gap-2">
@@ -898,7 +898,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                         className="text-2xs text-ink-2 hover:text-accent truncate inline-flex items-center gap-1 max-w-full"
                       >
                         <span className="truncate">{v.caption}</span>
-                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                       </a>
                     </div>
                     <div className="text-right tabular-nums shrink-0">

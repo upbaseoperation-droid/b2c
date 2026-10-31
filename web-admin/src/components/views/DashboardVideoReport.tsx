@@ -343,7 +343,7 @@ export function DashboardVideoReport({
                 aria-label={`Mở video ${v.code}`}
                 className="text-ink-3 hover:text-ink"
               >
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
           </span>

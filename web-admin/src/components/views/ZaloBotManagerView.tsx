@@ -1372,7 +1372,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       header: 'Nhóm chat Zalo & Chat ID',
       render: (row) => (
         <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium text-ink">
               {row.groupName || row.groupId}
             </span>
@@ -1438,9 +1438,9 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       header: 'Chiến dịch & KOC',
       render: (row) => (
         <div className="space-y-0.5 text-xs">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {row.dealCode && (
-              <span className="px-1.5 py-0.5 rounded bg-sunken font-mono text-2xs font-medium text-ink">
+              <span className="px-2 py-0.5 rounded bg-sunken font-mono text-2xs font-medium text-ink">
                 {row.dealCode}
               </span>
             )}
@@ -1621,7 +1621,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       header: 'Phân quyền nhanh',
       align: 'right',
       render: (row) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center justify-end gap-2">
           <Button
             size="sm"
             variant="secondary"
@@ -1727,7 +1727,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-2xs text-accent hover:underline font-mono truncate max-w-full"
               >
-                Link SP {primaryId ? `(${primaryId})` : ''} <ExternalLink className="w-3 h-3 shrink-0" />
+                Link SP {primaryId ? `(${primaryId})` : ''} <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               </a>
             )}
             {row.firstProductAppearanceSec !== null &&
@@ -1806,7 +1806,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
         >
-          Mở video <ExternalLink className="w-3 h-3" />
+          Mở video <ExternalLink className="w-3.5 h-3.5" />
         </a>
       ),
     },
@@ -1883,7 +1883,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       key: 'event',
       header: 'Loại sự kiện',
       render: (row) => (
-        <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-sunken text-ink">
+        <span className="text-xs font-mono px-2 py-0.5 rounded bg-sunken text-ink">
           {row.body?.event_name || 'message.text.received'}
         </span>
       ),
@@ -2305,7 +2305,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           <Panel title="Soạn thảo 7 Kịch bản Tin nhắn Trả lời Tự động của Bot (Auto-Reply Templates)">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               {/* Cột trái: Danh sách 7 mẫu kịch bản */}
-              <div className="lg:col-span-4 space-y-1.5">
+              <div className="lg:col-span-4 space-y-2">
                 {replyConfig.autoReplyTemplates.map((tpl) => {
                   const isSelected = tpl.key === selectedReplyKey;
                   return (
@@ -2313,7 +2313,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                       key={tpl.key}
                       type="button"
                       onClick={() => setSelectedReplyKey(tpl.key)}
-                      className={`w-full text-left p-2.5 rounded border transition-colors ${
+                      className={`w-full text-left p-3 rounded border transition-colors ${
                         isSelected
                           ? 'bg-sunken border-line-strong text-ink font-medium'
                           : 'bg-surface border-line text-ink-2 hover:bg-sunken'
@@ -2328,18 +2328,18 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
               {/* Cột phải: Khung chỉnh sửa nội dung & Xem trước (Live Preview) */}
               <div className="lg:col-span-8 space-y-3">
-                <div className="p-2.5 rounded bg-sunken border border-line flex items-center justify-between gap-2">
+                <div className="p-3 rounded bg-sunken border border-line flex items-center justify-between gap-2">
                   <div>
                     <div className="text-xs font-medium text-ink">{selectedReplyTemplate?.label}</div>
                     <div className="text-2xs text-ink-3">{selectedReplyTemplate?.triggerHint}</div>
                   </div>
-                  <span className="font-mono text-2xs px-1.5 py-0.5 rounded bg-surface border border-line text-ink-2">
+                  <span className="font-mono text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink-2">
                     {selectedReplyTemplate?.key}
                   </span>
                 </div>
 
                 <Field label="Biến dữ liệu động (Bấm vào biến để chèn nhanh vào mẫu tin nhắn)">
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {(selectedReplyTemplate?.availablePlaceholders || []).map((ph) => (
                       <Button
                         key={ph}
@@ -2430,7 +2430,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 </div>
               </div>
 
-              <div className="lg:col-span-7 space-y-2.5">
+              <div className="lg:col-span-7 space-y-3">
                 <div className="text-xs font-medium text-ink">
                   Danh sách mẫu thông báo đang lưu ({(replyConfig.broadcastTemplates || []).length} mẫu)
                 </div>
@@ -2438,7 +2438,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                   {(replyConfig.broadcastTemplates || []).map((tpl) => (
                     <div
                       key={tpl.id}
-                      className="p-3 rounded border border-line bg-sunken space-y-1.5"
+                      className="p-3 rounded border border-line bg-sunken space-y-2"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -2449,7 +2449,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                               : GROUP_ROLE_LABEL[tpl.targetRole as ZaloGroupRole] || tpl.targetRole}
                           </Status>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -2488,7 +2488,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Panel title="Bảng điều khiển & Kiểm thử Lệnh Bot (Command Console)">
             <div className="space-y-3">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {QUICK_COMMANDS.map((item) => (
                   <Button
                     key={item.cmd}
@@ -2562,7 +2562,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               </label>
 
               <div className="p-3 rounded border border-line bg-sunken min-h-[220px]">
-                <div className="text-2xs font-medium text-ink-3 mb-1.5 border-b border-line pb-1">
+                <div className="text-2xs font-medium text-ink-3 mb-2 border-b border-line pb-1">
                   Phản hồi từ Upbase B2C Zalo Bot:
                 </div>
                 <pre className="text-xs font-mono text-ink whitespace-pre-wrap leading-relaxed">
@@ -2576,7 +2576,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           <Panel title="Gửi thông báo theo Mẫu nghiệp vụ (Broadcast Message)">
             <div className="space-y-3">
               <Field label="Chọn nhanh mẫu thông báo chuẩn B2C (tùy chỉnh tại tab Kịch bản & Tin nhắn Bot)">
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {(replyConfig.broadcastTemplates?.length
                     ? replyConfig.broadcastTemplates
                     : MESSAGE_TEMPLATES
@@ -3031,7 +3031,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       >
         <div className="space-y-3">
           {reviewModalTarget?.draftVideoUrl && (
-            <div className="p-2.5 rounded bg-sunken border border-line text-xs">
+            <div className="p-3 rounded bg-sunken border border-line text-xs">
               <span className="text-ink-3">Link video nháp KOC đã nộp: </span>
               <a
                 href={reviewModalTarget.draftVideoUrl}
@@ -3167,7 +3167,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
             </pre>
           </div>
           {previewModalData?.photoUrl && (
-            <div className="p-3 rounded border border-line bg-sunken space-y-1.5">
+            <div className="p-3 rounded border border-line bg-sunken space-y-2">
               <div className="text-2xs font-medium text-ink-2">Ảnh đính kèm Bot đã gửi:</div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

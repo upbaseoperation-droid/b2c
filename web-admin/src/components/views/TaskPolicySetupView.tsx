@@ -284,7 +284,7 @@ export function TaskPolicySetupView({
       width: 155,
       render: (r) => (
         <div
-          className="flex items-center justify-end gap-1.5"
+          className="flex items-center justify-end gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -374,7 +374,7 @@ export function TaskPolicySetupView({
       render: (r) =>
         canManageSetup ? (
           <div
-            className="flex items-center justify-end gap-1.5"
+            className="flex items-center justify-end gap-2"
             onClick={(e) => e.stopPropagation()}
           >
             <Button
@@ -396,7 +396,7 @@ export function TaskPolicySetupView({
                 type="button"
                 onClick={() => handleDeleteLevelItem(r.id)}
                 title="Xóa cấp độ"
-                className="p-1.5 rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft transition-colors"
+                className="p-2 rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -630,7 +630,7 @@ export function TaskPolicySetupView({
             title="Công thức tính điểm Workload cá nhân & Tổng điểm tháng"
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-1">
+              <div className="p-4 rounded-lg bg-sunken border border-line space-y-1">
                 <div className="text-2xs font-medium text-ink-3">
                   1. Điểm nhiệm vụ cá nhân
                 </div>
@@ -638,7 +638,7 @@ export function TaskPolicySetupView({
                   Điểm cá nhân = SL nghiệm thu × Điểm chuẩn (Bảng 1) × HS phạm vi (Bảng 2/2b) × HS độ khó (Bảng 3) × HS tiến độ (Bảng 5) × HS đa sàn (Bảng 6) × Tỷ trọng vai trò (%)
                 </div>
               </div>
-              <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-1">
+              <div className="p-4 rounded-lg bg-sunken border border-line space-y-1">
                 <div className="text-2xs font-medium text-ink-3">
                   2. Tổng điểm nhân sự cuối tháng
                 </div>
@@ -659,19 +659,19 @@ export function TaskPolicySetupView({
                 <table className="w-full min-w-[560px] text-left text-xs">
                   <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                     <tr>
-                      <th className="py-2.5 px-4 font-medium">Nhóm gian hàng</th>
-                      <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
-                      <th className="py-2.5 px-4 font-medium">Tiêu chí nhận diện</th>
+                      <th className="py-3 px-4 font-medium">Nhóm gian hàng</th>
+                      <th className="py-3 px-3 font-medium text-right">Hệ số</th>
+                      <th className="py-3 px-4 font-medium">Tiêu chí nhận diện</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {STORE_SCOPE_TABLE_2.map((r) => (
                       <tr key={r.code} className="hover:bg-canvas">
-                        <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
+                        <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
+                        <td className="py-3 px-3 text-right font-mono font-semibold text-accent">
                           ×{r.coef.toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="py-2.5 px-4 text-ink-2">{r.note}</td>
+                        <td className="py-3 px-4 text-ink-2">{r.note}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -689,19 +689,19 @@ export function TaskPolicySetupView({
                   <table className="w-full min-w-[560px] text-left text-xs">
                     <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
-                        <th className="py-2.5 px-4 font-medium">Mức độ</th>
-                        <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
-                        <th className="py-2.5 px-4 font-medium">Khi áp dụng</th>
+                        <th className="py-3 px-4 font-medium">Mức độ</th>
+                        <th className="py-3 px-3 font-medium text-right">Hệ số</th>
+                        <th className="py-3 px-4 font-medium">Khi áp dụng</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
                       {TASK_DIFFICULTY_TABLE_3.map((r) => (
                         <tr key={r.tier} className="hover:bg-canvas">
-                          <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                          <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
                             ×{r.coef.toFixed(2).replace('.', ',')}
                           </td>
-                          <td className="py-2.5 px-4 text-ink-2">{r.criteria}</td>
+                          <td className="py-3 px-4 text-ink-2">{r.criteria}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -717,15 +717,15 @@ export function TaskPolicySetupView({
                   <table className="w-full min-w-[560px] text-left text-xs">
                     <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
-                        <th className="py-2.5 px-4 font-medium">Quy mô đa sàn</th>
-                        <th className="py-2.5 px-4 font-medium text-right">Hệ số nhân</th>
+                        <th className="py-3 px-4 font-medium">Quy mô đa sàn</th>
+                        <th className="py-3 px-4 font-medium text-right">Hệ số nhân</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
                       {MULTI_PLATFORM_TABLE_6.map((r) => (
                         <tr key={r.stores} className="hover:bg-canvas">
-                          <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                          <td className="py-2.5 px-4 text-right font-mono font-semibold text-accent">
+                          <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
+                          <td className="py-3 px-4 text-right font-mono font-semibold text-accent">
                             ×{r.coef.toFixed(1).replace('.', ',')}
                           </td>
                         </tr>
@@ -747,25 +747,25 @@ export function TaskPolicySetupView({
                 <table className="w-full min-w-[560px] text-left text-xs">
                   <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                     <tr>
-                      <th className="py-2.5 px-4 font-medium">Level nhân sự</th>
-                      <th className="py-2.5 px-3 font-medium">Tỷ trọng việc khó tối thiểu</th>
-                      <th className="py-2.5 px-3 font-medium text-right">Đạt chuẩn</th>
-                      <th className="py-2.5 px-4 font-medium text-right">Không đạt</th>
+                      <th className="py-3 px-4 font-medium">Level nhân sự</th>
+                      <th className="py-3 px-3 font-medium">Tỷ trọng việc khó tối thiểu</th>
+                      <th className="py-3 px-3 font-medium text-right">Đạt chuẩn</th>
+                      <th className="py-3 px-4 font-medium text-right">Không đạt</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {STAFF_LEVEL_TABLE_4.map((r) => (
                       <tr key={r.level} className="hover:bg-canvas">
-                        <td className="py-2.5 px-4 font-mono font-semibold text-ink">
+                        <td className="py-3 px-4 font-mono font-semibold text-ink">
                           {r.level}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-ink-2">
+                        <td className="py-3 px-3 font-mono text-ink-2">
                           ≥ {r.minHardRatioPct}%
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-positive font-semibold">
+                        <td className="py-3 px-3 text-right font-mono text-positive font-semibold">
                           ×{r.passCoef.toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="py-2.5 px-4 text-right font-mono text-warning font-semibold">
+                        <td className="py-3 px-4 text-right font-mono text-warning font-semibold">
                           ×{r.failCoef.toFixed(2).replace('.', ',')}
                         </td>
                       </tr>
@@ -785,19 +785,19 @@ export function TaskPolicySetupView({
                   <table className="w-full min-w-[560px] text-left text-xs">
                     <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
-                        <th className="py-2.5 px-4 font-medium">Mức độ hoàn thành</th>
-                        <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
-                        <th className="py-2.5 px-4 font-medium">Điều kiện áp dụng</th>
+                        <th className="py-3 px-4 font-medium">Mức độ hoàn thành</th>
+                        <th className="py-3 px-3 font-medium text-right">Hệ số</th>
+                        <th className="py-3 px-4 font-medium">Điều kiện áp dụng</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
                       {TIMELINE_TABLE_5.map((r) => (
                         <tr key={r.status} className="hover:bg-canvas">
-                          <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                          <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
                             ×{r.coef.toFixed(1).replace('.', ',')}
                           </td>
-                          <td className="py-2.5 px-4 text-ink-2">{r.condition}</td>
+                          <td className="py-3 px-4 text-ink-2">{r.condition}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -813,19 +813,19 @@ export function TaskPolicySetupView({
                   <table className="w-full min-w-[560px] text-left text-xs">
                     <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
-                        <th className="py-2.5 px-4 font-medium">Vai trò</th>
-                        <th className="py-2.5 px-3 font-medium text-right">Khung gợi ý</th>
-                        <th className="py-2.5 px-4 font-medium">Trách nhiệm chính</th>
+                        <th className="py-3 px-4 font-medium">Vai trò</th>
+                        <th className="py-3 px-3 font-medium text-right">Khung gợi ý</th>
+                        <th className="py-3 px-4 font-medium">Trách nhiệm chính</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
                       {TASK_ROLE_WEIGHT_RULES.map((r) => (
                         <tr key={r.roleKey} className="hover:bg-canvas">
-                          <td className="py-2.5 px-4 font-medium text-ink">{r.roleLabel}</td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
+                          <td className="py-3 px-4 font-medium text-ink">{r.roleLabel}</td>
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-accent">
                             {r.suggestedWeightRange}
                           </td>
-                          <td className="py-2.5 px-4 text-ink-2">{r.responsibilities}</td>
+                          <td className="py-3 px-4 text-ink-2">{r.responsibilities}</td>
                         </tr>
                       ))}
                     </tbody>

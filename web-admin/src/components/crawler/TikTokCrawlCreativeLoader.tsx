@@ -114,7 +114,7 @@ export const TikTokCrawlCreativeLoader: React.FC<TikTokCrawlCreativeLoaderProps>
   // Compact inline bar when results already exist
   if (compact) {
     return (
-      <div className="px-4 py-2.5 border-b border-accent/20 bg-accent-soft/30 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-200">
+      <div className="px-4 py-3 border-b border-accent/20 bg-accent-soft/30 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-200">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="relative w-7 h-7 rounded-lg bg-surface border border-accent/30 flex items-center justify-center shrink-0">
             <ModeIcon className="w-3.5 h-3.5 text-accent" />
@@ -193,7 +193,7 @@ export const TikTokCrawlCreativeLoader: React.FC<TikTokCrawlCreativeLoaderProps>
             <span className="text-base font-semibold font-code text-ink tabular-nums leading-tight">
               {progressPct}%
             </span>
-            <span className="text-3xs font-code text-ink-3 tabular-nums">
+            <span className="text-2xs font-code text-ink-3 tabular-nums">
               {elapsedSec}s
             </span>
           </div>
@@ -204,29 +204,29 @@ export const TikTokCrawlCreativeLoader: React.FC<TikTokCrawlCreativeLoaderProps>
           <div className="text-sm font-semibold text-ink">
             {config.title}
           </div>
-          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-sunken border border-line text-xs font-code font-medium text-ink max-w-[280px] truncate">
+          <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-md bg-sunken border border-line text-xs font-code font-medium text-ink max-w-[280px] truncate">
             {queryLabel}
           </div>
         </div>
 
         {/* Live Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full mt-4 p-2.5 rounded-lg bg-canvas border border-line text-left">
-          <div className="px-1.5">
-            <div className="text-3xs text-ink-3">Đã thu thập</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full mt-4 p-3 rounded-lg bg-canvas border border-line text-left">
+          <div className="px-2">
+            <div className="text-2xs text-ink-3">Đã thu thập</div>
             <div className="text-xs font-semibold font-code text-ink tabular-nums mt-0.5 truncate">
               {currentCollected}/{effectiveTarget}
             </div>
           </div>
-          <div className="px-1.5 sm:border-l border-line">
-            <div className="text-3xs text-ink-3">Đợt quét</div>
+          <div className="px-2 sm:border-l border-line">
+            <div className="text-2xs text-ink-3">Đợt quét</div>
             <div className="text-xs font-semibold font-code text-ink tabular-nums mt-0.5 truncate">
               {batchProgress
                 ? `${batchProgress.currentBatch}/${batchProgress.totalBatches}`
                 : '1/1'}
             </div>
           </div>
-          <div className="px-1.5 sm:border-l border-line">
-            <div className="text-3xs text-ink-3">Thời gian</div>
+          <div className="px-2 sm:border-l border-line">
+            <div className="text-2xs text-ink-3">Thời gian</div>
             <div className="text-xs font-semibold font-code text-ink tabular-nums mt-0.5 truncate">
               {elapsedSec}s
             </div>

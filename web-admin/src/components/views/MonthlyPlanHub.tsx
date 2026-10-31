@@ -89,6 +89,7 @@ import {
   getStorePlanWorkstreamSummary,
   buildPersonalWorkPackages,
   INITIAL_BRAND_MONTHLY_PLANS,
+  isSyntheticBrandMonthlyPlanItem,
   getWeeksForMonth,
   type B2cWorkstreamType,
   type StorePlanWorkstreamSummary,
@@ -713,6 +714,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'BRAND_PLANS'>('STORE_GOVERNANCE');
   const [expandedStoreId, setExpandedStoreId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab !== 'input-plan') return;
+      if (detail.subView === 'BRAND_PLANS' || detail.subView === 'STORE_GOVERNANCE') {
+        setActiveHubTab(detail.subView);
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
+  }, []);
+
   // State quản lý Kế hoạch tháng theo Brand (3 vị trí gắn theo Brand: Content / Brand main, Plan / Strategy, Key Visual / SIS)
   const [brandMonthlyPlans, setBrandMonthlyPlans] = useState<BrandMonthlyPlanItem[]>(INITIAL_BRAND_MONTHLY_PLANS);
   const [brandPlanSearch, setBrandPlanSearch] = useState<string>('');
@@ -739,9 +752,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           if (!raw) return;
           list = JSON.parse(raw) as BrandMonthlyPlanItem[];
         }
-        if (!Array.isArray(list) || list.length === 0) return;
-        const savedMap = new Map(list.map(item => [item.id, item]));
-        setBrandMonthlyPlans(prev => prev.map(item => savedMap.get(item.id) || item));
+        if (!Array.isArray(list)) return;
+        const cleanList = list.filter(item => !isSyntheticBrandMonthlyPlanItem(item));
+        const savedMap = new Map(cleanList.map(item => [item.id, item]));
+        setBrandMonthlyPlans(prev => {
+          if (prev.length === 0) return cleanList;
+          return prev.map(item => savedMap.get(item.id) || item);
+        });
       } catch {
         /* bỏ qua lỗi đọc localStorage */
       }
@@ -1079,6 +1096,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   >('B2C_ONLY');
   const [storeSearchInput, setStoreSearchInput] = useState<string>('');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
+  const [governancePage, setGovernancePage] = useState<number>(1);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1090,7 +1108,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [governanceRouteFilter, setGovernanceRouteFilter] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
   const [governancePlatformFilter, setGovernancePlatformFilter] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall'>('ALL');
   const [governancePicFilter, setGovernancePicFilter] = useState<string>('ALL');
-  const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
   const [isGovernanceOverviewModalOpen, setIsGovernanceOverviewModalOpen] = useState<boolean>(false);
   const [revisionTarget, setRevisionTarget] = useState<{ planId: string; storeName: string } | null>(null);
@@ -1549,6 +1566,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return Array.from(brandMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   }, [effectiveStores]);
 
+  // RULE-PERF-01: Index O(1) tra cứu gian hàng theo id hoặc normStoreSlug
+  const effectiveStoreByIdOrSlugMap = useMemo(() => {
+    const map = new Map<string, StorePortfolioItem>();
+    for (const s of effectiveStores) {
+      if (s.id) map.set(s.id, s);
+      if (s.storeName) map.set(`slug:${normStoreSlug(s.storeName)}`, s);
+    }
+    return map;
+  }, [effectiveStores]);
+
   // Các gian hàng thuộc Thương hiệu đang chọn trong modal
   const brandStoresForNewPlan = useMemo(() => {
     if (!newPlanBrand) return [];
@@ -1781,13 +1808,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const balancedItems = autoBalancePlanItems(
-      INITIAL_INPUT_PLAN_ITEMS,
-      newPlanBudget,
-      newPlanQty,
-      newPlanPreset
-    );
-
     const subject = newPlanStoreName || newPlanBrand;
     const createdPlan: InputPlanBreakdownState = {
       id: generatePlanId(newPlanMonth),
@@ -1811,19 +1831,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       notes: newPlanNotes || `Kế hoạch khởi tạo cho chu kỳ ${newPlanMonth}.`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      items: balancedItems,
-      discussions: [
-        {
-          id: generateDiscussionId(),
-          authorName: newPlanPic,
-          authorRole: 'BOOKING',
-          authorTitle: 'Booking Specialist PIC',
-          content: `Khởi tạo kế hoạch tháng ${newPlanMonth} (${newPlanWeek}) cho ${subject} với ngân sách trần ${formatVndShort(newPlanBudget)}, dự kiến ${newPlanQty} nội dung.`,
-          type: 'COMMENT',
-          timestamp: new Date().toISOString(),
-          tags: ['Khởi tạo', 'Ngân sách']
-        }
-      ]
+      items: [],
+      discussions: []
     };
 
     onCreatePlan(createdPlan);
@@ -3441,7 +3450,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       <>
                                         <span>·</span>
                                         {(rollup?.storePlans || []).map(sp => {
-                                          const st = stores.find(s => s.id === sp.storeId || normStoreSlug(s.storeName) === normStoreSlug(sp.storeName));
+                                          const st = (sp.storeId && effectiveStoreByIdOrSlugMap.get(sp.storeId)) || (sp.storeName ? effectiveStoreByIdOrSlugMap.get(`slug:${normStoreSlug(sp.storeName)}`) : undefined);
                                           const platShort = st?.platform === 'TikTok Shop' ? 'TikTok' : st?.platform === 'Shopee Mall' ? 'Shopee' : (sp.storeName || 'Gian');
                                           return (
                                             <button
@@ -3663,7 +3672,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <div className="pt-2 border-t border-line flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2 flex-wrap">
                             {(rollup?.storePlans || []).map(sp => {
-                              const st = stores.find(s => s.id === sp.storeId || normStoreSlug(s.storeName) === normStoreSlug(sp.storeName));
+                              const st = (sp.storeId && effectiveStoreByIdOrSlugMap.get(sp.storeId)) || (sp.storeName ? effectiveStoreByIdOrSlugMap.get(`slug:${normStoreSlug(sp.storeName)}`) : undefined);
                               const platShort = st?.platform === 'TikTok Shop' ? 'TikTok' : st?.platform === 'Shopee Mall' ? 'Shopee' : (sp.storeName || 'Gian');
                               return (
                                 <button

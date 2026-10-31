@@ -797,8 +797,8 @@ export async function POST(request: NextRequest) {
       throw e;
     }
 
-    // Phiếu Content kênh: ghi trạng thái "Đã lập ĐNTT" về việc trên bảng Self-channel
-    if (selfPrepared) await applySlipStatusToJobs(slip).catch(() => 0);
+    // Đồng bộ trạng thái phiếu về Deal Board, Self-Channel Board và List Duyệt Book (RULE-SYNC-01)
+    await applySlipStatusToJobs(slip).catch(() => 0);
 
     return NextResponse.json(
       {

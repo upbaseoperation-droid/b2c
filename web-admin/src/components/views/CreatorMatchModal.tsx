@@ -248,10 +248,10 @@ export const CreatorMatchModal: React.FC<CreatorMatchModalProps> = ({ open, onCl
                 <div key={r.koc.id} className={`rounded-md border p-3 ${handle === current ? 'border-accent bg-accent-soft' : 'border-line bg-surface'}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className="truncate font-medium text-ink">@{r.koc.channelId}</span>
-                        <span className="rounded bg-sunken px-1.5 py-0.5 text-2xs text-ink-2">{r.koc.salaryGrade === 'TAP UpAffiliate' ? 'FOC' : r.koc.salaryGrade}</span>
-                        {r.koc.kocCategory && <span className="rounded border border-line bg-surface px-1.5 py-0.5 text-2xs text-ink-3">{r.koc.kocCategory}</span>}
+                        <span className="rounded bg-sunken px-2 py-0.5 text-2xs text-ink-2">{r.koc.salaryGrade === 'TAP UpAffiliate' ? 'FOC' : r.koc.salaryGrade}</span>
+                        {r.koc.kocCategory && <span className="rounded border border-line bg-surface px-2 py-0.5 text-2xs text-ink-3">{r.koc.kocCategory}</span>}
                       </div>
 
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-2xs text-ink-3">
@@ -262,16 +262,16 @@ export const CreatorMatchModal: React.FC<CreatorMatchModalProps> = ({ open, onCl
                         <span className="font-medium text-ink-2">{r.koc.rateCardVideo ? `${fmt(r.koc.rateCardVideo)}đ` : 'Chưa có giá'}</span>
                       </div>
 
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {gradeScore === 25 && <span className="rounded bg-positive-soft px-1.5 py-0.2 text-2xs font-medium text-positive">Đúng bậc</span>}
-                        {priceScore === 10 && <span className="rounded bg-positive-soft px-1.5 py-0.2 text-2xs font-medium text-positive">Đúng giá kế hoạch</span>}
-                        {historyScore > 0 && <span className="rounded bg-accent-soft px-1.5 py-0.2 text-2xs font-medium text-accent">Brand từng duyệt</span>}
-                        {pillarScore >= 10 && <span className="rounded bg-sunken px-1.5 py-0.2 text-2xs text-ink-2">Khớp tệp pillar</span>}
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {gradeScore === 25 && <span className="rounded bg-positive-soft px-2 py-0.2 text-2xs font-medium text-positive">Đúng bậc</span>}
+                        {priceScore === 10 && <span className="rounded bg-positive-soft px-2 py-0.2 text-2xs font-medium text-positive">Đúng giá kế hoạch</span>}
+                        {historyScore > 0 && <span className="rounded bg-accent-soft px-2 py-0.2 text-2xs font-medium text-accent">Brand từng duyệt</span>}
+                        {pillarScore >= 10 && <span className="rounded bg-sunken px-2 py-0.2 text-2xs text-ink-2">Khớp tệp pillar</span>}
                       </div>
                     </div>
 
                     <div className="w-32 shrink-0 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-2">
                         <span className="text-sm font-semibold tabular-nums text-ink">{r.total}/100</span>
                         <Status tone={r.total >= 70 ? 'positive' : r.total >= 45 ? 'warning' : 'neutral'}>
                           {r.total >= 70 ? 'Phù hợp cao' : r.total >= 45 ? 'Phù hợp vừa' : 'Cân nhắc'}
@@ -292,7 +292,7 @@ export const CreatorMatchModal: React.FC<CreatorMatchModalProps> = ({ open, onCl
                   )}
 
                   {open && (
-                    <div className="mt-2.5 rounded border border-line bg-sunken/40 p-2.5">
+                    <div className="mt-3 rounded border border-line bg-sunken/40 p-3">
                       <div className="mb-1 text-2xs font-medium text-ink">Bóc tách điểm 6 trụ cột (100đ):</div>
                       <ul className="space-y-1 text-2xs">
                         {r.parts.map(p => (
@@ -330,7 +330,7 @@ export const CreatorMatchModal: React.FC<CreatorMatchModalProps> = ({ open, onCl
                     </div>
                   )}
 
-                  <div className="mt-2.5 flex items-center gap-2">
+                  <div className="mt-3 flex items-center gap-2">
                     <Button
                       size="sm"
                       variant="primary"

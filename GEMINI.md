@@ -42,7 +42,7 @@
   - **Tỷ lệ & Hiệu số:** Mọi phép tính chia tỷ lệ hoàn thành / ROI bắt buộc chặn mẫu số bằng 0 (`denominator === 0 ? 0 : ...`) để tránh văng `NaN` hoặc `Infinity` lên giao diện.
   - **Ngày tháng:** Chuẩn Việt Nam `DD/MM/YYYY` hoặc `YYYY/MM` (giờ VN UTC+7), cấm dùng chuẩn Mỹ `MM/DD/YYYY`.
   - **Bảo vệ dữ liệu nhạy cảm (Data Masking):** Số CCCD, Số tài khoản ngân hàng và Số điện thoại của KOC trên các bảng danh sách công cộng phải được che mờ (chỉ hiển thị 4 số cuối: `****5678`), chỉ mở đầy đủ khi có quyền Kế toán / Pháp chế mở xem chi tiết.
-  - **Cảnh báo tài chính:** Báo động đỏ ngay khi phát sinh chi phí vượt trần (Overbudget) hoặc gian hàng có chi phí nhưng hạn mức ghi nhận 0đ (Unbudgeted Spend).
+  - **Cảnh báo tài chính:** Trọng tâm kiểm soát là **Giải ngân chậm / Chưa chi hết ngân sách (`Under-spend`)** (`< 50%` cảnh báo đỏ, `< 80%` cuối tháng bắt buộc giải trình; gian hàng có ngân sách nhưng chi `0đ` tuyệt đối không gắn nhãn "Trong hạn mức") và **Chi ngoài kế hoạch (`Unbudgeted Spend`)** (gian hàng hạn mức `0đ` nhưng phát sinh chi phí). Vượt nhẹ trần Net (`Overbudget`) không khóa cứng vận hành nếu có giải trình/phê duyệt từ Giám Đốc Marketing.
 
 ## 4. Quy Tắc Phòng Ngừa Lỗi Hệ Thống (`blueprint/governance/KNOWN_BUGS_AND_LESSONS.md`)
 - **`RULE-DATA-01` (Cấm sinh trạng thái giả bằng hàm băm / ngẫu nhiên):** Tuyệt đối KHÔNG dùng `hash % N`, `Math.random()` hay `|| true` để hiển thị dấu tích (`✓`) hoặc trạng thái nghiệp vụ. Chỉ hiển thị khi trường dữ liệu thực tế có giá trị hợp lệ; nếu trống hiển thị `—` hoặc `Chưa xác nhận`.
@@ -58,3 +58,13 @@
 - **Tối ưu Token & Định tuyến Mô hình khi điều phối Task:**
   - Tác vụ tra cứu, đọc file, cập nhật doc, gỡ lỗi cú pháp, chạy `tsc` và `build`: Sử dụng model nhẹ, tốc độ cao (`flash` hoặc `flash_lite`).
   - Tác vụ phân rã kiến trúc phức tạp, thiết kế giải pháp mới hoặc nghiệm thu `git diff` quan trọng trước khi xuất xưởng: Sử dụng model thông minh (`inherit` hoặc `pro`).
+
+## 6. Quy Trình Kích Hoạt ECC Hàng Ngày (DAILY Skills & Subagents Bắt Buộc)
+Trợ lý BẮT BUỘC chủ động đọc `SKILL.md` và điều phối `invoke_subagent` theo đúng loại công việc hàng ngày thay vì tự làm thủ công toàn bộ trên một luồng:
+- **Đặc tả nghiệp vụ, Use Case, Gherkin & Gap Analysis:** Bắt buộc đọc [`.agents/skills/ba-spec-analyst/SKILL.md`](.agents/skills/ba-spec-analyst/SKILL.md) hoặc gọi subagent `ba-spec-analyst`.
+- **Thiết kế, dựng mới hoặc cải tổ giao diện `web-admin`:** Bắt buộc đọc [`.agents/skills/ui-ux-design-system/SKILL.md`](.agents/skills/ui-ux-design-system/SKILL.md) hoặc gọi subagent `ui-ux-architect`. Khi kiểm toán UX hoặc đề xuất bố cục mới (Bento, Split-Pane), đọc [`.agents/skills/ui-ux-creative-audit/SKILL.md`](.agents/skills/ui-ux-creative-audit/SKILL.md) hoặc gọi `ui-ux-critic`.
+- **Thiết kế kiến trúc tính năng lớn / Refactor đa tầng:** Gọi subagent `planner` hoặc `code-architect` trước khi viết code.
+- **Vẽ sơ đồ quy trình BPMN / Swimlane & nhúng Lark Wiki/Docx:** Bắt buộc đọc [`.agents/skills/lark-swimlane-builder/SKILL.md`](.agents/skills/lark-swimlane-builder/SKILL.md).
+- **Kiểm tra luồng bấm nút (Button / Modal / State) & Hồi quy:** Đọc [`.agents/skills/click-path-audit/SKILL.md`](.agents/skills/click-path-audit/SKILL.md) và [`.agents/skills/ai-regression-testing/SKILL.md`](.agents/skills/ai-regression-testing/SKILL.md).
+- **Gỡ lỗi Build / TypeScript:** Khi `tsc --noEmit` hoặc `next build` báo lỗi phức tạp, gọi subagent `build-error-resolver` hoặc `react-build-resolver` (với `Model: "flash"`).
+- **Review Code & Nghiệm thu cuối lượt (Verification Gate):** Sau khi hoàn tất thay đổi code không tầm thường, bắt buộc chạy quy trình [`.agents/skills/verification-loop/SKILL.md`](.agents/skills/verification-loop/SKILL.md) và gọi subagent `react-reviewer` / `typescript-reviewer` / `code-reviewer` (kèm `security-reviewer` nếu chạm tới API, phân quyền hoặc dữ liệu nhạy cảm CCCD/STK).

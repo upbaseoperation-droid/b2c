@@ -48,39 +48,33 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     [currentUser.role]
   );
 
-  // Chọn 4 mục điều hướng cốt lõi theo vai trò
+  // Chọn tối đa 4 mục điều hướng cốt lõi theo vai trò và lọc theo danh sách màn hình được cấp quyền
   const quickItems = React.useMemo<NavButtonConfig[]>(() => {
     if (currentUser.role === 'BRAND_PARTNER') {
       const brandItems: NavButtonConfig[] = [
-        { key: 'brand-hub', label: 'Cổng Brand', icon: ExternalLink },
-        { key: 'koc-listing', label: 'Listing & Air', icon: Film },
+        { key: 'koc-listing', label: 'Listing & Sheet', icon: Film },
         { key: 'content', label: 'Kịch bản', icon: FileText },
+        { key: 'brand-knowledge', label: 'Thương hiệu', icon: Layers },
         { key: 'dashboard-bi', label: 'Báo cáo', icon: LayoutDashboard },
       ];
-      return brandItems;
+      return brandItems.filter(item => allowedTabs.includes(item.key));
     }
 
     if (currentUser.role === 'KOC_PARTNER') {
       const kocItems: NavButtonConfig[] = [
         { key: 'koc-hub', label: 'Cổng KOC', icon: Users },
-        { key: 'content', label: 'Kịch bản', icon: FileText },
-        { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
-        { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
       ];
-      return kocItems;
+      return kocItems.filter(item => allowedTabs.includes(item.key));
     }
 
     if (currentUser.role === 'CTV_PARTNER') {
       const ctvItems: NavButtonConfig[] = [
         { key: 'self-channel-hub', label: 'CTV Video', icon: Video },
-        { key: 'content', label: 'Kịch bản', icon: FileText },
-        { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
-        { key: 'push-products', label: 'Sản phẩm', icon: TrendingUp },
       ];
-      return ctvItems;
+      return ctvItems.filter(item => allowedTabs.includes(item.key));
     }
 
-    // Nhân viên nội bộ (Specialist, Leader, Manager, Admin)
+    // Nhân viên nội bộ (Specialist, Leader, Manager, Admin, Pháp chế, Kế toán, Điều phối ký)
     const internalItems: NavButtonConfig[] = [
       {
         key: 'cockpit',
@@ -91,8 +85,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       { key: 'input-plan', label: 'Kế hoạch', icon: Calendar },
       { key: 'koc-listing', label: 'Listing & Deal', icon: Users },
       { key: 'content', label: 'Kịch bản & Air', icon: FileText },
+      { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
+      { key: 'self-channel-hub', label: 'Kênh Brand', icon: Video },
+      { key: 'dashboard-finance', label: 'Đối soát', icon: TrendingUp },
     ];
-    return internalItems.filter(item => allowedTabs.includes(item.key));
+    return internalItems.filter(item => allowedTabs.includes(item.key)).slice(0, 4);
   }, [currentUser.role, pendingTasksCount, allowedTabs]);
 
   const activeGroupResolved = resolveNavGroupTabKey(activeTab);
@@ -127,12 +124,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   strokeWidth={isActive ? 2.25 : 1.75}
                 />
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1 min-w-[15px] h-[15px] rounded-full bg-critical text-white text-3xs font-semibold flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-1 -right-2 px-1 min-w-[15px] h-[15px] rounded-full bg-critical text-white text-2xs font-semibold flex items-center justify-center shadow-xs">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
               </div>
-              <span className="text-3xs leading-tight mt-1 truncate max-w-full px-0.5">
+              <span className="text-2xs leading-tight mt-1 truncate max-w-full px-0.5">
                 {item.label}
               </span>
             </button>
@@ -147,7 +144,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           aria-label="Mở tất cả tính năng"
         >
           <Menu className="w-5 h-5" strokeWidth={1.75} />
-          <span className="text-3xs leading-tight mt-1 truncate max-w-full px-0.5">
+          <span className="text-2xs leading-tight mt-1 truncate max-w-full px-0.5">
             Tất cả
           </span>
         </button>

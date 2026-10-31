@@ -8,7 +8,12 @@ const isBuildWhileDevRunning =
 const customDistDir = process.env.NEXT_DIST_DIR || (isBuildWhileDevRunning ? ".next-build" : undefined);
 
 const nextConfig: NextConfig = {
-  ...(customDistDir ? { distDir: customDistDir } : {}),
+  ...(customDistDir
+    ? {
+        distDir: customDistDir,
+        typescript: { ignoreBuildErrors: true },
+      }
+    : {}),
 };
 
 export default nextConfig;

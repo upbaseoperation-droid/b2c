@@ -140,157 +140,8 @@ export function getPlanVersionSnapshots(plan: InputPlanBreakdownState): PlanVers
 
 // DANH MỤC MASTER KẾ HOẠCH THEO THÁNG (MONTHLY PLAN REPOSITORY)
 const RAW_MONTHLY_PLANS: InputPlanBreakdownState[] = [
-  // =========================================================================
-  // DỮ LIỆU THẬT 69 GIAN HÀNG THÁNG 10/2026 (TỪ FILE 4.1 VÀ 4.1.1)
-  // =========================================================================
   ...REAL_MONTHLY_PLANS_OCT_2026,
-
-  // =========================================================================
-  // DỮ LIỆU THẬT 66 GIAN HÀNG THÁNG 11/2026 (TỪ LARK BASE 4.1 VÀ 4.1.1)
-  // =========================================================================
   ...REAL_MONTHLY_PLANS_NOV_2026,
-
-  // =========================================================================
-  // THÁNG 09/2026 (THÁNG TRƯỚC - ĐÃ HOÀN THÀNH NGHIỆM THU)
-  // =========================================================================
-  {
-    id: 'PLAN-2026-09-CLIO',
-    title: 'Chiến Dịch Tháng 9 - Clio Cosmetics Make-up Chuẩn Hàn',
-    brandName: 'Clio_TikTok_E2E-C',
-    month: '2026/09',
-    week: 'W38 [15.09 - 21.09]',
-    pic: 'Nguyễn Thu Trang',
-    totalTargetBudget: 190000000,
-    totalTargetContents: 85,
-    targetGmv: 1150000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'BRAND_PUSH',
-    status: 'COMPLETED',
-    statusLabel: 'Đã Hoàn Thành (Nghiệm Thu)',
-    spentBudget: 188000000,
-    deliveredContents: 85,
-    actualGmv: 1220000000,
-    preApprovedBy: 'Vũ Thùy Linh',
-    preApprovedAt: '2026-08-30T10:00:00Z',
-    approvedBy: 'Nguyễn Hoàng Long',
-    approvedAt: '2026-09-01T09:00:00Z',
-    notes: 'Ra mắt Cushion thế hệ mới và Son kem lì. Đạt 106% KPI GMV đề ra.',
-    createdAt: '2026-08-25T08:00:00Z',
-    updatedAt: '2026-10-02T17:00:00Z',
-    items: createPlanItemsForScenario(190000000, 85, 'BRAND_PUSH', 'Nguyễn Thu Trang'),
-    discussions: [
-      {
-        id: 'DISC-CLIO-1',
-        authorName: 'Vũ Thùy Linh',
-        authorRole: 'GROWTH',
-        authorTitle: 'Growth Lead',
-        content: 'Clio đã nghiệm thu tháng 9 đạt 106% GMV kế hoạch. Khen ngợi team Booking đã kiểm soát tỷ lệ hoàn hủy dưới 6.5%.',
-        type: 'COMMENT',
-        timestamp: '2026-10-02T17:00:00Z',
-        tags: ['Chỉ Số KPI', 'Nghiệm Thu']
-      }
-    ]
-  },
-  {
-    id: 'PLAN-2026-09-LEMONADE',
-    title: 'Chiến Dịch Tháng 9 - Lemonade Siêu Tiệc Son Tint & Má Kem',
-    brandName: 'Lemonade',
-    month: '2026/09',
-    week: 'W37 [08.09 - 14.09]',
-    pic: 'Khánh Vy',
-    totalTargetBudget: 130000000,
-    totalTargetContents: 60,
-    targetGmv: 780000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'GMV_MAX',
-    status: 'COMPLETED',
-    statusLabel: 'Đã Hoàn Thành (Nghiệm Thu)',
-    spentBudget: 129000000,
-    deliveredContents: 60,
-    actualGmv: 815000000,
-    preApprovedBy: 'Trần Thị Ánh',
-    preApprovedAt: '2026-08-29T11:00:00Z',
-    approvedBy: 'Nguyễn Hoàng Long',
-    approvedAt: '2026-08-31T15:00:00Z',
-    notes: 'Chiến dịch Son Tint nước và Má hồng kem. Tệp Gen Z tương tác cực mạnh.',
-    createdAt: '2026-08-28T10:00:00Z',
-    updatedAt: '2026-09-30T16:30:00Z',
-    items: createPlanItemsForScenario(130000000, 60, 'GMV_MAX', 'Khánh Vy')
-  },
-  {
-    id: 'PLAN-2026-09-SENKA',
-    title: 'Chiến Dịch Tháng 9 - Senka Bọt Rửa Mặt & Sạch Sâu',
-    brandName: 'Senka_TikTok_E2E-C',
-    month: '2026/09',
-    week: 'W39 [22.09 - 28.09]',
-    pic: 'Phạm Thị Thu Hằng',
-    totalTargetBudget: 210000000,
-    totalTargetContents: 95,
-    targetGmv: 1300000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'BALANCED',
-    status: 'COMPLETED',
-    statusLabel: 'Đã Hoàn Thành (Nghiệm Thu)',
-    spentBudget: 208000000,
-    deliveredContents: 95,
-    actualGmv: 1340000000,
-    preApprovedBy: 'Hoàng Quốc Bảo',
-    preApprovedAt: '2026-08-31T09:00:00Z',
-    approvedBy: 'Nguyễn Hoàng Long',
-    approvedAt: '2026-09-01T14:00:00Z',
-    notes: 'Chiến dịch bứt phá doanh số cuối quý 3. Đạt 103% chỉ tiêu.',
-    createdAt: '2026-08-30T09:00:00Z',
-    updatedAt: '2026-10-02T10:00:00Z',
-    items: createPlanItemsForScenario(210000000, 95, 'BALANCED', 'Phạm Thị Thu Hằng')
-  },
-
-  // =========================================================================
-  // THÁNG 08/2026 (LỊCH SỬ THÁNG 8)
-  // =========================================================================
-  {
-    id: 'PLAN-2026-08-TMCLEAN',
-    title: 'Kế Hoạch Tẩy Rửa Đa Năng - TM Clean Mùa Mưa Tháng 8',
-    brandName: 'TM Clean_TikTok_E2E-C',
-    month: '2026/08',
-    week: 'W32 [04.08 - 10.08]',
-    pic: 'Trần Minh Đức',
-    totalTargetBudget: 50000000,
-    totalTargetContents: 48,
-    targetGmv: 350000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'COST_SAVER',
-    status: 'COMPLETED',
-    statusLabel: 'Đã Hoàn Thành (Nghiệm Thu)',
-    spentBudget: 49500000,
-    deliveredContents: 48,
-    actualGmv: 362000000,
-    notes: 'Ngành hàng gia dụng, tận dụng video chuyển đổi trước/sau (Before-After).',
-    createdAt: '2026-07-28T09:00:00Z',
-    updatedAt: '2026-08-31T17:00:00Z',
-    items: MOCK_PLAN_SCENARIOS[3]?.state?.items || createPlanItemsForScenario(50000000, 48, 'COST_SAVER', 'Trần Minh Đức')
-  },
-  {
-    id: 'PLAN-2026-08-FRESH',
-    title: 'Chiến Dịch Tháng 8 - Fresh Back To School Sinh Viên',
-    brandName: 'Fresh_TikTok_E2E-C',
-    month: '2026/08',
-    week: 'W34 [18.08 - 24.08]',
-    pic: 'Đặng Mai Hà Linh',
-    totalTargetBudget: 120000000,
-    totalTargetContents: 65,
-    targetGmv: 720000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'BALANCED',
-    status: 'COMPLETED',
-    statusLabel: 'Đã Hoàn Thành (Nghiệm Thu)',
-    spentBudget: 119000000,
-    deliveredContents: 65,
-    actualGmv: 755000000,
-    notes: 'Tập trung bộ dưỡng da sinh viên tựu trường. Đạt 105% GMV.',
-    createdAt: '2026-07-30T10:00:00Z',
-    updatedAt: '2026-08-31T18:00:00Z',
-    items: createPlanItemsForScenario(120000000, 65, 'BALANCED', 'Đặng Mai Hà Linh')
-  }
 ];
 
 function buildScaledItems(items: InputPlanRowItem[], ratio: number): InputPlanRowItem[] {
@@ -431,162 +282,26 @@ function pickContentPrimaryForBrand(brandOrStore: string, idx: number): { primar
  * - Video Self-Channel (Kênh Brand): Đội Content dưới quyền Leader Partnership Việt Hoàng (1-2 bạn Content cùng làm)
  * - Đa sàn khác: Chuyên viên Đa sàn (Lê Hoàng Yến / Phan Diệu Ánh)
  */
-export function enrichPlanWithMultiStaffWorkstreams(plan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
-  const primaryBooking = (plan.primaryPic || plan.pic || 'Lê Phương Thảo').trim();
-  const coCandidates = BOOKING_CO_PIC_POOL.filter(n => n !== primaryBooking);
-  const coBooking1 = coCandidates[idx % coCandidates.length] || 'Phạm Thị Thu Hằng';
-  const coBooking2 = coCandidates[(idx + 2) % coCandidates.length] || 'Nguyễn Thu Trang';
-  const contentTeam = pickContentPrimaryForBrand(`${plan.brandName} ${plan.storeName || ''}`, idx);
-
+export function enrichPlanWithMultiStaffWorkstreams(plan: InputPlanBreakdownState, _idx: number = 0): InputPlanBreakdownState {
+  const primaryBooking = (plan.primaryPic || plan.pic || '').trim();
   const rawItems = plan.items || [];
-  let selfIdx = 0;
-  let affIdx = 0;
-
-  const totalAffQty = rawItems
-    .filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP') && it.id !== 'row-tt-tap' && it.totalBudget > 0)
-    .reduce((s, i) => s + (i.qty || 0), 0);
-
-  const enrichedItems: InputPlanRowItem[] = rawItems.map(it => {
-    // 1. Mảng Gửi mẫu FOC (0đ / TAP)
-    if (it.tierCode.includes('TAP') || it.id === 'row-tt-tap' || (it.channel === 'TIKTOK' && it.unitCost === 0)) {
-      const focPic = idx % 2 === 0 ? 'Trần Thị Hảo' : 'Phạm Thị Thu Hằng';
-      return {
-        ...it,
-        assignedStaff: focPic,
-        staffNotes: `Gói FOC gửi mẫu 0đ (${focPic} phụ trách rải đơn & thu hồi clip)`
-      };
-    }
-
-    // 2. Mảng Video Self-Channel (Kênh Brand — dưới quyền Leader Partnership Việt Hoàng)
-    if (it.channel === 'SELF_CHANNEL') {
-      const assignedContent = selfIdx === 0 ? contentTeam.primary : contentTeam.secondary;
-      selfIdx += 1;
-      return {
-        ...it,
-        assignedStaff: assignedContent,
-        staffNotes: `Kênh Brand Self-Channel • Content PIC: ${assignedContent} (Leader Partnership: Việt Hoàng liên hệ CTV)`
-      };
-    }
-
-    // 3. Mảng Đa sàn khác (Shopee, FB, IG, Threads)
-    if (['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel)) {
-      const isShopeeMain = (plan.storeName || '').toLowerCase().includes('shopee');
-      const multiPic = isShopeeMain ? primaryBooking : (idx % 2 === 0 ? 'Lê Hoàng Yến' : 'Phan Diệu Ánh');
-      return {
-        ...it,
-        assignedStaff: multiPic,
-        staffNotes: `Gói Đa sàn (${it.platform}) do ${multiPic} phụ trách`
-      };
-    }
-
-    // 4. Mảng Video Affiliate trả phí (KL1 -> KL7): Chia 2-3 người nếu gian hàng có nhiều video
-    if (it.channel === 'TIKTOK') {
-      const tier = (it.tierCode || '').toUpperCase();
-      let assigned = primaryBooking;
-      if (totalAffQty >= 20) {
-        if (['KL1', 'KL2'].includes(tier)) {
-          assigned = coBooking1;
-        } else if (tier === 'KL3' && totalAffQty >= 50) {
-          assigned = coBooking2;
-        } else {
-          assigned = primaryBooking;
-        }
-      } else if (affIdx > 0 && (plan.totalTargetBudget || 0) >= 40000000) {
-        assigned = coBooking1;
-      }
-      affIdx += 1;
-      return {
-        ...it,
-        assignedStaff: assigned,
-        staffNotes: assigned === primaryBooking
-          ? `PIC chính (${primaryBooking}) phụ trách nhóm ${it.tierCode}`
-          : `Phối hợp cùng ${primaryBooking}: ${assigned} chạy gói ${it.tierCode}`
-      };
-    }
-
-    return it;
-  });
-
-  // Nếu gian có chỉ tiêu Self-Channel ở cấp Plan nhưng chưa có dòng SELF_CHANNEL trong items, tự bổ sung 2 dòng cho 2 bạn Content
-  const hasSelfItems = enrichedItems.some(it => it.channel === 'SELF_CHANNEL' && it.qty > 0);
-  const targetSelfQty = plan.targetSelfChannelContents || 0;
-  const targetSelfBudget = plan.budgetSelfChannel || 0;
-  if (!hasSelfItems && (targetSelfQty > 0 || targetSelfBudget > 0)) {
-    const qtyTotal = targetSelfQty > 0 ? targetSelfQty : Math.max(4, Math.round(targetSelfBudget / 500000));
-    const unitCost = qtyTotal > 0 && targetSelfBudget > 0 ? Math.round(targetSelfBudget / qtyTotal) : 450000;
-    if (qtyTotal >= 10) {
-      const q1 = Math.ceil(qtyTotal * 0.6);
-      const q2 = qtyTotal - q1;
-      enrichedItems.push(
-        {
-          id: `${plan.id}-self-voice`,
-          channel: 'SELF_CHANNEL',
-          platform: 'TikTok Shop',
-          category: 'SELF_CHANNEL',
-          tierCode: 'Review voice',
-          tierLabel: 'Kênh Brand - Review Voice',
-          contentFormat: 'Kênh Brand - Review Voice',
-          qty: q1,
-          unitCost,
-          benchmarkCost: 450000,
-          totalBudget: q1 * unitCost,
-          expectedRoiMultiplier: 2.8,
-          targetGmv: Math.round(q1 * unitCost * 2.8),
-          assignedStaff: contentTeam.primary,
-          staffNotes: `Kênh Brand Self-Channel • Content PIC: ${contentTeam.primary} (Leader Partnership: Việt Hoàng)`
-        },
-        {
-          id: `${plan.id}-self-pov`,
-          channel: 'SELF_CHANNEL',
-          platform: 'TikTok Shop',
-          category: 'SELF_CHANNEL',
-          tierCode: 'POV',
-          tierLabel: 'Kênh Brand - POV & Tình Huống',
-          contentFormat: 'Kênh Brand - POV & Tình Huống',
-          qty: q2,
-          unitCost,
-          benchmarkCost: 450000,
-          totalBudget: q2 * unitCost,
-          expectedRoiMultiplier: 2.8,
-          targetGmv: Math.round(q2 * unitCost * 2.8),
-          assignedStaff: contentTeam.secondary,
-          staffNotes: `Kênh Brand Self-Channel • Content PIC: ${contentTeam.secondary} (Leader Partnership: Việt Hoàng)`
-        }
-      );
-    } else {
-      enrichedItems.push({
-        id: `${plan.id}-self-main`,
-        channel: 'SELF_CHANNEL',
-        platform: 'TikTok Shop',
-        category: 'SELF_CHANNEL',
-        tierCode: 'Review voice',
-        tierLabel: 'Kênh Brand - Review Voice',
-        contentFormat: 'Kênh Brand - Review Voice',
-        qty: qtyTotal,
-        unitCost,
-        benchmarkCost: 450000,
-        totalBudget: targetSelfBudget || qtyTotal * unitCost,
-        expectedRoiMultiplier: 2.8,
-        targetGmv: Math.round((targetSelfBudget || qtyTotal * unitCost) * 2.8),
-        assignedStaff: contentTeam.primary,
-        staffNotes: `Kênh Brand Self-Channel • Content PIC: ${contentTeam.primary} (Leader Partnership: Việt Hoàng)`
-      });
-    }
-  }
-
+  const enrichedItems: InputPlanRowItem[] = rawItems.map(it => ({
+    ...it,
+    assignedStaff: it.assignedStaff || primaryBooking || undefined,
+  }));
   const allContributors = Array.from(
     new Set(
       [
         primaryBooking,
-        ...enrichedItems.filter(i => i.qty > 0).map(i => i.assignedStaff || primaryBooking)
+        ...(plan.assignedMembers || []),
+        ...enrichedItems.filter(i => i.qty > 0).map(i => i.assignedStaff || primaryBooking),
       ].filter(Boolean)
     )
   );
-
   return {
     ...plan,
     assignedMembers: allContributors,
-    items: enrichedItems
+    items: enrichedItems,
   };
 }
 
@@ -819,74 +534,20 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
   return summary;
 }
 
-export function buildInitialBrandMonthlyPlans(
-  brands: BrandDetail[] = REAL_B2C_42_BRANDS,
-  month: string = '2026/10'
-): BrandMonthlyPlanItem[] {
-  return brands.map((b, idx) => {
-    const contentPic = b.contentBrandMainPic || b.contentPic || 'Quỳnh Như';
-    const planPic = b.planStrategyPic || b.brandPicName || 'Nguyễn Thị Ngọc Tâm';
-    const kvPic = b.keyVisualSisPic || 'Vũ Hoài Lâm';
-    const budget = b.planBudget || b.monthlyBudget || 0;
-    const isApproved = budget > 0 || idx % 3 !== 2;
-    const activeCamp = findActiveCampaignForBrandInMonth(b.name, month);
-
-    return {
-      id: `BRAND-PLAN-${month.replace('/', '-')}-${b.code}`,
-      brandId: b.id,
-      brandCode: b.code,
-      brandName: b.name,
-      category: b.category || 'Mỹ phẩm & Chăm sóc da',
-      month,
-      status: isApproved ? 'IN_EXECUTION' : 'PENDING_APPROVAL',
-      hasCampaign: !!activeCamp,
-      campaignId: activeCamp?.id,
-      campaignCode: activeCamp?.code,
-      campaignTitle: activeCamp?.title,
-      linkedCampaignIds: activeCamp ? [activeCamp.id] : [],
-      contentBrandMainPic: contentPic,
-      planStrategyPic: planPic,
-      keyVisualSisPic: kvPic,
-      accountPic: b.accountPic || 'Phạm Thị Nhài',
-      bookingPicLead: b.bookingPicLead || 'Đặng Thị Yến Nhi',
-      contentBrandMainPlan: {
-        masterContentPlanCount: 1,
-        contentPillarsCount: 4,
-        heroScriptsTarget: Math.max(6, Math.min(24, Math.round((b.targetVideos || 20) * 0.25))),
-        deliveredCount: isApproved ? Math.max(2, Math.round((b.targetVideos || 20) * 0.12)) : 0,
-        focusPillars: `USP sản phẩm chủ lực ${b.name} • Review thực tế • So sánh giải pháp • Ưu đãi Mega Sale`,
-        notes: `Content / Brand main (${contentPic}) duyệt khung kịch bản & định hướng tuyến nội dung xuyên suốt cho ${b.name}.`,
-      },
-      planStrategyPlan: {
-        campaignStrategyCount: activeCamp ? ((b.storeCount || 1) >= 2 ? 2 : 1) : 0,
-        bigIdeaAndKeyMessage: activeCamp
-          ? `${activeCamp.bigIdea} — ${activeCamp.keyMessage || ''}`
-          : `Duy trì nhận diện & chuyển đổi thường nhật (Always-on) cho Hero SKU ${b.name}`,
-        brandAuditCount: 1,
-        deliveredCount: isApproved ? 1 : 0,
-        targetBrandBudget: budget,
-        targetBrandGmv: b.targetGmv || Math.round(budget * 4.5),
-        notes: `Plan / Strategy (${planPic}) lập kế hoạch tổng thể cấp Brand, phân bổ hạn mức xuống ${b.storeCount || b.stores?.length || 1} gian hàng.`,
-      },
-      keyVisualSisPlan: {
-        kvDirectionCount: activeCamp ? 2 : 1,
-        sisBannerPackageCount: Math.max(2, (b.storeCount || 1) * 2),
-        pdpSeoProductCount: Math.max(4, (b.heroProducts?.length || 1) * 4),
-        deliveredCount: isApproved ? 2 : 1,
-        designTheme: activeCamp?.keyVisualSpec?.theme
-          ? `${activeCamp.keyVisualSpec.theme} (${activeCamp.code})`
-          : `Key Visual duy trì tháng ${month} & chuẩn hóa SIS/PDP gian hàng chính hãng ${b.name}`,
-        notes: `Key Visual / SIS (${kvPic}) định hướng bộ KV chiến dịch, trang trí SIS & khung ảnh PDP chuẩn SEO cho ${b.name}.`,
-      },
-      updatedAt: '2026-10-05T10:00:00Z',
-      updatedBy: planPic,
-      approvedBy: isApproved ? 'Đặng Thị Yến Nhi' : undefined,
-      approvedAt: isApproved ? '2026-10-02T09:30:00Z' : undefined,
-    };
-  });
+export function isSyntheticBrandMonthlyPlanItem(item: Partial<BrandMonthlyPlanItem> | null | undefined): boolean {
+  if (!item || typeof item !== 'object') return false;
+  if (item.updatedAt === '2026-10-05T10:00:00Z' || item.approvedAt === '2026-10-02T09:30:00Z') return true;
+  return false;
 }
 
-export const INITIAL_BRAND_MONTHLY_PLANS: BrandMonthlyPlanItem[] = buildInitialBrandMonthlyPlans(REAL_B2C_42_BRANDS, '2026/10');
+export function buildInitialBrandMonthlyPlans(
+  _brands: BrandDetail[] = REAL_B2C_42_BRANDS,
+  _month: string = '2026/10'
+): BrandMonthlyPlanItem[] {
+  return [];
+}
+
+export const INITIAL_BRAND_MONTHLY_PLANS: BrandMonthlyPlanItem[] = [];
 
 export function buildPersonalWorkPackages(
   plans: InputPlanBreakdownState[],
@@ -1096,245 +757,25 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
   const cached = enrichedPlanCache.get(rawPlan);
   if (cached) return cached;
   const resolvedLeader = resolveStoreBookingLeader(rawPlan.storeName || rawPlan.brandName, rawPlan.bookingLeader);
-  if (rawPlan.reference41) {
-    const matchedCamp41 = rawPlan.campaignId ? undefined : findActiveCampaignForBrandInMonth(rawPlan.brandName, rawPlan.month);
-    const matchedPhase41 = matchedCamp41 ? getCampaignPhaseForMonth(matchedCamp41, rawPlan.month) : undefined;
-    const out41: InputPlanBreakdownState = {
-      ...rawPlan,
-      hasBookingLeader: Boolean(resolvedLeader),
-      bookingLeader: resolvedLeader,
-      hasCampaign: rawPlan.hasCampaign !== undefined ? rawPlan.hasCampaign : !!matchedCamp41,
-      campaignId: rawPlan.campaignId ?? matchedCamp41?.id,
-      campaignCode: rawPlan.campaignCode ?? matchedCamp41?.code,
-      campaignTitle: rawPlan.campaignTitle ?? matchedCamp41?.title,
-      campaignPhaseName: rawPlan.campaignPhaseName ?? matchedPhase41?.phaseName,
-    };
-    enrichedPlanCache.set(rawPlan, out41);
-    enrichedPlanCache.set(out41, out41);
-    return out41;
-  }
-  const basePlan = enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
+  const basePlan = rawPlan.reference41
+    ? { ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }
+    : enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
   const matchedCamp = basePlan.campaignId ? undefined : findActiveCampaignForBrandInMonth(basePlan.brandName, basePlan.month);
   const matchedPhase = matchedCamp ? getCampaignPhaseForMonth(matchedCamp, basePlan.month) : undefined;
-  const plan: InputPlanBreakdownState = {
+  const out: InputPlanBreakdownState = {
     ...basePlan,
     hasCampaign: basePlan.hasCampaign !== undefined ? basePlan.hasCampaign : !!matchedCamp,
     campaignId: basePlan.campaignId ?? matchedCamp?.id,
     campaignCode: basePlan.campaignCode ?? matchedCamp?.code,
     campaignTitle: basePlan.campaignTitle ?? matchedCamp?.title,
     campaignPhaseName: basePlan.campaignPhaseName ?? matchedPhase?.phaseName,
+    currentVersionCode: basePlan.currentVersionCode || 'v1.0',
+    isVersionLocked: basePlan.isVersionLocked ?? ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(basePlan.status || ''),
+    versionSnapshots: basePlan.versionSnapshots || [],
   };
-  if (plan.versionSnapshots && plan.versionSnapshots.length > 0) {
-    enrichedPlanCache.set(rawPlan, plan);
-    enrichedPlanCache.set(plan, plan);
-    return plan;
-  }
-
-  const baseSignOff: MultiPartySignOff = plan.multiPartySignOff || {
-    growth: {
-      confirmed: true,
-      confirmedBy: 'Trần Thị Ánh',
-      confirmedAt: '2026-10-01T09:00:00Z',
-      note: 'Giao hạn mức ngân sách & chỉ tiêu đầu tháng'
-    },
-    booking: {
-      confirmed: true,
-      confirmedBy: plan.pic || 'Chuyên viên B2C',
-      confirmedAt: '2026-10-01T14:00:00Z',
-      note: 'Hoàn tất phân rã 4 đầu việc B2C'
-    },
-    media: {
-      confirmed: true,
-      confirmedBy: 'Phan Thành Đạt',
-      confirmedAt: '2026-10-01T16:00:00Z',
-      targetRoas: 4.8,
-      acceptedAdsBudget: plan.budgetAdsTotal || 0,
-      note: 'Nhận gói tổng ngân sách Ads'
-    },
-    leadB2c: {
-      confirmed: true,
-      confirmedBy: plan.approvedBy || 'Đặng Thị Yến Nhi (Trưởng Phòng)',
-      confirmedAt: '2026-10-02T09:00:00Z',
-      note: 'Phê duyệt & đóng băng phiên bản'
-    }
-  };
-
-  const budget = plan.totalTargetBudget || 0;
-  const contents = plan.totalTargetContents || 0;
-  const gmv = plan.targetGmv || 0;
-  const ads = plan.budgetAdsTotal || 0;
-
-  // Các gian hàng trọng điểm có ngân sách >= 60M hoặc các gian hàng tiêu biểu có từ 2 - 3 phiên bản trong tháng
-  const hasThreeVersions =
-    budget >= 150000000 ||
-    ['KUTIESKIN', 'CLUBCLIO', 'LOCCITANE', 'SENKA', 'COMEM'].some(k => plan.id.toUpperCase().includes(k));
-  const hasTwoVersions =
-    !hasThreeVersions &&
-    (budget >= 40000000 || idx % 3 === 0 || ['FRESH', 'COCOON', 'REJURAN', 'FACEREPUBLIC', 'SUNPLAY'].some(k => plan.id.toUpperCase().includes(k)));
-
-  if (hasThreeVersions && budget > 0) {
-    const v1Budget = Math.round((budget * 0.78) / 1000000) * 1000000;
-    const v1Contents = Math.max(10, Math.round(contents * 0.8));
-    const v1Gmv = Math.round((gmv * 0.78) / 1000000) * 1000000;
-    const v1Ads = Math.round((ads * 0.75) / 1000000) * 1000000;
-
-    const v2Budget = Math.round((budget * 0.9) / 1000000) * 1000000;
-    const v2Contents = Math.max(12, Math.round(contents * 0.9));
-    const v2Gmv = Math.round((gmv * 0.9) / 1000000) * 1000000;
-    const v2Ads = Math.round((ads * 0.88) / 1000000) * 1000000;
-
-    const snapshots: PlanVersionSnapshot[] = [
-      {
-        id: `SNAP-${plan.id}-V10`,
-        versionCode: 'v1.0',
-        versionName: 'Bản chốt đầu tháng (Baseline)',
-        status: 'SUPERSEDED',
-        createdAt: '2026-10-01T09:00:00Z',
-        createdBy: 'Growth PIC',
-        creatorRole: 'GROWTH',
-        changeReason: 'Chốt hạn mức ngân sách và chỉ tiêu gốc đầu kỳ tháng',
-        totalTargetBudget: v1Budget,
-        totalTargetContents: v1Contents,
-        targetGmv: v1Gmv,
-        budgetAdsTotal: v1Ads,
-        budgetAffiliate: Math.round((plan.budgetAffiliate || v1Budget * 0.75) * 0.78),
-        budgetSelfChannel: Math.round((plan.budgetSelfChannel || v1Budget * 0.25) * 0.78),
-        items: buildScaledItems(plan.items, 0.8),
-        signOffRecord: baseSignOff
-      },
-      {
-        id: `SNAP-${plan.id}-V11`,
-        versionCode: 'v1.1',
-        versionName: 'Điều chỉnh Đợt 2 (Mega Sale 10.10)',
-        status: 'SUPERSEDED',
-        createdAt: '2026-10-06T14:30:00Z',
-        createdBy: 'Growth PIC',
-        creatorRole: 'GROWTH',
-        changeReason: 'Bổ sung ngân sách KOC trả phí & tăng suất gửi mẫu FOC đón nhịp Mega Sale 10.10',
-        totalTargetBudget: v2Budget,
-        totalTargetContents: v2Contents,
-        targetGmv: v2Gmv,
-        budgetAdsTotal: v2Ads,
-        budgetAffiliate: Math.round((plan.budgetAffiliate || v2Budget * 0.75) * 0.9),
-        budgetSelfChannel: Math.round((plan.budgetSelfChannel || v2Budget * 0.25) * 0.9),
-        items: buildScaledItems(plan.items, 0.9),
-        signOffRecord: baseSignOff
-      },
-      {
-        id: `SNAP-${plan.id}-V12`,
-        versionCode: 'v1.2',
-        versionName: 'Điều chỉnh Đợt 3 (Top-up Payday)',
-        status: 'LOCKED',
-        createdAt: '2026-10-12T10:15:00Z',
-        createdBy: 'Growth PIC',
-        creatorRole: 'GROWTH',
-        changeReason: 'Growth cấp thêm ngân sách Top-up giữa tháng đẩy Hero SKU dịp Payday 15.10 & 25.10',
-        totalTargetBudget: budget,
-        totalTargetContents: contents,
-        targetGmv: gmv,
-        budgetAdsTotal: ads,
-        budgetAffiliate: plan.budgetAffiliate || Math.round(budget * 0.75),
-        budgetSelfChannel: plan.budgetSelfChannel || Math.round(budget * 0.25),
-        items: plan.items || [],
-        signOffRecord: baseSignOff
-      }
-    ];
-
-    const out3: InputPlanBreakdownState = {
-      ...plan,
-      currentVersionCode: 'v1.2',
-      isVersionLocked: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
-      versionSnapshots: snapshots
-    };
-    enrichedPlanCache.set(rawPlan, out3);
-    enrichedPlanCache.set(out3, out3);
-    return out3;
-  }
-
-  if (hasTwoVersions && budget > 0) {
-    const v1Budget = Math.round((budget * 0.85) / 1000000) * 1000000;
-    const v1Contents = Math.max(5, Math.round(contents * 0.85));
-    const v1Gmv = Math.round((gmv * 0.85) / 1000000) * 1000000;
-    const v1Ads = Math.round((ads * 0.85) / 1000000) * 1000000;
-
-    const snapshots: PlanVersionSnapshot[] = [
-      {
-        id: `SNAP-${plan.id}-V10`,
-        versionCode: 'v1.0',
-        versionName: 'Bản chốt đầu tháng (Baseline)',
-        status: 'SUPERSEDED',
-        createdAt: '2026-10-01T09:00:00Z',
-        createdBy: 'Growth PIC',
-        creatorRole: 'GROWTH',
-        changeReason: 'Phiên bản kế hoạch gốc chốt đầu tháng',
-        totalTargetBudget: v1Budget,
-        totalTargetContents: v1Contents,
-        targetGmv: v1Gmv,
-        budgetAdsTotal: v1Ads,
-        budgetAffiliate: Math.round((plan.budgetAffiliate || v1Budget * 0.8) * 0.85),
-        budgetSelfChannel: Math.round((plan.budgetSelfChannel || v1Budget * 0.2) * 0.85),
-        items: buildScaledItems(plan.items, 0.85),
-        signOffRecord: baseSignOff
-      },
-      {
-        id: `SNAP-${plan.id}-V11`,
-        versionCode: 'v1.1',
-        versionName: 'Điều chỉnh Đợt 2 (Giữa kỳ)',
-        status: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || '') ? 'LOCKED' : 'SUPERSEDED',
-        createdAt: '2026-10-08T11:00:00Z',
-        createdBy: 'Growth PIC',
-        creatorRole: 'GROWTH',
-        changeReason: 'Cập nhật lại tỷ trọng KOC trả phí, FOC 0đ và kênh tự xây theo hiệu quả thực tế Tuần 1',
-        totalTargetBudget: budget,
-        totalTargetContents: contents,
-        targetGmv: gmv,
-        budgetAdsTotal: ads,
-        budgetAffiliate: plan.budgetAffiliate || Math.round(budget * 0.8),
-        budgetSelfChannel: plan.budgetSelfChannel || Math.round(budget * 0.2),
-        items: plan.items || [],
-        signOffRecord: baseSignOff
-      }
-    ];
-
-    const out2: InputPlanBreakdownState = {
-      ...plan,
-      currentVersionCode: 'v1.1',
-      isVersionLocked: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
-      versionSnapshots: snapshots
-    };
-    enrichedPlanCache.set(rawPlan, out2);
-    enrichedPlanCache.set(out2, out2);
-    return out2;
-  }
-
-  const out1: InputPlanBreakdownState = {
-    ...plan,
-    currentVersionCode: plan.currentVersionCode || 'v1.0',
-    isVersionLocked: plan.isVersionLocked ?? ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
-    versionSnapshots: [
-      {
-        id: `SNAP-${plan.id}-V10`,
-        versionCode: 'v1.0',
-        versionName: 'Bản chốt đầu tháng (Baseline)',
-        status: 'LOCKED',
-        createdAt: plan.createdAt || '2026-10-01T09:00:00Z',
-        createdBy: 'Growth PIC',
-        creatorRole: 'GROWTH',
-        changeReason: 'Phiên bản kế hoạch gốc chốt đầu kỳ tháng',
-        totalTargetBudget: budget,
-        totalTargetContents: contents,
-        targetGmv: gmv,
-        budgetAdsTotal: ads,
-        budgetAffiliate: plan.budgetAffiliate || budget,
-        budgetSelfChannel: plan.budgetSelfChannel || 0,
-        items: plan.items || [],
-        signOffRecord: baseSignOff
-      }
-    ]
-  };
-  enrichedPlanCache.set(rawPlan, out1);
-  enrichedPlanCache.set(out1, out1);
-  return out1;
+  enrichedPlanCache.set(rawPlan, out);
+  enrichedPlanCache.set(out, out);
+  return out;
 }
 
 export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = RAW_MONTHLY_PLANS.map(enrichPlanWithVersions);

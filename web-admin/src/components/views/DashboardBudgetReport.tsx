@@ -438,7 +438,7 @@ export function DashboardBudgetReport({
             ) : (
               <p className="text-sm text-ink-3 py-4 text-center">Chưa có đơn booking vào luồng ĐNTT.</p>
             )}
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-2.5 text-xs">
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3 text-xs">
               <span className="text-ink-2">Chi vượt hạn mức</span>
               <span className={`tabular-nums ${totals.overAmount > 0 ? 'text-critical' : 'text-ink-2'}`}>
                 {totals.overAmount > 0 ? `+${formatVndShort(totals.overAmount)}` : '0 đ'}
@@ -496,7 +496,7 @@ export function DashboardBudgetReport({
           </>
         }
       >
-        <div className="flex flex-wrap items-center gap-2 px-3.5 sm:px-4 py-2.5 border-b border-line">
+        <div className="flex flex-wrap items-center gap-2 px-4 sm:px-4 py-3 border-b border-line">
           <SearchInput
             value={query}
             onChange={resetPage(setQuery)}
@@ -543,7 +543,7 @@ export function DashboardBudgetReport({
           />
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 sm:px-4 py-2.5 border-t border-line">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-4 py-3 border-t border-line">
           <p className="text-2xs text-ink-3">
             Kỳ đối soát {PERIOD_LABEL} · {tableView === 'BRAND' ? 'bấm thương hiệu để xem gian hàng' : 'bấm gian hàng để mở hồ sơ'}.
           </p>

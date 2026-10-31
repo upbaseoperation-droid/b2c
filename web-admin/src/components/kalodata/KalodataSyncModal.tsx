@@ -176,14 +176,14 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
       title="Đồng bộ số liệu thương mại từ Kalodata"
       size="xl"
       footer={
-        <div className="w-full flex flex-wrap items-center justify-between gap-2.5">
+        <div className="w-full flex flex-wrap items-center justify-between gap-3">
           <div className="text-2xs text-muted">
             {result?.syncedAt
               ? `Cập nhật lúc: ${new Date(result.syncedAt).toLocaleTimeString('vi-VN')} - ${new Date(result.syncedAt).toLocaleDateString('vi-VN')}`
               : 'Nguồn dữ liệu: Kalodata E-commerce Analytics'}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={onClose}
@@ -197,7 +197,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                 type="button"
                 onClick={handleApplyToKoc}
                 disabled={isApplying}
-                className="px-5 py-2 rounded-xl text-xs font-semibold text-primary-fg bg-primary hover:bg-primary-hover transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="px-5 py-2 rounded-xl text-xs font-semibold text-primary-fg bg-primary hover:bg-primary-hover transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>{isApplying ? 'Đang cập nhật...' : 'Cập nhật vào hồ sơ KOC'}</span>
@@ -225,7 +225,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                   }
                 }}
                 placeholder="Nhập ID kênh TikTok (VD: megauriviu, chanhbeauty...)"
-                className="w-full pl-8 pr-4 py-2.5 bg-sunken border border-line-strong rounded-xl text-xs text-ink font-medium placeholder-muted focus:outline-none focus:border-primary focus:bg-surface transition-colors"
+                className="w-full pl-8 pr-4 py-3 bg-sunken border border-line-strong rounded-xl text-xs text-ink font-medium placeholder-muted focus:outline-none focus:border-primary focus:bg-surface transition-colors"
               />
             </div>
 
@@ -239,7 +239,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                     setPeriod(p);
                     if (result) handleFetchData(handle, p);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                     period === p
                       ? 'bg-surface text-primary'
                       : 'text-ink-2 hover:text-ink'
@@ -255,7 +255,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               type="button"
               onClick={() => handleFetchData()}
               disabled={loading}
-              className="px-5 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-fg rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors shrink-0"
+              className="px-5 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-fg rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors shrink-0"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>{loading ? 'Đang tra cứu...' : 'Tra cứu số liệu'}</span>
@@ -362,7 +362,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               </div>
 
               {/* 4 Thẻ chỉ số thương mại cốt lõi */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-surface p-4 rounded-xl border border-line">
                   <div className="flex items-center justify-between text-muted text-2xs font-medium">
                     <span>Doanh số ước tính ({result.metrics.period})</span>
@@ -419,7 +419,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               {/* Chi tiết phân bổ kênh bán & Nhân khẩu học */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Cơ cấu nguồn doanh số */}
-                <div className="bg-surface p-5 rounded-xl border border-line space-y-3.5">
+                <div className="bg-surface p-5 rounded-xl border border-line space-y-4">
                   <h5 className="text-xs font-semibold text-ink flex items-center gap-2">
                     <Video className="w-4 h-4 text-primary" />
                     <span>Cơ cấu doanh số theo định dạng nội dung</span>
@@ -480,14 +480,14 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                 </div>
 
                 {/* Nhân khẩu học người xem */}
-                <div className="bg-surface p-5 rounded-xl border border-line space-y-3.5">
+                <div className="bg-surface p-5 rounded-xl border border-line space-y-4">
                   <h5 className="text-xs font-semibold text-ink flex items-center gap-2">
                     <Users className="w-4 h-4 text-success" />
                     <span>Nhân khẩu học tệp người theo dõi</span>
                   </h5>
 
                   {/* Giới tính */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-ink-2 font-medium">Giới tính:</span>
                       <span className="font-semibold text-ink tabular-nums">

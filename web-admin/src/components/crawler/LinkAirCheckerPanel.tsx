@@ -193,7 +193,7 @@ export function LinkAirCheckerPanel({
             <p className="text-xs text-ink truncate" title={r.productTitle || 'Có gắn giỏ hàng'}>
               {r.productTitle || 'Có gắn giỏ hàng'}
             </p>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               {r.productUrl ? (
                 <a
                   href={r.productUrl}
@@ -202,7 +202,7 @@ export function LinkAirCheckerPanel({
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                 >
-                  <ShoppingBag className="w-3 h-3 shrink-0" />
+                  <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                   <span>Xem SP</span>
                   <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                 </a>
@@ -210,7 +210,7 @@ export function LinkAirCheckerPanel({
                 <span className="text-2xs text-positive font-medium">Đã gắn giỏ</span>
               )}
               {extraCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded bg-accent-soft text-accent text-2xs font-semibold">
+                <span className="px-2 py-0.2 rounded bg-accent-soft text-accent text-2xs font-semibold">
                   +{extraCount} SP
                 </span>
               )}
@@ -237,7 +237,7 @@ export function LinkAirCheckerPanel({
       header: '',
       align: 'right',
       render: (r) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
           {r.canonicalUrl && (
             <a
               href={r.canonicalUrl}
@@ -430,7 +430,7 @@ function LinkAirDetailModal({
         </div>
 
         {/* Lưới 4 chỉ số tương tác */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3 rounded-lg bg-surface border border-line text-center">
             <span className="text-2xs text-ink-3 block">Lượt xem</span>
             <span className="text-base font-semibold text-ink tabular-nums">{num(r.metrics.views)}</span>
@@ -461,7 +461,7 @@ function LinkAirDetailModal({
 
         {/* Thông tin Giỏ hàng & Sản phẩm */}
         <div className="space-y-2">
-          <h4 className="font-semibold text-ink flex items-center gap-1.5">
+          <h4 className="font-semibold text-ink flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-accent" />
             <span>Giỏ hàng gắn kèm ({cartItems.length > 0 ? `${cartItems.length} sản phẩm` : r.hasProductLink ? 'Có gắn giỏ' : 'Chưa gắn giỏ'})</span>
           </h4>
@@ -485,7 +485,7 @@ function LinkAirDetailModal({
                     <p className="font-medium text-ink leading-snug">{item.title}</p>
                     <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
                       {item.anchorKeyword && (
-                        <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-medium">
+                        <span className="px-2 py-0.5 rounded bg-accent-soft text-accent font-medium">
                           Nhãn: &ldquo;{item.anchorKeyword}&rdquo;
                         </span>
                       )}
@@ -501,7 +501,7 @@ function LinkAirDetailModal({
                       className="text-accent hover:underline text-2xs inline-flex items-center gap-1 shrink-0 pt-1"
                     >
                       <span>Xem giỏ</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}
                 </div>

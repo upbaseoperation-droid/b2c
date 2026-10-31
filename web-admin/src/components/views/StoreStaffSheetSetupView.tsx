@@ -2,13 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ArrowUpDown,
   CheckCircle2,
   Code2,
-  Columns,
+  Copy,
   Edit3,
   ExternalLink,
-  EyeOff,
   FileSpreadsheet,
   KeyRound,
   Lock,
@@ -18,12 +16,17 @@ import {
   Save,
   ShieldCheck,
   Trash2,
-  Users,
 } from 'lucide-react';
 import { resolveStoreStaffAssignment, type StorePortfolioItem } from '../../lib/types';
-import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
-import { pushSharedStateToDb } from '../../lib/sharedStateClient';
+import {
+  persistStoreSheetLinks,
+  readStoreOverrides,
+  resolveStoreSheetLink,
+  STORE_SHEET_OVERRIDES_EVENT,
+  type StoreSheetLink,
+} from '../../lib/storeSheetLinks';
 import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
+import { StoreSheetLinkModal } from './StoreSheetLinkModal';
 import {
   DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY,
   getStaffSheetFieldEditPolicy,
@@ -37,6 +40,7 @@ import {
   type StaffSheetFieldEditPolicy,
 } from '../../lib/staffBrandListingSheet';
 import {
+  ActionMenu,
   Button,
   ChannelTag,
   Column,
@@ -47,7 +51,6 @@ import {
   Input,
   Modal,
   Panel,
-  Person,
   Select,
   Stat,
   StatRow,
@@ -159,19 +162,13 @@ function combineAppsScriptModulesClient(modules: AppsScriptModuleItem[]): string
   return lines.join('\n');
 }
 
-export interface StoreStaffSheetDraft {
+export interface StoreStaffSheetDraft extends StoreSheetLink {
   storeId: string;
   storeName: string;
   brandName: string;
   platform: string;
   pic: string;
   supportStaff: string[];
-  bookingLeader: string;
-  planSheetTab: string;
-  reportSheetTab: string;
-  storeUrl: string;
-  bookingSheetUrl: string;
-  defaultSheetTab: string;
 }
 
 interface ParsedBulkRow {
@@ -179,7 +176,6 @@ interface ParsedBulkRow {
   rawStore: string;
   matchedStore?: StorePortfolioItem;
   bookingSheetUrl: string;
-  storeUrl: string;
   defaultSheetTab: string;
 }
 
@@ -214,7 +210,6 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
 }) => {
   const [activeTab, setActiveTab] = useState<StoreSheetSetupTabKey>(initialTab);
   const [drafts, setDrafts] = useState<Record<string, StoreStaffSheetDraft>>({});
-  const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -228,19 +223,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   const [staffFilter, setStaffFilter] = useState('ALL');
   const [linkStatusFilter, setLinkStatusFilter] = useState<'ALL' | 'HAS_SHEET' | 'MISSING_SHEET'>('ALL');
 
-  // Khung thiết lập nhanh: Chọn Brand -> Gian hàng (hiển thị sẵn PIC & Support từ Phân quyền theo gian) -> Link Google Sheet
-  const [quickBrand, setQuickBrand] = useState('');
-  const [quickStoreId, setQuickStoreId] = useState('');
-  const [quickSheetUrl, setQuickSheetUrl] = useState('');
-  const [quickPlanSheetTab, setQuickPlanSheetTab] = useState('');
-  const [quickSheetTab, setQuickSheetTab] = useState('');
-  const [quickReportSheetTab, setQuickReportSheetTab] = useState('');
-  const [quickStoreUrl, setQuickStoreUrl] = useState('');
-  const [applySheetToEntireBrand, setApplySheetToEntireBrand] = useState(false);
-  const [availableSheetTabs, setAvailableSheetTabs] = useState<string[]>([]);
-  const [quickTabsDetail, setQuickTabsDetail] = useState<{ title: string; sheetId: number; hidden: boolean }[]>([]);
-  const [loadingTabs, setLoadingTabs] = useState(false);
-  const [sheetControlBusy, setSheetControlBusy] = useState(false);
+  // Gian đang mở modal sửa Link Sheet
+  const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
 
   // Phân quyền sửa trường (cột) cho nhân sự trên bảng Listing & Air Video
   const [fieldPolicyDraft, setFieldPolicyDraft] = useState<StaffSheetFieldEditPolicy>(() =>
@@ -325,31 +309,11 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   );
 
   const loadDraftsFromStores = useCallback(() => {
-    let overrides: Record<string, Partial<StorePortfolioItem>> = {};
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = window.localStorage.getItem('upbase_store_overrides_v1');
-        if (raw) overrides = JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>;
-      } catch {
-        overrides = {};
-      }
-    }
+    const overrides = readStoreOverrides();
     const nextDrafts: Record<string, StoreStaffSheetDraft> = {};
     for (const st of b2cStores) {
-      const ov = overrides[st.id] || {};
-      // Nhân sự (PIC chính, Nhân viên hỗ trợ, Leader) lấy 100% từ dữ liệu Phân quyền theo gian trên hệ thống (st)
+      // Nhân sự chỉ dùng để lọc; nguồn duy nhất là Dữ liệu gốc
       const resolvedStaff = resolveStoreStaffAssignment(st, '');
-      const storeUrlVal = (ov.storeUrl ?? st.storeUrl ?? '').trim();
-      const bookingSheetUrlVal = (
-        ov.bookingSheetUrl ||
-        st.bookingSheetUrl ||
-        resolveBrandBookingSheetUrl(st.brandName, st.storeName, st) ||
-        ''
-      ).trim();
-      const planSheetTabVal = (ov.planSheetTab ?? st.planSheetTab ?? '').trim();
-      const defaultSheetTabVal = (ov.defaultSheetTab ?? st.defaultSheetTab ?? '').trim();
-      const reportSheetTabVal = (ov.reportSheetTab ?? st.reportSheetTab ?? '').trim();
-
       nextDrafts[st.id] = {
         storeId: st.id,
         storeName: st.storeName,
@@ -357,21 +321,17 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         platform: st.platform || 'TikTok Shop',
         pic: (resolvedStaff.primaryPic || '').trim(),
         supportStaff: resolvedStaff.supportStaff,
-        bookingLeader:
-          st.hasBookingLeader && st.bookingLeader ? st.bookingLeader.trim() : '',
-        storeUrl: storeUrlVal,
-        bookingSheetUrl: bookingSheetUrlVal,
-        planSheetTab: planSheetTabVal,
-        defaultSheetTab: defaultSheetTabVal,
-        reportSheetTab: reportSheetTabVal,
+        ...resolveStoreSheetLink(st, overrides),
       };
     }
     setDrafts(nextDrafts);
-    setDirtyIds(new Set());
   }, [b2cStores]);
 
   useEffect(() => {
     loadDraftsFromStores();
+    // Link Sheet có thể được sửa từ Dữ liệu gốc
+    window.addEventListener(STORE_SHEET_OVERRIDES_EVENT, loadDraftsFromStores);
+    return () => window.removeEventListener(STORE_SHEET_OVERRIDES_EVENT, loadDraftsFromStores);
   }, [loadDraftsFromStores]);
 
   // Kiểm tra trạng thái Google Service Account (tự động khôi phục từ bộ nhớ trình duyệt nếu máy chủ vừa khởi động lại)
@@ -478,161 +438,6 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     return Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b, 'vi'));
   }, [drafts]);
 
-  // Danh sách Gian hàng thuộc Brand đang chọn trên Khung gán nhanh
-  const storesForQuickBrand = useMemo(() => {
-    const all = Object.values(drafts).sort((a, b) => a.storeName.localeCompare(b.storeName, 'vi'));
-    if (!quickBrand) return all;
-    return all.filter(d => d.brandName.toLowerCase() === quickBrand.toLowerCase());
-  }, [drafts, quickBrand]);
-
-  const activeQuickDraft = quickStoreId ? drafts[quickStoreId] : undefined;
-
-  // Tự động chọn Brand & Gian hàng đầu tiên cho khung Thiết lập nhanh khi vừa mở
-  useEffect(() => {
-    const allDrafts = Object.values(drafts);
-    if (allDrafts.length === 0) return;
-    if (!quickStoreId || !drafts[quickStoreId]) {
-      const first = allDrafts[0];
-      setQuickBrand(first.brandName);
-      setQuickStoreId(first.storeId);
-      setQuickSheetUrl(first.bookingSheetUrl);
-      setQuickPlanSheetTab(first.planSheetTab);
-      setQuickSheetTab(first.defaultSheetTab);
-      setQuickReportSheetTab(first.reportSheetTab);
-      setQuickStoreUrl(first.storeUrl);
-    }
-  }, [drafts, quickStoreId]);
-
-  const handleSelectQuickBrand = (nextBrand: string) => {
-    setQuickBrand(nextBrand);
-    const matching = Object.values(drafts)
-      .filter(d => !nextBrand || d.brandName.toLowerCase() === nextBrand.toLowerCase())
-      .sort((a, b) => a.storeName.localeCompare(b.storeName, 'vi'));
-    if (matching.length > 0) {
-      const first = matching[0];
-      setQuickStoreId(first.storeId);
-      setQuickSheetUrl(first.bookingSheetUrl);
-      setQuickPlanSheetTab(first.planSheetTab);
-      setQuickSheetTab(first.defaultSheetTab);
-      setQuickReportSheetTab(first.reportSheetTab);
-      setQuickStoreUrl(first.storeUrl);
-      setAvailableSheetTabs([]);
-    }
-  };
-
-  const handleSelectQuickStore = (nextStoreId: string) => {
-    setQuickStoreId(nextStoreId);
-    const d = drafts[nextStoreId];
-    if (d) {
-      setQuickBrand(d.brandName);
-      setQuickSheetUrl(d.bookingSheetUrl);
-      setQuickPlanSheetTab(d.planSheetTab);
-      setQuickSheetTab(d.defaultSheetTab);
-      setQuickReportSheetTab(d.reportSheetTab);
-      setQuickStoreUrl(d.storeUrl);
-      setAvailableSheetTabs([]);
-    }
-  };
-
-  // Đọc danh sách Tab thực tế từ Google Sheet
-  const handleFetchSheetTabs = async (targetUrl?: string) => {
-    const urlToCheck = (targetUrl ?? quickSheetUrl).trim();
-    if (!urlToCheck) {
-      onNotify?.('Vui lòng dán Link Google Sheet trước khi lấy danh sách Tab.', 'warning');
-      return;
-    }
-    setLoadingTabs(true);
-    try {
-      const res = await fetch(`/api/booking-list/push-sheet?sheetUrl=${encodeURIComponent(urlToCheck)}`);
-      const data = (await res.json()) as {
-        configured?: boolean;
-        serviceAccountEmail?: string;
-        tabs?: string[];
-        tabsDetail?: { title: string; sheetId: number; hidden: boolean }[];
-        error?: string;
-      };
-      if (data.serviceAccountEmail) setSaEmail(data.serviceAccountEmail);
-      setSaConfigured(Boolean(data.configured));
-      if (!res.ok || data.error) {
-        onNotify?.(data.error || 'Không đọc được danh sách Tab từ Google Sheet.', 'warning');
-        return;
-      }
-      const tabs = data.tabs || [];
-      setAvailableSheetTabs(tabs);
-      if (Array.isArray(data.tabsDetail)) {
-        setQuickTabsDetail(data.tabsDetail);
-      }
-      if (tabs.length > 0) {
-        const planCandidate = tabs.find(t => /plan|ke\s*hoach|kế\s*hoạch/i.test(t));
-        const listingCandidate = tabs.find(t => /list|de\s*xuat|đề\s*xuất|koc/i.test(t));
-        const reportCandidate = tabs.find(t => /report|ket\s*qua|kết\s*quả|nghiem\s*thu|nghiệm\s*thu|air|bao\s*cao|báo\s*cáo/i.test(t));
-        if (planCandidate && !quickPlanSheetTab) setQuickPlanSheetTab(planCandidate);
-        if (!quickSheetTab) setQuickSheetTab(listingCandidate || tabs[0]);
-        if (reportCandidate && !quickReportSheetTab) setQuickReportSheetTab(reportCandidate);
-      }
-      onNotify?.(`Đã kết nối Google Sheet và tìm thấy ${tabs.length} Tab.`, 'success');
-    } catch (err) {
-      onNotify?.(err instanceof Error ? err.message : 'Lỗi kết nối Google Sheet.', 'error');
-    } finally {
-      setLoadingTabs(false);
-    }
-  };
-
-  const [quickCollapsedMonths, setQuickCollapsedMonths] = useState<string[]>([
-    '2026/09',
-    '2026/08',
-  ]);
-
-  // Điều khiển Template Google Sheet (Thu gọn các tháng cũ theo Cột Tháng, Ẩn/Hiện nhóm Cột, Sort theo Sản phẩm / Nhân sự)
-  const handleRunQuickSheetTemplatePatch = async (
-    payload: {
-      tabVisibility?: { title: string; hidden: boolean }[];
-      collapsedMonths?: string[];
-      collapseOldMonthsBefore?: string;
-      expandAllMonths?: boolean;
-      columnPreset?: 'BRAND_REVIEW' | 'AIR_ACCEPTANCE' | 'FULL_TEMPLATE';
-      sortBy?: 'PRODUCT' | 'STAFF' | 'BATCH' | 'BRAND_DECISION';
-      installFilterViews?: boolean;
-    },
-    successMsg: string
-  ) => {
-    const urlToCheck = quickSheetUrl.trim();
-    if (!urlToCheck) {
-      onNotify?.('Vui lòng chọn gian hàng đã có Link Google Sheet trước.', 'warning');
-      return;
-    }
-    setSheetControlBusy(true);
-    try {
-      const res = await fetch('/api/booking-list/push-sheet', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sheetUrl: urlToCheck,
-          activeTab: quickSheetTab.trim() || availableSheetTabs[0] || 'Listing',
-          ...payload,
-        }),
-      });
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        tabsDetail?: { title: string; sheetId: number; hidden: boolean }[];
-        error?: string;
-      } | null;
-      if (!res.ok || !data?.ok) {
-        onNotify?.(data?.error || 'Không thực thi được thiết lập trên Google Sheet.', 'error');
-        return;
-      }
-      if (Array.isArray(data.tabsDetail)) {
-        setQuickTabsDetail(data.tabsDetail);
-        setAvailableSheetTabs(data.tabsDetail.map(t => t.title));
-      }
-      onNotify?.(successMsg, 'success');
-    } catch (err) {
-      onNotify?.(err instanceof Error ? err.message : 'Lỗi điều khiển Google Sheet.', 'error');
-    } finally {
-      setSheetControlBusy(false);
-    }
-  };
-
   // Xử lý Phân quyền Sửa Trường (Cột) cho Nhân sự
   const columnMetaMap = useMemo(() => {
     const map = new Map<StaffListingColumnKey, StaffListingColumnMeta>();
@@ -712,162 +517,48 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     );
   };
 
-  const persistStorePatches = async (patchesByStoreId: Record<string, Partial<StorePortfolioItem>>) => {
-    const storeIds = Object.keys(patchesByStoreId);
-    if (storeIds.length === 0) return;
-    setSaving(true);
-    try {
-      let overrides: Record<string, Partial<StorePortfolioItem>> = {};
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = window.localStorage.getItem('upbase_store_overrides_v1');
-          if (raw) overrides = JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>;
-        } catch {
-          overrides = {};
-        }
-      }
-
-      for (const id of storeIds) {
-        const patch = patchesByStoreId[id] || {};
-        overrides[id] = {
-          ...(overrides[id] || {}),
-          ...(patch.bookingSheetUrl !== undefined ? { bookingSheetUrl: patch.bookingSheetUrl } : {}),
-          ...(patch.planSheetTab !== undefined ? { planSheetTab: patch.planSheetTab } : {}),
-          ...(patch.defaultSheetTab !== undefined ? { defaultSheetTab: patch.defaultSheetTab } : {}),
-          ...(patch.reportSheetTab !== undefined ? { reportSheetTab: patch.reportSheetTab } : {}),
-          ...(patch.storeUrl !== undefined ? { storeUrl: patch.storeUrl } : {}),
-        };
-      }
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
-        pushSharedStateToDb('store-overrides-v1', overrides);
-        window.dispatchEvent(new CustomEvent('upbase:store-overrides-updated', { detail: overrides }));
-      }
-
-      await Promise.allSettled(
-        storeIds.map(storeId => {
-          const patch = patchesByStoreId[storeId];
-          if (!patch) return Promise.resolve();
-          return fetch('/api/master-data', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              storeId,
-              assignment: {
-                storeUrl: patch.storeUrl ?? '',
-                bookingSheetUrl: patch.bookingSheetUrl ?? '',
-                planSheetTab: patch.planSheetTab ?? '',
-                defaultSheetTab: patch.defaultSheetTab ?? '',
-                reportSheetTab: patch.reportSheetTab ?? '',
-              },
-            }),
-          });
-        })
-      );
-
-      setDirtyIds(prev => {
-        const next = new Set(prev);
-        for (const id of storeIds) next.delete(id);
-        return next;
-      });
-      onSaved?.(patchesByStoreId);
-      onNotify?.(`Đã lưu Link Google Sheet cho ${storeIds.length} gian hàng.`, 'success');
-    } catch (err) {
-      onNotify?.(err instanceof Error ? err.message : 'Không lưu được thiết lập.', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Lưu từ khung Thiết lập nhanh
-  const handleApplyQuickSetup = async () => {
-    const targetDraft = drafts[quickStoreId];
-    if (!targetDraft) {
-      onNotify?.('Vui lòng chọn một Gian hàng.', 'warning');
-      return;
-    }
-    const targetStores = applySheetToEntireBrand
-      ? Object.values(drafts).filter(d => d.brandName.toLowerCase() === targetDraft.brandName.toLowerCase())
-      : [targetDraft];
-
-    const patchesByStoreId: Record<string, Partial<StorePortfolioItem>> = {};
-    const nextDrafts = { ...drafts };
-
-    for (const d of targetStores) {
-      const isPrimaryTarget = d.storeId === targetDraft.storeId;
-      const updatedStoreUrl = isPrimaryTarget ? quickStoreUrl.trim() : d.storeUrl;
-      const updatedSheetUrl = quickSheetUrl.trim();
-      const updatedPlanTab = isPrimaryTarget ? quickPlanSheetTab.trim() : d.planSheetTab || quickPlanSheetTab.trim();
-      const updatedTab = isPrimaryTarget ? quickSheetTab.trim() : d.defaultSheetTab || quickSheetTab.trim();
-      const updatedReportTab = isPrimaryTarget ? quickReportSheetTab.trim() : d.reportSheetTab || quickReportSheetTab.trim();
-
-      nextDrafts[d.storeId] = {
-        ...d,
-        storeUrl: updatedStoreUrl,
-        bookingSheetUrl: updatedSheetUrl,
-        planSheetTab: updatedPlanTab,
-        defaultSheetTab: updatedTab,
-        reportSheetTab: updatedReportTab,
-      };
-
-      patchesByStoreId[d.storeId] = {
-        id: d.storeId,
-        storeName: d.storeName,
-        storeUrl: updatedStoreUrl || undefined,
-        bookingSheetUrl: updatedSheetUrl || undefined,
-        planSheetTab: updatedPlanTab || undefined,
-        defaultSheetTab: updatedTab || undefined,
-        reportSheetTab: updatedReportTab || undefined,
-      };
-    }
-
-    setDrafts(nextDrafts);
-    await persistStorePatches(patchesByStoreId);
-  };
-
-  const updateRowDraft = (storeId: string, patch: Partial<StoreStaffSheetDraft>) => {
-    setDrafts(prev => {
-      const cur = prev[storeId];
-      if (!cur) return prev;
-      return { ...prev, [storeId]: { ...cur, ...patch } };
-    });
-    setDirtyIds(prev => {
-      const next = new Set(prev);
-      next.add(storeId);
-      return next;
-    });
-  };
-
-  const handleSaveDirtyTableRows = async () => {
-    const ids = Array.from(dirtyIds);
-    if (ids.length === 0) return;
-    const patches: Record<string, Partial<StorePortfolioItem>> = {};
-    for (const id of ids) {
-      const d = drafts[id];
-      if (!d) continue;
-      patches[id] = {
-        id: d.storeId,
-        storeName: d.storeName,
-        storeUrl: d.storeUrl.trim() || undefined,
-        bookingSheetUrl: d.bookingSheetUrl.trim() || undefined,
-        planSheetTab: d.planSheetTab.trim() || undefined,
-        defaultSheetTab: d.defaultSheetTab.trim() || undefined,
-        reportSheetTab: d.reportSheetTab.trim() || undefined,
-      };
-    }
-    await persistStorePatches(patches);
-  };
-
-  // Thống kê tổng quan 4 chỉ số đầu trang
   const stats = useMemo(() => {
     const all = Object.values(drafts);
-    const total = all.length;
-    const withPic = all.filter(d => Boolean(d.pic.trim())).length;
-    const withSheet = all.filter(d => Boolean(d.bookingSheetUrl.trim())).length;
-    const withStoreUrl = all.filter(d => Boolean(d.storeUrl.trim())).length;
-    return { total, withPic, withSheet, withStoreUrl };
+    return {
+      total: all.length,
+      withSheet: all.filter(d => Boolean(d.bookingSheetUrl.trim())).length,
+    };
   }, [drafts]);
+
+  const toSheetTarget = (d: StoreStaffSheetDraft) => ({
+    storeId: d.storeId,
+    storeName: d.storeName,
+    brandName: d.brandName,
+    platform: d.platform,
+    link: {
+      bookingSheetUrl: d.bookingSheetUrl,
+      planSheetTab: d.planSheetTab,
+      defaultSheetTab: d.defaultSheetTab,
+      reportSheetTab: d.reportSheetTab,
+    },
+  });
+
+  const editingDraft = editingStoreId ? drafts[editingStoreId] : undefined;
+
+  const applySavedLinks = (patches: Record<string, StoreSheetLink>) => {
+    setDrafts(prev => {
+      const next = { ...prev };
+      for (const [id, link] of Object.entries(patches)) {
+        if (next[id]) next[id] = { ...next[id], ...link };
+      }
+      return next;
+    });
+    const updated: Record<string, Partial<StorePortfolioItem>> = {};
+    for (const [id, link] of Object.entries(patches)) {
+      updated[id] = {
+        bookingSheetUrl: link.bookingSheetUrl.trim() || undefined,
+        planSheetTab: link.planSheetTab.trim() || undefined,
+        defaultSheetTab: link.defaultSheetTab.trim() || undefined,
+        reportSheetTab: link.reportSheetTab.trim() || undefined,
+      };
+    }
+    onSaved?.(updated);
+  };
 
   // Lọc danh sách trên bảng
   const filteredRows = useMemo(() => {
@@ -892,7 +583,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       .filter(
         d =>
           !q ||
-          `${d.storeName} ${d.brandName} ${d.pic} ${(d.supportStaff || []).join(' ')} ${d.bookingSheetUrl} ${d.storeUrl} ${d.defaultSheetTab}`
+          `${d.storeName} ${d.brandName} ${d.pic} ${(d.supportStaff || []).join(' ')} ${d.bookingSheetUrl} ${d.defaultSheetTab}`
             .toLowerCase()
             .includes(q)
       )
@@ -934,14 +625,14 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
 
       let rawStore = '';
       let bookingSheetUrl = '';
-      let storeUrl = '';
       let defaultSheetTab = '';
 
       for (const cell of cells) {
         if (/docs\.google\.com\/spreadsheets/i.test(cell)) {
           bookingSheetUrl = cell;
         } else if (/^https?:\/\//i.test(cell)) {
-          storeUrl = cell;
+          // Link gian hàng trên sàn sửa ở Dữ liệu gốc
+          continue;
         } else if (!rawStore && matchStore(cell)) {
           rawStore = cell;
         } else if (!rawStore) {
@@ -956,7 +647,6 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         rawStore,
         matchedStore: matchStore(rawStore),
         bookingSheetUrl,
-        storeUrl,
         defaultSheetTab,
       });
     });
@@ -969,32 +659,29 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       onNotify?.('Chưa tìm thấy dòng nào khớp với tên Gian hàng trong hệ thống.', 'warning');
       return;
     }
-    const nextDrafts = { ...drafts };
-    const patches: Record<string, Partial<StorePortfolioItem>> = {};
+    const patches: Record<string, StoreSheetLink> = {};
     for (const row of matched) {
-      const stId = row.matchedStore!.id;
-      const cur = nextDrafts[stId];
+      const cur = drafts[row.matchedStore!.id];
       if (!cur) continue;
-      const nextSheet = (row.bookingSheetUrl || cur.bookingSheetUrl).trim();
-      const nextStoreUrl = (row.storeUrl || cur.storeUrl).trim();
-      const nextTab = (row.defaultSheetTab || cur.defaultSheetTab).trim();
-      nextDrafts[stId] = {
-        ...cur,
-        bookingSheetUrl: nextSheet,
-        storeUrl: nextStoreUrl,
-        defaultSheetTab: nextTab,
-      };
-      patches[stId] = {
-        id: stId,
-        storeName: cur.storeName,
-        bookingSheetUrl: nextSheet || undefined,
-        storeUrl: nextStoreUrl || undefined,
-        defaultSheetTab: nextTab || undefined,
+      patches[cur.storeId] = {
+        bookingSheetUrl: (row.bookingSheetUrl || cur.bookingSheetUrl).trim(),
+        planSheetTab: cur.planSheetTab,
+        defaultSheetTab: (row.defaultSheetTab || cur.defaultSheetTab).trim(),
+        reportSheetTab: cur.reportSheetTab,
       };
     }
-    setDrafts(nextDrafts);
-    await persistStorePatches(patches);
-    setActiveTab('TABLE');
+    setSaving(true);
+    try {
+      await persistStoreSheetLinks(patches);
+      applySavedLinks(patches);
+      onNotify?.(`Đã lưu Link Google Sheet cho ${Object.keys(patches).length} gian hàng.`, 'success');
+      setBulkText('');
+      setActiveTab('TABLE');
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Không lưu được Link Sheet.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveServiceAccount = async () => {
@@ -1413,19 +1100,17 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     }
   };
 
-  // Định nghĩa cột cho DataTable chính
+  // Bảng chỉ để xem; sửa trong modal
   const tableColumns = useMemo<Column<StoreStaffSheetDraft>[]>(
     () => [
       {
         key: 'store',
-        header: 'Brand & Gian hàng',
-        width: 230,
+        header: 'Gian hàng',
+        width: 240,
         render: row => (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-semibold text-ink">{row.storeName}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+          <div className="space-y-0.5">
+            <div className="font-semibold text-ink">{row.storeName}</div>
+            <div className="flex items-center gap-2 text-2xs text-ink-3">
               <span className="font-medium text-ink-2">{row.brandName}</span>
               <span>·</span>
               <ChannelTag channel={row.platform} />
@@ -1434,220 +1119,118 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         ),
       },
       {
-        key: 'pic',
-        header: 'Phân quyền theo gian (Đồng bộ tự động)',
-        width: 260,
-        render: row => (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-2xs text-ink-3 shrink-0">PIC Chính:</span>
-              {row.pic ? (
-                <Person name={row.pic} size={20} />
-              ) : (
-                <span className="text-2xs text-ink-3">Chưa phân công</span>
-              )}
-            </div>
-            {(row.supportStaff || []).length > 0 && (
-              <div className="flex flex-wrap items-center gap-1 text-2xs">
-                <span className="text-ink-3">Hỗ trợ:</span>
-                {row.supportStaff.map(sup => (
-                  <span
-                    key={sup}
-                    className="inline-flex items-center rounded bg-sunken border border-line px-1.5 py-0.5 text-ink"
-                  >
-                    {sup}
-                  </span>
-                ))}
-              </div>
-            )}
-            {row.bookingLeader && (
-              <div className="text-2xs text-ink-3">
-                Leader: <span className="font-medium text-ink-2">{row.bookingLeader}</span>
-              </div>
-            )}
-          </div>
-        ),
-      },
-      {
         key: 'sheetUrl',
-        header: 'Link Google Sheet',
-        width: 300,
-        render: row => (
-          <div className="flex items-center gap-1.5">
-            <Input
-              value={row.bookingSheetUrl}
-              onChange={e => updateRowDraft(row.storeId, { bookingSheetUrl: e.target.value })}
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-            />
-            {row.bookingSheetUrl && (
-              <a
-                href={row.bookingSheetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 hover:bg-sunken hover:text-accent"
-                title="Mở Google Sheet"
-              >
-                <FileSpreadsheet className="h-4 w-4" />
-              </a>
-            )}
-          </div>
-        ),
+        header: 'Google Sheet',
+        width: 200,
+        render: row => {
+          const sheetId = extractSpreadsheetIdFromUrl(row.bookingSheetUrl);
+          return row.bookingSheetUrl.trim() ? (
+            <a
+              href={row.bookingSheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="inline-flex max-w-full items-center gap-2 text-xs text-ink-2 hover:text-accent"
+              title={row.bookingSheetUrl}
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate font-mono text-2xs">{sheetId ? `…${sheetId.slice(-8)}` : 'Mở file'}</span>
+            </a>
+          ) : (
+            <span className="text-xs text-ink-3">—</span>
+          );
+        },
       },
       {
         key: 'sheetTab',
-        header: 'Cấu hình 3 Sheet (Plan · Listing · Kết quả)',
-        width: 280,
-        render: row => (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-14 shrink-0 text-2xs font-medium text-ink-3">1. Plan:</span>
-              <Input
-                value={row.planSheetTab}
-                onChange={e => updateRowDraft(row.storeId, { planSheetTab: e.target.value })}
-                placeholder="Plan tháng"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-14 shrink-0 text-2xs font-medium text-ink-3">2. Listing:</span>
-              <Input
-                value={row.defaultSheetTab}
-                onChange={e => updateRowDraft(row.storeId, { defaultSheetTab: e.target.value })}
-                placeholder="Listing KOC"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-14 shrink-0 text-2xs font-medium text-ink-3">3. Kết quả:</span>
-              <Input
-                value={row.reportSheetTab}
-                onChange={e => updateRowDraft(row.storeId, { reportSheetTab: e.target.value })}
-                placeholder="Báo cáo & Nghiệm thu"
-              />
-            </div>
-          </div>
-        ),
-      },
-      {
-        key: 'storeUrl',
-        header: 'Link Gian hàng trên sàn',
-        width: 220,
-        render: row => (
-          <div className="flex items-center gap-1.5">
-            <Input
-              value={row.storeUrl}
-              onChange={e => updateRowDraft(row.storeId, { storeUrl: e.target.value })}
-              placeholder="https://www.tiktok.com/@..."
-            />
-            {row.storeUrl && (
-              <a
-                href={row.storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 hover:bg-sunken hover:text-accent"
-                title="Mở link gian hàng"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            )}
-          </div>
-        ),
+        header: 'Tab Plan · Listing · Kết quả',
+        width: 260,
+        render: row => {
+          const tabs = [row.planSheetTab, row.defaultSheetTab, row.reportSheetTab];
+          return row.bookingSheetUrl.trim() ? (
+            <span className="text-xs text-ink-2">
+              {tabs.map((t, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <span className="text-ink-4"> · </span>}
+                  {t ? <span>{t}</span> : <span className="text-ink-3">mặc định</span>}
+                </React.Fragment>
+              ))}
+            </span>
+          ) : (
+            <span className="text-xs text-ink-3">—</span>
+          );
+        },
       },
       {
         key: 'status',
-        header: 'Trạng thái & Thao tác',
-        width: 220,
+        header: 'Trạng thái',
+        width: 190,
+        render: row => {
+          const hasSheet = Boolean(row.bookingSheetUrl.trim());
+          const sheetId = extractSpreadsheetIdFromUrl(row.bookingSheetUrl);
+          const scriptMeta = sheetId ? appsScriptInstalledMap[sheetId] : undefined;
+          const matrixCfg = getStoreMatrixConfig(row.storeId);
+          return (
+            <div className="flex flex-wrap items-center gap-1">
+              {hasSheet ? <Status tone="positive">Đã gắn Sheet</Status> : <Status tone="neutral">Chưa gắn</Status>}
+              {hasSheet &&
+                (!matrixCfg.applyAppsScript ? null : scriptMeta ? (
+                  <Status tone="info">
+                    Script ({scriptMeta.enabledModuleIds?.length ?? matrixCfg.enabledModuleIds.length})
+                  </Status>
+                ) : (
+                  <Status tone="warning">Chưa cài Script</Status>
+                ))}
+            </div>
+          );
+        },
+      },
+      {
+        key: 'actions',
+        header: '',
+        width: 150,
         align: 'right',
         render: row => {
           const hasSheet = Boolean(row.bookingSheetUrl.trim());
           const sheetId = extractSpreadsheetIdFromUrl(row.bookingSheetUrl);
           const scriptMeta = sheetId ? appsScriptInstalledMap[sheetId] : undefined;
           const matrixCfg = getStoreMatrixConfig(row.storeId);
-          const isDirty = dirtyIds.has(row.storeId);
-          return (
-            <div className="flex flex-col items-end gap-1.5">
-              <div className="flex flex-wrap items-center justify-end gap-1">
-                {hasSheet ? (
-                  <Status tone="positive">Đã gắn Sheet</Status>
-                ) : (
-                  <Status tone="neutral">Chưa gắn Sheet</Status>
-                )}
-                {!matrixCfg.applyAppsScript ? (
-                  <Status tone="neutral">Không dùng Script</Status>
-                ) : scriptMeta ? (
-                  <Status tone="info">
-                    Đã cài Script ({scriptMeta.enabledModuleIds?.length ?? matrixCfg.enabledModuleIds.length})
-                  </Status>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center justify-end gap-1">
-                {hasSheet && matrixCfg.applyAppsScript && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={pushingAppsScriptBusy}
-                    onClick={() =>
+          const menuItems = [
+            ...(hasSheet && matrixCfg.applyAppsScript
+              ? [
+                  {
+                    label: scriptMeta ? 'Cập nhật Apps Script' : 'Cài Apps Script',
+                    icon: Code2,
+                    onSelect: () =>
                       void handleDeployAppsScriptToTargets([
-                        {
-                          storeId: row.storeId,
-                          storeName: row.storeName,
-                          sheetUrl: row.bookingSheetUrl,
-                        },
-                      ])
-                    }
-                  >
-                    {scriptMeta ? 'Cập nhật Script' : 'Cài Apps Script'}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    handleSelectQuickStore(row.storeId);
-                    if (typeof window !== 'undefined') {
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                  }}
-                >
-                  Chọn sửa
-                </Button>
-                {onSelectStoreForListing && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => onSelectStoreForListing(row.storeName)}
-                  >
-                    Mở Listing
-                  </Button>
-                )}
-                {isDirty && (
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    disabled={saving}
-                    onClick={() => {
-                      void persistStorePatches({
-                        [row.storeId]: {
-                          id: row.storeId,
-                          storeName: row.storeName,
-                          storeUrl: row.storeUrl.trim() || undefined,
-                          bookingSheetUrl: row.bookingSheetUrl.trim() || undefined,
-                          planSheetTab: row.planSheetTab.trim() || undefined,
-                          defaultSheetTab: row.defaultSheetTab.trim() || undefined,
-                          reportSheetTab: row.reportSheetTab.trim() || undefined,
-                        },
-                      });
-                    }}
-                  >
-                    Lưu
-                  </Button>
-                )}
-              </div>
+                        { storeId: row.storeId, storeName: row.storeName, sheetUrl: row.bookingSheetUrl },
+                      ]),
+                  },
+                ]
+              : []),
+            ...(onSelectStoreForListing
+              ? [
+                  {
+                    label: 'Mở Listing',
+                    icon: ExternalLink,
+                    onSelect: () => onSelectStoreForListing(row.storeName),
+                  },
+                ]
+              : []),
+          ];
+          return (
+            <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+              <Button size="sm" variant="ghost" icon={Edit3} onClick={() => setEditingStoreId(row.storeId)}>
+                Sửa
+              </Button>
+              {menuItems.length > 0 && <ActionMenu items={menuItems} />}
             </div>
           );
         },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dirtyIds, saving, onSelectStoreForListing, appsScriptInstalledMap, pushingAppsScriptBusy]
+    [onSelectStoreForListing, appsScriptInstalledMap, pushingAppsScriptBusy, getStoreMatrixConfig]
   );
 
   // Định nghĩa cột cho bảng xem trước Dán hàng loạt
@@ -1669,470 +1252,84 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           ),
       },
       {
-        key: 'pic',
-        header: 'PIC Chính (Theo Phân quyền gian)',
-        render: r => {
-          const d = r.matchedStore ? drafts[r.matchedStore.id] : undefined;
-          return d?.pic ? <Person name={d.pic} size={20} /> : <span className="text-ink-3">—</span>;
-        },
-      },
-      {
         key: 'sheetUrl',
         header: 'Link Google Sheet',
         render: r => <span className="block max-w-[280px] truncate text-ink-2">{r.bookingSheetUrl || '—'}</span>,
       },
       {
         key: 'extra',
-        header: 'Tab / Link Gian hàng Sàn',
-        render: r => (
-          <span className="block max-w-[220px] truncate text-ink-2">
-            {r.defaultSheetTab || r.storeUrl || '—'}
-          </span>
-        ),
+        header: 'Tab Listing',
+        render: r => <span className="block max-w-[220px] truncate text-ink-2">{r.defaultSheetTab || '—'}</span>,
       },
     ],
-    [drafts]
+    []
   );
 
   return (
     <div className="space-y-4">
-      {/* 4 chỉ số đầu trang chuẩn Design System */}
       <StatRow size="sm">
+        <Stat label="Gian hàng B2C" value={stats.total} note={`${brandOptions.length} thương hiệu`} />
         <Stat
-          label="Tổng gian hàng B2C"
-          value={stats.total}
-          note={`${brandOptions.length} thương hiệu đang vận hành`}
-        />
-        <Stat
-          label="Phân quyền theo gian"
-          value={`${stats.withPic}/${stats.total}`}
-          tone={stats.withPic === stats.total ? 'positive' : 'warning'}
-          progress={{ value: stats.withPic, max: Math.max(1, stats.total) }}
-          note="Đồng bộ tự động từ Phân công Gian hàng"
-        />
-        <Stat
-          label="Đã gắn Link Google Sheet"
+          label="Đã gắn Google Sheet"
           value={`${stats.withSheet}/${stats.total}`}
-          tone={stats.withSheet > 0 ? 'positive' : 'warning'}
+          tone={stats.withSheet === stats.total ? 'positive' : 'warning'}
           progress={{ value: stats.withSheet, max: Math.max(1, stats.total) }}
-          note="Tự động điền khi nhân sự đẩy / kéo kết quả"
+        />
+        <Stat
+          label="Đã cài Apps Script"
+          value={`${
+            Object.values(drafts).filter(d => {
+              const id = extractSpreadsheetIdFromUrl(d.bookingSheetUrl);
+              return Boolean(id && appsScriptInstalledMap[id]);
+            }).length
+          }/${stats.withSheet}`}
+          note="Trên số gian đã gắn Sheet"
         />
         <Stat
           label="Kết nối Google Sheets API"
           value={saConfigured ? 'Sẵn sàng' : 'Chưa gắn Key'}
           tone={saConfigured ? 'positive' : 'warning'}
-          note={saEmail ? `Bot: ${saEmail}` : 'Cần cấu hình Service Account JSON'}
+          note={saConfigured ? undefined : 'Cấu hình ở tab Kết nối Google'}
         />
       </StatRow>
 
-      {/* Khung 1: Bộ chọn Thiết lập nhanh Link Google Sheet theo Brand & Gian hàng */}
-      <Panel
-        title="Thiết lập nhanh Link Google Sheet theo Brand & Gian hàng"
-        actions={
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={RefreshCw}
-              disabled={loadingTabs || !quickSheetUrl.trim()}
-              onClick={() => void handleFetchSheetTabs()}
-            >
-              {loadingTabs ? 'Đang đọc Tab…' : 'Đọc danh sách Tab từ Sheet'}
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              icon={Save}
-              disabled={saving || !quickStoreId}
-              onClick={() => void handleApplyQuickSetup()}
-            >
-              {saving ? 'Đang lưu…' : 'Áp dụng & Lưu Link Sheet'}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-            <div className="md:col-span-3">
-              <Field label="1. Chọn Thương hiệu (Brand)">
-                <Select value={quickBrand} onChange={e => handleSelectQuickBrand(e.target.value)}>
-                  <option value="">Tất cả thương hiệu ({brandOptions.length} Brand)</option>
-                  {brandOptions.map(b => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <div className="md:col-span-4">
-              <Field label="2. Chọn Gian hàng">
-                <Select value={quickStoreId} onChange={e => handleSelectQuickStore(e.target.value)}>
-                  {storesForQuickBrand.map(st => (
-                    <option key={st.storeId} value={st.storeId}>
-                      {st.storeName} ({st.platform})
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <div className="md:col-span-5">
-              <Field label="Phân quyền nhân sự của gian hàng (Đồng bộ từ Phân công Gian hàng)">
-                <div className="min-h-9 rounded-md border border-line bg-sunken px-3 py-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span className="inline-flex items-center gap-1.5 text-ink">
-                    <ShieldCheck className="h-3.5 w-3.5 text-accent shrink-0" />
-                    <span className="text-ink-3">PIC Chính:</span>
-                    <strong className="font-semibold text-ink">
-                      {activeQuickDraft?.pic || 'Chưa phân công'}
-                    </strong>
-                  </span>
-                  {activeQuickDraft && activeQuickDraft.supportStaff.length > 0 && (
-                    <span className="inline-flex items-center gap-1 text-ink-2">
-                      <Users className="h-3.5 w-3.5 text-ink-3 shrink-0" />
-                      <span className="text-ink-3">Hỗ trợ:</span>
-                      <span className="font-medium text-ink">
-                        {activeQuickDraft.supportStaff.join(', ')}
-                      </span>
-                    </span>
-                  )}
-                  {activeQuickDraft?.bookingLeader && (
-                    <span className="text-2xs text-ink-3">
-                      Leader: <strong className="text-ink-2">{activeQuickDraft.bookingLeader}</strong>
-                    </span>
-                  )}
-                </div>
-              </Field>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-            <div className="md:col-span-7">
-              <Field label="3. Link Google Sheet">
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    value={quickSheetUrl}
-                    onChange={e => setQuickSheetUrl(e.target.value)}
-                    placeholder="https://docs.google.com/spreadsheets/d/..."
-                  />
-                  {quickSheetUrl.trim() && (
-                    <a
-                      href={quickSheetUrl.trim()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 hover:bg-sunken hover:text-accent"
-                      title="Mở Google Sheet trong tab mới"
-                    >
-                      <FileSpreadsheet className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-              </Field>
-            </div>
-
-            <div className="md:col-span-5">
-              <Field label="4. Link Gian hàng trên sàn">
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    value={quickStoreUrl}
-                    onChange={e => setQuickStoreUrl(e.target.value)}
-                    placeholder="https://www.tiktok.com/@..."
-                  />
-                  {quickStoreUrl.trim() && (
-                    <a
-                      href={quickStoreUrl.trim()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 hover:bg-sunken hover:text-accent"
-                      title="Mở link gian hàng"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-              </Field>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-line bg-sunken/50 p-3 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-ink">
-                5. Cấu hình 3 Sheet chuẩn trên File Google Sheet (Plan tháng · Listing · Kết quả)
-              </span>
-              {availableSheetTabs.length > 0 && (
-                <span className="text-2xs text-positive font-medium">
-                  Đã đọc {availableSheetTabs.length} tab từ file Google Sheet
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Field label="Sheet 1 — Plan tháng">
-                {availableSheetTabs.length > 0 ? (
-                  <Select value={quickPlanSheetTab} onChange={e => setQuickPlanSheetTab(e.target.value)}>
-                    <option value="">-- Mặc định (Plan tháng) --</option>
-                    {availableSheetTabs.map(t => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  <Input
-                    value={quickPlanSheetTab}
-                    onChange={e => setQuickPlanSheetTab(e.target.value)}
-                    placeholder="VD: Plan tháng"
-                  />
-                )}
-              </Field>
-
-              <Field label="Sheet 2 — Listing KOC">
-                {availableSheetTabs.length > 0 ? (
-                  <Select value={quickSheetTab} onChange={e => setQuickSheetTab(e.target.value)}>
-                    <option value="">-- Tự động theo đợt / Listing --</option>
-                    {availableSheetTabs.map(t => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  <Input
-                    value={quickSheetTab}
-                    onChange={e => setQuickSheetTab(e.target.value)}
-                    placeholder="VD: Listing KOC"
-                  />
-                )}
-              </Field>
-
-              <Field label="Sheet 3 — Kết quả (Report & Nghiệm thu)">
-                {availableSheetTabs.length > 0 ? (
-                  <Select value={quickReportSheetTab} onChange={e => setQuickReportSheetTab(e.target.value)}>
-                    <option value="">-- Mặc định (Báo cáo & Nghiệm thu) --</option>
-                    {availableSheetTabs.map(t => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  <Input
-                    value={quickReportSheetTab}
-                    onChange={e => setQuickReportSheetTab(e.target.value)}
-                    placeholder="VD: Báo cáo & Nghiệm thu"
-                  />
-                )}
-              </Field>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line">
-            <label className="inline-flex items-center gap-2 text-xs text-ink-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={applySheetToEntireBrand}
-                onChange={e => setApplySheetToEntireBrand(e.target.checked)}
-                className="h-4 w-4 rounded border-line-strong text-primary focus:ring-0"
-              />
-              <span>
-                Áp dụng chung <strong>Link Google Sheet</strong> này cho toàn bộ gian hàng thuộc thương hiệu{' '}
-                <strong className="text-ink">{drafts[quickStoreId]?.brandName || quickBrand || 'đang chọn'}</strong>
-              </span>
-            </label>
-            {saEmail && (
-              <span className="text-2xs text-ink-3">
-                Chia sẻ quyền <strong>Editor</strong> trên file Google Sheet cho:{' '}
-                <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-ink">{saEmail}</code>
-              </span>
-            )}
-          </div>
-
-          {quickSheetUrl.trim() && (
-            <div className="rounded-lg border border-line bg-sunken/70 p-2.5 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-1.5 font-semibold text-ink">
-                  <Columns className="h-3.5 w-3.5 text-accent" />
-                  <span>Điều khiển nhanh File Google Sheet đang chọn (Thu gọn Cột Tháng cũ, Ẩn cột, Sort & Bộ lọc):</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Columns}
-                    disabled={sheetControlBusy}
-                    onClick={() =>
-                      void handleRunQuickSheetTemplatePatch(
-                        { columnPreset: 'BRAND_REVIEW' },
-                        'Đã ẩn các cột nội bộ trên Google Sheet (chỉ hiện 32 cột gửi Brand duyệt).'
-                      )
-                    }
-                  >
-                    Hiện 32 cột gửi Brand
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Columns}
-                    disabled={sheetControlBusy}
-                    onClick={() =>
-                      void handleRunQuickSheetTemplatePatch(
-                        { columnPreset: 'AIR_ACCEPTANCE' },
-                        'Đã mở chế độ cột Theo dõi Đi Air & Nghiệm thu trên Google Sheet.'
-                      )
-                    }
-                  >
-                    Hiện cột Đi Air & Nghiệm thu
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={sheetControlBusy}
-                    onClick={() =>
-                      void handleRunQuickSheetTemplatePatch(
-                        { columnPreset: 'FULL_TEMPLATE' },
-                        'Đã mở hiển thị đầy đủ 61 cột trên Google Sheet (giữ ẩn cột Mã dòng Row ID).'
-                      )
-                    }
-                  >
-                    Mở đủ 61 cột
-                  </Button>
-                  <span className="text-line-strong">|</span>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={ArrowUpDown}
-                    disabled={sheetControlBusy}
-                    onClick={() =>
-                      void handleRunQuickSheetTemplatePatch(
-                        { sortBy: 'PRODUCT', installFilterViews: true },
-                        'Đã sắp xếp Google Sheet theo Sản phẩm (Cột K) và gắn nút Lọc.'
-                      )
-                    }
-                  >
-                    Sort theo Sản phẩm
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={ArrowUpDown}
-                    disabled={sheetControlBusy}
-                    onClick={() =>
-                      void handleRunQuickSheetTemplatePatch(
-                        { sortBy: 'STAFF', installFilterViews: true },
-                        'Đã sắp xếp Google Sheet theo Nhân sự thao tác (Cột E) và gắn nút Lọc.'
-                      )
-                    }
-                  >
-                    Sort theo Nhân sự
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line text-2xs">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-ink-3 font-medium">
-                    Cột Tháng (Cột B) trên Sheet — Chọn tháng cũ cần thu gọn:
-                  </span>
-                  {['2026/11', '2026/10', '2026/09', '2026/08'].map(m => {
-                    const isCollapsed = quickCollapsedMonths.includes(m);
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        disabled={sheetControlBusy}
-                        onClick={() =>
-                          setQuickCollapsedMonths(prev =>
-                            prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
-                          )
-                        }
-                        className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 font-medium transition-colors ${
-                          isCollapsed
-                            ? 'border-warning/40 bg-sunken text-ink-2'
-                            : 'border-accent/30 bg-accent-soft text-accent'
-                        }`}
-                        title={
-                          isCollapsed
-                            ? `Tháng ${m} đang chọn thu gọn dòng — bấm để mở rộng`
-                            : `Tháng ${m} đang mở rộng — bấm để chọn thu gọn dòng`
-                        }
-                      >
-                        <span className="font-mono">{isCollapsed ? '[+]' : '[-]'}</span>
-                        <span>Tháng {m}</span>
-                        <span className="text-ink-3">
-                          ({isCollapsed ? 'Thu gọn' : 'Mở rộng'})
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={sheetControlBusy}
-                    onClick={() => {
-                      setQuickCollapsedMonths([]);
-                      void handleRunQuickSheetTemplatePatch(
-                        { expandAllMonths: true },
-                        'Đã mở rộng toàn bộ các tháng ở Cột Tháng (Cột B) trên Google Sheet.'
-                      );
-                    }}
-                  >
-                    Mở rộng tất cả tháng
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={EyeOff}
-                    disabled={sheetControlBusy}
-                    onClick={() =>
-                      void handleRunQuickSheetTemplatePatch(
-                        { collapsedMonths: quickCollapsedMonths },
-                        quickCollapsedMonths.length > 0
-                          ? `Đã thu gọn các dòng tháng cũ (${quickCollapsedMonths.join(', ')}) theo Cột Tháng (Cột B) trên Google Sheet.`
-                          : 'Đã mở rộng toàn bộ các tháng theo Cột Tháng (Cột B) trên Google Sheet.'
-                      )
-                    }
-                  >
-                    Thu gọn các tháng cũ đã chọn
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+      {saEmail && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-xs text-ink-2">
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" />
+          <span>Mỗi file Google Sheet cần chia sẻ quyền Editor cho</span>
+          <code className="rounded bg-sunken px-2 py-0.5 font-mono text-ink">{saEmail}</code>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-accent hover:underline cursor-pointer"
+            onClick={() => {
+              void navigator.clipboard?.writeText(saEmail);
+              onNotify?.('Đã sao chép email.', 'info');
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" /> Sao chép
+          </button>
         </div>
-      </Panel>
+      )}
 
-      {/* Khung 2: Bảng 69 Gian hàng / Phân quyền Sửa Trường / Dán hàng loạt / Cấu hình Service Account */}
       <Tabs
         value={activeTab}
         onChange={setActiveTab}
         items={[
-          { key: 'TABLE', label: 'Bảng Link Google Sheet 69 Gian hàng', count: filteredRows.length },
+          { key: 'TABLE', label: 'Gian hàng', count: filteredRows.length },
           {
             key: 'FIELD_PERMISSIONS',
-            label: 'Phân quyền Sửa Trường & Ma trận Apps Script',
+            label: 'Quyền sửa trường',
             count: fieldPolicyDraft.editableFieldsByRole.SUPPORT.length,
           },
-          { key: 'BULK_PASTE', label: 'Dán hàng loạt Link Sheet từ Excel' },
+          { key: 'BULK_PASTE', label: 'Dán từ Excel' },
           {
             key: 'SERVICE_ACCOUNT',
-            label: 'Kết nối Google & Tiện ích Apps Script',
+            label: 'Kết nối Google',
             count: appsScriptModules.filter(m => m.enabled).length || undefined,
           },
         ]}
         actions={
-          activeTab === 'TABLE' && dirtyIds.size > 0 ? (
-            <Button
-              size="sm"
-              variant="primary"
-              icon={Save}
-              disabled={saving}
-              onClick={() => void handleSaveDirtyTableRows()}
-            >
-              {saving ? 'Đang lưu…' : `Lưu ${dirtyIds.size} gian hàng vừa sửa`}
-            </Button>
-          ) : activeTab === 'FIELD_PERMISSIONS' ? (
+          activeTab === 'FIELD_PERMISSIONS' ? (
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -2157,7 +1354,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
 
       {activeTab === 'TABLE' && (
         <Panel flush>
-          <div className="p-3.5 sm:p-4 border-b border-line">
+          <div className="p-4 sm:p-4 border-b border-line">
             <FilterBar
               search={{
                 value: search,
@@ -2225,7 +1422,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             rows={filteredRows}
             rowKey={r => r.storeId}
             stickyLast
-            rowClassName={r => (dirtyIds.has(r.storeId) ? 'bg-accent-soft/30' : undefined)}
+            onRowClick={r => setEditingStoreId(r.storeId)}
             empty={
               <EmptyState
                 title="Không tìm thấy gian hàng phù hợp"
@@ -2252,8 +1449,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
 
       {activeTab === 'FIELD_PERMISSIONS' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3.5 py-2.5">
-            <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
                 variant={permissionSubView === 'ALL' ? 'primary' : 'secondary'}
@@ -2389,7 +1586,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             title="Ma trận Phân quyền Sửa từng Trường (Cột) theo Cấp Nhân sự"
             flush
           >
-            <div className="p-3.5 sm:p-4 border-b border-line space-y-3">
+            <div className="p-4 sm:p-4 border-b border-line space-y-3">
               <FilterBar
                 search={{
                   value: fieldSearch,
@@ -2429,7 +1626,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   return (
                     <div
                       key={group.id}
-                      className="rounded-md border border-line bg-sunken/70 p-2.5 space-y-1.5 text-2xs"
+                      className="rounded-md border border-line bg-sunken/70 p-3 space-y-2 text-2xs"
                     >
                       <div className="font-semibold text-ink leading-snug">{group.title}</div>
                       <div className="flex items-center justify-between gap-1 text-ink-2">
@@ -2438,14 +1635,14 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                           <button
                             type="button"
                             onClick={() => handleToggleGroupForRole('SUPPORT', group.fields, true)}
-                            className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-accent-soft hover:text-accent"
+                            className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-accent-soft hover:text-accent"
                           >
                             Mở hết
                           </button>
                           <button
                             type="button"
                             onClick={() => handleToggleGroupForRole('SUPPORT', group.fields, false)}
-                            className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-sunken text-ink-3"
+                            className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-sunken text-ink-3"
                           >
                             Khóa
                           </button>
@@ -2457,14 +1654,14 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                           <button
                             type="button"
                             onClick={() => handleToggleGroupForRole('PRIMARY_PIC', group.fields, true)}
-                            className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-accent-soft hover:text-accent"
+                            className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-accent-soft hover:text-accent"
                           >
                             Mở hết
                           </button>
                           <button
                             type="button"
                             onClick={() => handleToggleGroupForRole('PRIMARY_PIC', group.fields, false)}
-                            className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-sunken text-ink-3"
+                            className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-sunken text-ink-3"
                           >
                             Khóa
                           </button>
@@ -2476,14 +1673,14 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                           <button
                             type="button"
                             onClick={() => handleToggleGroupForRole('LEADER', group.fields, true)}
-                            className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-accent-soft hover:text-accent"
+                            className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-accent-soft hover:text-accent"
                           >
                             Mở hết
                           </button>
                           <button
                             type="button"
                             onClick={() => handleToggleGroupForRole('LEADER', group.fields, false)}
-                            className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-sunken text-ink-3"
+                            className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-sunken text-ink-3"
                           >
                             Khóa
                           </button>
@@ -2634,8 +1831,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               ]}
             />
 
-            <div className="p-3.5 border-t border-line bg-sunken/60 flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
-              <div className="flex items-center gap-1.5">
+            <div className="p-4 border-t border-line bg-sunken/60 flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
+              <div className="flex items-center gap-2">
                 <Lock className="h-3.5 w-3.5 text-ink-3 shrink-0" />
                 <span>
                   <strong>{STAFF_SHEET_READONLY_SYSTEM_COLUMNS.length} cột công thức & định danh tự động</strong>{' '}
@@ -2660,7 +1857,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               title="Ma trận Áp dụng Tiện ích Apps Script theo từng Gian hàng / File Sheet của Brand"
               flush
               actions={
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   {storeMatrixDirty && <Status tone="warning">Có thay đổi chưa lưu</Status>}
                   <Button
                     size="sm"
@@ -2712,7 +1909,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                 </div>
               }
             >
-              <div className="p-3.5 sm:p-4 border-b border-line space-y-3">
+              <div className="p-4 sm:p-4 border-b border-line space-y-3">
                 <FilterBar
                   search={{
                     value: matrixSearch,
@@ -2776,7 +1973,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                     return (
                       <div
                         key={mod.id}
-                        className="rounded-md border border-line bg-sunken/70 p-2 space-y-1.5 text-2xs flex flex-col justify-between"
+                        className="rounded-md border border-line bg-sunken/70 p-2 space-y-2 text-2xs flex flex-col justify-between"
                       >
                         <div>
                           <div className="font-semibold text-ink line-clamp-2" title={mod.name}>
@@ -2796,7 +1993,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                               onClick={() =>
                                 handleBatchToggleModuleColumnForFilteredStores(mod.id, true)
                               }
-                              className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-accent-soft hover:text-accent"
+                              className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-accent-soft hover:text-accent"
                             >
                               Bật hết
                             </button>
@@ -2805,7 +2002,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                               onClick={() =>
                                 handleBatchToggleModuleColumnForFilteredStores(mod.id, false)
                               }
-                              className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-sunken text-ink-3"
+                              className="rounded border border-line bg-surface px-2 py-0.5 hover:bg-sunken text-ink-3"
                             >
                               Tắt
                             </button>
@@ -2885,7 +2082,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                         cfg.applyAppsScript && cfg.enabledModuleIds.includes(mod.id);
                       return (
                         <label
-                          className={`inline-flex items-center justify-center gap-1.5 select-none ${
+                          className={`inline-flex items-center justify-center gap-2 select-none ${
                             cfg.applyAppsScript
                               ? 'cursor-pointer'
                               : 'opacity-40 cursor-not-allowed'
@@ -3014,7 +2211,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             }
           >
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-2.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-3 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="text-ink-2">Trạng thái máy chủ:</span>
                   {saConfigured ? (
@@ -3048,7 +2245,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             title="2. Quản lý Danh mục Tiện ích Tự động hóa Google Sheet (Apps Script) & Tác dụng của từng Script"
             flush
             actions={
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -3126,7 +2323,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               </div>
             }
           >
-            <div className="px-3.5 py-2.5 bg-sunken/70 border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="px-4 py-3 bg-sunken/70 border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-ink-2">
                   Đang bật{' '}
@@ -3180,7 +2377,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   render: m => (
                     <div className="space-y-1">
                       <div className="font-semibold text-ink leading-snug">{m.name}</div>
-                      <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+                      <div className="flex items-center gap-2 text-2xs text-ink-3">
                         <span className="font-mono">{m.id}</span>
                         <span>·</span>
                         <span>{m.isBuiltIn ? 'Mặc định UpBase' : 'Tùy chỉnh'}</span>
@@ -3218,7 +2415,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   width: 185,
                   align: 'right',
                   render: m => (
-                    <div className="flex items-center justify-end gap-1.5">
+                    <div className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"
                         variant="secondary"
@@ -3244,7 +2441,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             />
 
             {showRawCodePreview && (
-              <div className="p-3.5 border-t border-line bg-sunken/40 space-y-2">
+              <div className="p-4 border-t border-line bg-sunken/40 space-y-2">
                 <Field label="Mã gộp Google Apps Script (Code.gs) tự động tổng hợp từ các tác vụ Đang bật ở bảng trên">
                   <Textarea
                     rows={12}
@@ -3257,7 +2454,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             )}
 
             {appsScriptBatchResults.length > 0 && (
-              <div className="p-3.5 border-t border-line bg-surface">
+              <div className="p-4 border-t border-line bg-surface">
                 <div className="rounded-lg border border-line overflow-hidden">
                   <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between text-xs font-semibold text-ink">
                     <span>
@@ -3316,7 +2513,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             }
           >
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-2.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-3 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="text-ink-2">Trạng thái kết nối Google Apps Script API:</span>
                   {appsScriptConfigured ? (
@@ -3345,7 +2542,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                 </div>
               </div>
 
-              <div className="rounded-lg border border-line bg-sunken/50 p-3.5 text-xs text-ink-2 space-y-1.5">
+              <div className="rounded-lg border border-line bg-sunken/50 p-4 text-xs text-ink-2 space-y-2">
                 <div className="font-semibold text-ink">
                   Hướng dẫn lấy 3 thông số OAuth2 một lần duy nhất (chỉ mất 2 phút):
                 </div>
@@ -3539,6 +2736,21 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           </div>
         )}
       </Modal>
+
+      <StoreSheetLinkModal
+        target={editingDraft ? toSheetTarget(editingDraft) : null}
+        brandSiblings={
+          editingDraft
+            ? Object.values(drafts)
+                .filter(d => d.brandName.toLowerCase() === editingDraft.brandName.toLowerCase())
+                .map(toSheetTarget)
+            : []
+        }
+        saEmail={saEmail}
+        onClose={() => setEditingStoreId(null)}
+        onSaved={applySavedLinks}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

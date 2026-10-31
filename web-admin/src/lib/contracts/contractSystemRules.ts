@@ -57,13 +57,20 @@ export function buildStableContractCode(input: {
         ? 'BBNT'
         : 'HDDV';
 
+  const rawTokenId = (values['token:[ID KOC]'] || '').trim();
+  const isStaleDemoToken =
+    rawTokenId.toLowerCase() === 'chanhbeauty' &&
+    Boolean(input.partner) &&
+    !/chanh|mai\s*phuong|mai\s*phương/i.test(input.partner || '');
+  const safeTokenId = isStaleDemoToken ? '' : rawTokenId;
+
   const rawRef =
     docType === 'HDNT'
-      ? values['token:[ID KOC]'] || input.kocId || input.partner || input.id?.slice(0, 8) || 'KOC'
+      ? safeTokenId || input.partner || input.kocId || input.id?.slice(0, 8) || 'KOC'
       : input.dealCode ||
-        values['token:[ID KOC]'] ||
-        input.kocId ||
+        safeTokenId ||
         input.partner ||
+        input.kocId ||
         input.id?.slice(0, 8) ||
         'KOC';
 

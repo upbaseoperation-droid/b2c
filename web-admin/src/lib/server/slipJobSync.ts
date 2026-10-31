@@ -66,8 +66,191 @@ async function applySlipToSelfBoards(slip: LarkPaymentRequestSlip): Promise<numb
   return touched;
 }
 
+import type { ApprovedBookingListItem } from '../approvedBookingList';
+import type { MultiPlatformListingItem } from '../multiPlatformListing';
+
+const APPROVED_BOOKING_LIST_SERVER_KEY = 'approved-booking-list-v2';
+const MULTI_PLATFORM_LISTINGS_SERVER_KEY = 'multi-platform-listings-v1';
+
+/**
+ * Đồng bộ trạng thái phiếu Lark về danh sách Booking Đa nền tảng (multi-platform-listings-v1)
+ */
+async function applySlipToMultiPlatformListings(slip: LarkPaymentRequestSlip): Promise<number> {
+  const lineByDealCode = new Map<string, LarkPaymentRequestSlip['lineItems'][number]>();
+  for (const li of slip.lineItems || []) {
+    if (li.dealCode) lineByDealCode.set(li.dealCode.trim().toUpperCase(), li);
+    if (li.dealId) lineByDealCode.set(li.dealId.trim().toUpperCase(), li);
+  }
+  if (lineByDealCode.size === 0) return 0;
+
+  const status = slip.larkSync.approvalStatus;
+  let touched = 0;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await readRecord<MultiPlatformListingItem[]>(
+      MULTI_PLATFORM_LISTINGS_SERVER_KEY,
+      [],
+    );
+    if (!Array.isArray(current.data) || current.data.length === 0) return 0;
+    try {
+      await updateRecord<MultiPlatformListingItem[]>(
+        MULTI_PLATFORM_LISTINGS_SERVER_KEY,
+        [],
+        current.revision,
+        (prev) => {
+          if (!Array.isArray(prev)) return [];
+          return prev.map((row) => {
+            const codeKey = (row.boCode || `MP-DEAL-${row.id}`).trim().toUpperCase();
+            const idKey = (row.id || '').trim().toUpperCase();
+            const matchedLine = lineByDealCode.get(codeKey) || lineByDealCode.get(idKey);
+            if (!matchedLine) return row;
+
+            touched++;
+            const isPaid = Boolean(slip.larkSync.daDiTien || status === 'PAID');
+            const isRejected = status === 'REJECTED';
+            return {
+              ...row,
+              paymentStatus: isRejected
+                ? 'Đủ điều kiện ĐNTT'
+                : isPaid
+                  ? 'Đã thanh toán'
+                  : 'Đã lập ĐNTT',
+              stage: isRejected
+                ? 'ACCEPTED'
+                : isPaid
+                  ? 'PAID'
+                  : 'PAYMENT_READY',
+              updatedAt: new Date().toISOString(),
+            };
+          });
+        },
+      );
+      break;
+    } catch (e) {
+      if (!(e instanceof RecordError) || e.status !== 409 || attempt === 2) throw e;
+    }
+  }
+  return touched;
+}
+
+/**
+ * Đồng bộ trạng thái phiếu Tạm ứng / Tất toán trên Lark về List Duyệt Book (approved-booking-list-v2)
+ * đảm bảo RULE-SYNC-01: khi Kế toán / Giám đốc MKT / Leader duyệt hoặc chi tiền từ bất kỳ màn hình nào,
+ * dữ liệu trên Bảng 3.2 (ApprovedBookingListView) và Sổ Đối Soát (FinanceAdvancePaymentReportView) khớp 100%.
+ */
+async function applySlipToApprovedBookingList(slip: LarkPaymentRequestSlip): Promise<number> {
+  const lineByDealCode = new Map<string, LarkPaymentRequestSlip['lineItems'][number]>();
+  for (const li of slip.lineItems || []) {
+    if (li.dealCode) lineByDealCode.set(li.dealCode.trim().toUpperCase(), li);
+    if (li.dealId) lineByDealCode.set(li.dealId.trim().toUpperCase(), li);
+  }
+  if (lineByDealCode.size === 0) return 0;
+
+  const status = slip.larkSync.approvalStatus;
+  let touched = 0;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await readRecord<ApprovedBookingListItem[]>(
+      APPROVED_BOOKING_LIST_SERVER_KEY,
+      [],
+    );
+    if (!Array.isArray(current.data) || current.data.length === 0) return 0;
+    try {
+      await updateRecord<ApprovedBookingListItem[]>(
+        APPROVED_BOOKING_LIST_SERVER_KEY,
+        [],
+        current.revision,
+        (prev) => {
+          if (!Array.isArray(prev)) return [];
+          return prev.map((row) => {
+            const codeKey = (row.maBooking || '').trim().toUpperCase();
+            const idKey = (row.id || '').trim().toUpperCase();
+            const matchedLine = lineByDealCode.get(codeKey) || lineByDealCode.get(idKey);
+            if (!matchedLine) return row;
+
+            touched++;
+            const isPaid = Boolean(slip.larkSync.daDiTien || status === 'PAID');
+            const isRejected = status === 'REJECTED';
+            const isApproved = status === 'APPROVED' || isPaid;
+
+            if (slip.requestType === 'ADVANCE') {
+              const nextAdvanceStatus: ApprovedBookingListItem['larkAdvanceStatus'] = isRejected
+                ? 'TỪ_CHỐI_TẠM_ỨNG'
+                : isPaid
+                  ? 'ĐÃ_CHI_TẠM_ỨNG'
+                  : isApproved
+                    ? 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                    : 'CHỜ_DUYỆT_TẠM_ỨNG';
+              const nextPaymentStatus: ApprovedBookingListItem['trangThaiPhieuThanhToan'] = isRejected
+                ? 'Từ chối duyệt'
+                : isPaid || isApproved
+                  ? 'Đã tạm ứng'
+                  : 'Đang duyệt Lark';
+              const paidAdvAmount = isPaid
+                ? Math.max(
+                    row.soTienDaThanhToan || 0,
+                    matchedLine.netTransferAmount || row.soTienTamUngTruoc || 0,
+                  )
+                : row.soTienDaThanhToan;
+              return {
+                ...row,
+                larkAdvanceSlipCode: slip.slipCode,
+                larkAdvanceInstanceCode: slip.larkSync.approvalInstanceCode,
+                larkAdvanceStatus: nextAdvanceStatus,
+                larkApprovalStatus: status,
+                larkApprovalRouteSummary:
+                  slip.approvalRoute?.routeSummary || row.larkApprovalRouteSummary,
+                larkSyncedAt: slip.larkSync.syncedAt,
+                trangThaiPhieuThanhToan: nextPaymentStatus,
+                soTienDaThanhToan: paidAdvAmount,
+                uncBillCode: slip.larkSync.uncBillCode || row.uncBillCode,
+                uncSentToKocAt: slip.larkSync.uncSentToKocAt || row.uncSentToKocAt,
+              };
+            }
+
+            // SETTLEMENT (Tất toán ĐNTT)
+            const nextSettlementStatus: ApprovedBookingListItem['trangThaiPhieuThanhToan'] =
+              isRejected
+                ? 'Từ chối duyệt'
+                : isPaid
+                  ? 'Đã thanh toán'
+                  : isApproved
+                    ? 'Đã duyệt chờ chi'
+                    : 'Đang duyệt Lark';
+            return {
+              ...row,
+              larkSlipCode: slip.slipCode,
+              larkApprovalInstanceCode: slip.larkSync.approvalInstanceCode,
+              larkApprovalStatus: status,
+              larkApprovalRouteSummary:
+                slip.approvalRoute?.routeSummary || row.larkApprovalRouteSummary,
+              larkSyncedAt: slip.larkSync.syncedAt,
+              trangThaiPhieuThanhToan: nextSettlementStatus,
+              chotData: isRejected ? row.chotData : true,
+              unlockRequestBatch: isRejected ? row.unlockRequestBatch : 'NONE',
+              daDiTien: isPaid ? true : isRejected ? false : row.daDiTien,
+              soTienDaThanhToan: isPaid
+                ? row.chiPhiBookingNetCuoi - (row.khauTruHangMucHuy || 0)
+                : row.soTienDaThanhToan,
+              soTienCanThanhToan: isPaid ? 0 : row.soTienCanThanhToan,
+              uncBillCode: slip.larkSync.uncBillCode || row.uncBillCode,
+              uncSentToKocAt: slip.larkSync.uncSentToKocAt || row.uncSentToKocAt,
+            };
+          });
+        },
+      );
+      break;
+    } catch (e) {
+      if (!(e instanceof RecordError) || e.status !== 409 || attempt === 2) throw e;
+    }
+  }
+  return touched;
+}
+
 export async function applySlipStatusToJobs(slip: LarkPaymentRequestSlip): Promise<number> {
   const selfTouched = await applySlipToSelfBoards(slip);
+  const approvedTouched = await applySlipToApprovedBookingList(slip).catch(() => 0);
+  const mpTouched = await applySlipToMultiPlatformListings(slip).catch(() => 0);
   const refs = slip.planJobRefs || [];
   const byPlan = new Map<string, Set<string>>();
   for (const r of refs) byPlan.set(r.planId, new Set([...(byPlan.get(r.planId) || []), r.jobId]));
@@ -133,5 +316,5 @@ export async function applySlipStatusToJobs(slip: LarkPaymentRequestSlip): Promi
       }
     }
   }
-  return touched + selfTouched;
+  return touched + selfTouched + approvedTouched + mpTouched;
 }

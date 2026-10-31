@@ -1831,8 +1831,9 @@ export async function inspectLiveTikTokVideoPage(
       let creatorListCount = 0;
       let creatorMatchedProds = 0;
 
-      // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm:
+      // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm (chỉ thử lại khi IP đang ở vùng VN; nếu ssrRegion=SG trên Vercel thì chuyển thẳng sang Vietnam Bridge để tiết kiệm 5s):
       if (
+        ssrRegion !== 'SG' &&
         (result.hasCartAnchor ||
           itemStruct?.AnchorTypes?.includes?.('33') ||
           itemStruct?.AnchorTypes?.includes?.('54')) &&

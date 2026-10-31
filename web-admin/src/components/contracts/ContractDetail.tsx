@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, ChevronLeft, ChevronRight, Download, ExternalLink, FileCheck2, FileCode2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch, Send } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, ChevronLeft, ChevronRight, Download, ExternalLink, FileCheck2, FileCode2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch, Send } from 'lucide-react';
 import type { BookingDealItem, KocItem, LegalDocAttachment } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Segmented, Select, Status, StepMark, Textarea } from '../ui';
@@ -99,9 +99,9 @@ export function ContractDetail({
   const isOwner = record.ownerId === me.id;
   const editable = isOwner && record.approval !== 'IN_REVIEW' && !activeSigning;
   const canSubmit = editable && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval);
-  const myStep = record.approval === 'IN_REVIEW'
-    ? (record.steps.find(s => s.reviewerId === me.id && s.status === 'PENDING') ||
-       (me.id !== record.ownerId ? record.steps.find(s => s.status === 'PENDING' && me.roles.includes(s.role)) : undefined))
+  const myStep = record.approval === 'IN_REVIEW' && me.roles.includes('FINANCE')
+    ? (record.steps.find(s => s.role === 'FINANCE' && s.reviewerId === me.id && s.status === 'PENDING') ||
+       (me.id !== record.ownerId ? record.steps.find(s => s.role === 'FINANCE' && s.status === 'PENDING') : undefined))
     : undefined;
   const legalStep = record.steps.find(s => s.role === 'LEGAL');
   const financeStep = record.steps.find(s => s.role === 'FINANCE');
@@ -162,14 +162,12 @@ export function ContractDetail({
     };
   }, [record.id, record.revision, selectedVersion]);
 
-  const gdocsLegalPending = record.steps.some(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED');
   const canApproveGDocsFinance =
     Boolean(record.googleDocsUrl) &&
     me.roles.includes('FINANCE') &&
     me.id !== record.ownerId &&
     record.approval === 'IN_REVIEW' &&
     record.googleDocsStage === 'FINAL' &&
-    !gdocsLegalPending &&
     record.steps.some(s => s.role === 'FINANCE' && s.version === record.version && s.status === 'PENDING');
 
   // Nút chính: việc tiếp theo của người đang xem (Pháp chế duyệt trước -> Kế toán duyệt & Đẩy WeSign).
@@ -195,10 +193,12 @@ export function ContractDetail({
     <Button variant="primary" disabled={busy} onClick={() => setDialog('approve')}>Duyệt</Button>
   ) : canStartSigning ? (
     <Button variant="primary" icon={Send} disabled={busy} onClick={() => setDialog('request_sign')}>Gửi ký WeSign (requestSign)</Button>
-  ) : signing?.status === 'COMPLETED' && isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') ? (
+  ) : signing?.status === 'COMPLETED' && isFrameworkWithSow && onCreateSow && (me.roles.includes('CREATOR') || me.roles.includes('LEAD')) ? (
     <Button variant="primary" icon={FilePlus2} onClick={onCreateSow}>Tạo phụ lục SOW</Button>
-  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !isFrameworkWithSow && !hasAcceptance && onCreateAcceptance && me.roles.includes('CREATOR') ? (
+  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !isFrameworkWithSow && !hasAcceptance && onCreateAcceptance && (me.roles.includes('CREATOR') || me.roles.includes('LEAD')) ? (
     <Button variant="primary" icon={FilePlus2} onClick={onCreateAcceptance}>Tạo biên bản nghiệm thu</Button>
+  ) : signing?.status === 'COMPLETED' && isAcceptance(record.templateId) && onBackToBooking ? (
+    <Button variant="primary" icon={CheckCircle2} onClick={onBackToBooking}>Chuyển sang Đề nghị thanh toán</Button>
   ) : null;
 
   const menu: ActionMenuItem[] = [
@@ -229,7 +229,7 @@ export function ContractDetail({
       : record.versions.find(v => v.version === selectedVersion)?.acceptanceScreenshots || [];
 
   const isSowDoc = record.templateId.endsWith('-SOW');
-  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'LEGAL_DOCS' | 'APPROVAL' | 'GOOGLE_DOCS'>(
+  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'SPLIT_VERIFY' | 'LEGAL_DOCS' | 'APPROVAL' | 'GOOGLE_DOCS'>(
     record.googleDocsUrl ? 'GOOGLE_DOCS' : 'DOCUMENT'
   );
 
@@ -408,29 +408,6 @@ export function ContractDetail({
               Phụ lục SOW đã ký hoàn tất — Cấu hình Deal đã khóa
             </Status>
           )}
-          {(onPrev || onNext) && (
-            <div className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2 py-1">
-              <button
-                type="button"
-                disabled={!onPrev}
-                onClick={onPrev}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-ink-2 hover:bg-sunken disabled:opacity-40"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" /> Trước
-              </button>
-              {positionLabel && (
-                <span className="px-2 text-2xs font-code text-ink-3 tabular-nums">{positionLabel}</span>
-              )}
-              <button
-                type="button"
-                disabled={!onNext}
-                onClick={onNext}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-ink-2 hover:bg-sunken disabled:opacity-40"
-              >
-                Tiếp <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -592,15 +569,70 @@ export function ContractDetail({
         </div>
       </header>
 
+      {current && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-xs space-y-2 ${
+            current.findings.some(f => f.severity === 'ERROR')
+              ? 'border-critical/40 bg-critical-soft/40 text-ink'
+              : current.findings.some(f => f.severity === 'WARNING')
+                ? 'border-warning/40 bg-warning-soft/50 text-ink'
+                : 'border-positive/30 bg-positive-soft/40 text-ink'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold flex items-center gap-2">
+              <ScanSearch className="w-4 h-4 text-accent shrink-0" />
+              Kết quả kiểm tra nội dung hồ sơ (v{current.version})
+            </span>
+            <span className="text-2xs text-ink-3">{dateTime(current.at)}</span>
+          </div>
+          {current.findings.length === 0 ? (
+            <p className="text-positive font-medium">
+              Toàn bộ trường bắt buộc và điều khoản đều hợp lệ, không phát hiện cảnh báo.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {current.findings.map((f, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <Status
+                    tone={
+                      f.severity === 'ERROR'
+                        ? 'critical'
+                        : f.severity === 'WARNING'
+                          ? 'warning'
+                          : 'neutral'
+                    }
+                  >
+                    {f.severity === 'ERROR'
+                      ? 'Lỗi'
+                      : f.severity === 'WARNING'
+                        ? 'Cảnh báo'
+                        : 'Ghi chú'}
+                  </Status>
+                  <span className="text-ink">
+                    {f.message}
+                    {f.evidence ? <span className="text-ink-3"> ({f.evidence})</span> : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* KHÔNG GIAN LÀM VIỆC CHÍNH */}
-      <div className="grid gap-5 items-start lg:grid-cols-[minmax(0,1fr)_290px]">
+      <div className="grid gap-5 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Segmented<'DOCUMENT' | 'LEGAL_DOCS' | 'APPROVAL' | 'GOOGLE_DOCS'>
+            <Segmented<'DOCUMENT' | 'SPLIT_VERIFY' | 'LEGAL_DOCS' | 'APPROVAL' | 'GOOGLE_DOCS'>
               value={workspaceTab}
               onChange={setWorkspaceTab}
               items={[
                 { key: 'DOCUMENT', label: 'Văn bản hợp đồng' },
+                {
+                  key: 'SPLIT_VERIFY',
+                  label: 'Đối chiếu song song (CCCD + Văn bản)',
+                },
                 ...(record.googleDocsUrl
                   ? [
                       {
@@ -718,6 +750,79 @@ export function ContractDetail({
                 />
               )}
             </section>
+          ) : workspaceTab === 'SPLIT_VERIFY' ? (
+            <section className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+              <div className="space-y-3 min-w-0">
+                <LegalProfileSigningHistoryBanner
+                  summary={evaluateLegalProfileSigningHistory(record, data.records, deals, kocs)}
+                  onOpenPriorContract={id => onOpen(id)}
+                />
+                {(() => {
+                  const profiles = linkedKoc ? getKocLegalProfiles(linkedKoc) : [];
+                  const activeProf =
+                    (record.legalProfileId ? profiles.find(p => p.id === record.legalProfileId) : undefined) ||
+                    profiles.find(p => p.isDefault) ||
+                    profiles[0];
+                  const effectiveAttachments =
+                    record.legalAttachments && record.legalAttachments.length > 0
+                      ? record.legalAttachments
+                      : resolveContractLegalAttachments(record, deals, kocs, data.records);
+                  const effectiveLegalType =
+                    activeProf?.legalType ||
+                    (record.templateId.startsWith('COM-')
+                      ? 'COMPANY'
+                      : record.templateId.startsWith('HKD-')
+                        ? 'HOUSEHOLD'
+                        : 'INDIVIDUAL');
+                  return (
+                    <LegalAttachmentsPanel
+                      attachments={effectiveAttachments}
+                      entitySlug={linkedKoc?.channelId || linkedKoc?.id || record.partner || record.id}
+                      legalType={effectiveLegalType}
+                      editable={!isFullySigned}
+                      defaultExpandPreview={true}
+                      onChange={nextAttachments => {
+                        void onAction(
+                          { action: 'ATTACH_LEGAL_DOCS', legalAttachments: nextAttachments },
+                          'Đã cập nhật tệp đính kèm CCCD / ĐKKD',
+                        );
+                      }}
+                      title="Giấy tờ pháp lý CCCD & ĐKKD"
+                    />
+                  );
+                })()}
+              </div>
+              <div className="min-w-0">
+                {previewLoading && !previewData ? (
+                  <div className="bg-surface border border-line rounded-xl p-8 text-center text-xs text-ink-3">
+                    Đang dựng văn bản hợp đồng…
+                  </div>
+                ) : (
+                  <ContractDocumentViewer
+                    title={record.title}
+                    templateName={`${template?.name || record.templateId} · v${selectedVersion}`}
+                    blocks={previewData?.blocks || record.customFile?.blocks || template?.blocks || []}
+                    paragraphs={previewData?.paragraphs || record.customFile?.paragraphs || []}
+                    fields={record.isKocOwnForm ? [] : (previewData?.fields || template?.fields || [])}
+                    values={shownValues}
+                    compareValues={comparePrev && previousSnapshot ? previousSnapshot.values : undefined}
+                    clauseDiffs={
+                      record.googleDocsAuditTrail?.initialToFinalDiffs?.length
+                        ? record.googleDocsAuditTrail.initialToFinalDiffs
+                        : record.googleDocsReviewRouting?.clauseDiffs
+                    }
+                    activeFieldKey={activeFieldKey}
+                    downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
+                    signingPeople={selectedVersion === signing?.version ? signing?.people : undefined}
+                    signingDocumentId={signing?.documentId}
+                    partnerName={record.partner}
+                    acceptanceScreenshots={shownScreenshots}
+                    isTemplatePreview={record.isKocOwnForm}
+                    compactToolbar
+                  />
+                )}
+              </div>
+            </section>
           ) : workspaceTab === 'LEGAL_DOCS' ? (
             <section className="grid gap-3">
               <LegalProfileSigningHistoryBanner
@@ -786,6 +891,22 @@ export function ContractDetail({
                       note={s.note}
                     />
                   ))}
+                  {record.approval !== 'DRAFT' && !record.steps.some(s => s.role === 'LEGAL') && (
+                    <Step
+                      title="Pháp chế"
+                      who={data.reviewers.find(a => a.roles.includes('LEGAL'))?.name || 'Bộ phận Pháp chế'}
+                      status={{ label: 'Đã thông báo · Theo dõi', tone: 'info' }}
+                    />
+                  )}
+                  {record.approval !== 'DRAFT' &&
+                    (record.templateId.endsWith('-HDNT') || record.brand === 'UPBASE') &&
+                    !record.steps.some(s => s.role === 'LEAD') && (
+                      <Step
+                        title="Giám đốc B2C"
+                        who="Đặng Thị Yến Nhi"
+                        status={{ label: 'Đã thông báo · Quản lý', tone: 'info' }}
+                      />
+                    )}
                 </ol>
               </section>
 
@@ -846,9 +967,9 @@ export function ContractDetail({
           )}
         </div>
 
-        <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">
+        <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0 overflow-hidden">
           <AsideSection title="Thông tin hợp đồng">
-            <dl className="grid gap-2.5">
+            <dl className="grid gap-2.5 min-w-0">
               <Info label="Đối tác KOC (Bên B)">{record.partner}</Info>
               <Info label="Loại hợp đồng">
                 {record.isKocOwnForm && record.customFile
@@ -876,7 +997,14 @@ export function ContractDetail({
                 <span className="font-code text-2xs break-all">{stableContractCode}</span>
               </Info>
               <Info label="Phụ trách">
-                <Person name={record.ownerName} size={20} />
+                {(() => {
+                  const m = record.ownerName.match(/^(.+?)\s*\((.+)\)$/);
+                  return m ? (
+                    <Person name={m[1].trim()} sub={m[2].trim()} size={22} />
+                  ) : (
+                    <Person name={record.ownerName} size={22} />
+                  );
+                })()}
               </Info>
               {parent && (
                 <Info label="Hợp đồng gốc">
@@ -915,7 +1043,16 @@ export function ContractDetail({
         data={data}
         busy={busy}
         onClose={() => setDialog(null)}
-        onSubmit={(ids, reqLegal) => onAction({ action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal }, record.googleDocsUrl ? 'Đã trình final và chốt bản Google Doc' : 'Đã gửi duyệt').then(r => r && setDialog(null))}
+        onSubmit={(ids, reqLegal) =>
+          onAction(
+            { action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal },
+            record.googleDocsUrl
+              ? 'Đã trình final và chốt bản Google Doc'
+              : record.templateId.endsWith('-HDNT') || record.brand === 'UPBASE'
+                ? 'Đã gửi Kế toán duyệt · Đã thông báo Pháp chế & Giám đốc Đặng Thị Yến Nhi'
+                : 'Đã gửi Kế toán duyệt · Đã thông báo Pháp chế theo dõi',
+          ).then(r => r && setDialog(null))
+        }
       />
       <LinkDialog open={dialog === 'link'} version={record.version} busy={busy} onClose={() => setDialog(null)} onSubmit={documentId => onAction({ action: 'LINK_WESIGN', documentId, confirmed: true }, 'Đã liên kết luồng ký').then(r => r && setDialog(null))} />
       <RequestSignDialog
@@ -1048,7 +1185,7 @@ function Step({ title, who, status, meta, note }: { title: string; who: string; 
 
 function AsideSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="px-4 py-4">
+    <section className="px-4 py-4 min-w-0 overflow-hidden">
       <h3 className="text-sm font-semibold text-ink mb-3">{title}</h3>
       {children}
     </section>
@@ -1057,9 +1194,9 @@ function AsideSection({ title, children }: { title: string; children: React.Reac
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-0.5">
+    <div className="grid gap-0.5 min-w-0">
       <dt className="text-2xs text-ink-3">{label}</dt>
-      <dd className="text-xs text-ink break-words">{children}</dd>
+      <dd className="text-xs text-ink break-words min-w-0 overflow-hidden">{children}</dd>
     </div>
   );
 }
@@ -1111,16 +1248,16 @@ function DiscussionAndHistory({
       {items.length === 0 ? (
         <EmptyState title="Chưa có thao tác" />
       ) : (
-        <ol className="grid gap-3">
+        <ol className="grid gap-3 min-w-0">
           {shown.map((h, i) => (
-            <li key={i} className={`grid gap-0.5 pl-3 border-l-2 ${h.action === 'NOTE' ? 'border-accent' : 'border-line'}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className={`text-xs font-medium ${h.action === 'NOTE' ? 'text-accent' : 'text-ink'}`}>
+            <li key={i} className={`grid gap-0.5 pl-3 border-l-2 min-w-0 ${h.action === 'NOTE' ? 'border-accent' : 'border-line'}`}>
+              <div className="flex items-center justify-between gap-1 min-w-0">
+                <span className={`text-xs font-medium truncate ${h.action === 'NOTE' ? 'text-accent' : 'text-ink'}`}>
                   {HISTORY_LABEL[h.action] || h.action}
                 </span>
-                <span className="text-2xs text-ink-3">v{h.version}</span>
+                <span className="text-2xs text-ink-3 shrink-0">v{h.version}</span>
               </div>
-              <span className="text-2xs text-ink-3">{h.actorName} · {dateTime(h.at)}</span>
+              <span className="text-2xs text-ink-3 break-words">{h.actorName} · {dateTime(h.at)}</span>
               {h.note && !/^-?\d+$/.test(h.note) && (
                 <span className={`text-2xs mt-0.5 ${h.action === 'NOTE' ? 'text-ink font-normal bg-sunken/60 p-2 rounded' : 'text-ink-2 line-clamp-3'}`}>
                   {h.note}
@@ -1156,34 +1293,29 @@ function SubmitDialog({
   onClose: () => void;
   onSubmit: (ids: string[], requireLegal?: boolean) => void;
 }) {
-  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [financeId, setFinanceId] = useState<string>('');
   const [initKey, setInitKey] = useState('');
-  const template = data.templates.find(t => t.id === record.templateId);
-  const options = (role: ContractRole) => data.reviewers.filter(a => a.id !== record.ownerId && a.roles.includes(role) && (a.allBrands || a.brands.includes(record.brand)));
+  const options = (role: ContractRole) =>
+    data.reviewers.filter(
+      a =>
+        a.id !== record.ownerId &&
+        a.roles.includes(role) &&
+        (record.brand === 'UPBASE' || a.allBrands || a.brands.includes(record.brand)),
+    );
 
-  const isExempt = template?.exemptLegalReview !== false && !record.hasCustomTerms;
-  const [forceLegal, setForceLegal] = useState<boolean>(!isExempt);
+  const financeOpts = options('FINANCE');
+  const legalOpts = options('LEGAL');
+  const isHdnt = record.templateId.endsWith('-HDNT') || record.brand === 'UPBASE';
 
   const currentKey = open ? `${record.id}:${record.version}` : '';
   if (currentKey !== initKey) {
     setInitKey(currentKey);
     if (open) {
-      const legalOpts = options('LEGAL');
-      const financeOpts = options('FINANCE');
-      const leadOpts = options('LEAD');
-      const defaultRoles = template?.defaultReviewRoles || ['LEGAL', 'FINANCE'];
-      const defaultForceLegal = !isExempt;
-      setForceLegal(defaultForceLegal);
-      setPicked({
-        LEGAL: defaultForceLegal ? (legalOpts[0]?.id || '') : '',
-        FINANCE: financeOpts.find(a => a.id !== legalOpts[0]?.id)?.id || financeOpts[0]?.id || '',
-        LEAD: defaultRoles.includes('LEAD') ? (leadOpts[0]?.id || '') : '',
-      });
+      setFinanceId(financeOpts[0]?.id || '');
     }
   }
 
-  const needLegal = forceLegal || Boolean(record.hasCustomTerms);
-  const ready = !!picked.FINANCE && (!needLegal || (!!picked.LEGAL && picked.LEGAL !== picked.FINANCE));
+  const ready = Boolean(financeId);
   return (
     <Modal
       open={open}
@@ -1195,7 +1327,7 @@ function SubmitDialog({
           <Button
             variant="primary"
             disabled={busy || !ready}
-            onClick={() => onSubmit(Object.values(picked).filter(Boolean), needLegal)}
+            onClick={() => onSubmit([financeId], false)}
           >
             {record.googleDocsUrl ? 'Trình final' : 'Gửi duyệt'}
           </Button>
@@ -1203,73 +1335,41 @@ function SubmitDialog({
       }
     >
       <div className="space-y-4">
-        {isExempt && !forceLegal ? (
-          <div className="rounded-lg border border-positive/30 bg-positive-soft p-3 text-xs text-ink space-y-1">
-            <div className="font-semibold text-positive flex items-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              Áp dụng luồng chuẩn: Miễn duyệt Pháp chế
+        <Field label="Người duyệt (Kế toán) *" htmlFor="rv-FINANCE">
+          <Select
+            id="rv-FINANCE"
+            value={financeId}
+            onChange={e => setFinanceId(e.target.value)}
+          >
+            {financeOpts.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </Select>
+        </Field>
+
+        <div className="space-y-2">
+          <span className="block text-xs font-medium text-ink">Nhận thông báo &amp; theo dõi</span>
+          <div className="rounded-lg border border-line bg-sunken/30 divide-y divide-line">
+            <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+              <Person
+                name={legalOpts[0]?.name || 'Bộ phận Pháp chế'}
+                sub="Pháp chế · Quản lý, theo dõi hợp đồng"
+                size={24}
+              />
+              <Status tone="info">Nhận thông báo</Status>
             </div>
-            <p className="text-2xs text-ink-2">
-              Hồ sơ dùng mẫu chuẩn và không có điều khoản sửa đổi riêng. Hồ sơ chuyển thẳng Kế toán soát xét ngân sách và thuế.
-            </p>
+            {isHdnt && (
+              <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                <Person
+                  name="Đặng Thị Yến Nhi"
+                  sub="Giám đốc Marketing B2C · Nắm thông tin quản lý"
+                  size={24}
+                />
+                <Status tone="info">Nhận thông báo</Status>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-xs text-ink space-y-1">
-            <div className="font-semibold text-warning-strong flex items-center gap-2">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              Bắt buộc Pháp chế (chị Liên) duyệt trước
-            </div>
-            <p className="text-2xs text-ink-2">
-              {record.hasCustomTerms
-                ? `Hồ sơ có thỏa thuận sửa đổi riêng theo yêu cầu của KOC: "${record.customTermsSummary || ''}".`
-                : 'Mẫu biểu này yêu cầu Pháp chế thẩm định trước.'}
-            </p>
-          </div>
-        )}
-
-        {isExempt && (
-          <label className="flex items-center gap-2 text-xs text-ink-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={forceLegal}
-              onChange={e => {
-                const nextForce = e.target.checked;
-                setForceLegal(nextForce);
-                if (nextForce && !picked.LEGAL) {
-                  setPicked(p => ({ ...p, LEGAL: options('LEGAL')[0]?.id || '' }));
-                }
-              }}
-              className="rounded border-line"
-            />
-            Yêu cầu thêm Pháp chế duyệt bổ sung nếu cần
-          </label>
-        )}
-
-        {(['LEGAL', 'FINANCE', 'LEAD'] as const).map(role => {
-          if (role === 'LEGAL' && !needLegal) return null;
-          return (
-            <Field
-              key={role}
-              label={`${ROLE_LABEL[role]}${role === 'LEAD' ? ' (tùy theo hạn mức / nhóm)' : ' *'}`}
-              htmlFor={`rv-${role}`}
-            >
-              <Select
-                id={`rv-${role}`}
-                value={picked[role] || ''}
-                onChange={e => setPicked(p => ({ ...p, [role]: e.target.value }))}
-              >
-                <option value="">{role === 'LEAD' ? 'Không cần' : 'Chọn người duyệt'}</option>
-                {options(role).map(a => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </Select>
-            </Field>
-          );
-        })}
-
-        {needLegal && picked.LEGAL && picked.LEGAL === picked.FINANCE && (
-          <p className="text-2xs text-critical">Chọn hai người khác nhau cho pháp chế và kế toán.</p>
-        )}
+        </div>
       </div>
     </Modal>
   );
@@ -1475,9 +1575,11 @@ function RequestSignDialog({
   const [partyAEmail, setPartyAEmail] = useState('hopdong@upbase.vn');
   const [partyBEmail, setPartyBEmail] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [prevOpenKey, setPrevOpenKey] = useState('');
 
-  useEffect(() => {
-    if (!open) return;
+  const curOpenKey = open ? `${record.id}:${record.revision}` : '';
+  if (curOpenKey && curOpenKey !== prevOpenKey) {
+    setPrevOpenKey(curOpenKey);
     const rawEmail =
       record.values['src:email'] ||
       record.values['token:[ĐIỀN EMAIL]'] ||
@@ -1485,7 +1587,9 @@ function RequestSignDialog({
       '';
     setPartyBEmail(rawEmail.trim());
     setConfirmed(false);
-  }, [open, record]);
+  } else if (!open && prevOpenKey) {
+    setPrevOpenKey('');
+  }
 
   const ready = Boolean(partyAEmail.trim() && partyBEmail.trim() && confirmed);
 

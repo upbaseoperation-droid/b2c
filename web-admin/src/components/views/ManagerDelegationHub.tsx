@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Search,
   Database,
-  ArrowRight,
   History,
   X,
 } from 'lucide-react';
@@ -27,9 +26,9 @@ import {
 } from '../../lib/types';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { getVietnamDateYmd } from '../../lib/format';
-import { Avatar, Button, Modal, PageActions, Status, ChannelTag, Tabs } from '../ui';
+import { Avatar, Button, Combobox, Modal, PageActions, Status, ChannelTag, Tabs } from '../ui';
+import type { ComboboxOption } from '../ui/Combobox';
 import { B2C_28_STAFF_WORKLOAD_ROSTER } from './TaskDelegationView';
-import { StoreStaffSheetSetupView } from './StoreStaffSheetSetupView';
 import {
   computeUnifiedB2cStaffWorkloads,
   loadSavedManagerExceptions,
@@ -81,8 +80,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   tasks,
   onNotify,
 }) => {
-  const isAdmin = !currentUser?.role || currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER';
-  const [activeSection, setActiveSection] = useState<'STORES' | 'SHEET_LINKS' | 'BRANDS' | 'ASSIGNMENT_HISTORY'>('STORES');
+  const [activeSection, setActiveSection] = useState<'STORES' | 'BRANDS' | 'ASSIGNMENT_HISTORY'>('STORES');
   const [selectedLeaderTeam, setSelectedLeaderTeam] = useState<'ALL' | 'TEAM_1' | 'TEAM_2'>('ALL');
 
   // Lịch sử bàn giao PIC
@@ -228,7 +226,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
   const [brandAddMode, setBrandAddMode] = useState<'FROM_MASTER' | 'CUSTOM'>('FROM_MASTER');
   const [selectedMasterBrandId, setSelectedMasterBrandId] = useState<string>('');
-  const [masterBrandSearch, setMasterBrandSearch] = useState<string>('');
   const [masterBrandCategoryFilter, setMasterBrandCategoryFilter] = useState<string>('ALL');
   const [hideAllocatedMasterBrands, setHideAllocatedMasterBrands] = useState<boolean>(true);
 
@@ -261,14 +258,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   }, []);
 
   const filteredMasterBrands = useMemo(() => {
-    const q = masterBrandSearch.trim().toLowerCase();
     return UPBASE_BRANDS_MASTER.filter((b) => {
-      const matchesSearch =
-        !q ||
-        b.name.toLowerCase().includes(q) ||
-        b.code.toLowerCase().includes(q) ||
-        (b.companyName && b.companyName.toLowerCase().includes(q));
-
       const matchesCat = masterBrandCategoryFilter === 'ALL' || b.category === masterBrandCategoryFilter;
 
       const isAlreadyAllocated = brands.some(
@@ -279,14 +269,27 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         return false;
       }
 
-      return matchesSearch && matchesCat;
+      return matchesCat;
     });
-  }, [masterBrandSearch, masterBrandCategoryFilter, hideAllocatedMasterBrands, brands]);
+  }, [masterBrandCategoryFilter, hideAllocatedMasterBrands, brands]);
 
   const selectedMasterBrand = useMemo(() => {
     if (!selectedMasterBrandId) return null;
     return UPBASE_BRANDS_MASTER.find((b) => b.id === selectedMasterBrandId) || null;
   }, [selectedMasterBrandId]);
+
+  // Nhãn hàng đang chọn luôn có trong danh sách, kể cả khi bị bộ lọc loại ra.
+  const masterBrandOptions = useMemo<ComboboxOption[]>(() => {
+    const list = selectedMasterBrand && !filteredMasterBrands.some((b) => b.id === selectedMasterBrand.id)
+      ? [selectedMasterBrand, ...filteredMasterBrands]
+      : filteredMasterBrands;
+    return list.map((b) => ({
+      value: b.id,
+      label: b.name,
+      hint: b.code,
+      searchText: b.companyName || '',
+    }));
+  }, [filteredMasterBrands, selectedMasterBrand]);
 
   const handleSelectMasterBrand = (master: BrandDetail) => {
     setSelectedMasterBrandId(master.id);
@@ -505,7 +508,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               setEditingBrand(null);
               setBrandAddMode('FROM_MASTER');
               setSelectedMasterBrandId('');
-              setMasterBrandSearch('');
               setMasterBrandCategoryFilter('ALL');
               setHideAllocatedMasterBrands(true);
               setBrandFormState({
@@ -536,25 +538,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             count: b2cPlanStores.length,
           },
           { key: 'BRANDS', label: 'Phân công theo Brand', count: brands.length },
-          ...(isAdmin
-            ? [{ key: 'SHEET_LINKS' as const, label: 'Thiết lập Link Google & Nhân sự', count: b2cPlanStores.length }]
-            : []),
           { key: 'ASSIGNMENT_HISTORY', label: 'Lịch sử bàn giao', count: assignmentHistory.length },
         ]}
       />
-
-      {isAdmin && activeSection === 'SHEET_LINKS' && (
-        <StoreStaffSheetSetupView
-          stores={storePortfolios}
-          onNotify={(msg) => notify(msg)}
-          onSaved={(updatedByStoreId) => {
-            for (const [id, patch] of Object.entries(updatedByStoreId)) {
-              const found = storePortfolios.find((s) => s.id === id);
-              if (found) onUpdateStore({ ...found, ...patch });
-            }
-          }}
-        />
-      )}
 
       {/* ========================================================================= */}
       {/* 1. PHÂN CÔNG GIAN HÀNG (TRỰC TIẾP HỆ SỐ + LEADER + PIC)                   */}
@@ -570,14 +556,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   placeholder="Tìm tên gian hàng, Brand, PIC..."
                   value={storeSearchTerm}
                   onChange={(e) => setStoreSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                  className="w-full pl-8 pr-3 py-2 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
                 />
               </div>
 
               <select
                 value={storePlatformFilter}
                 onChange={(e) => setStorePlatformFilter(e.target.value as typeof storePlatformFilter)}
-                className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                className="text-xs px-3 py-2 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
               >
                 <option value="ALL">Tất cả sàn</option>
                 <option value="TikTok Shop">TikTok Shop</option>
@@ -588,7 +574,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <select
                 value={selectedLeaderTeam}
                 onChange={(e) => setSelectedLeaderTeam(e.target.value as typeof selectedLeaderTeam)}
-                className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                className="text-xs px-3 py-2 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
               >
                 <option value="ALL">Tất cả luồng duyệt</option>
                 <option value="TEAM_1">Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm (8 gian)</option>
@@ -598,7 +584,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <select
                 value={selectedStaffFilter}
                 onChange={(e) => setSelectedStaffFilter(e.target.value)}
-                className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                className="text-xs px-3 py-2 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
               >
                 <option value="ALL">Tất cả chuyên viên</option>
                 {b2cStorePicOptions.map((s) => (
@@ -637,13 +623,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
-                  <th className="py-2.5 px-4 min-w-[200px]">Gian hàng & sàn</th>
-                  <th className="py-2.5 px-3">Nhãn hàng</th>
-                  <th className="py-2.5 px-3 w-40">Hệ số gian hàng</th>
-                  <th className="py-2.5 px-3 min-w-[180px]">Cấp sơ duyệt (Leader)</th>
-                  <th className="py-2.5 px-3 min-w-[205px]">Nhân viên chính (PIC)</th>
-                  <th className="py-2.5 px-3 min-w-[220px]">Nhân viên hỗ trợ</th>
-                  <th className="py-2.5 px-3 text-right w-28">
+                  <th className="py-3 px-4 min-w-[200px]">Gian hàng & sàn</th>
+                  <th className="py-3 px-3">Nhãn hàng</th>
+                  <th className="py-3 px-3 w-40">Hệ số gian hàng</th>
+                  <th className="py-3 px-3 min-w-[180px]">Cấp sơ duyệt (Leader)</th>
+                  <th className="py-3 px-3 min-w-[205px]">Nhân viên chính (PIC)</th>
+                  <th className="py-3 px-3 min-w-[220px]">Nhân viên hỗ trợ</th>
+                  <th className="py-3 px-3 text-right w-28">
                     <span className="sr-only">Thao tác</span>
                   </th>
                 </tr>
@@ -666,17 +652,17 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                     return (
                       <tr key={store.id} className="hover:bg-canvas transition-colors group">
-                        <td className="py-2.5 px-4">
+                        <td className="py-3 px-4">
                           <div className="font-semibold text-ink text-xs">{store.storeName}</div>
                           <div className="mt-0.5">
                             <ChannelTag channel={store.platform} />
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3 font-medium text-ink-2">{store.brandName}</td>
+                        <td className="py-3 px-3 font-medium text-ink-2">{store.brandName}</td>
 
                         {/* Chọn trực tiếp Hệ số gian hàng */}
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <span
                             className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-sunken text-ink border border-line"
                             title="Hệ số quy mô gian hàng chuẩn theo định mức B2C"
@@ -686,14 +672,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         </td>
 
                         {/* Chọn Cấp sơ duyệt (Leader) */}
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <span className="text-xs text-ink-2 font-medium">
                             {hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}
                           </span>
                         </td>
 
                         {/* Chọn Nhân viên chính (PIC) */}
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <Avatar name={primaryPic} size={22} />
                             <select
@@ -709,7 +695,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                   store.assignmentNotes || ''
                                 );
                               }}
-                              className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              className="w-full min-w-0 text-xs font-medium px-2 py-2 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                             >
                               {b2cStorePicOptions.map((s) => {
                                 const w = staffWorkloadMap.get(s.name);
@@ -725,14 +711,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         </td>
 
                         {/* Chọn Nhân viên hỗ trợ (Đa chọn) */}
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="space-y-1">
                             {supportStaff.length > 0 && (
                               <div className="flex flex-wrap items-center gap-1">
                                 {supportStaff.map((sp) => (
                                   <span
                                     key={sp}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft text-accent border border-accent/20 text-2xs font-medium"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent-soft text-accent border border-accent/20 text-2xs font-medium"
                                   >
                                     <span>{sp}</span>
                                     <button
@@ -751,7 +737,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                       className="hover:text-critical cursor-pointer"
                                       title={`Gỡ ${sp} khỏi nhân viên hỗ trợ`}
                                     >
-                                      <X className="w-3 h-3" />
+                                      <X className="w-3.5 h-3.5" />
                                     </button>
                                   </span>
                                 ))}
@@ -794,7 +780,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-3 px-3 text-right">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -822,7 +808,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {activeSection === 'BRANDS' && (
         <div className="bg-surface rounded-xl border border-line overflow-hidden">
           <div className="px-4 py-3 border-b border-line flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="relative min-w-[230px]">
                 <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
                 <input
@@ -830,14 +816,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   placeholder="Tìm nhãn hàng, nhân sự phụ trách..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                  className="w-full pl-8 pr-3 py-2 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
                 />
               </div>
 
               <select
                 value={selectedBrandFilter}
                 onChange={(e) => setSelectedBrandFilter(e.target.value)}
-                className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                className="text-xs px-3 py-2 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
               >
                 <option value="ALL">Tất cả nhân sự phụ trách Brand</option>
                 {uniqueBrandPics.map((pic) => (
@@ -871,12 +857,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
-                  <th className="py-2.5 px-4 min-w-[190px]">Nhãn hàng</th>
-                  <th className="py-2.5 px-3 min-w-[190px]">Content / Brand main</th>
-                  <th className="py-2.5 px-3 min-w-[190px]">Plan / Strategy</th>
-                  <th className="py-2.5 px-3 min-w-[190px]">Key Visual / SIS</th>
-                  <th className="py-2.5 px-3 text-center w-28">Số gian B2C</th>
-                  <th className="py-2.5 px-3 text-right w-28">
+                  <th className="py-3 px-4 min-w-[190px]">Nhãn hàng</th>
+                  <th className="py-3 px-3 min-w-[190px]">Content / Brand main</th>
+                  <th className="py-3 px-3 min-w-[190px]">Plan / Strategy</th>
+                  <th className="py-3 px-3 min-w-[190px]">Key Visual / SIS</th>
+                  <th className="py-3 px-3 text-center w-28">Số gian B2C</th>
+                  <th className="py-3 px-3 text-right w-28">
                     <span className="sr-only">Thao tác</span>
                   </th>
                 </tr>
@@ -900,14 +886,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                     return (
                       <tr key={brand.id} className="hover:bg-canvas transition-colors group">
-                        <td className="py-2.5 px-4">
+                        <td className="py-3 px-4">
                           <span className="font-semibold text-ink text-xs block truncate">{brand.name}</span>
                           <span className="text-2xs text-ink-3 block truncate max-w-[180px]">
                             {brand.category || brand.companyName}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <Avatar name={contentMainVal} size={22} />
                             <select
@@ -920,7 +906,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 });
                                 notify(`Đã gán Content / Brand main của ${brand.name} cho ${e.target.value}`);
                               }}
-                              className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              className="w-full min-w-0 text-xs font-medium px-2 py-2 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                             >
                               {brandPositionCandidateNames.map((name) => (
                                 <option key={name} value={name}>
@@ -931,7 +917,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <Avatar name={planStrategyVal} size={22} />
                             <select
@@ -944,7 +930,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 });
                                 notify(`Đã gán Plan / Strategy của ${brand.name} cho ${e.target.value}`);
                               }}
-                              className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              className="w-full min-w-0 text-xs font-medium px-2 py-2 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                             >
                               {brandPositionCandidateNames.map((name) => (
                                 <option key={name} value={name}>
@@ -955,7 +941,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <Avatar name={kvSisVal} size={22} />
                             <select
@@ -967,7 +953,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 });
                                 notify(`Đã gán Key Visual / SIS của ${brand.name} cho ${e.target.value}`);
                               }}
-                              className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              className="w-full min-w-0 text-xs font-medium px-2 py-2 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                             >
                               {brandPositionCandidateNames.map((name) => (
                                 <option key={name} value={name}>
@@ -978,7 +964,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-3 px-3 text-center">
                           {brandStoresCount > 0 ? (
                             <span className="tabular-nums font-medium text-ink-2">{brandStoresCount} gian</span>
                           ) : (
@@ -986,7 +972,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           )}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-3 px-3 text-right">
                           <Button size="sm" variant="secondary" onClick={() => handleOpenEditBrand(brand)}>
                             Cấu hình
                           </Button>
@@ -1021,13 +1007,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     placeholder="Tìm gian hàng, nhân sự..."
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
-                    className="w-full pl-8 pr-2.5 py-1 text-xs bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-brand"
+                    className="w-full pl-8 pr-3 py-1 text-xs bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-brand"
                   />
                 </div>
                 <select
                   value={historyActionFilter}
                   onChange={(e) => setHistoryActionFilter(e.target.value as typeof historyActionFilter)}
-                  className="px-2.5 py-1 text-xs bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-brand"
+                  className="px-3 py-1 text-xs bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-brand"
                 >
                   <option value="ALL">Mọi loại bàn giao</option>
                   <option value="ASSIGNED">Bổ nhiệm mới</option>
@@ -1041,12 +1027,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                   <tr>
-                    <th className="py-2.5 px-4 min-w-[200px]">Gian hàng</th>
-                    <th className="py-2.5 px-4 w-[140px]">Loại thay đổi</th>
-                    <th className="py-2.5 px-4 min-w-[170px]">Nhân sự tiếp nhận</th>
-                    <th className="py-2.5 px-4 min-w-[260px]">Nội dung bàn giao</th>
-                    <th className="py-2.5 px-4 w-[150px]">Người duyệt</th>
-                    <th className="py-2.5 px-4 text-right w-[110px]">Ngày hiệu lực</th>
+                    <th className="py-3 px-4 min-w-[200px]">Gian hàng</th>
+                    <th className="py-3 px-4 w-[140px]">Loại thay đổi</th>
+                    <th className="py-3 px-4 min-w-[170px]">Nhân sự tiếp nhận</th>
+                    <th className="py-3 px-4 min-w-[260px]">Nội dung bàn giao</th>
+                    <th className="py-3 px-4 w-[150px]">Người duyệt</th>
+                    <th className="py-3 px-4 text-right w-[110px]">Ngày hiệu lực</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -1071,21 +1057,21 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       };
                       return (
                         <tr key={h.id} className="hover:bg-sunken/40 transition-colors">
-                          <td className="py-2.5 px-4 font-medium text-ink">
+                          <td className="py-3 px-4 font-medium text-ink">
                             {h.storeName}
                             <div className="text-2xs text-ink-3 font-normal">{h.brandName}</div>
                           </td>
-                          <td className="py-2.5 px-4">
+                          <td className="py-3 px-4">
                             <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${act.className}`}>
                               {act.label}
                             </span>
                           </td>
-                          <td className="py-2.5 px-4 font-semibold text-ink">{h.staffName}</td>
-                          <td className="py-2.5 px-4 text-xs text-ink-2">
+                          <td className="py-3 px-4 font-semibold text-ink">{h.staffName}</td>
+                          <td className="py-3 px-4 text-xs text-ink-2">
                             {h.reason || h.handoverNotes || '—'}
                           </td>
-                          <td className="py-2.5 px-4 text-xs text-ink-2">{h.assignedByName}</td>
-                          <td className="py-2.5 px-4 text-right font-mono text-2xs text-ink-3">
+                          <td className="py-3 px-4 text-xs text-ink-2">{h.assignedByName}</td>
+                          <td className="py-3 px-4 text-right font-mono text-2xs text-ink-3">
                             {h.effectiveDate}
                           </td>
                         </tr>
@@ -1108,20 +1094,20 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                   <tr>
-                    <th className="py-2.5 px-4 min-w-[160px]">Nhân sự chính</th>
-                    <th className="py-2.5 px-4 min-w-[160px]">Nhân sự dự phòng</th>
-                    <th className="py-2.5 px-4 min-w-[260px]">Phạm vi ủy quyền</th>
-                    <th className="py-2.5 px-4 text-center w-[130px]">Trạng thái</th>
-                    <th className="py-2.5 px-4 text-right w-[180px]">Thời hạn</th>
+                    <th className="py-3 px-4 min-w-[160px]">Nhân sự chính</th>
+                    <th className="py-3 px-4 min-w-[160px]">Nhân sự dự phòng</th>
+                    <th className="py-3 px-4 min-w-[260px]">Phạm vi ủy quyền</th>
+                    <th className="py-3 px-4 text-center w-[130px]">Trạng thái</th>
+                    <th className="py-3 px-4 text-right w-[180px]">Thời hạn</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {INITIAL_BACKUP_ASSIGNMENTS.map((b) => (
                     <tr key={b.id} className="hover:bg-sunken/40 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-ink">{b.primaryStaffName}</td>
-                      <td className="py-2.5 px-4 font-semibold text-warning">{b.backupStaffName}</td>
-                      <td className="py-2.5 px-4 text-xs text-ink-2">{b.reason}</td>
-                      <td className="py-2.5 px-4 text-center">
+                      <td className="py-3 px-4 font-semibold text-ink">{b.primaryStaffName}</td>
+                      <td className="py-3 px-4 font-semibold text-warning">{b.backupStaffName}</td>
+                      <td className="py-3 px-4 text-xs text-ink-2">{b.reason}</td>
+                      <td className="py-3 px-4 text-center">
                         <span
                           className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                             b.isActive
@@ -1132,7 +1118,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {b.isActive ? 'Đang kích hoạt' : 'Sẵn sàng'}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-right font-mono text-2xs text-ink-3">
+                      <td className="py-3 px-4 text-right font-mono text-2xs text-ink-3">
                         {b.startDate} → {b.endDate || 'Vô thời hạn'}
                       </td>
                     </tr>
@@ -1188,16 +1174,23 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               {brandAddMode === 'FROM_MASTER' && (
-                <div className="space-y-2.5 bg-canvas p-3 rounded-xl border border-line">
+                <div className="space-y-3 bg-canvas p-3 rounded-xl border border-line">
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                     <div className="sm:col-span-7 relative">
-                      <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Tìm tên nhãn hàng, mã brand..."
-                        value={masterBrandSearch}
-                        onChange={(e) => setMasterBrandSearch(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 bg-white border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none"
+                      <Combobox
+                        value={selectedMasterBrandId}
+                        placeholder="Tìm tên nhãn hàng, mã brand…"
+                        clearable
+                        options={masterBrandOptions}
+                        onChange={(v) => {
+                          const master = UPBASE_BRANDS_MASTER.find((b) => b.id === v);
+                          if (master) {
+                            handleSelectMasterBrand(master);
+                            return;
+                          }
+                          setSelectedMasterBrandId('');
+                          setBrandFormState((prev) => ({ ...prev, name: '', companyName: '' }));
+                        }}
                       />
                     </div>
 
@@ -1205,7 +1198,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       <select
                         value={masterBrandCategoryFilter}
                         onChange={(e) => setMasterBrandCategoryFilter(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs text-ink-2 focus:outline-none"
+                        className="w-full px-3 py-2 bg-white border border-line rounded-lg text-xs text-ink-2 focus:outline-none"
                       >
                         <option value="ALL">Tất cả ngành hàng</option>
                         {masterCategories.map((cat) => (
@@ -1218,7 +1211,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between text-2xs text-ink-3 px-0.5">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={hideAllocatedMasterBrands}
@@ -1230,48 +1223,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     <span>{filteredMasterBrands.length} thương hiệu</span>
                   </div>
 
-                  {selectedMasterBrand ? (
-                    <div className="p-2.5 bg-white border border-accent/30 rounded-lg flex items-center justify-between gap-2">
-                      <div>
-                        <span className="font-semibold text-ink text-xs">{selectedMasterBrand.name}</span>
-                        <span className="ml-2 text-2xs font-mono text-ink-3">{selectedMasterBrand.code}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedMasterBrandId('');
-                          setBrandFormState((prev) => ({
-                            ...prev,
-                            name: '',
-                            companyName: '',
-                          }));
-                        }}
-                        className="text-2xs font-semibold text-accent px-2 py-1 rounded border border-accent/20 hover:bg-accent-soft transition"
-                      >
-                        Đổi nhãn hàng
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="max-h-44 overflow-y-auto divide-y divide-line border border-line rounded-lg bg-white">
-                      {filteredMasterBrands.slice(0, 40).map((master) => (
-                        <button
-                          key={master.id}
-                          type="button"
-                          onClick={() => handleSelectMasterBrand(master)}
-                          className="w-full p-2 text-left flex items-center justify-between gap-2 hover:bg-accent-soft transition"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-semibold text-ink">{master.name}</span>
-                            <span className="ml-1.5 text-2xs font-mono text-ink-3">{master.code}</span>
-                          </div>
-                          <span className="text-2xs font-semibold text-accent flex items-center gap-1 shrink-0">
-                            <span>Chọn</span>
-                            <ArrowRight className="w-2.5 h-2.5" />
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -1304,13 +1255,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           )}
 
           <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="font-semibold text-ink-2 block mb-1">1. Content / Brand main</label>
                 <select
                   value={brandFormState.contentBrandMainPic}
                   onChange={(e) => setBrandFormState((prev) => ({ ...prev, contentBrandMainPic: e.target.value }))}
-                  className="w-full text-xs font-medium px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                  className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
                   {brandPositionCandidateNames.map((name) => (
                     <option key={name} value={name}>
@@ -1325,7 +1276,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <select
                   value={brandFormState.planStrategyPic}
                   onChange={(e) => setBrandFormState((prev) => ({ ...prev, planStrategyPic: e.target.value }))}
-                  className="w-full text-xs font-medium px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                  className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
                   {brandPositionCandidateNames.map((name) => (
                     <option key={name} value={name}>
@@ -1340,7 +1291,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <select
                   value={brandFormState.keyVisualSisPic}
                   onChange={(e) => setBrandFormState((prev) => ({ ...prev, keyVisualSisPic: e.target.value }))}
-                  className="w-full text-xs font-medium px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                  className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
                   {brandPositionCandidateNames.map((name) => (
                     <option key={name} value={name}>
@@ -1351,13 +1302,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-line">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-line">
               <div>
                 <label className="font-semibold text-ink-2 block mb-1">Cấp duyệt B2C</label>
                 <select
                   value={brandFormState.bookingPicLead}
                   onChange={(e) => setBrandFormState((prev) => ({ ...prev, bookingPicLead: e.target.value }))}
-                  className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                  className="w-full text-xs px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
                   <option value="Đặng Thị Yến Nhi">Đặng Thị Yến Nhi (GĐ MKT B2C)</option>
                   {b2cStorePicOptions.map((s) => (
@@ -1373,7 +1324,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <select
                   value={brandFormState.accountPic}
                   onChange={(e) => setBrandFormState((prev) => ({ ...prev, accountPic: e.target.value }))}
-                  className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                  className="w-full text-xs px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
                   {staffList
                     .filter((s) => s.role === 'ACCOUNT' || s.role === 'MANAGER')
@@ -1475,15 +1426,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <label className="font-semibold text-ink-2 block mb-1">
                   Nhân viên hỗ trợ cùng thực thi ({modalSupport.length} nhân sự)
                 </label>
-                <div className="space-y-2 rounded-lg border border-line bg-canvas p-2.5">
+                <div className="space-y-2 rounded-lg border border-line bg-canvas p-3">
                   {modalSupport.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-line">
+                    <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-line">
                       {modalSupport.map((sp) => (
                         <span
                           key={sp}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent-soft text-accent border border-accent/20 text-xs font-medium"
                         >
-                          <Users className="w-3 h-3 shrink-0" />
+                          <Users className="w-3.5 h-3.5 shrink-0" />
                           <span>{sp}</span>
                           <button
                             type="button"
@@ -1491,13 +1442,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             className="ml-0.5 hover:text-critical cursor-pointer"
                             title={`Gỡ ${sp}`}
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-2xs text-ink-3 pb-1.5 border-b border-line">
+                    <div className="text-2xs text-ink-3 pb-2 border-b border-line">
                       Chưa chọn nhân viên hỗ trợ. Tích chọn một hoặc nhiều nhân sự bên dưới.
                     </div>
                   )}
@@ -1509,11 +1460,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       value={modalSupportSearch}
                       onChange={(e) => setModalSupportSearch(e.target.value)}
                       placeholder="Tìm tên nhân viên hỗ trợ..."
-                      className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                      className="w-full pl-8 pr-3 py-2 text-xs bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
                     />
                   </div>
 
-                  <div className="max-h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                  <div className="max-h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                     {supportCandidates.map((s) => {
                       const isSelected = modalSupport.some(
                         (n) => n.toLowerCase() === s.name.toLowerCase()
@@ -1523,7 +1474,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           key={s.id}
                           type="button"
                           onClick={() => toggleModalSupport(s.name)}
-                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-left text-xs transition cursor-pointer ${
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-left text-xs transition cursor-pointer ${
                             isSelected
                               ? 'bg-accent-soft border-accent/30 text-accent font-semibold'
                               : 'bg-surface border-line text-ink hover:bg-sunken'
@@ -1542,7 +1493,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 : 'border-line-strong bg-surface'
                             }`}
                           >
-                            {isSelected && <Check className="w-3 h-3" />}
+                            {isSelected && <Check className="w-3.5 h-3.5" />}
                           </span>
                         </button>
                       );

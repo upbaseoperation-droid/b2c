@@ -60,7 +60,7 @@ export function AssignmentIssuesPanel() {
         {issues.length} phân công cần xử lý
         {conflicts > 0 && <span className="text-ink-2 font-normal">· {conflicts} nhãn có PIC Plan / KV khác nhau giữa các gian</span>}
       </summary>
-      <ul className="px-3 pb-3 space-y-1.5 max-h-72 overflow-y-auto">
+      <ul className="px-3 pb-3 space-y-2 max-h-72 overflow-y-auto">
         {issues.map((i, idx) => (
           <li key={`${i.entityId}-${i.field}-${i.name || ''}-${idx}`} className="text-ink-2">
             <span className="font-medium text-ink">{i.entityName}</span>: {describe(i)}

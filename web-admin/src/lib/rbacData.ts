@@ -47,7 +47,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     code: 'ADMIN',
     name: 'Quản Trị Hệ Thống (Admin)',
     scopeType: 'INTERNAL',
-    badgeColor: 'bg-red-50 text-red-700 border-red-200',
+    badgeColor: 'bg-critical-soft text-critical border-line',
     description: 'Xác định phòng ban và nhân sự thuộc Marketing B2C được phép đăng nhập hệ thống; phân quyền hệ thống.',
     defaultLandingTab: 'cockpit',
     userCount: 2
@@ -58,7 +58,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Giám Đốc Marketing B2C',
     scopeType: 'INTERNAL',
     departmentScope: 'MARKETING_B2C',
-    badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+    badgeColor: 'bg-accent-soft text-accent border-line',
     description: 'Quản lý nhân sự khối Marketing B2C (Booking, Content, Brand), phân bổ gian hàng, duyệt kế hoạch tháng B2C, duyệt chi & thưởng P3.',
     defaultLandingTab: 'cockpit',
     userCount: 1
@@ -69,7 +69,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Trưởng Nhóm B2C (Leader)',
     scopeType: 'INTERNAL',
     departmentScope: 'MARKETING_B2C',
-    badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+    badgeColor: 'bg-accent-soft text-accent border-line',
     description: 'Phụ trách cụm Brand/Store có nhóm, duyệt ứng viên KOC/Deal bước 1, duyệt kịch bản sơ bộ, theo dõi tiến độ lên bài của nhóm.',
     defaultLandingTab: 'cockpit',
     userCount: 4
@@ -77,9 +77,10 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
   {
     id: 'MEMBER',
     code: 'SPECIALIST',
-    name: 'Chuyên Viên (MKT / Growth / Media)',
+    name: 'Chuyên Viên Vận Hành B2C',
     scopeType: 'INTERNAL',
-    badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    departmentScope: 'MARKETING_B2C',
+    badgeColor: 'bg-sunken text-ink-2 border-line',
     description: 'Tác nghiệp trực tiếp trên Brand/Gian hàng được Trưởng phòng phân công (Booking, Content, Brand).',
     defaultLandingTab: 'cockpit',
     userCount: 260
@@ -89,7 +90,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     code: 'LEGAL_REVIEW',
     name: 'Pháp Chế (Duyệt Hợp Đồng & Biểu Mẫu)',
     scopeType: 'INTERNAL',
-    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    badgeColor: 'bg-warning-soft text-warning border-line',
     description: 'Kiểm tra pháp lý hợp đồng & biên bản nghiệm thu, quản lý danh mục và cập nhật biểu mẫu hợp đồng chuẩn (.docx).',
     defaultLandingTab: 'contracts',
     userCount: 2
@@ -99,7 +100,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     code: 'FINANCE_ACC',
     name: 'Kế Toán (Duyệt Hợp Đồng & Đối Soát Chi)',
     scopeType: 'INTERNAL',
-    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+    badgeColor: 'bg-accent-soft text-accent border-line',
     description: 'Duyệt điều khoản thanh toán hợp đồng, kiểm soát thuế TNCN 10% / hóa đơn VAT và đối soát hạn mức chi Order Net.',
     defaultLandingTab: 'contracts',
     userCount: 3
@@ -109,7 +110,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     code: 'SIGN_COORD',
     name: 'Điều Phối Ký Điện Tử (weSign)',
     scopeType: 'INTERNAL',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    badgeColor: 'bg-positive-soft text-positive border-line',
     description: 'Điều phối trình ký hợp đồng đã được Pháp chế & Kế toán duyệt lên hệ thống ký số điện tử weSign.',
     defaultLandingTab: 'contracts',
     userCount: 1
@@ -117,19 +118,19 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
   {
     id: 'BRAND_PARTNER',
     code: 'BRAND_GMAIL',
-    name: 'Đại Diện Thương Hiệu (Brand)',
+    name: 'Đại Diện Nhãn Hàng (Brand Partner)',
     scopeType: 'EXTERNAL',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    description: 'Đăng nhập Gmail, chỉ xem nhãn hàng và gian hàng của mình. Duyệt danh sách KOC, duyệt kịch bản và theo dõi GMV/ROAS.',
-    defaultLandingTab: 'brand-hub',
-    userCount: 8
+    badgeColor: 'bg-accent-soft text-accent border-line',
+    description: 'Đăng nhập cổng đối tác Nhãn hàng để duyệt danh sách KOC đề xuất, duyệt kịch bản / video demo và xem báo cáo hiệu quả.',
+    defaultLandingTab: 'koc-listing',
+    userCount: 18
   },
   {
     id: 'KOC_PARTNER',
     code: 'CREATOR_GMAIL',
     name: 'KOC / KOL / Creator',
     scopeType: 'EXTERNAL',
-    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    badgeColor: 'bg-warning-soft text-warning border-line',
     description: 'Đăng nhập Gmail, quản lý thông tin cá nhân & pháp lý, xem & ký xác nhận hợp đồng, theo dõi lịch sử hợp tác, nhận hàng mẫu, nộp video/mã Spark Ads và đối soát hiệu quả.',
     defaultLandingTab: 'koc-hub',
     userCount: 42
@@ -139,7 +140,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     code: 'CTV_GMAIL',
     name: 'Cộng Tác Viên (CTV Nội Bộ)',
     scopeType: 'EXTERNAL',
-    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    badgeColor: 'bg-sunken text-ink-2 border-line',
     description: 'Đăng nhập Gmail, nhận yêu cầu sản xuất video kênh nội bộ UpBase, nộp sản phẩm và theo dõi thù lao hoa hồng.',
     defaultLandingTab: 'self-channel-hub',
     userCount: 15
@@ -411,13 +412,15 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
     permissions: {
       ADMIN: 'APPROVE',
       MANAGER: 'APPROVE',
-      LEADER: 'DENIED',
-      MEMBER: 'DENIED',
+      LEADER: 'SCOPED',
+      MEMBER: 'VIEW',
+      FINANCE: 'APPROVE',
+      LEGAL: 'VIEW',
       BRAND_PARTNER: 'DENIED',
       KOC_PARTNER: 'VIEW',
       CTV_PARTNER: 'VIEW'
     },
-    securityNote: 'KOC và CTV chỉ xem trạng thái thanh toán (Đang xử lý / Đã chuyển khoản).'
+    securityNote: 'Leader duyệt bước 1 cho 8 gian hàng trọng điểm; GĐ MKT duyệt bước 2; Kế toán duyệt chi & xác nhận UNC.'
   },
   {
     id: 'agency_financial_margins',
@@ -668,10 +671,21 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
 /** Quyền mới khai báo đủ mọi vai trò, vai trò không nêu tên mặc định bị chặn. */
 function withDeniedDefaults(levels: Partial<Record<UserRole, PermissionAccessLevel>>): Record<string, PermissionAccessLevel> {
   const roles: UserRole[] = [
-    'ADMIN', 'MANAGER', 'LEADER', 'MEMBER',
-    'LEGAL', 'FINANCE', 'SIGN_ADMIN', 'BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER',
+    'ADMIN', 'MANAGER', 'LEADER',
+    'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER',
+    'LEGAL', 'FINANCE', 'SIGN_ADMIN',
+    'BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER',
   ];
-  return Object.fromEntries(roles.map((r) => [r, levels[r] ?? 'DENIED']));
+  const memberFallback = levels.MEMBER ?? 'DENIED';
+  return Object.fromEntries(
+    roles.map((r) => [
+      r,
+      levels[r] ??
+        (r === 'BOOKING_MEMBER' || r === 'CONTENT_MEMBER' || r === 'BRAND_MEMBER'
+          ? memberFallback
+          : 'DENIED'),
+    ])
+  );
 }
 
 export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_MATRIX.map(item => {
@@ -701,6 +715,11 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
       financePerm = 'ALL';
       signAdminPerm = 'DENIED';
     }
+  } else if (item.category === 'BOOKING_CONTENT') {
+    if (item.id === 'koc_master_database' || item.id === 'deal_create_management') {
+      legalPerm = 'VIEW';
+      financePerm = item.id === 'deal_create_management' ? 'SCOPED' : 'VIEW';
+    }
   } else if (item.category === 'PERFORMANCE_ADS') {
     if (item.id === 'raw_data_export') {
       legalPerm = 'VIEW';
@@ -715,23 +734,48 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
     }
   }
 
+  const memberDefault = item.permissions.MEMBER || 'DENIED';
+  const bookingPerm =
+    item.permissions.BOOKING_MEMBER ||
+    (item.id === 'content_angles_setup' ? 'VIEW' : memberDefault);
+  const contentPerm =
+    item.permissions.CONTENT_MEMBER ||
+    (item.id === 'deal_create_management' || item.id === 'sample_shipping_tracker' || item.id === 'contract_creation'
+      ? 'VIEW'
+      : item.id === 'legal_ocr_extraction'
+      ? 'DENIED'
+      : memberDefault);
+  const brandMemberPerm =
+    item.permissions.BRAND_MEMBER ||
+    (item.id === 'deal_approval_two_tier' || item.id === 'script_approval'
+      ? 'APPROVE'
+      : item.id === 'brand_profile_full_edit'
+      ? 'SCOPED'
+      : memberDefault);
+
   return {
     ...item,
     permissions: {
       ...item.permissions,
+      BOOKING_MEMBER: bookingPerm,
+      CONTENT_MEMBER: contentPerm,
+      BRAND_MEMBER: brandMemberPerm,
       LEGAL: item.permissions.LEGAL || legalPerm,
       FINANCE: item.permissions.FINANCE || financePerm,
       SIGN_ADMIN: item.permissions.SIGN_ADMIN || signAdminPerm,
+      BRAND_PARTNER: item.permissions.BRAND_PARTNER || 'DENIED',
+      KOC_PARTNER: item.permissions.KOC_PARTNER || 'DENIED',
+      CTV_PARTNER: item.permissions.CTV_PARTNER || 'DENIED',
     }
   };
 });
 
 // =========================================================================
-// 3. DANH SÁCH NHÂN SỰ NỘI BỘ UPBASE CỐT LÕI (3 KHỐI: MARKETING B2C - GROWTH - MEDIA)
+// 3. DANH SÁCH NHÂN SỰ NỘI BỘ UPBASE CỐT LÕI (KHỐI MARKETING B2C & PHỐI HỢP)
 // =========================================================================
 export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
   {
-    id: 'user-do-van-giang',
+    id: 'user-admin-giang',
     staffCode: 'HN001',
     name: 'Đỗ Văn Giang',
     email: 'giangdv@upbase.vn',
@@ -1149,10 +1193,10 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     permissions: {
       canApproveBudget: false,
       canApproveP3: false,
-      canApprovePayment: true,
-      canViewAllBrands: true,
+      canApprovePayment: false,
+      canViewAllBrands: false,
       canExportRawData: true,
-      canManageMasterData: true
+      canManageMasterData: false
     },
     status: 'ACTIVE',
     lastActive: '5 phút trước',
@@ -1590,22 +1634,27 @@ export function classifyMasterStaffMember(
     };
   }
 
-  // 6. Toàn bộ các phòng ban khác (Fulfillment, Livestream, Kế toán, HCNS, Tech, Account B2B, MCN...) -> CHẶN MẶC ĐỊNH
+  // 6. Toàn bộ các phòng ban khác (Fulfillment, Livestream, Kế toán, Pháp chế, HCNS, Tech, Account B2B, MCN...) -> CHẶN MẶC ĐỊNH
   let ruleId = 'rule-blocked-other-units';
   if (/fulfillment/i.test(combined)) ruleId = 'rule-blocked-fulfillment';
   else if (isLivestreamOnly) ruleId = 'rule-blocked-livestream';
-  else if (/kế toán|tài chính|hcns|tuyển dụng|l&d|c&b/i.test(combined)) ruleId = 'rule-blocked-backoffice';
+  else if (/kế toán|tài chính|pháp chế|legal|hcns|tuyển dụng|l&d|c&b/i.test(combined)) ruleId = 'rule-blocked-backoffice';
 
   const matchedBlockedRule = deptRules.find(r => r.id === ruleId);
   const allowFromBlockedRule = matchedBlockedRule ? matchedBlockedRule.autoAllowLogin : false;
+  const fallbackSpecialistRole: UserRole = /pháp chế|legal/i.test(combined)
+    ? 'LEGAL'
+    : /kế toán|tài chính|finance/i.test(combined)
+    ? 'FINANCE'
+    : 'MEMBER';
 
   return {
     ...staff,
     departmentScope: 'OTHER_BLOCKED',
     classifiedScope: 'OTHER_BLOCKED',
     canLogin: allowFromBlockedRule,
-    role: 'MEMBER',
-    mappedRole: 'MEMBER',
+    role: fallbackSpecialistRole,
+    mappedRole: fallbackSpecialistRole,
     roleTitle: pos || 'Nhân sự phòng ban khác',
     managerName: 'Ngoài phạm vi B2C',
     ruleId,
@@ -1679,41 +1728,41 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
   ALL: {
     label: 'ALL (Toàn quyền)',
     shortLabel: 'ALL',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700 font-bold',
-    border: 'border-emerald-200',
+    bg: 'bg-positive-soft',
+    text: 'text-positive font-bold',
+    border: 'border-line',
     description: 'Toàn quyền tạo, sửa, xóa, duyệt không giới hạn phạm vi.'
   },
   SCOPED: {
     label: 'SCOPED (Theo phân công)',
     shortLabel: 'SCOPED',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700 font-bold',
-    border: 'border-blue-200',
+    bg: 'bg-accent-soft',
+    text: 'text-accent font-bold',
+    border: 'border-line',
     description: 'Chỉ được thao tác trên Phòng ban / Brand / Store được giao phụ trách.'
   },
   VIEW: {
     label: 'VIEW (Chỉ xem)',
     shortLabel: 'VIEW',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700 font-bold',
-    border: 'border-amber-200',
+    bg: 'bg-warning-soft',
+    text: 'text-warning font-bold',
+    border: 'border-line',
     description: 'Chỉ có quyền xem thông tin, không được tạo, sửa hoặc xóa.'
   },
   APPROVE: {
     label: 'APPROVE (Phê duyệt)',
     shortLabel: 'APPROVE',
-    bg: 'bg-purple-50',
-    text: 'text-purple-700 font-bold',
-    border: 'border-purple-200',
+    bg: 'bg-accent-soft',
+    text: 'text-accent font-bold',
+    border: 'border-line',
     description: 'Có thẩm quyền ký duyệt chính sách, duyệt deal, duyệt tiền, duyệt kịch bản.'
   },
   DENIED: {
     label: 'DENIED (Cấm truy cập)',
     shortLabel: 'DENIED',
-    bg: 'bg-slate-50',
-    text: 'text-slate-400 font-medium',
-    border: 'border-slate-200',
+    bg: 'bg-sunken',
+    text: 'text-ink-3 font-medium',
+    border: 'border-line',
     description: 'Bị ẩn hoàn toàn, không có quyền truy cập tính năng này.'
   }
 };
@@ -1724,9 +1773,7 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
 
 export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ADMIN: [
-    'store-air-plan-report',
     'cockpit',
-    'overview',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
@@ -1737,36 +1784,26 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-finance',
     'input-plan',
     'koc-listing',
-    'approved-booking-list',
     'self-channel-hub',
     'master-data',
-    'push-products',
-    'stores',
     'campaigns',
     'brand-knowledge',
     'content',
     'content-angles',
     'partner-access',
-    'booking',
     'koc-master',
-    'ctv-master',
     'contracts',
     'manager',
     'task-delegation',
-    'sample-tracker',
-    'brand-hub',
     'koc-hub',
     'ads-report',
     'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   MANAGER: [
-    'store-air-plan-report',
     'cockpit',
-    'overview',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
@@ -1777,36 +1814,26 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-finance',
     'input-plan',
     'koc-listing',
-    'approved-booking-list',
     'self-channel-hub',
     'master-data',
-    'push-products',
-    'stores',
     'campaigns',
     'brand-knowledge',
     'content',
     'content-angles',
     'partner-access',
-    'booking',
     'koc-master',
-    'ctv-master',
     'contracts',
     'manager',
     'task-delegation',
-    'sample-tracker',
-    'brand-hub',
     'koc-hub',
     'ads-report',
     'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   LEADER: [
-    'store-air-plan-report',
     'cockpit',
-    'overview',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
@@ -1820,49 +1847,33 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'task-delegation',
     'input-plan',
     'koc-listing',
-    'approved-booking-list',
     'self-channel-hub',
-    'push-products',
-    'stores',
-    'booking',
     'koc-master',
-    'ctv-master',
     'content',
     'content-angles',
     'campaigns',
     'contracts',
-    'sample-tracker',
     'master-data',
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   BOOKING_MEMBER: [
-    'store-air-plan-report',
-    'store-air-plan-report',
     'cockpit',
     'task-delegation',
     'dashboard-store',
     'dashboard-video',
     'dashboard-air-sync',
-    'booking',
     'koc-listing',
-    'approved-booking-list',
     'koc-master',
-    'ctv-master',
     'self-channel-hub',
     'input-plan',
-    'stores',
     'contracts',
-    'sample-tracker',
-    'push-products',
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   CONTENT_MEMBER: [
     'cockpit',
@@ -1872,15 +1883,11 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'content',
     'content-angles',
     'self-channel-hub',
-    'ctv-master',
     'campaigns',
     'brand-knowledge',
-    'sample-tracker',
-    'push-products',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   BRAND_MEMBER: [
     'cockpit',
@@ -1890,19 +1897,14 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-store',
     'dashboard-video',
     'campaigns',
-    'push-products',
     'brand-knowledge',
     'koc-listing',
-    'approved-booking-list',
     'content',
     'input-plan',
     'ads-report',
-    'overview',
-    'sample-tracker',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   MEMBER: [
     'cockpit',
@@ -1910,47 +1912,43 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-store',
     'dashboard-video',
     'dashboard-air-sync',
-    'booking',
     'koc-listing',
-    'approved-booking-list',
     'koc-master',
-    'ctv-master',
     'self-channel-hub',
-    'stores',
     'content',
     'contracts',
     'input-plan',
-    'sample-tracker',
-    'push-products',
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'zalo-bot'
   ],
   LEGAL: [
     'cockpit',
     'contracts',
-    'zalo-bot'
+    'koc-listing',
+    'koc-hub',
+    'knowledge-qa',
   ],
   FINANCE: [
     'cockpit',
-    'self-channel-hub',
-    'store-air-plan-report',
     'contracts',
+    'koc-listing',
+    'self-channel-hub',
     'dashboard-finance',
-    'zalo-bot'
+    'koc-hub',
+    'knowledge-qa',
   ],
   SIGN_ADMIN: [
+    'cockpit',
     'contracts',
-    'zalo-bot'
+    'knowledge-qa',
   ],
   BRAND_PARTNER: [
-    'brand-hub',
     'koc-listing',
-    'approved-booking-list',
-    'push-products',
-    'content'
+    'content',
+    'brand-knowledge',
+    'dashboard-bi',
   ],
   KOC_PARTNER: [
     'koc-hub'
@@ -1971,7 +1969,7 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
   LEGAL: 'contracts',
   FINANCE: 'contracts',
   SIGN_ADMIN: 'contracts',
-  BRAND_PARTNER: 'brand-hub',
+  BRAND_PARTNER: 'koc-listing',
   KOC_PARTNER: 'koc-hub',
   CTV_PARTNER: 'self-channel-hub'
 };
@@ -1992,6 +1990,7 @@ export const HIDDEN_SYSTEM_SCREENS: TabKey[] = [
   'performance-p3',
   'audit-trail',
   'cloudflare-admin',
+  'brand-hub',
 ];
 
 export const LEADERSHIP_ONLY_SCREENS: TabKey[] = ['dashboard-bi', 'dashboard-team-sla', 'dashboard-staff'];
@@ -2042,11 +2041,19 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'task-delegation',
   'contracts',
   'api-settings',
-  'zalo-bot',
+  'multi-platform-booking',
+  'livestream-booking',
+  'lark-settlement',
 ];
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
   if (HIDDEN_SYSTEM_SCREENS.includes(tab)) return false;
+  if (
+    (tab === 'multi-platform-booking' || tab === 'livestream-booking' || (tab === 'lark-settlement' && role !== 'BRAND_PARTNER' && role !== 'KOC_PARTNER' && role !== 'CTV_PARTNER')) &&
+    (isTabAllowedForRole(role, 'koc-listing') || (tab === 'lark-settlement' && isTabAllowedForRole(role, 'self-channel-hub')))
+  ) {
+    return true;
+  }
   if (CORE_SYNCED_ROLE_TABS.includes(tab) && ROLE_ALLOWED_TABS[role]?.includes(tab)) {
     return true;
   }
@@ -2063,6 +2070,14 @@ export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const base = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])].filter(
     (t) => !HIDDEN_SYSTEM_SCREENS.includes(t)
   );
+  if (base.includes('koc-listing')) {
+    if (!base.includes('multi-platform-booking')) base.push('multi-platform-booking');
+    if (!base.includes('livestream-booking')) base.push('livestream-booking');
+    if (role !== 'BRAND_PARTNER' && !base.includes('lark-settlement')) base.push('lark-settlement');
+  }
+  if (base.includes('self-channel-hub') && role !== 'CTV_PARTNER' && !base.includes('lark-settlement')) {
+    base.push('lark-settlement');
+  }
   for (const coreTab of CORE_SYNCED_ROLE_TABS) {
     if (ROLE_ALLOWED_TABS[role]?.includes(coreTab) && !base.includes(coreTab)) {
       base.push(coreTab);
@@ -2105,30 +2120,22 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'input-plan', label: 'Kế hoạch tháng (Input Plan 4.1)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Lập & duyệt kế hoạch tháng theo gian hàng và khung lương.' },
   { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu (Brand Profile)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Định vị nhãn hàng, pháp nhân, ratecard và quy tắc duyệt.' },
   { key: 'market-research', label: 'Nghiên cứu Brand & Đối thủ', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Bóc tách định vị 4P, lập ma trận đối thủ trực diện, đào bình luận khách hàng và quét trang đích.' },
-  { key: 'stores', label: 'Hồ sơ gian hàng (Store Portfolio)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Quản lý danh mục gian hàng TikTok Shop, Shopee Mall.' },
   { key: 'manager', label: 'Điều phối & Quản lý nhân sự', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Phân bổ tải, giao việc PIC và duyệt kế hoạch cấp phòng.' },
   { key: 'task-delegation', label: 'Giao việc & Định mức Task', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Giao việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research.' },
-  { key: 'campaigns', label: 'Chiến dịch Brand', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Quản lý chiến dịch, mục tiêu GMV và bàn giao đề bài.' },
-  { key: 'push-products', label: 'Sản phẩm trọng tâm (Hero SKU)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Danh mục sản phẩm chủ lực theo Brand & Gian hàng, USP, tồn kho và hạn mức hàng mẫu.' },
-  { key: 'booking', label: 'Quản lý Booking KOC (Pipeline 5 Bước · Mẫu & Mã Ads)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Tạo deal, duyệt KOC, vận đơn gửi mẫu (Bước 3), thu thập & bàn giao mã Spark Ads (Bước 4) và quyết toán.' },
-  { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads (Đối tác / Trực tiếp)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Theo dõi vận đơn gửi mẫu và thu thập mã quảng cáo Spark Ads trong quy trình Booking.' },
   { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ TikTok', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Quét KOC đang làm cho đối thủ, tìm KOC theo #Hashtag và nghiệm thu link video KOC gửi.' },
-  { key: 'koc-listing', label: 'Quản lý Deal & Booking', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Đề xuất danh sách KOC theo lô và cập nhật link video.' },
-  { key: 'approved-booking-list', label: 'List duyệt book (Chốt ngày air, giá cuối & Tạo BO)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Nhận dòng KOC Brand đã duyệt từ Sheet Listing, điền ngày air dự kiến, chốt giá cuối cùng, tạo Booking Order (BO...) và tự động khớp kênh KOC khi nghiệm thu video.' },
+  { key: 'koc-listing', label: 'Booking TikTok (Listing & Deal)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Đề xuất danh sách KOC theo lô, quản lý Deal và cập nhật link video TikTok.' },
+  { key: 'multi-platform-booking', label: 'Booking đa sàn (Threads, FB, Shopee, IG)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Listing, nghiệm thu tự động bài đăng đa sàn và quản lý Video Reup 0đ.' },
+  { key: 'livestream-booking', label: 'Booking Livestream Affiliate', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Quản lý phiên Livestream Affiliate, Phiếu xác nhận hợp tác 30 trường và nghiệm thu phiên Live.' },
   { key: 'content', label: 'Kịch bản & Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Soạn thảo và duyệt kịch bản video KOC / Self-channel.' },
-  { key: 'content-angles', label: 'Góc nội dung (Content Angles)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Ma trận trụ cột nội dung & Hook 3s đầu.' },
   { key: 'koc-master', label: 'Danh bạ KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Hồ sơ KOC/KOL, thông tin pháp lý CCCD/MST và lịch sử hợp tác.' },
-  { key: 'ctv-master', label: 'Danh bạ CTV / VJ', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Hồ sơ cộng tác viên sản xuất video kênh nội bộ.' },
   { key: 'self-channel-hub', label: 'Video kênh Brand (Self-channel)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Giao việc & nghiệm thu video kênh tự xây.' },
+  { key: 'lark-settlement', label: 'Nghiệm thu & ĐNTT Lark tập trung', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng & Tài Chính', description: 'Màn hình tập trung quản lý nghiệm thu và đẩy Phiếu ĐNTT / Tạm ứng sang Larkbase & Lark Approval từ 4 phân hệ Booking.' },
   { key: 'contracts', label: 'Hợp đồng & Biểu mẫu', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng & Tài Chính', description: 'Soạn hợp đồng, duyệt Pháp chế / Kế toán, trình ký điện tử và quản lý mẫu .docx.' },
   { key: 'ads-report', label: 'Báo cáo Ads TikTok', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Báo cáo hiệu quả chạy quảng cáo GMV, ROAS, CPA.' },
-  { key: 'store-air-plan-report', label: 'Báo cáo Kế hoạch & Air Video', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Báo cáo đối soát thực tế vs kế hoạch gian hàng theo KL, kiểm tra tiến độ air video và quản lý ngân sách chi tiêu.' },
   { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
   { key: 'partner-access', label: 'Phân quyền & Nhân sự (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },
   { key: 'api-settings', label: 'Cấu hình API & Công cụ', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cấu hình kết nối Kalodata, Lark Base, TikTok Seller.' },
-  { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản lý kết nối Cloudflare R2 và tệp đính kèm của 42 thương hiệu B2C.' },
-  { key: 'brand-hub', label: 'Cổng đối tác Brand', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho đại diện thương hiệu duyệt KOC & kịch bản.' },
   { key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho Creator cập nhật hồ sơ, ký hợp đồng và nộp bài.' },
 ];
 
@@ -2220,14 +2227,14 @@ export function canUserPerformAction(
 }
 
 export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
-  ...RBAC_ROLE_DEFINITIONS.slice(0, 5),
+  ...RBAC_ROLE_DEFINITIONS.filter((r) => ['ADMIN', 'MANAGER', 'LEADER'].includes(r.id)),
   {
     id: 'BOOKING_MEMBER',
     code: 'BOOKING_PIC',
     name: 'Chuyên Viên Booking B2C',
     scopeType: 'INTERNAL',
     departmentScope: 'MARKETING_B2C',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    badgeColor: 'bg-positive-soft text-positive border-line',
     description: 'Tìm kiếm KOC, tạo deal booking, soạn hợp đồng và theo dõi video lên bài cho các gian hàng được giao.',
     defaultLandingTab: 'cockpit',
     userCount: 118
@@ -2238,7 +2245,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Chuyên Viên Content B2C',
     scopeType: 'INTERNAL',
     departmentScope: 'MARKETING_B2C',
-    badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    badgeColor: 'bg-accent-soft text-accent border-line',
     description: 'Xây dựng góc nội dung, viết kịch bản video KOC & kênh tự xây (Self-channel), điều phối CTV quay dựng.',
     defaultLandingTab: 'cockpit',
     userCount: 10
@@ -2249,12 +2256,14 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Chuyên Viên Quản Lý Nhãn (Brand PIC)',
     scopeType: 'INTERNAL',
     departmentScope: 'MARKETING_B2C',
-    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    badgeColor: 'bg-accent-soft text-accent border-line',
     description: 'Làm việc trực tiếp với nhãn hàng, quản lý chiến dịch Brand, sản phẩm đẩy và trình duyệt kịch bản.',
     defaultLandingTab: 'cockpit',
     userCount: 6
   },
-  ...RBAC_ROLE_DEFINITIONS.slice(6),
+  ...RBAC_ROLE_DEFINITIONS.filter((r) =>
+    ['MEMBER', 'LEGAL', 'FINANCE', 'SIGN_ADMIN', 'BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(r.id)
+  ),
 ];
 
 export const ROLE_SCREEN_PERMS_STORAGE_KEY = 'upbase_b2c_role_screen_perms_v1';

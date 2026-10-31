@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requestActor } from '@/lib/server/requestActor';
 import { readRecord } from '@/lib/server/sharedRecords';
 import {
   getZaloBotToken,
@@ -16,6 +17,13 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const actor = await requestActor(req);
+  if (actor && (actor.partnerType || actor.role.endsWith('_PARTNER'))) {
+    return NextResponse.json(
+      { ok: false, error: 'Tài khoản đối tác không có quyền xem trạng thái Zalo Bot nội bộ.' },
+      { status: 403 }
+    );
+  }
   const token = getZaloBotToken();
   const secretToken = getZaloBotSecretToken();
 

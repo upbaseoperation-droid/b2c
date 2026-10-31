@@ -352,7 +352,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             className="text-2xs font-code text-accent hover:underline inline-flex items-center gap-1"
           >
             <span>@{r.authorHandle}</span>
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
           {!r.isChannelMatched && r.expectedKocHandle && (
             <span className="text-2xs text-critical font-medium">
@@ -369,7 +369,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       render: (r) => (
         <div className="grid gap-1 min-w-0 max-w-[320px]">
           {r.contentCheck.hookFirst3Seconds && (
-            <div className="text-2xs font-semibold text-ink bg-accent-soft/40 border border-accent/20 rounded px-1.5 py-0.5 line-clamp-1">
+            <div className="text-2xs font-semibold text-ink bg-accent-soft/40 border border-accent/20 rounded px-2 py-0.5 line-clamp-1">
               Hook 3s: &ldquo;{r.contentCheck.hookFirst3Seconds}&rdquo;
             </div>
           )}
@@ -380,7 +380,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             className="text-xs text-ink hover:text-accent line-clamp-2 leading-snug inline-flex items-start gap-1"
           >
             <span>{r.contentCheck.caption || r.resolvedUrl}</span>
-            <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
+            <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5 text-ink-3" />
           </a>
           {r.contentCheck.hashtags.length > 0 && (
             <span className="text-2xs font-code text-ink-3 truncate">
@@ -409,7 +409,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
         return (
           <div className="grid gap-0.5 text-xs tabular-nums">
             <span className="font-medium text-ink">{r.publishedTimeFormatted}</span>
-            <div className="flex items-center gap-1.5 flex-wrap text-2xs text-ink-3">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3">
               {r.durationSeconds > 0 ? <span>{r.durationSeconds}s ·</span> : null}
               {r.contentCheck.hasCartAnchor ? (
                 cartUrl ? (
@@ -420,7 +420,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                     className="inline-flex items-center gap-1 text-accent font-medium hover:underline"
                     title={r.cartAnchorVerification.detectedProductTitle || cartUrl}
                   >
-                    <ShoppingBag className="w-3 h-3 shrink-0" />
+                    <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                     <span>Link giỏ hàng</span>
                     <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                   </a>
@@ -490,7 +490,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
         const isSelected = activeInspection?.id === r.id;
         return (
           <div className="grid gap-1 justify-items-end">
-            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            <div className="flex items-center justify-end gap-2 flex-wrap">
               {results.length > 1 && (
                 <Button
                   size="sm"
@@ -602,8 +602,8 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     >
       <div className="space-y-4">
         {/* Khung nhập Link & Tiêu chí đối soát theo Brief chiến dịch */}
-        <div className="px-3.5 py-3 rounded-xl border border-line bg-surface space-y-3">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-2.5 items-start">
+        <div className="px-4 py-3 rounded-xl border border-line bg-surface space-y-3">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
             <Textarea
               id="tiktok-video-inspector-input"
               aria-label="Link video TikTok"
@@ -627,14 +627,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             </Button>
           </div>
 
-          <div className="pt-2.5 border-t border-line grid sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          <div className="pt-3 border-t border-line grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {selectableDeals.length > 0 ? (
               <label className="grid gap-1 text-2xs font-medium text-ink-2">
                 <span>Deal Booking đối chiếu</span>
                 <select
                   value={selectedDealCode}
                   onChange={(e) => handleDealSelectChange(e.target.value)}
-                  className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                  className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink"
                 >
                   <option value="">-- Không chọn Deal --</option>
                   {selectableDeals.map((d) => (
@@ -652,7 +652,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                   value={expectedHandleInput}
                   onChange={(e) => setExpectedHandleInput(e.target.value)}
                   placeholder="VD: @reviewmypham..."
-                  className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+                  className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
                 />
               </label>
             )}
@@ -664,7 +664,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                 value={requiredHashtagsInput}
                 onChange={(e) => setRequiredHashtagsInput(e.target.value)}
                 placeholder="VD: #CocoonVietnam, #TayDaChet"
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
               />
             </label>
 
@@ -675,7 +675,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                 value={expectedCartUrlInput}
                 onChange={(e) => setExpectedCartUrlInput(e.target.value)}
                 placeholder="Dán link giỏ hàng TikTok Shop hoặc mã SP..."
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
               />
             </label>
 
@@ -686,7 +686,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                 value={requiredUspInput}
                 onChange={(e) => setRequiredUspInput(e.target.value)}
                 placeholder="VD: không cồn, dịu nhẹ, cà phê Đắk Lắk"
-                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                className="h-8 px-3 rounded-md border border-line bg-surface-2 text-xs text-ink"
               />
             </label>
 
@@ -766,18 +766,18 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
         )}
 
         {activeInspection && (
-          <div className="border border-line rounded-xl bg-surface p-3.5 space-y-3.5">
+          <div className="border border-line rounded-xl bg-surface p-4 space-y-4">
             {results.length > 1 && (
-              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-line">
+              <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-line">
                 {results.map((item, idx) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedVideoId(item.id)}
-                    className={`px-2.5 py-1 rounded-lg text-2xs font-medium border transition ${
+                    className={`px-3 py-1 rounded-lg text-2xs font-medium border transition ${
                       item.id === activeInspection.id
                         ? 'bg-accent text-white border-accent'
-                        : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
+                        : 'bg-sunken text-ink-2 border-line hover:text-ink'
                     }`}
                   >
                     #{idx + 1} @{item.authorHandle} ({item.verdict === 'ĐẠT_CHUẨN' ? 'Đạt' : item.verdict === 'CẦN_KIỂM_TRA' ? 'Cần xem' : 'Lỗi'})
@@ -787,7 +787,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             )}
 
             {/* Checklist 5 tiêu chí đối soát theo Brief chiến dịch */}
-            <div className="rounded-lg border border-line bg-surface-2/60 p-3 space-y-2.5">
+            <div className="rounded-lg border border-line bg-sunken/60 p-3 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-ink">
@@ -817,7 +817,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                         : 'border-critical/40 bg-critical-soft/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-ink text-2xs">
                         {item.label}
                       </span>
@@ -881,7 +881,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-line">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-ink">
                   Kịch bản & Lời thoại trong video: @{activeInspection.authorHandle}
@@ -920,14 +920,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             </div>
 
             {/* Câu mở đầu 3 giây đầu (Hook) & Chữ nổi trên màn hình */}
-            <div className="grid md:grid-cols-2 gap-2.5">
-              <div className="p-2.5 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-1.5">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-2xs font-semibold uppercase tracking-wider text-accent">
+                  <span className="text-2xs font-semibold text-accent">
                     Câu mở đầu 3 giây đầu (Hook 00:00 - 00:03)
                   </span>
                   {activeInspection.visualAndAudioCheck.firstProductAppearanceSec !== null ? (
-                    <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-code font-semibold">
+                    <span className="px-2 py-0.5 rounded bg-positive-soft text-positive text-2xs font-code font-semibold">
                       Nhắc tên SP giây thứ {activeInspection.visualAndAudioCheck.firstProductAppearanceSec}s
                       {activeInspection.visualAndAudioCheck.firstProductMentionTerm
                         ? ` (“${activeInspection.visualAndAudioCheck.firstProductMentionTerm}”)`
@@ -959,12 +959,12 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                 )}
               </div>
 
-              <div className="p-2.5 rounded-lg border border-line bg-surface-2 space-y-1.5">
+              <div className="p-3 rounded-lg border border-line bg-surface-2 space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-2xs font-semibold uppercase tracking-wider text-ink-3">
+                  <span className="text-2xs font-semibold text-ink-3">
                     Giỏ hàng TikTok Shop & Đối chiếu Link SP
                   </span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {activeInspection.cartAnchorVerification.cartLinkComparison?.hasExpectedInput && (
                       <Status
                         tone={
@@ -1027,7 +1027,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                 )}
 
                 {(activeInspection.cartAnchorVerification.detectedProducts?.length ?? 0) > 0 ? (
-                  <div className="grid gap-1.5">
+                  <div className="grid gap-2">
                     {activeInspection.cartAnchorVerification.detectedProducts?.map((prod, idx) => {
                       const comp = activeInspection.cartAnchorVerification.cartLinkComparison;
                       const isMatchedWithExpected =
@@ -1049,7 +1049,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="flex items-start gap-3 min-w-0">
                               {prod.coverUrl && (
                                 <img
                                   src={prod.coverUrl}
@@ -1059,10 +1059,10 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                                 />
                               )}
                               <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   {comp?.hasExpectedInput && (
                                     <span
-                                      className={`px-1.5 py-0.2 rounded text-2xs font-semibold ${
+                                      className={`px-2 py-0.2 rounded text-2xs font-semibold ${
                                         isMatchedWithExpected
                                           ? 'bg-positive text-white'
                                           : 'bg-warning-soft text-warning'
@@ -1075,14 +1075,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                                     {prod.title}
                                   </p>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 font-code mt-0.5">
+                                <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 font-code mt-0.5">
                                   {prod.anchorKeyword && (
-                                    <span className="px-1.5 py-0.2 rounded bg-accent-soft/50 text-accent font-sans font-medium">
+                                    <span className="px-2 py-0.2 rounded bg-accent-soft/50 text-accent font-sans font-medium">
                                       Nhãn giỏ: &ldquo;{prod.anchorKeyword}&rdquo;
                                     </span>
                                   )}
                                   {prod.categoryName && (
-                                    <span className="px-1.5 py-0.2 rounded bg-surface-2 border border-line text-ink-2 font-sans">
+                                    <span className="px-2 py-0.2 rounded bg-surface-2 border border-line text-ink-2 font-sans">
                                       {prod.categoryName}
                                     </span>
                                   )}
@@ -1128,7 +1128,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                                       className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
                                     >
                                       <span>Mở giỏ</span>
-                                      <ExternalLink className="w-3 h-3" />
+                                      <ExternalLink className="w-3.5 h-3.5" />
                                     </a>
                                   </>
                                 );
@@ -1185,14 +1185,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                               className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
                             >
                               <span>Mở giỏ hàng</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           </div>
                         )}
                       </>
                     ) : (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span
                             className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                               activeInspection.cartAnchorVerification.diagnosticCode === 'CAPCUT_CONFLICT'
@@ -1220,7 +1220,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                             className="inline-flex items-center gap-1 h-6 px-2 rounded bg-surface-2 border border-line text-2xs text-ink hover:text-accent font-medium"
                           >
                             <span>Mở video kiểm tra trên TikTok</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                           <span className="text-2xs text-ink-3">
                             Gợi ý: Dán mã SP của Brand vào ô tìm kiếm phía trên để đối soát
@@ -1230,14 +1230,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                     )}
                   </div>
                 ) : (
-                  <div className="p-2.5 rounded-lg border border-dashed border-line bg-surface-2 text-2xs text-ink-3">
+                  <div className="p-3 rounded-lg border border-dashed border-line bg-surface-2 text-2xs text-ink-3">
                     {activeInspection.cartAnchorVerification.diagnosticReason ||
                       'Video không gắn giỏ hàng TikTok Shop (isECVideo = 0).'}
                   </div>
                 )}
 
                 {activeInspection.contentCheck.onScreenStickers.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <div className="flex flex-wrap gap-2 pt-0.5">
                     {activeInspection.contentCheck.onScreenStickers.map((stk, idx) => (
                       <span
                         key={idx}
@@ -1254,17 +1254,17 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             {/* Bóc tách Kịch bản 4 bước */}
             {activeInspection.contentCheck.scriptSections &&
               activeInspection.contentCheck.scriptSections.length > 0 && (
-                <div className="grid lg:grid-cols-2 gap-2.5">
+                <div className="grid lg:grid-cols-2 gap-3">
                   {activeInspection.contentCheck.scriptSections.map((sec) => (
                     <div
                       key={sec.stepIndex}
-                      className="p-2.5 rounded-lg border border-line bg-surface-2/60 space-y-1"
+                      className="p-3 rounded-lg border border-line bg-surface-2/60 space-y-1"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold text-ink">
                           Bước {sec.stepIndex}: {sec.sectionTitle}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
+                        <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
                           {sec.timeRange}
                         </span>
                       </div>
@@ -1284,7 +1284,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
               activeInspection.contentCheck.subtitleSegments.length > 0 && (
                 <div className="rounded-lg border border-line bg-surface-2 overflow-hidden">
                   <div className="px-3 py-2 border-b border-line flex items-center justify-between">
-                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                       <Clock className="w-3.5 h-3.5 text-accent" />
                       Lời thoại & Phụ đề bóc tách theo mốc giây ({activeInspection.contentCheck.subtitleSegments.length} phân đoạn)
                     </span>
@@ -1301,13 +1301,13 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                       return (
                         <div
                           key={idx}
-                          className={`px-3 py-1.5 flex items-start justify-between gap-2.5 text-xs ${
+                          className={`px-3 py-2 flex items-start justify-between gap-3 text-xs ${
                             matchedMoment ? 'bg-positive-soft/25' : 'hover:bg-surface/60'
                           }`}
                         >
-                          <div className="flex items-start gap-2.5 min-w-0">
+                          <div className="flex items-start gap-3 min-w-0">
                             <span
-                              className={`font-code text-2xs px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${
+                              className={`font-code text-2xs px-2 py-0.5 rounded shrink-0 mt-0.5 ${
                                 matchedMoment
                                   ? 'bg-positive text-white font-semibold'
                                   : 'text-accent bg-accent-soft/40'
@@ -1318,7 +1318,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                             <span className="text-ink leading-relaxed">{seg.text}</span>
                           </div>
                           {matchedMoment && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-code font-medium">
+                            <span className="shrink-0 px-2 py-0.5 rounded bg-positive-soft text-positive text-2xs font-code font-medium">
                               SP: &ldquo;{matchedMoment.matchedTerm}&rdquo; ({matchedMoment.startSec}s)
                             </span>
                           )}
@@ -1330,9 +1330,9 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
               )}
 
               {/* Khối Đối soát phụ đề video với quy chuẩn nhãn hàng */}
-              <div className="rounded border border-line bg-surface/75 p-3 space-y-2.5">
+              <div className="rounded border border-line bg-surface/75 p-3 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
-                  <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                     <FileText className="w-3.5 h-3.5 text-accent" />
                     Đối soát phụ đề video với quy chuẩn nhãn hàng
                   </span>

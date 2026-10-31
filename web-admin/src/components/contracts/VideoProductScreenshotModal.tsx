@@ -958,7 +958,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     >
       <div className="space-y-4">
         {/* Thanh nhập link video và từ khóa sản phẩm */}
-        <div className="p-3.5 rounded-xl border border-line bg-surface-2/50 space-y-3">
+        <div className="p-4 rounded-xl border border-line bg-sunken/50 space-y-3">
           <div className="grid gap-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_auto] items-end">
             <Field label="Đường dẫn video TikTok cần nghiệm thu" htmlFor="vpss-url">
               <Input
@@ -977,7 +977,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               />
             </Field>
             <Button
-              variant="primary"
+              variant="secondary"
               icon={loadingMeta || extractingFrames ? RefreshCw : Film}
               disabled={loadingMeta || extractingFrames}
               onClick={handleInspectAndExtract}
@@ -1028,7 +1028,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              <label className="inline-flex items-center gap-1.5 cursor-pointer text-ink-2">
+              <label className="inline-flex items-center gap-2 cursor-pointer text-ink-2">
                 <input
                   type="checkbox"
                   checked={zoomCropProduct}
@@ -1039,7 +1039,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                 <span>Zoom cận cảnh sản phẩm (1.25x)</span>
               </label>
 
-              <label className="inline-flex items-center gap-1.5 cursor-pointer text-ink-2">
+              <label className="inline-flex items-center gap-2 cursor-pointer text-ink-2">
                 <input
                   type="checkbox"
                   checked={stampOverlay}
@@ -1053,13 +1053,13 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         </div>
 
         {errorMsg && (
-          <div className="rounded-lg border border-critical/40 bg-critical-soft/20 px-3.5 py-2 text-xs text-critical font-medium">
+          <div className="rounded-lg border border-critical/40 bg-critical-soft/20 px-4 py-2 text-xs text-critical font-medium">
             {errorMsg}
           </div>
         )}
 
         {statusNotice && (
-          <div className="rounded-lg border border-positive/30 bg-positive-soft/25 px-3.5 py-2 text-xs text-positive font-medium flex flex-wrap items-center justify-between gap-2">
+          <div className="rounded-lg border border-positive/30 bg-positive-soft/25 px-4 py-2 text-xs text-positive font-medium flex flex-wrap items-center justify-between gap-2">
             <span>{statusNotice}</span>
             {resolvedMeta?.firstProductAppearanceSec !== null &&
               resolvedMeta?.firstProductAppearanceSec !== undefined && (
@@ -1072,7 +1072,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
         {/* Bảng thông tin Link Air, Chỉ số tương tác & Đối soát kịch bản/giỏ hàng */}
         {activeInspectionMeta && (
-          <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3 text-xs">
+          <div className="rounded-xl border border-line bg-surface p-4 space-y-3 text-xs">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-ink">
@@ -1111,7 +1111,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
             <div className="grid gap-3 md:grid-cols-3">
               {/* Cột 1: Thông tin bài đăng */}
-              <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1">
+              <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
                 <span className="text-2xs font-semibold text-ink-2 block">
                   1. Thông tin bài đăng
                 </span>
@@ -1142,42 +1142,42 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               </div>
 
               {/* Cột 2: Chỉ số tương tác thực tế */}
-              <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1.5">
+              <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-2">
                 <span className="text-2xs font-semibold text-ink-2 block">
                   2. Chỉ số tương tác tại thời điểm nghiệm thu
                 </span>
-                <div className="grid grid-cols-3 gap-1.5 text-center pt-0.5">
-                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
+                  <div className="rounded bg-surface px-2 py-1 border border-line/70">
                     <span className="text-2xs text-ink-3 block">Lượt xem</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.viewsCount)}
                     </strong>
                   </div>
-                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                  <div className="rounded bg-surface px-2 py-1 border border-line/70">
                     <span className="text-2xs text-ink-3 block">Thả tim</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.likesCount)}
                     </strong>
                   </div>
-                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                  <div className="rounded bg-surface px-2 py-1 border border-line/70">
                     <span className="text-2xs text-ink-3 block">Bình luận</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.commentsCount)}
                     </strong>
                   </div>
-                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                  <div className="rounded bg-surface px-2 py-1 border border-line/70">
                     <span className="text-2xs text-ink-3 block">Chia sẻ</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.sharesCount)}
                     </strong>
                   </div>
-                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                  <div className="rounded bg-surface px-2 py-1 border border-line/70">
                     <span className="text-2xs text-ink-3 block">Lượt lưu</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.savesCount)}
                     </strong>
                   </div>
-                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                  <div className="rounded bg-surface px-2 py-1 border border-line/70">
                     <span className="text-2xs text-ink-3 block">Tương tác (ER)</span>
                     <strong className="font-code text-accent text-xs tabular-nums">
                       {activeInspectionMeta.engagementRate}%
@@ -1187,7 +1187,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               </div>
 
               {/* Cột 3: Đối soát kịch bản, lời thoại & từ cấm */}
-              <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1">
+              <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
                 <span className="text-2xs font-semibold text-ink-2 block">
                   3. Đối soát kịch bản & Từ khóa
                 </span>
@@ -1216,7 +1216,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         {(activeVideoSrc || candidateFrames.length > 0) && (
           <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] items-start">
             {/* Cột trái: Trình phát video để tua và bấm chụp thủ công */}
-            <div className="rounded-xl border border-line bg-surface p-3 space-y-2.5">
+            <div className="rounded-xl border border-line bg-surface p-3 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-ink">Trình phát & Tua khung hình</span>
                 <span className="text-2xs font-code text-ink-2 tabular-nums">
@@ -1239,7 +1239,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                     />
                   </div>
 
-                  <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -1280,7 +1280,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                   </Button>
 
                   {resolvedMeta?.suggestedMoments && resolvedMeta.suggestedMoments.length > 0 && (
-                    <div className="pt-2 border-t border-line space-y-1.5">
+                    <div className="pt-2 border-t border-line space-y-2">
                       <span className="text-2xs font-semibold text-ink-2 block">
                         Nhảy nhanh tới mốc có sản phẩm:
                       </span>
@@ -1295,7 +1295,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                                 ? 'bg-positive-soft text-positive border-positive/30 font-semibold'
                                 : m.isPrimaryProductMoment
                                   ? 'bg-accent-soft text-accent border-accent/30 font-semibold'
-                                  : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
+                                  : 'bg-sunken text-ink-2 border-line hover:text-ink'
                             }`}
                             title={m.reason}
                           >
@@ -1307,7 +1307,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                   )}
                 </>
               ) : (
-                <div className="p-4 rounded-lg border border-dashed border-line bg-surface-2 text-center space-y-2 text-xs text-ink-2">
+                <div className="p-4 rounded-lg border border-dashed border-line bg-sunken text-center space-y-2 text-xs text-ink-2">
                   <Play className="w-6 h-6 text-ink-3 mx-auto" />
                   <p>
                     Video TikTok này đang hạn chế phát trực tiếp trên trình duyệt. Bạn có thể chọn
@@ -1319,9 +1319,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
             </div>
 
             {/* Cột phải: Dải khung hình đã tự động trích xuất */}
-            <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
+            <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-accent" />
                   Dải khung hình trích xuất tại mốc xuất hiện sản phẩm ({candidateFrames.length}{' '}
                   ảnh)
@@ -1355,7 +1355,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                         className={`group cursor-pointer rounded-xl border overflow-hidden transition-colors flex flex-col ${
                           isSelected
                             ? 'border-accent ring-2 ring-accent/30 bg-accent-soft/15'
-                            : 'border-line bg-surface-2/40 hover:border-line-strong'
+                            : 'border-line bg-sunken/40 hover:border-line-strong'
                         }`}
                       >
                         <div className="relative aspect-[9/16] max-h-[200px] bg-black overflow-hidden">
@@ -1364,7 +1364,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                             alt={cand.reason}
                             className="w-full h-full object-contain"
                           />
-                          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white text-2xs font-code">
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 text-white text-2xs font-code">
                             {cand.timeLabel}
                           </span>
                           <span
@@ -1378,7 +1378,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                           </span>
                           <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 pointer-events-none">
                             <Status tone={badge.tone}>{badge.label}</Status>
-                            <span className="px-1.5 py-0.5 rounded bg-black/70 text-white text-2xs font-code">
+                            <span className="px-2 py-0.5 rounded bg-black/70 text-white text-2xs font-code">
                               Nét {cand.sharpnessScore}%
                             </span>
                           </div>
@@ -1435,7 +1435,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         )}
 
         {/* Danh sách các ảnh đã chọn để chèn vào Biên bản nghiệm thu */}
-        <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-semibold text-ink">
               Ảnh minh chứng sẽ chèn vào Biên bản nghiệm thu ({selectedScreenshots.length})
@@ -1453,7 +1453,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
           </div>
 
           {selectedScreenshots.length === 0 ? (
-            <div className="p-4 rounded-lg border border-dashed border-line bg-surface-2/40 text-center text-xs text-ink-3">
+            <div className="p-4 rounded-lg border border-dashed border-line bg-sunken/40 text-center text-xs text-ink-3">
               Chưa chọn ảnh nào. Hãy bấm chọn ảnh từ dải khung hình phía trên, bấm &ldquo;Tự chọn 2
               ảnh rõ nhất&rdquo;, hoặc bấm Ctrl+V để dán ảnh chụp màn hình.
             </div>
@@ -1462,16 +1462,16 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               {selectedScreenshots.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="flex items-start gap-2.5 p-2.5 rounded-xl border border-line bg-surface-2/50"
+                  className="flex items-start gap-3 p-3 rounded-xl border border-line bg-sunken/50"
                 >
                   <img
                     src={item.imageDataUrl}
                     alt={item.note || item.timeLabel}
                     className="w-16 h-24 rounded-lg object-cover border border-line bg-black shrink-0"
                   />
-                  <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-code text-2xs font-semibold">
+                      <span className="px-2 py-0.5 rounded bg-accent-soft text-accent font-code text-2xs font-semibold">
                         Ảnh #{idx + 1} · Mốc {item.timeLabel}
                       </span>
                       <div className="flex items-center gap-1">

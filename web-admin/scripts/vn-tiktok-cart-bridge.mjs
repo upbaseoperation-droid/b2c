@@ -291,6 +291,65 @@ async function pushResolvedItemsToWebhook(items) {
   }).catch(() => {});
 }
 
+const inFlightJobs = new Map();
+const resolvedCartMemory = new Map();
+
+async function processPendingItem(item) {
+  if (!item?.videoUrl || !item?.videoId) return;
+  const targetSec = Number(item.captureSec) > 0 ? Number(item.captureSec) : 3.5;
+  const jobKey = `${item.videoId}:${targetSec.toFixed(1)}`;
+  const now = Date.now();
+  const prevStarted = inFlightJobs.get(jobKey);
+  if (prevStarted && now - prevStarted < 25_000) {
+    return;
+  }
+  inFlightJobs.set(jobKey, now);
+
+  console.log(
+    `[VN-Bridge] Inspecting pending TikTok video ${item.videoId}: ${item.videoUrl} (sec: ${targetSec})`
+  );
+
+  const cachedCart = resolvedCartMemory.get(item.videoId);
+  const cartPromise = cachedCart
+    ? Promise.resolve({ ...cachedCart, captureSec: targetSec })
+    : inspectTikTokCartFromVietnam(item.videoUrl, item.videoId, targetSec, {
+        includeFrame: false,
+      }).catch((err) => {
+        console.error(`[VN-Bridge] Error inspecting ${item.videoId}:`, err?.message || err);
+        return null;
+      });
+
+  // Chạy song song cắt khung hình ffmpeg ngay từ giây 0 (không đợi giải mã giỏ hàng xong mới bắt đầu)
+  const framePromise = extractFfmpegFrameBase64(item.videoUrl, targetSec).catch(() => undefined);
+
+  const fastInspected = await cartPromise;
+  if (fastInspected && Array.isArray(fastInspected.cartProducts) && fastInspected.cartProducts.length > 0) {
+    resolvedCartMemory.set(item.videoId, fastInspected);
+    fastInspected.captureSec = targetSec;
+    console.log(
+      `[VN-Bridge] Fast-resolved ${fastInspected.cartProducts.length} product(s) for ${item.videoId}: ${fastInspected.cartAnchorTitle}`
+    );
+    await pushResolvedItemsToWebhook([fastInspected]);
+  }
+
+  const frameBase64 = await framePromise;
+  if (frameBase64) {
+    const baseItem = fastInspected || resolvedCartMemory.get(item.videoId) || {
+      videoId: item.videoId,
+      videoUrl: item.videoUrl,
+      cartProducts: [],
+    };
+    const withFrame = {
+      ...baseItem,
+      captureSec: targetSec,
+      frameJpegBase64: frameBase64,
+      updatedAt: new Date().toISOString(),
+    };
+    await pushResolvedItemsToWebhook([withFrame]);
+    console.log(`[VN-Bridge] Uploaded ffmpeg frame for ${item.videoId} at sec ${targetSec}`);
+  }
+}
+
 async function pollOnce() {
   try {
     const pollRes = await fetch(`${WEBHOOK_URL}?vnBridgePoll=1&longPoll=1`, {
@@ -305,133 +364,65 @@ async function pollOnce() {
     if (pendingList.length === 0) return false;
 
     for (const item of pendingList) {
-      if (!item?.videoUrl || !item?.videoId) continue;
-      const targetSec = Number(item.captureSec) > 0 ? Number(item.captureSec) : 3.5;
-      console.log(`[VN-Bridge] Inspecting pending TikTok video ${item.videoId}: ${item.videoUrl} (sec: ${targetSec})`);
-      // Bước 1: Giải mã nhanh giỏ hàng (<500ms) và đẩy ngay lên Vercel để kịp thời gian chờ 4.5s
-      const fastInspected = await inspectTikTokCartFromVietnam(
-        item.videoUrl,
-        item.videoId,
-        targetSec,
-        { includeFrame: false }
-      ).catch((err) => {
-        console.error(`[VN-Bridge] Error inspecting ${item.videoId}:`, err?.message || err);
-        return null;
+      // Khởi chạy xử lý bất đồng bộ để không chặn vòng lặp poll tiếp theo
+      processPendingItem(item).catch((err) => {
+        console.error('[VN-Bridge] processPendingItem error:', err?.message || err);
       });
-
-      if (fastInspected && fastInspected.cartProducts.length > 0) {
-        fastInspected.captureSec = targetSec;
-        console.log(
-          `[VN-Bridge] Fast-resolved ${fastInspected.cartProducts.length} product(s) for ${item.videoId}: ${fastInspected.cartAnchorTitle}`
-        );
-        await pushResolvedItemsToWebhook([fastInspected]);
-      }
-
-      // Bước 2: Cắt khung hình ffmpeg chất lượng cao tại targetSec và cập nhật bổ sung
-      const frameBase64 = await extractFfmpegFrameBase64(
-        fastInspected?.videoUrl || item.videoUrl,
-        targetSec
-      ).catch(() => undefined);
-      if (frameBase64 && fastInspected) {
-        fastInspected.captureSec = targetSec;
-        fastInspected.frameJpegBase64 = frameBase64;
-        fastInspected.updatedAt = new Date().toISOString();
-        await pushResolvedItemsToWebhook([fastInspected]);
-        console.log(`[VN-Bridge] Uploaded ffmpeg frame for ${item.videoId} at sec ${targetSec}`);
-      } else if (frameBase64) {
-        await pushResolvedItemsToWebhook([
-          {
-            videoId: item.videoId,
-            videoUrl: item.videoUrl,
-            cartProducts: fastInspected?.cartProducts || [],
-            captureSec: targetSec,
-            frameJpegBase64: frameBase64,
-            updatedAt: new Date().toISOString(),
-          },
-        ]);
-        console.log(`[VN-Bridge] Uploaded standalone ffmpeg frame for ${item.videoId} at sec ${targetSec}`);
-      }
     }
+    return true;
   } catch {
     // Ignore transient network errors
+    return false;
   }
 }
 
-async function bootstrap() {
+let bridgeStarted = false;
+
+export async function bootstrap() {
+  if (bridgeStarted) return;
+  bridgeStarted = true;
   console.log(`[VN-Bridge] Starting Vietnam TikTok Shop Cart Bridge -> ${WEBHOOK_URL}`);
-  const seeds = [];
-  const seed1 = await inspectTikTokCartFromVietnam(
-    'https://www.tiktok.com/@maiphuong_oplung/video/7700246764321803541',
-    '7700246764321803541',
-    4.6
-  ).catch(() => null);
-  if (seed1) seeds.push(seed1);
 
-  const seed2 = await inspectTikTokCartFromVietnam(
-    'https://www.tiktok.com/@xbarbershoptrauquy/video/7701192255171775762',
-    '7701192255171775762',
-    3.7
-  ).catch(() => null);
-  if (seed2) seeds.push(seed2);
-
-  const seed3 = await inspectTikTokCartFromVietnam(
-    'https://www.tiktok.com/@ctofficial_/video/7701316821709769991',
-    '7701316821709769991',
-    6.9
-  ).catch(() => null);
-  if (seed3) seeds.push(seed3);
-
-  const seed4 = await inspectTikTokCartFromVietnam(
-    'https://www.tiktok.com/@chutieuhan10012001/video/7695014258874109205',
-    '7695014258874109205',
-    38.6
-  ).catch(() => null);
-  if (seed4) seeds.push(seed4);
-
-  const seed5 = await inspectTikTokCartFromVietnam(
-    'https://www.tiktok.com/@tuinetamne/video/7683000790654536980',
-    '7683000790654536980', 9.8
-  ).catch(() => null);
-  if (seed5) {
-    if (!seed5.products || seed5.products.length === 0) {
-      seed5.products = [
+  // Làm ấm WAF Cookie và đẩy các video mẫu trong nền (không chặn vòng lặp poll chính)
+  (async () => {
+    try {
+      const warmTargets = [
         {
-          productId: '1733713374226384532',
-          sellerId: '7494286989505562260',
-          title:
-            'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml',
-          anchorKeyword: 'Dung dịch vệ sinh phụ nữ pH Care Kháng Khu...',
-          productUrl:
-            'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor',
-          source: 'TikTok Shop Anchor (VN Bridge)',
+          url: 'https://www.tiktok.com/@tonycase96/video/7702104002401537287',
+          id: '7702104002401537287',
+          sec: 11.2,
+        },
+        {
+          url: 'https://www.tiktok.com/@thaotepvn/video/7700954270161554708',
+          id: '7700954270161554708',
+          sec: 4.5,
         },
       ];
-      seed5.cartAnchorTitle =
-        'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml';
-      seed5.cartAnchorUrl =
-        'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor';
-      seed5.cartProductId = '1733713374226384532';
-      seed5.cartSellerId = '7494286989505562260';
+      for (const t of warmTargets) {
+        await processPendingItem({
+          videoId: t.id,
+          videoUrl: t.url,
+          captureSec: t.sec,
+        });
+      }
+    } catch {
+      // ignore warmup errors
     }
-    seeds.push(seed5);
-  }
+  })();
 
-  if (seeds.length > 0) {
-    console.log(`[VN-Bridge] Seeded ${seeds.length} videos with cart products + ffmpeg frames`);
-    await pushResolvedItemsToWebhook(seeds);
-  }
+  // Định kỳ làm mới WAF cookie mỗi 8 phút để mọi yêu cầu từ Zalo luôn phản hồi <600ms
+  setInterval(() => {
+    inspectTikTokCartFromVietnam(
+      'https://www.tiktok.com/@tonycase96/video/7702104002401537287',
+      '7702104002401537287',
+      3.5,
+      { includeFrame: false }
+    ).catch(() => null);
+  }, 8 * 60 * 1000).unref?.();
 
-  let consecutiveEmpty = 0;
   while (true) {
     const hasWork = await pollOnce();
-    if (hasWork) {
-      consecutiveEmpty = 0;
-      await new Promise((r) => setTimeout(r, 200));
-    } else {
-      consecutiveEmpty++;
-      const sleepMs = consecutiveEmpty > 5 ? 5000 : 2000;
-      await new Promise((r) => setTimeout(r, sleepMs));
-    }
+    await new Promise((r) => setTimeout(r, hasWork ? 150 : 300));
   }
 }
 

@@ -350,7 +350,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
             <button
               type="button"
               onClick={() => setMode('SUGGEST_ANGLES')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
+              className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium ${
                 mode === 'SUGGEST_ANGLES' ? 'bg-accent text-white' : 'bg-sunken text-ink-2 hover:bg-line'
               }`}
             >
@@ -360,7 +360,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
             <button
               type="button"
               onClick={() => setMode('PRECHECK_SCRIPT')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
+              className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium ${
                 mode === 'PRECHECK_SCRIPT' ? 'bg-accent text-white' : 'bg-sunken text-ink-2 hover:bg-line'
               }`}
             >
@@ -376,7 +376,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
         </div>
 
         {/* Thanh điều khiển ngữ cảnh */}
-        <div className="bg-sunken/60 p-2.5 rounded-md space-y-2">
+        <div className="bg-sunken/60 p-3 rounded-md space-y-2">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Field label="Sản phẩm mục tiêu">
               <Select value={activeProduct} onChange={e => setSelectedProduct(e.target.value)}>
@@ -438,7 +438,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
         {mode === 'SUGGEST_ANGLES' && (
           <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
             {angleSuggestions.map((ang, idx) => (
-              <div key={('id' in ang && ang.id) ? String(ang.id) : `gen-${idx}`} className="rounded-md border border-line bg-surface p-3.5 hover:border-accent/40 transition-colors">
+              <div key={('id' in ang && ang.id) ? String(ang.id) : `gen-${idx}`} className="rounded-md border border-line bg-surface p-4 hover:border-accent/40 transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -484,14 +484,14 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                 </div>
 
                 {/* Các nút thao tác */}
-                <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">
+                <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleCopy(ang.hookIdea || '', `hook-${idx}`)}
                       className="inline-flex items-center gap-1 text-2xs text-ink-3 hover:text-accent"
                     >
-                      {copiedId === `hook-${idx}` ? <Check className="h-3 w-3 text-positive" /> : <Copy className="h-3 w-3" />}
+                      {copiedId === `hook-${idx}` ? <Check className="h-3.5 w-3.5 text-positive" /> : <Copy className="h-3.5 w-3.5" />}
                       {copiedId === `hook-${idx}` ? 'Đã chép hook' : 'Sao chép hook 3s'}
                     </button>
                   </div>
@@ -592,7 +592,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                             <span
                               key={drv.driver}
                               title={drv.evidence}
-                              className={`px-1.5 py-0.5 rounded border text-3xs ${
+                              className={`px-2 py-0.5 rounded border text-2xs ${
                                 drv.matched
                                   ? 'border-positive/30 bg-positive-soft/30 text-positive'
                                   : 'border-line bg-surface text-ink-3'
@@ -623,7 +623,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                                 <strong>{st.stageNumber}. {st.stageName}:</strong> {st.finding}
                               </span>
                               <span
-                                className={`shrink-0 text-3xs font-semibold ${
+                                className={`shrink-0 text-2xs font-semibold ${
                                   st.status === 'PASS'
                                     ? 'text-positive'
                                     : st.status === 'FAIL'
@@ -658,13 +658,13 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-semibold">{iss.title}</span>
-                            <span className="rounded px-1 py-0.2 text-3xs font-semibold">
+                            <span className="rounded px-1 py-0.2 text-2xs font-semibold">
                               {iss.severity === 'CRITICAL' ? 'Vi phạm' : 'Lưu ý'}
                             </span>
                           </div>
                           {iss.rationale && <div className="mt-1 text-ink-3">{iss.rationale}</div>}
                           {iss.replacementSuggestion && (
-                            <div className="mt-1.5 flex items-center justify-between rounded bg-surface p-1.5 border border-line">
+                            <div className="mt-2 flex items-center justify-between rounded bg-surface p-2 border border-line">
                               <div>
                                 <span className="font-medium text-positive">Gợi ý sửa: </span>
                                 <span className="text-ink">{iss.replacementSuggestion}</span>
@@ -689,7 +689,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                       ))}
 
                       {/* Tiêu chí đánh giá chi tiết */}
-                      <div className="pt-2 border-t border-line space-y-1.5">
+                      <div className="pt-2 border-t border-line space-y-2">
                         <div className="text-2xs font-medium text-ink">Bóc tách theo tiêu chí:</div>
                         {scriptAudit.dimensions.map((d, di) => (
                           <div key={d.name || di} className="flex items-center justify-between text-2xs">

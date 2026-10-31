@@ -113,7 +113,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
       </PageActions>
 
       <Panel flush>
-        <div className="p-4 border-b border-line grid gap-2.5">
+        <div className="p-4 border-b border-line grid gap-3">
           <FilterBar
             search={{
               value: search,
@@ -230,7 +230,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
           </>
         }
       >
-        <form id="video-format-form" onSubmit={handleSave} className="space-y-3.5 text-xs">
+        <form id="video-format-form" onSubmit={handleSave} className="space-y-4 text-xs">
           <div>
             <label className="block text-ink-2 font-medium mb-1">Tên định dạng video *</label>
             <input
@@ -239,7 +239,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
               placeholder="VD: Review Voice, Ảnh lướt, Unbox Voice..."
               value={form.name}
               onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
             />
           </div>
 
@@ -250,7 +250,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
               placeholder="VD: Review Voice (giọng đọc trải nghiệm)..."
               value={form.option}
               onChange={(e) => setForm(prev => ({ ...prev, option: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
         </form>

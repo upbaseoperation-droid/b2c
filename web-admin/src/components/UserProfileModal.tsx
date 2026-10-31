@@ -171,7 +171,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     >
       <div className="space-y-4">
         {/* Khối thẻ định danh nhân sự */}
-        <div className="p-3.5 rounded-xl bg-sunken border border-line flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
+        <div className="p-4 rounded-xl bg-sunken border border-line flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <Avatar
             name={currentUser.name}
             src={currentUser.larkAvatarUrl}
@@ -255,7 +255,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* Nội dung 1: Thông tin & Phân công */}
         {activeSubTab === 'info' && (
           <div className="space-y-3 pt-1">
-            <div className="p-3.5 rounded-lg border border-line bg-canvas space-y-3">
+            <div className="p-4 rounded-lg border border-line bg-canvas space-y-3">
               <span className="text-2xs font-semibold text-ink-3 block">
                 Phân công & Phê duyệt
               </span>
@@ -278,7 +278,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <div className="sm:col-span-2">
                   <span className="text-ink-3 block mb-1">Nhãn hàng phân công phụ trách:</span>
                   {currentUser.assignedBrands && currentUser.assignedBrands.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1">
                       {currentUser.assignedBrands.map((brand) => (
                         <span
                           key={brand}
@@ -299,7 +299,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Nội dung 1b: Chuyển nhanh tài khoản nội bộ */}
         {activeSubTab === 'internal_accounts' && onSwitchUser && (
-          <div className="space-y-2.5 pt-1">
+          <div className="space-y-3 pt-1">
             <div className="text-2xs text-ink-2">
               Chọn tài khoản nhân sự nội bộ để đăng nhập và làm việc theo đúng phạm vi phân quyền:
             </div>
@@ -314,16 +314,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       onSwitchUser(u);
                       onClose();
                     }}
-                    className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-colors cursor-pointer ${
                       isCurrent ? 'bg-accent-soft/60 text-ink' : 'hover:bg-sunken text-ink'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <Avatar name={u.name} size={28} />
                       <div className="min-w-0 leading-tight">
                         <div className="text-xs font-semibold text-ink truncate">
                           {u.name}
-                          {u.staffCode ? <span className="ml-1.5 font-mono text-2xs text-ink-3">({u.staffCode})</span> : null}
+                          {u.staffCode ? <span className="ml-2 font-mono text-2xs text-ink-3">({u.staffCode})</span> : null}
                         </div>
                         <div className="text-2xs text-ink-3 truncate mt-0.5">{u.roleTitle} · {u.email}</div>
                       </div>
@@ -340,7 +340,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Nội dung 2: Thiết lập cá nhân */}
         {activeSubTab === 'preferences' && (
-          <div className="space-y-3.5 pt-1">
+          <div className="space-y-4 pt-1">
             <Field label="Số điện thoại liên hệ">
               <Input
                 type="tel"
@@ -369,7 +369,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {activeSubTab === 'security' && (
           <div className="space-y-3 pt-1">
             {isLarkLogin ? (
-              <div className="p-3.5 rounded-lg border border-line bg-sunken space-y-2">
+              <div className="p-4 rounded-lg border border-line bg-sunken space-y-2">
                 <div className="flex items-center gap-2 text-ink font-medium text-xs">
                   <Shield className="w-4 h-4 text-positive shrink-0" />
                   <span>Xác thực tập trung qua Lark SSO</span>
@@ -381,7 +381,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
             ) : (
               <form onSubmit={handleChangePassword} className="space-y-3">
-                <div className="p-3.5 rounded-lg border border-line bg-canvas space-y-3">
+                <div className="p-4 rounded-lg border border-line bg-canvas space-y-3">
                   <span className="text-2xs font-semibold text-ink-3 block">
                     Đổi mật khẩu tài khoản
                   </span>
@@ -393,7 +393,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   )}
 
                   {passwordSuccess && (
-                    <div className="p-2 rounded bg-positive-soft text-positive text-xs border border-positive/20 flex items-center gap-1.5">
+                    <div className="p-2 rounded bg-positive-soft text-positive text-xs border border-positive/20 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />
                       <span>Đã đổi mật khẩu thành công</span>
                     </div>

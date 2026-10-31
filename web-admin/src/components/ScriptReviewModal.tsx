@@ -214,9 +214,9 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
       size="lg"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-2 w-full">
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-ink-2">
             Trạng thái hiện tại:{' '}
-            <strong className="text-slate-900">
+            <strong className="text-ink">
               {script.status === 'PENDING' ? 'Chờ duyệt' : script.status === 'APPROVED' ? 'Đã duyệt' : 'Cần sửa'}
             </strong>
           </span>
@@ -225,9 +225,9 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             {!isRevisionMode && script.status === 'PENDING' && (
               <button
                 onClick={() => setIsRevisionMode(true)}
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg border border-slate-300 transition flex items-center gap-1.5 shadow-2xs"
+                className="px-4 py-2 bg-white hover:bg-canvas text-ink-2 font-semibold text-xs rounded-lg border border-line-strong transition flex items-center gap-2 shadow-2xs"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <RotateCcw className="w-3.5 h-3.5 text-ink-3" />
                 <span>Yêu cầu chỉnh sửa</span>
               </button>
             )}
@@ -235,7 +235,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             {script.status === 'PENDING' && (
               <button
                 onClick={handleApprove}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5"
+                className="px-5 py-2 bg-positive hover:bg-positive text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-2"
               >
                 <CheckCircle className="w-4 h-4" />
                 <span>Duyệt kịch bản &amp; kích hoạt ký hợp đồng</span>
@@ -244,7 +244,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg transition shadow-2xs"
+              className="px-4 py-2 bg-white hover:bg-canvas text-ink-2 border border-line-strong text-xs font-semibold rounded-lg transition shadow-2xs"
             >
               Đóng
             </button>
@@ -254,22 +254,22 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
     >
       <div className="space-y-4">
         {/* Metadata Bar + Brand Profile Selector */}
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-canvas rounded-lg border border-line text-xs text-ink-2">
               <div className="flex flex-wrap items-center gap-3">
-                <span>KOC: <strong className="text-slate-900">{script.kocName}</strong> ({script.campaignTitle})</span>
+                <span>KOC: <strong className="text-ink">{script.kocName}</strong> ({script.campaignTitle})</span>
                 <span>·</span>
                 <span>
                   Phân loại: <strong className="text-accent">{script.pillar}</strong>
                 </span>
                 <span>
-                  Thời lượng: <strong className="text-slate-900">{script.videoDuration}</strong>
+                  Thời lượng: <strong className="text-ink">{script.videoDuration}</strong>
                 </span>
-                <label className="flex items-center gap-1.5">
-                  <span className="text-slate-500">Hồ sơ nhãn:</span>
+                <label className="flex items-center gap-2">
+                  <span className="text-ink-3">Hồ sơ nhãn:</span>
                   <select
                     value={detectedBrandProfile?.brandName || ''}
                     onChange={(e) => setSelectedBrandName(e.target.value)}
-                    className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-blue-700 focus:outline-none focus:border-blue-500"
+                    className="bg-white border border-line-strong rounded px-2 py-0.5 text-xs font-semibold text-accent-hover focus:outline-none focus:border-accent"
                   >
                     {profiles.map(p => (
                       <option key={p.key} value={p.brandName}>
@@ -278,12 +278,12 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     ))}
                   </select>
                 </label>
-                <label className="flex items-center gap-1.5">
-                  <span className="text-slate-500">Giai đoạn Phễu:</span>
+                <label className="flex items-center gap-2">
+                  <span className="text-ink-3">Giai đoạn Phễu:</span>
                   <select
                     value={selectedFunnelStage}
                     onChange={(e) => setSelectedFunnelStage(e.target.value as ContentFunnelStage)}
-                    className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="bg-white border border-line-strong rounded px-2 py-0.5 text-xs font-semibold text-ink focus:outline-none focus:border-accent"
                   >
                     {FUNNEL_STAGE_OPTIONS.map(f => (
                       <option key={f.value} value={f.value}>
@@ -292,13 +292,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     ))}
                   </select>
                 </label>
-                <label className="flex items-center gap-1.5">
-                  <span className="text-slate-500">Lần sửa:</span>
+                <label className="flex items-center gap-2">
+                  <span className="text-ink-3">Lần sửa:</span>
                   <select
                     value={revisionRound}
                     onChange={(e) => setRevisionRound(Number(e.target.value))}
                     className={`bg-white border rounded px-2 py-0.5 text-xs font-semibold focus:outline-none ${
-                      isOverFreeRevisionLimit ? 'border-rose-400 text-rose-700' : 'border-slate-300 text-slate-800'
+                      isOverFreeRevisionLimit ? 'border-critical text-critical' : 'border-line-strong text-ink'
                     }`}
                   >
                     <option value={1}>Lần 1 (Miễn phí)</option>
@@ -308,7 +308,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   </select>
                 </label>
               </div>
-              <span className="text-xs font-medium flex items-center gap-1.5 text-warning">
+              <span className="text-xs font-medium flex items-center gap-2 text-warning">
                 <Clock className="w-3.5 h-3.5" />
                 SLA còn {script.remainingHours > 0 ? `${script.remainingHours}h` : 'Đã nghiệm thu'}
               </span>
@@ -316,7 +316,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 
             {/* Quy tắc SLA duyệt kịch bản & giới hạn chỉnh sửa từ Hồ sơ thương hiệu */}
             {workflowRules && (
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 text-2xs text-slate-700">
+              <div className="p-3 rounded-lg bg-canvas border border-line space-y-2 text-2xs text-ink-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
                     <strong>Quy định phê duyệt của {detectedBrandProfile?.brandName}:</strong>{' '}
@@ -324,13 +324,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     {' · '}
                     {workflowRules.requireDemoApproval ? 'Có duyệt video nháp' : 'Không duyệt video nháp'}
                   </span>
-                  <span className="font-semibold text-blue-700">
+                  <span className="font-semibold text-accent-hover">
                     Tự động cho phép đăng sau {workflowRules.autoAirAfterHours}h · Tối đa {workflowRules.maxFreeRevisions} lần sửa miễn phí
                   </span>
                 </div>
                 {isOverFreeRevisionLimit && (
-                  <div className="p-2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-medium flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                  <div className="p-2 rounded bg-critical-soft border border-critical/30 text-critical font-medium flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-critical" />
                     <span>
                       Cảnh báo: Yêu cầu sửa lần thứ {revisionRound} vượt định mức {workflowRules.maxFreeRevisions} lần sửa miễn phí trong Hồ sơ thương hiệu {detectedBrandProfile?.brandName}. Cần xác nhận phụ phí với nhãn hàng nếu sửa ngoài brief ban đầu.
                     </span>
@@ -344,10 +344,10 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               <div
                 className={`p-4 rounded-lg border space-y-3 ${
                   bannedIssues.length > 0
-                    ? 'bg-rose-50/70 border-rose-200'
+                    ? 'bg-critical-soft/70 border-critical/30'
                     : complianceResult.overallScore >= 80
-                      ? 'bg-emerald-50/60 border-emerald-200'
-                      : 'bg-amber-50/60 border-amber-200'
+                      ? 'bg-positive-soft/60 border-positive/30'
+                      : 'bg-warning-soft/60 border-warning/30'
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -355,13 +355,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     <ShieldAlert
                       className={`w-4 h-4 ${
                         bannedIssues.length > 0
-                          ? 'text-rose-600'
+                          ? 'text-critical'
                           : complianceResult.overallScore >= 80
-                            ? 'text-emerald-600'
-                            : 'text-amber-600'
+                            ? 'text-positive'
+                            : 'text-warning'
                       }`}
                     />
-                    <span className="text-xs font-semibold text-slate-900">
+                    <span className="text-xs font-semibold text-ink">
                       Kiểm tra từ cấm &amp; pháp lý ({detectedBrandProfile.brandName})
                     </span>
                     <span
@@ -381,32 +381,32 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     <button
                       type="button"
                       onClick={handleAutoFillRevisionFromProfile}
-                      className="px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-rose-700 border border-rose-300 text-2xs font-semibold transition shadow-2xs"
+                      className="px-3 py-1 rounded bg-white hover:bg-canvas text-critical border border-critical/30 text-2xs font-semibold transition shadow-2xs"
                     >
                       Điền nội dung yêu cầu sửa ({complianceResult.issues.length} mục)
                     </button>
                   )}
                 </div>
 
-                <p className="text-xs text-slate-700">{complianceResult.summaryVerdict}</p>
+                <p className="text-xs text-ink-2">{complianceResult.summaryVerdict}</p>
 
                 {complianceResult.issues.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
+                  <div className="space-y-2 pt-1">
                     {complianceResult.issues.map(issue => (
                       <div
                         key={issue.id}
-                        className="p-2.5 rounded bg-white border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                        className="p-3 rounded bg-white border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
                       >
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+                          <div className="flex items-center gap-2 font-semibold text-ink">
                             <AlertTriangle
                               className={`w-3.5 h-3.5 shrink-0 ${
-                                issue.severity === 'CRITICAL' ? 'text-rose-600' : 'text-amber-600'
+                                issue.severity === 'CRITICAL' ? 'text-critical' : 'text-warning'
                               }`}
                             />
                             <span>{issue.title}</span>
                           </div>
-                          <p className="text-2xs text-slate-500">{issue.rationale}</p>
+                          <p className="text-2xs text-ink-3">{issue.rationale}</p>
                         </div>
                         {issue.replacementSuggestion && (
                           <span className="text-positive text-2xs font-medium shrink-0">
@@ -420,24 +420,24 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 
                 {/* Kiểm định Kịch bản 7 Chặng chuẩn B2C & Phân tích Hook STAR-T */}
                 {complianceResult.hookStarTAnalysis && (
-                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 text-2xs">
+                  <div className="p-3 rounded-lg bg-white border border-line space-y-2 text-2xs">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-ink">
                         Phân tích Hook 3–5 giây theo mô hình STAR-T ({complianceResult.hookStarTAnalysis.detectedHookType})
                       </span>
-                      <span className="font-mono font-semibold text-blue-700">
+                      <span className="font-mono font-semibold text-accent-hover">
                         Đạt {complianceResult.hookStarTAnalysis.starTDrivers.filter(d => d.matched).length}/5 động lực STAR-T
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {complianceResult.hookStarTAnalysis.starTDrivers.map(drv => (
                         <span
                           key={drv.driver}
                           title={drv.evidence}
                           className={`px-2 py-0.5 rounded border font-medium ${
                             drv.matched
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-slate-50 text-slate-500 border-slate-200'
+                              ? 'bg-positive-soft text-positive border-positive/30'
+                              : 'bg-canvas text-ink-3 border-line'
                           }`}
                         >
                           {drv.matched ? '✓' : '○'} {drv.label}
@@ -448,40 +448,40 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 )}
 
                 {complianceResult.sevenStageAudit && complianceResult.sevenStageAudit.length > 0 && (
-                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 text-2xs">
+                  <div className="p-3 rounded-lg bg-white border border-line space-y-2 text-2xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-ink">
                         Kiểm định Kịch bản 7 Chặng chuẩn B2C (Phễu: {FUNNEL_STAGE_OPTIONS.find(f => f.value === selectedFunnelStage)?.shortLabel || selectedFunnelStage})
                       </span>
-                      <span className="text-slate-500">
+                      <span className="text-ink-3">
                         {complianceResult.sevenStageAudit.filter(s => s.status === 'PASS').length}/7 chặng đạt
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {complianceResult.sevenStageAudit.map(st => (
                         <div
                           key={st.stageNumber}
-                          className={`px-2.5 py-1.5 rounded border flex items-start justify-between gap-2 ${
+                          className={`px-3 py-2 rounded border flex items-start justify-between gap-2 ${
                             st.status === 'PASS'
-                              ? 'bg-emerald-50/50 border-emerald-200 text-slate-800'
+                              ? 'bg-positive-soft/50 border-positive/30 text-ink'
                               : st.status === 'FAIL'
-                                ? 'bg-rose-50/70 border-rose-200 text-rose-900'
-                                : 'bg-amber-50/60 border-amber-200 text-amber-900'
+                                ? 'bg-critical-soft/70 border-critical/30 text-critical'
+                                : 'bg-warning-soft/60 border-warning/30 text-warning'
                           }`}
                         >
                           <div className="space-y-0.5 min-w-0">
                             <div className="font-semibold truncate">
                               Chặng {st.stageNumber}: {st.stageName}
                             </div>
-                            <div className="text-2xs text-slate-600 leading-snug">{st.finding}</div>
+                            <div className="text-2xs text-ink-2 leading-snug">{st.finding}</div>
                           </div>
                           <span
-                            className={`shrink-0 px-1.5 py-0.5 rounded text-2xs font-semibold ${
+                            className={`shrink-0 px-2 py-0.5 rounded text-2xs font-semibold ${
                               st.status === 'PASS'
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-positive-soft text-positive'
                                 : st.status === 'FAIL'
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-amber-100 text-amber-800'
+                                  ? 'bg-critical-soft text-critical'
+                                  : 'bg-warning-soft text-warning'
                             }`}
                           >
                             {st.status === 'PASS' ? 'ĐẠT' : st.status === 'FAIL' ? 'LỖI' : 'LƯU Ý'}
@@ -493,10 +493,10 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 )}
 
                 {/* Tóm tắt danh mục từ cấm, nỗi đau khách hàng & hashtag bắt buộc của nhãn để người duyệt tra cứu nhanh */}
-                <div className="pt-2 border-t border-slate-200/80 space-y-1.5 text-2xs">
+                <div className="pt-2 border-t border-line/80 space-y-2 text-2xs">
                   {(detectedBrandProfile.contentRules?.banned.length || 0) > 0 && (
-                    <div className="text-slate-600">
-                      <span className="text-slate-500 font-medium">
+                    <div className="text-ink-2">
+                      <span className="text-ink-3 font-medium">
                         Từ cấm trong hồ sơ {detectedBrandProfile.brandName}:{' '}
                       </span>
                       <span className="text-critical font-medium">
@@ -505,19 +505,19 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     </div>
                   )}
                   {(detectedBrandProfile.positioning?.painPoints?.length || 0) > 0 && (
-                    <div className="text-slate-600">
+                    <div className="text-ink-2">
                       <strong>Góc nỗi đau khách hàng chuẩn của nhãn:</strong>{' '}
                       {detectedBrandProfile.positioning!.painPoints!.slice(0, 2).join(' · ')}
                     </div>
                   )}
                   {(detectedBrandProfile.positioning?.barriersToTrial?.length || 0) > 0 && (
-                    <div className="text-slate-600">
+                    <div className="text-ink-2">
                       <strong>Rào cản mua hàng cần giải đáp trong clip:</strong>{' '}
                       {detectedBrandProfile.positioning!.barriersToTrial!.slice(0, 2).join(' · ')}
                     </div>
                   )}
                   {(detectedBrandProfile.contentRules?.mandatoryHashtags?.length || 0) > 0 && (
-                    <div className="text-slate-600">
+                    <div className="text-ink-2">
                       <strong>Hashtag &amp; thời lượng bắt buộc:</strong>{' '}
                       {detectedBrandProfile.contentRules!.mandatoryHashtags!.join(' ')}{' '}
                       {detectedBrandProfile.contentRules?.videoDurationRule ? `(${detectedBrandProfile.contentRules.videoDurationRule})` : ''}
@@ -531,7 +531,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO') ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="text-xs font-semibold text-slate-800">
+                  <h4 className="text-xs font-semibold text-ink">
                     Bộ tham số kiểm duyệt KOL ({script.klCode || 'KL6 / KL7'} — Không áp đặt Angle/Hook mẫu)
                   </h4>
                   <span className="rounded bg-accent-soft px-2 py-0.5 text-2xs font-semibold text-accent">
@@ -539,118 +539,118 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   </span>
                 </div>
 
-                <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-200/80 space-y-1">
+                <div className="p-4 bg-positive-soft/50 rounded-lg border border-positive/80 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-emerald-700">
+                    <span className="text-xs font-semibold text-positive">
                       1. Thông điệp cốt lõi tối thiểu phải nhắc (Key USP)
                     </span>
-                    <span className="text-2xs text-slate-500 font-medium">Truyền tải tự nhiên bằng ngôn từ KOL</span>
+                    <span className="text-2xs text-ink-3 font-medium">Truyền tải tự nhiên bằng ngôn từ KOL</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">{script.solutionAndUsp}</p>
+                  <p className="text-xs text-ink leading-relaxed">{script.solutionAndUsp}</p>
                 </div>
 
-                <div className="p-3.5 bg-rose-50/50 rounded-lg border border-rose-200/80 space-y-1">
+                <div className="p-4 bg-critical-soft/50 rounded-lg border border-critical/80 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-rose-700">
+                    <span className="text-xs font-semibold text-critical">
                       2. Từ cấm &amp; Ranh giới thương hiệu bắt buộc tránh (Do &amp; Don&apos;t)
                     </span>
-                    <span className="text-2xs text-slate-500 font-medium">An toàn pháp lý &amp; hình ảnh</span>
+                    <span className="text-2xs text-ink-3 font-medium">An toàn pháp lý &amp; hình ảnh</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">
+                  <p className="text-xs text-ink leading-relaxed">
                     {script.forbiddenClaims || script.painPoint || 'Tuân thủ danh mục từ cấm y tế/sàn và không nhắc tên đối thủ cạnh tranh trực tiếp.'}
                   </p>
                 </div>
 
-                <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-200/80 space-y-1">
+                <div className="p-4 bg-accent-soft/50 rounded-lg border border-accent/80 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-blue-700">
+                    <span className="text-xs font-semibold text-accent-hover">
                       3. Yêu cầu khung hình &amp; Hiện diện sản phẩm bắt buộc
                     </span>
-                    <span className="text-2xs text-slate-500 font-medium">Quy chuẩn hình ảnh tối thiểu</span>
+                    <span className="text-2xs text-ink-3 font-medium">Quy chuẩn hình ảnh tối thiểu</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">
+                  <p className="text-xs text-ink leading-relaxed">
                     {script.mandatoryShots || 'Lộ diện rõ bao bì sản phẩm tối thiểu 5 giây; quay cận kết cấu thực tế khi sử dụng; phát âm đúng tên thương hiệu.'}
                   </p>
                 </div>
 
-                <div className="p-3.5 bg-accent-soft rounded-lg border border-line space-y-1">
+                <div className="p-4 bg-accent-soft rounded-lg border border-line space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-accent">
                       4. Điều khoản gắn giỏ hàng, Mã Spark Ads &amp; Độc quyền
                     </span>
-                    <span className="text-2xs text-slate-500 font-medium">Quyền lợi thương mại</span>
+                    <span className="text-2xs text-ink-3 font-medium">Quyền lợi thương mại</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">
+                  <p className="text-xs text-ink leading-relaxed">
                     {script.rightsGuardrails ? `${script.rightsGuardrails} · ${script.callToAction}` : script.callToAction}
                   </p>
                 </div>
 
                 {script.hook && (
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                    <span className="text-2xs font-semibold text-slate-600">Outline / Ý tưởng do KOL gửi:</span>
-                    <p className="text-xs text-slate-800 italic">&ldquo;{script.hook}&rdquo;</p>
+                  <div className="p-3 bg-canvas rounded-lg border border-line space-y-1">
+                    <span className="text-2xs font-semibold text-ink-2">Outline / Ý tưởng do KOL gửi:</span>
+                    <p className="text-xs text-ink italic">&ldquo;{script.hook}&rdquo;</p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-slate-800">Nội dung kịch bản chi tiết</h4>
+                <h4 className="text-xs font-semibold text-ink">Nội dung kịch bản chi tiết</h4>
 
                 {/* Section 1: Hook */}
-                <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-200/80 space-y-1">
+                <div className="p-4 bg-accent-soft/50 rounded-lg border border-accent/80 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-blue-700">Đoạn mở đầu (0–3 giây đầu)</span>
-                    <span className="text-2xs text-slate-500 font-medium">Tình huống mở đầu</span>
+                    <span className="text-xs font-semibold text-accent-hover">Đoạn mở đầu (0–3 giây đầu)</span>
+                    <span className="text-2xs text-ink-3 font-medium">Tình huống mở đầu</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed italic">&ldquo;{script.hook}&rdquo;</p>
+                  <p className="text-xs text-ink leading-relaxed italic">&ldquo;{script.hook}&rdquo;</p>
                 </div>
 
                 {/* Section 2: Pain Point */}
-                <div className="p-3.5 bg-amber-50/50 rounded-lg border border-amber-200/80 space-y-1">
+                <div className="p-4 bg-warning-soft/50 rounded-lg border border-warning/80 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-amber-700">Vấn đề người dùng (3–15 giây)</span>
-                    <span className="text-2xs text-slate-500 font-medium">Tình trạng thường gặp</span>
+                    <span className="text-xs font-semibold text-warning">Vấn đề người dùng (3–15 giây)</span>
+                    <span className="text-2xs text-ink-3 font-medium">Tình trạng thường gặp</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">{script.painPoint}</p>
+                  <p className="text-xs text-ink leading-relaxed">{script.painPoint}</p>
                 </div>
 
                 {/* Section 3: Solution & USP */}
-                <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-200/80 space-y-1">
+                <div className="p-4 bg-positive-soft/50 rounded-lg border border-positive/80 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-emerald-700">
+                    <span className="text-xs font-semibold text-positive">
                       Giới thiệu sản phẩm (15–45 giây)
                     </span>
-                    <span className="text-2xs text-slate-500 font-medium">Công dụng &amp; thành phần chính</span>
+                    <span className="text-2xs text-ink-3 font-medium">Công dụng &amp; thành phần chính</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">{script.solutionAndUsp}</p>
+                  <p className="text-xs text-ink leading-relaxed">{script.solutionAndUsp}</p>
                 </div>
 
                 {/* Section 4: CTA */}
-                <div className="p-3.5 bg-accent-soft rounded-lg border border-line space-y-1">
+                <div className="p-4 bg-accent-soft rounded-lg border border-line space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-accent">Điều hướng mua hàng (45–60 giây)</span>
-                    <span className="text-2xs text-slate-500 font-medium">Gắn giỏ hàng &amp; ưu đãi</span>
+                    <span className="text-2xs text-ink-3 font-medium">Gắn giỏ hàng &amp; ưu đãi</span>
                   </div>
-                  <p className="text-xs text-slate-800 leading-relaxed">{script.callToAction}</p>
+                  <p className="text-xs text-ink leading-relaxed">{script.callToAction}</p>
                 </div>
               </div>
             )}
 
             {/* Quality Audit Checklist */}
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5">
-              <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                <CheckSquare className="w-4 h-4 text-emerald-600" />
+            <div className="p-4 bg-canvas rounded-lg border border-line space-y-3">
+              <h4 className="text-xs font-semibold text-ink flex items-center gap-2">
+                <CheckSquare className="w-4 h-4 text-positive" />
                 {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
                   ? 'Checklist kiểm duyệt theo Khung tham số (Dành cho KL6 / KL7)'
                   : 'Danh mục kiểm duyệt tiêu chuẩn nền tảng & thương hiệu'}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-ink-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checkUsp}
                     onChange={(e) => setCheckUsp(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-line-strong text-accent focus:ring-accent"
                   />
                   <span>
                     {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
@@ -658,21 +658,21 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                       : 'Đúng thông điệp sản phẩm & quy chuẩn thương hiệu'}
                   </span>
                 </label>
-                <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-ink-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checkNoBannedKeywords}
                     onChange={(e) => setCheckNoBannedKeywords(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-line-strong text-accent focus:ring-accent"
                   />
                   <span>Không vi phạm từ cấm &amp; ranh giới Do &amp; Don&apos;t của nhãn</span>
                 </label>
-                <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-ink-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checkCallToAction}
                     onChange={(e) => setCheckCallToAction(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-line-strong text-accent focus:ring-accent"
                   />
                   <span>
                     {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
@@ -680,12 +680,12 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                       : 'Có lời kêu gọi nhấp giỏ hàng góc trái rõ ràng'}
                   </span>
                 </label>
-                <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-ink-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checkDuration}
                     onChange={(e) => setCheckDuration(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-line-strong text-accent focus:ring-accent"
                   />
                   <span>
                     {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
@@ -697,11 +697,11 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             </div>
 
             {/* Khung Nhận xét Biên tập Kịch bản */}
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+            <div className="p-4 bg-canvas rounded-lg border border-line space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-blue-600" />
-                  <span className="text-xs font-semibold text-slate-800">
+                  <Sliders className="w-4 h-4 text-accent" />
+                  <span className="text-xs font-semibold text-ink">
                     Rà soát &amp; biên tập kịch bản
                   </span>
                 </div>
@@ -759,7 +759,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                         setIsRunningLlmReview(false);
                       }
                     }}
-                    className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1 rounded bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isRunningLlmReview ? 'animate-spin' : ''}`} />
                     {isRunningLlmReview ? 'Đang rà soát...' : 'Chạy biên tập kịch bản'}
@@ -768,9 +768,9 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               </div>
 
               {llmReviewResult && (
-                <div className="p-3.5 bg-white rounded-lg border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-600">
-                    <span className="font-semibold text-slate-800">
+                <div className="p-4 bg-white rounded-lg border border-line space-y-2">
+                  <div className="flex items-center justify-between text-xs text-ink-2">
+                    <span className="font-semibold text-ink">
                       Bản nhận xét & gợi ý sửa kịch bản ({llmReviewResult.providerUsed}):
                     </span>
                     <button
@@ -779,12 +779,12 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                         setIsRevisionMode(true);
                         setFeedbackNotes(llmReviewResult.output);
                       }}
-                      className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                      className="text-xs font-semibold text-accent hover:underline cursor-pointer"
                     >
                       Chèn vào ô Yêu cầu chỉnh sửa
                     </button>
                   </div>
-                  <pre className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed bg-slate-50 p-3 rounded border border-slate-200 max-h-56 overflow-y-auto">
+                  <pre className="text-xs font-mono text-ink whitespace-pre-wrap leading-relaxed bg-canvas p-3 rounded border border-line max-h-56 overflow-y-auto">
                     {llmReviewResult.output}
                   </pre>
                 </div>
@@ -793,15 +793,15 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 
             {/* Revision Input Box if toggled */}
             {isRevisionMode && (
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-300 space-y-2 animate-in fade-in duration-150">
+              <div className="p-4 bg-warning-soft rounded-lg border border-warning/30 space-y-2 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-semibold text-warning flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-warning" />
                     Nhập ghi chú phản hồi yêu cầu sửa kịch bản cho KOC
                   </span>
                   <button
                     onClick={() => setIsRevisionMode(false)}
-                    className="text-xs text-slate-500 hover:text-slate-800 font-medium"
+                    className="text-xs text-ink-3 hover:text-ink font-medium"
                   >
                     Hủy
                   </button>
@@ -811,12 +811,12 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   placeholder="VD: Đoạn mở đầu 3s cần đẩy năng lượng cao hơn; bổ sung nhấn mạnh vào chứng nhận..."
                   value={feedbackNotes}
                   onChange={(e) => setFeedbackNotes(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg p-3 text-xs text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-white border border-line-strong rounded-lg p-3 text-xs text-ink placeholder-ink-3 focus:ring-2 focus:ring-warning/20 focus:border-warning focus:outline-none"
                 />
-                {errorMsg && <p className="text-xs text-rose-600 font-medium">{errorMsg}</p>}
+                {errorMsg && <p className="text-xs text-critical font-medium">{errorMsg}</p>}
                 <button
                   onClick={handleSendRevision}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-lg transition shadow-xs"
+                  className="px-4 py-2 bg-warning hover:bg-warning text-white font-semibold text-xs rounded-lg transition shadow-xs"
                 >
                   Gửi yêu cầu chỉnh sửa
                 </button>

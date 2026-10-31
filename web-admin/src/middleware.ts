@@ -2,14 +2,20 @@ import { effectiveUser } from '@/lib/server/accessPolicy';
 import { type NextRequest, NextResponse } from "next/server";
 import { decodeSessionToken, encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from "@/lib/larkAuth";
 import { USERS } from "@/lib/mockData";
-import { updateSession } from "@/utils/supabase/middleware";
 
 export const runtime = 'nodejs';
+
+function forwardNext(request: NextRequest) {
+  return NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Job đồng bộ tự xác thực bearer secret tại route, không dùng phiên người dùng.
-  // Webhook va Job tu xac thuc secret tai route, khong dung phien nguoi dung
   if (
     pathname === '/api/contracts/integrations/wesign/sync' ||
     pathname.startsWith('/api/integrations/zalo-bot/webhook')
@@ -25,7 +31,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/icon.png' ||
     pathname === '/favicon.ico'
   ) {
-    return await updateSession(request);
+    return forwardNext(request);
   }
 
   // 2. Kiểm tra phiên đăng nhập được ký HMAC
@@ -43,7 +49,7 @@ export async function middleware(request: NextRequest) {
     const defaultUser = USERS[0];
     const defaultToken = encodeSessionToken(defaultUser);
 
-    const response = await updateSession(request);
+    const response = forwardNext(request);
     const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
     response.cookies.set(SESSION_COOKIE_NAME, defaultToken, {
       httpOnly: true,
@@ -61,7 +67,7 @@ export async function middleware(request: NextRequest) {
     // Forward the current server policy to legacy handlers that read the signed session synchronously.
     if (JSON.stringify(actor) !== JSON.stringify(user)) request.cookies.set(SESSION_COOKIE_NAME, encodeSessionToken(actor));
   } catch { return NextResponse.json({ error: 'Không kiểm tra được quyền. Thử lại sau.' }, { status: 503 }); }
-  return await updateSession(request);
+  return forwardNext(request);
 }
 
 export const config = {

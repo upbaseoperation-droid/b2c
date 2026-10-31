@@ -42,11 +42,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="p-8 rounded-xl bg-surface border border-line shadow-sm max-w-2xl mx-auto my-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">
+          <div className="w-12 h-12 rounded-xl bg-warning-soft text-warning flex items-center justify-center mx-auto border border-warning/30">
             <AlertTriangle className="w-6 h-6" />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <h2 className="text-base font-semibold text-ink">
               {this.props.fallbackTitle || 'Không thể hiển thị màn hình này'}
             </h2>
@@ -65,14 +65,14 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex items-center justify-center gap-3 pt-2">
             <button
               onClick={this.handleReset}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Thử tải lại
             </button>
             <button
               onClick={this.handleReset}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md bg-surface text-ink-2 border border-line hover:bg-sunken transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md bg-surface text-ink-2 border border-line hover:bg-sunken transition-colors"
             >
               <Home className="w-3.5 h-3.5" />
               Làm mới màn hình

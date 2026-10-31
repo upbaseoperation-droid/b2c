@@ -507,7 +507,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
 
       {activeTab === 'KOC_MAPPING' && activeReportData && (
         <Panel flush>
-          <div className="p-3.5 border-b border-line bg-surface">
+          <div className="p-4 border-b border-line bg-surface">
             <FilterBar
               search={{
                 value: searchQuery,
@@ -547,7 +547,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                 header: 'Kênh TikTok',
                 render: (cr) => (
                   <div>
-                    <div className="font-semibold text-ink text-xs flex items-center gap-1.5">
+                    <div className="font-semibold text-ink text-xs flex items-center gap-2">
                       <span>{cr.accountName}</span>
                       {cr.isWinnerTop20 && <Status tone="positive">Top 20%</Status>}
                     </div>
@@ -564,7 +564,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                 header: 'Danh bạ KOC',
                 render: (cr) =>
                   cr.isMatched ? (
-                    <div className="flex items-center gap-1.5 text-positive font-semibold text-xs">
+                    <div className="flex items-center gap-2 text-positive font-semibold text-xs">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       <span>{cr.mappedStageName}</span>
                     </div>
@@ -632,7 +632,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
 
       {activeTab === 'CREATIVES' && activeReportData && (
         <Panel flush>
-          <div className="p-3.5 border-b border-line bg-surface">
+          <div className="p-4 border-b border-line bg-surface">
             <FilterBar
               search={{
                 value: searchQuery,

@@ -109,6 +109,7 @@ export interface ApprovedBookingListItem {
   bookingOrderCreated: boolean;
   bookingOrderCreatedAt?: string;
   linkedDealId?: string;
+  maJob?: string;                      // Mã Job (BO2610...-J01)
   thangPlan: string;                   // Cột 36: Tháng Plan (2026/10)
   dot: string;                         // Đợt Listing (Đợt 1, Đợt 2...)
   storeName: string;                   // Cột 3: Store
@@ -223,6 +224,7 @@ export interface ApprovedBookingListItem {
     | 'REJECTED';
   larkApprovalRouteSummary?: string;   // Tóm tắt luồng phê duyệt Lark Approval (Chuyên viên -> Leader -> GĐ MKT -> Kế toán)
   larkSyncedAt?: string;
+  larkRecordId?: string;               // ID bản ghi trên Larkbase Bảng 3.2
 
   // 8. Luồng 1 — Tạm ứng trên Lark (Whiteboard QNvp & Bảng 3.2/6.1)
   larkAdvanceSlipCode?: string;        // Mã phiếu tạm ứng (TU-202610-001)
@@ -259,6 +261,107 @@ export interface ApprovedBookingListItem {
   daDiTien?: boolean;                  // Checkbox "Đã đi tiền" trên Bảng 6.1 sau bước KT Handle
   uncBillCode?: string;                // Mã lệnh chi / Link ảnh Bill Ủy nhiệm chi (UNC) gửi KOC
   uncSentToKocAt?: string;             // Thời điểm gửi Bill UNC cho KOC (cam kết 100% trong 7 ngày sau duyệt)
+
+  // 11. Thông số Phiên Livestream Affiliate (Phiếu xác nhận hợp tác Livestream Affiliate - Mục 3.4)
+  liveStartTime?: string;              // Giờ bắt đầu phiên Live (VD: "20:00")
+  liveEndTime?: string;                // Giờ kết thúc phiên Live (VD: "22:00")
+  liveCommittedMinutes?: number;       // Thời lượng cam kết (phút, VD: 120)
+  liveActualMinutes?: number;          // Thời lượng thực tế nghiệm thu (phút)
+  liveSessionsCount?: number;          // Số phiên cam kết (VD: 1)
+  liveCommissionPct?: number;          // Hoa hồng Affiliate % (VD: 15)
+  liveGmvBonusTier?: string;           // Mốc thưởng GMV (VD: "Đạt 150tr thưởng 3tr")
+  liveTargetGmv?: number;              // GMV mục tiêu phiên Live (VNĐ)
+  liveTargetOrders?: number;           // Số đơn mục tiêu phiên Live
+  liveTargetViews?: number;            // Lượt xem / PCV mục tiêu
+  liveKpiType?: 'Tham chiếu' | 'Cam kết'; // Loại KPI (Tham chiếu | Cam kết)
+  liveDealPriceInfo?: string;          // Giá live / Deal độc quyền trong phiên
+  liveVoucherInfo?: string;            // Voucher / Quà tặng / Freeship phiên Live
+  liveCommittedStock?: number;         // Tồn kho cam kết cho phiên Live
+  liveAdsBudget?: number;              // Ngân sách Ads hỗ trợ phiên Live (VNĐ)
+  liveTeasingSchedule?: string;        // Lịch Teasing / Đầu ra bổ sung trước phiên Live
+  liveExclusivityNote?: string;        // Cam kết độc quyền ngành hàng trong phiên
+  liveKocConfirmed?: boolean;          // KOC xác nhận lịch & deal Live
+  liveBrandConfirmed?: boolean;        // Brand xác nhận deal & tồn kho Live
+  liveLeaderConfirmed?: boolean;       // Booking Lead xác nhận đủ điều kiện tạo HĐ & gửi mẫu
+}
+
+export function isLivestreamBookingItem(
+  item?: Pick<ApprovedBookingListItem, 'phanLoaiVideo' | 'dinhDangNghiemThu' | 'maBooking'> | null
+): boolean {
+  if (!item) return false;
+  return (
+    item.phanLoaiVideo === 'Livestream' ||
+    item.dinhDangNghiemThu === 'Phiên Livestream' ||
+    Boolean(item.maBooking && /^LIVE[-_]/i.test(item.maBooking.trim()))
+  );
+}
+
+/**
+ * Xuất văn bản chuẩn "PHIẾU XÁC NHẬN HỢP TÁC LIVESTREAM AFFILIATE" (Quy trình Booking - Tech.md Mục 3.4)
+ * để nhân sự sao chép gửi nhóm làm việc KOC Livestream (Booking + Growth + Media + Content + Brand).
+ */
+export function formatLivestreamConfirmationSheet(item: ApprovedBookingListItem): string {
+  const fmtVnd = (n?: number) => `${Math.round(Number(n) || 0).toLocaleString('vi-VN')} ₫`;
+  const subjectType = item.loaiTaiKhoanThanhToan.includes('Công ty')
+    ? 'Công ty'
+    : item.loaiTaiKhoanThanhToan.includes('Hộ kinh doanh') || item.loaiTaiKhoanThanhToan.includes('HKD')
+      ? 'Hộ kinh doanh'
+      : 'Cá nhân';
+  const readyForContract =
+    item.liveKocConfirmed && item.liveBrandConfirmed && item.liveLeaderConfirmed
+      ? 'ĐỦ ĐIỀU KIỆN'
+      : 'CHƯA ĐỦ';
+  const readyForSample =
+    item.liveKocConfirmed && item.liveBrandConfirmed ? 'ĐƯỢC GỬI HÀNG' : 'CHƯA ĐƯỢC GỬI';
+
+  return [
+    '=== PHIẾU XÁC NHẬN HỢP TÁC LIVESTREAM AFFILIATE ===',
+    `CODE: ${item.maBooking || 'LIVE-2026-001'}`,
+    '',
+    '[1. THÔNG TIN KOC & HỢP TÁC]',
+    `- Brand / Store: ${item.brandName} / ${item.storeName}`,
+    `- Kỳ kế hoạch: ${item.thangPlan} (${item.dot || 'Đợt 1'})`,
+    `- Nền tảng: TikTok Shop`,
+    `- Hình thức hợp tác: ${item.chiPhiBookingNetCuoi > 0 ? 'Paid - Booking Phiên Live' : 'Affiliate Commission'}`,
+    `- Tên KOC: ${item.tenKenh || item.idKenh} (@${item.idKenh.replace(/^@/, '')})`,
+    `- Link kênh: ${item.linkKenh}`,
+    `- Chủ thể ký: ${subjectType}`,
+    '',
+    '[2. LỊCH & ĐẦU RA PHIÊN LIVE]',
+    `- Ngày live: ${item.plannedAirDate || 'Chưa chốt'}`,
+    `- Khung giờ: ${item.liveStartTime || '20:00'} - ${item.liveEndTime || '22:00'}`,
+    `- Thời lượng cam kết: ${item.liveCommittedMinutes || 120} phút (${item.liveSessionsCount || 1} phiên)`,
+    `- Thời lượng thực tế: ${item.liveActualMinutes ? `${item.liveActualMinutes} phút` : 'Chờ nghiệm thu'}`,
+    `- Lịch teasing / Đầu ra bổ sung: ${item.liveTeasingSchedule || '1 Video Teasing trước phiên Live 24h'}`,
+    '',
+    '[3. CHI PHÍ, HOA HỒNG & THANH TOÁN]',
+    `- Phí booking Gross: ${fmtVnd(item.chiPhiGrossKemThue)}`,
+    `- Phí cứng Net: ${fmtVnd(item.chiPhiBookingNetCuoi)}`,
+    `- Thuế / Hóa đơn: ${item.loaiTaiKhoanThanhToan}`,
+    `- Hoa hồng Affiliate: ${item.liveCommissionPct ?? 15}%`,
+    `- Thưởng GMV: ${item.liveGmvBonusTier || 'Theo chính sách chiến dịch'}`,
+    `- Tạm ứng trước: ${fmtVnd(item.soTienTamUngTruoc)} (${item.paymentScheduleOption === 'TWO_TIMES' ? 'Thanh toán 2 đợt' : 'Thanh toán 1 lần sau nghiệm thu'})`,
+    '',
+    '[4. KPI & ĐIỀU KIỆN NGHIỆM THU]',
+    `- GMV mục tiêu: ${fmtVnd(item.liveTargetGmv || 0)} (${item.liveKpiType || 'Tham chiếu'})`,
+    `- Đơn hàng mục tiêu: ${(item.liveTargetOrders || 0).toLocaleString('vi-VN')} đơn`,
+    `- Điều kiện nghiệm thu: Đủ thời lượng ${item.liveCommittedMinutes || 120} phút, gắn giỏ SKU cam kết & cung cấp Link Replay / Dashboard phiên Live`,
+    '',
+    '[5. SẢN PHẨM, GIÁ DEAL & HỖ TRỢ PHIÊN LIVE]',
+    `- SKU / Sản phẩm: ${item.sanPham || 'Theo giỏ hàng phiên Live'}`,
+    `- Giá live / Deal độc quyền: ${item.liveDealPriceInfo || 'Theo deal sàn phê duyệt'}`,
+    `- Voucher / Quà / Freeship: ${item.liveVoucherInfo || 'Voucher Livestream TikTok Shop'}`,
+    `- Tồn kho cam kết: ${(item.liveCommittedStock || 0).toLocaleString('vi-VN')} sản phẩm`,
+    `- Ngân sách Ads hỗ trợ Live: ${fmtVnd(item.liveAdsBudget || 0)}`,
+    `- Độc quyền: ${item.liveExclusivityNote || 'Không gắn sản phẩm đối thủ cùng ngành trong phiên Live'}`,
+    '',
+    '[6. XÁC NHẬN 3 BÊN TRƯỚC GIỜ G]',
+    `- KOC xác nhận: ${item.liveKocConfirmed ? 'Đã xác nhận' : 'Chưa xác nhận'}`,
+    `- Brand xác nhận: ${item.liveBrandConfirmed ? 'Đã xác nhận' : 'Chưa xác nhận'}`,
+    `- Booking Lead xác nhận: ${item.liveLeaderConfirmed ? 'Đã xác nhận' : 'Chưa xác nhận'}`,
+    `- Đủ điều kiện tạo HĐ (${subjectType}-LIVE-HD): ${readyForContract}`,
+    `- Đủ điều kiện gửi hàng mẫu: ${readyForSample}`,
+  ].join('\n');
 }
 
 /**
@@ -376,8 +479,19 @@ export function generateDealAppendixCode(maBooking: string, seq = 1): string {
   return `PL-${maBooking.trim()}-${String(seq).padStart(2, '0')}`;
 }
 
+export function isSyntheticAutoAddon(addon?: Partial<DealRightsTermItem> | null): boolean {
+  if (!addon || typeof addon !== 'object') return false;
+  const id = String(addon.id || '');
+  if (!id.endsWith('-ADDON-ADS') && !id.endsWith('-ADDON-IMG')) return false;
+  return (
+    addon.allocatedWeightPct === 10 &&
+    (addon.termLabel === 'Cấp mã quảng cáo Spark Ads (30 ngày)' ||
+      addon.termLabel === 'Quyền sử dụng hình ảnh & file video gốc (30 ngày)')
+  );
+}
+
 /**
- * Tạo danh sách Dịch vụ gia tăng (Add-on Services) mặc định đi kèm Asset Video trong Deal
+ * Tạo danh sách Dịch vụ gia tăng (Add-on Services) chỉ khi người dùng chủ động bật
  */
 export function buildDefaultAddonServicesForDeal(params: {
   maBooking: string;
@@ -386,7 +500,7 @@ export function buildDefaultAddonServicesForDeal(params: {
   actualAirDate?: string;
   includeDefaultAddons?: boolean;
 }): DealRightsTermItem[] {
-  const { maBooking, totalNet, sparkAdsCode, actualAirDate, includeDefaultAddons = true } = params;
+  const { maBooking, totalNet, sparkAdsCode, actualAirDate, includeDefaultAddons = false } = params;
   if (!includeDefaultAddons || totalNet <= 0) {
     return [];
   }
@@ -552,6 +666,8 @@ export function ensureDealJobsForApprovedItem(
     : 'TikTok Shop';
 
   if (Array.isArray(item.dealJobs) && item.dealJobs.length > 0) {
+    const isSingleJob = item.dealJobs.length === 1;
+    const itemNet = Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
     return item.dealJobs.map((job, idx) => {
       const seqStr = String(idx + 1).padStart(2, '0');
       const jobCode = job.jobCode?.trim() || `${maBo}-J${seqStr}`;
@@ -564,7 +680,11 @@ export function ensureDealJobsForApprovedItem(
       const jobActualAir = job.actualAirDate?.trim() || (idx === 0 ? item.actualAirDate || '' : '');
       const jobSparkCode = job.sparkAdsCode?.trim() || (idx === 0 ? item.sparkAdsCode || '' : '');
 
-      const normalizedJobAddons: DealRightsTermItem[] = (job.addonServices || []).map((addon, aIdx) => {
+      const rawJobAddons = job.addonServices || [];
+      const hadSyntheticAddons = rawJobAddons.some((a) => isSyntheticAutoAddon(a));
+      const cleanJobAddons = rawJobAddons.filter((a) => !isSyntheticAutoAddon(a));
+
+      const normalizedJobAddons: DealRightsTermItem[] = cleanJobAddons.map((addon, aIdx) => {
         if (addon.acceptanceStatus === 'DROPPED') {
           return {
             ...addon,
@@ -598,6 +718,11 @@ export function ensureDealJobsForApprovedItem(
         };
       });
 
+      const restoredVideoNet =
+        isSingleJob && hadSyntheticAddons && cleanJobAddons.length === 0 && itemNet > 0
+          ? itemNet
+          : Math.max(0, Number(job.videoAssetNetCost) || 0);
+
       return {
         ...job,
         id: job.id || `${jobCode}-ID`,
@@ -612,7 +737,7 @@ export function ensureDealJobsForApprovedItem(
         actualAirDate: jobActualAir || undefined,
         linkAir: jobLinkAir || undefined,
         sparkAdsCode: jobSparkCode || undefined,
-        videoAssetNetCost: Math.max(0, Number(job.videoAssetNetCost) || 0),
+        videoAssetNetCost: restoredVideoNet,
         quantity: Math.max(1, Number(job.quantity) || 1),
         addonServices: normalizedJobAddons,
         acceptanceStatus: hasJobAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU',
@@ -621,22 +746,9 @@ export function ensureDealJobsForApprovedItem(
   }
 
   const fallbackNet = Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
-  const rawAddons =
-    item.addonServices !== undefined
-      ? item.addonServices
-      : item.bookingOrderCreated && fallbackNet > 0
-        ? buildDefaultAddonServicesForDeal({
-            maBooking: item.maBooking,
-            totalNet: fallbackNet,
-            sparkAdsCode: item.sparkAdsCode,
-            actualAirDate: item.actualAirDate,
-          })
-        : [];
+  const rawAddons = (item.addonServices || []).filter((a) => !isSyntheticAutoAddon(a));
   const addonsCost = rawAddons.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
-  const defaultVideoNet =
-    item.videoAssetNetCost !== undefined
-      ? Math.max(0, Number(item.videoAssetNetCost) || 0)
-      : Math.max(0, fallbackNet - addonsCost);
+  const defaultVideoNet = Math.max(0, fallbackNet - addonsCost);
   const jobCode = `${maBo}-J01`;
   const hasAir = Boolean(item.linkAir?.trim() || item.actualAirDate?.trim());
 
@@ -717,16 +829,7 @@ export function recalculateApprovedBookingItem(
   // Chuẩn hóa danh sách Dịch vụ gia tăng (Add-on Services) trong Deal & Nghiệm thu 2 tầng tuần tự
   const rawAddons = hasExplicitMultiJobs
     ? normalizedDealJobs.flatMap((j) => j.addonServices || [])
-    : item.addonServices !== undefined
-      ? item.addonServices
-      : item.bookingOrderCreated && finalNet > 0
-        ? buildDefaultAddonServicesForDeal({
-            maBooking: item.maBooking,
-            totalNet: finalNet,
-            sparkAdsCode: item.sparkAdsCode,
-            actualAirDate: item.actualAirDate,
-          })
-        : [];
+    : (item.addonServices || []).filter((a) => !isSyntheticAutoAddon(a));
 
   const normalizedAddons: DealRightsTermItem[] = rawAddons.map((addon) => {
     if (addon.acceptanceStatus === 'DROPPED') {
@@ -1058,8 +1161,416 @@ export function buildApprovedBookingItemFromSheetRow(params: {
   return recalculateApprovedBookingItem(baseItem);
 }
 
+export function isSyntheticApprovedBookingItem(
+  item?: Partial<ApprovedBookingListItem> | null
+): boolean {
+  if (!item || typeof item !== 'object') return false;
+  if (item.soTaiKhoan === '19038492019284' && item.soCccd === '079198004821') return true;
+  return false;
+}
+
+export function buildDefaultLivestreamApprovedDeals(): ApprovedBookingListItem[] {
+  const specs: Array<{
+    id: string;
+    maBooking: string;
+    thangPlan: string;
+    dot: 'Đợt 1' | 'Đợt 2' | 'Đợt 3';
+    brandName: string;
+    storeName: string;
+    nguoiPhuTrach: string;
+    leaderName?: string;
+    idKenh: string;
+    tenKenh: string;
+    follower: number;
+    sanPham: string;
+    klGrade: SalaryGrade;
+    netFee: number;
+    plannedAirDate: string;
+    actualAirDate: string;
+    linkAir: string;
+    views30d: number;
+    orders30d: number;
+    gmv30d: number;
+    liveStartTime: string;
+    liveEndTime: string;
+    liveCommittedMinutes: number;
+    liveActualMinutes?: number;
+    liveSessionsCount: number;
+    liveCommissionPct: number;
+    liveGmvBonusTier: string;
+    liveTargetGmv: number;
+    liveTargetOrders: number;
+    liveKpiType: 'Cam kết' | 'Tham chiếu';
+    liveDealPriceInfo: string;
+    liveVoucherInfo: string;
+    liveCommittedStock: number;
+    liveAdsBudget: number;
+    liveTeasingSchedule: string;
+    liveExclusivityNote: string;
+    liveKocConfirmed: boolean;
+    liveBrandConfirmed: boolean;
+    liveLeaderConfirmed: boolean;
+    contractAppendixStatus: 'CHƯA_LẬP' | 'CHỜ_KÝ' | 'ĐÃ_KÝ';
+    paymentStatus: ApprovedBookingPaymentStatus;
+  }> = [
+    {
+      id: 'ABL-LIVE-2610-001',
+      maBooking: 'LIVE-2610-001',
+      thangPlan: '2026/10',
+      dot: 'Đợt 1',
+      brandName: 'ClubClio',
+      storeName: 'ClubClio_TikTok_E2E-S',
+      nguoiPhuTrach: 'Nguyễn Thị Ngọc Tâm',
+      leaderName: 'Nguyễn Thị Ngọc Tâm',
+      idKenh: 'callme.duy',
+      tenKenh: 'Call Me Duy',
+      follower: 1450000,
+      sanPham: 'Combo Cushion Kill Cover Mesh Glow + Son Peripera Ink Mood Glowy Tint',
+      klGrade: 'KL7',
+      netFee: 25000000,
+      plannedAirDate: '2026-10-15',
+      actualAirDate: '2026-10-15',
+      linkAir: 'https://www.tiktok.com/@callme.duy/video/7426001122334455',
+      views30d: 185000,
+      orders30d: 420,
+      gmv30d: 168000000,
+      liveStartTime: '20:00',
+      liveEndTime: '22:00',
+      liveCommittedMinutes: 120,
+      liveActualMinutes: 135,
+      liveSessionsCount: 1,
+      liveCommissionPct: 15,
+      liveGmvBonusTier: 'Đạt 150tr thưởng thêm 3% GMV vượt mốc',
+      liveTargetGmv: 150000000,
+      liveTargetOrders: 350,
+      liveKpiType: 'Cam kết',
+      liveDealPriceInfo: 'Cushion giảm còn 429k + Tặng lõi refill chính hãng',
+      liveVoucherInfo: 'Voucher Live 18% tối đa 80k + Freeship Extra',
+      liveCommittedStock: 600,
+      liveAdsBudget: 5000000,
+      liveTeasingSchedule: '1 Video Teasing gắn lịch Live trước 24h (14/10)',
+      liveExclusivityNote: 'Không lên sản phẩm Cushion đối thủ trong cùng phiên Live',
+      liveKocConfirmed: true,
+      liveBrandConfirmed: true,
+      liveLeaderConfirmed: true,
+      contractAppendixStatus: 'ĐÃ_KÝ',
+      paymentStatus: 'Đã lập ĐNTT',
+    },
+    {
+      id: 'ABL-LIVE-2610-002',
+      maBooking: 'LIVE-2610-002',
+      thangPlan: '2026/10',
+      dot: 'Đợt 2',
+      brandName: 'Babé',
+      storeName: 'Babe_TikTok_E2E-S',
+      nguoiPhuTrach: 'Lê Phương Thảo',
+      idKenh: 'goc.cua.ru',
+      tenKenh: 'Góc Của Rư',
+      follower: 860000,
+      sanPham: 'Kem dưỡng phục hồi Babé Stop AKN Repairing Moisturizer + Sữa rửa mặt 200ml',
+      klGrade: 'KL6',
+      netFee: 18000000,
+      plannedAirDate: '2026-10-20',
+      actualAirDate: '2026-10-20',
+      linkAir: 'https://www.tiktok.com/@goc.cua.ru/video/7427881920192837',
+      views30d: 112000,
+      orders30d: 265,
+      gmv30d: 119250000,
+      liveStartTime: '20:30',
+      liveEndTime: '22:30',
+      liveCommittedMinutes: 120,
+      liveActualMinutes: 125,
+      liveSessionsCount: 1,
+      liveCommissionPct: 12,
+      liveGmvBonusTier: 'Đạt 100tr thưởng nóng 2.000.000đ',
+      liveTargetGmv: 100000000,
+      liveTargetOrders: 220,
+      liveKpiType: 'Cam kết',
+      liveDealPriceInfo: 'Combo Sữa rửa mặt + Kem dưỡng giá độc quyền 689k',
+      liveVoucherInfo: 'Voucher 15% + Quà mini size 50ml cho 100 đơn đầu',
+      liveCommittedStock: 400,
+      liveAdsBudget: 3500000,
+      liveTeasingSchedule: '1 Story & 1 Video ngắn thông báo lịch Live trước 12h',
+      liveExclusivityNote: 'Độc quyền dược mỹ phẩm chăm sóc da dầu mụn trong khung giờ Live',
+      liveKocConfirmed: true,
+      liveBrandConfirmed: true,
+      liveLeaderConfirmed: true,
+      contractAppendixStatus: 'ĐÃ_KÝ',
+      paymentStatus: 'Đủ điều kiện ĐNTT',
+    },
+    {
+      id: 'ABL-LIVE-2610-003',
+      maBooking: 'LIVE-2610-003',
+      thangPlan: '2026/10',
+      dot: 'Đợt 2',
+      brandName: 'Kutieskin',
+      storeName: 'Kutieskin_TikTok_E2E-S',
+      nguoiPhuTrach: 'Trần Thị Thu Trang',
+      idKenh: 'mebimsuathongthai',
+      tenKenh: 'Mẹ Bỉm Sữa Thông Thái',
+      follower: 420000,
+      sanPham: 'Bộ đôi Kem mẩn ngứa & Kem dưỡng ẩm Kutieskin cho bé',
+      klGrade: 'KL5',
+      netFee: 9500000,
+      plannedAirDate: '2026-10-25',
+      actualAirDate: '2026-10-25',
+      linkAir: 'https://www.tiktok.com/@mebimsuathongthai/video/7429112233445566',
+      views30d: 68000,
+      orders30d: 310,
+      gmv30d: 65100000,
+      liveStartTime: '19:30',
+      liveEndTime: '21:30',
+      liveCommittedMinutes: 120,
+      liveActualMinutes: 120,
+      liveSessionsCount: 1,
+      liveCommissionPct: 15,
+      liveGmvBonusTier: 'Đạt 60tr thưởng thêm 2% hoa hồng',
+      liveTargetGmv: 60000000,
+      liveTargetOrders: 280,
+      liveKpiType: 'Tham chiếu',
+      liveDealPriceInfo: 'Mua 2 tặng 1 Sữa tắm gội thảo dược 50ml',
+      liveVoucherInfo: 'Voucher 40k cho đơn từ 249k',
+      liveCommittedStock: 500,
+      liveAdsBudget: 2000000,
+      liveTeasingSchedule: 'Đăng bài ghim lịch Live trên kênh trước 24h',
+      liveExclusivityNote: 'Không gắn sản phẩm kem bôi da trẻ em khác trong phiên Live',
+      liveKocConfirmed: true,
+      liveBrandConfirmed: true,
+      liveLeaderConfirmed: true,
+      contractAppendixStatus: 'ĐÃ_KÝ',
+      paymentStatus: 'Đủ điều kiện ĐNTT',
+    },
+    {
+      id: 'ABL-LIVE-2610-004',
+      maBooking: 'LIVE-2610-004',
+      thangPlan: '2026/10',
+      dot: 'Đợt 3',
+      brandName: 'Rejuran',
+      storeName: 'Rejuran_TikTok_E2E-S',
+      nguoiPhuTrach: 'Nguyễn Thị Ngọc Tâm',
+      leaderName: 'Nguyễn Thị Ngọc Tâm',
+      idKenh: 'hannaholala',
+      tenKenh: 'Hannah Olala',
+      follower: 1620000,
+      sanPham: 'Tinh chất trẻ hóa chuyên sâu Rejuran Healer Turnover Ampoule Dual Effect 30ml',
+      klGrade: 'KL7',
+      netFee: 35000000,
+      plannedAirDate: '2026-10-29',
+      actualAirDate: '',
+      linkAir: '',
+      views30d: 0,
+      orders30d: 0,
+      gmv30d: 0,
+      liveStartTime: '21:00',
+      liveEndTime: '23:00',
+      liveCommittedMinutes: 120,
+      liveSessionsCount: 1,
+      liveCommissionPct: 12,
+      liveGmvBonusTier: 'Đạt 250tr thưởng thêm 3% GMV toàn phiên',
+      liveTargetGmv: 250000000,
+      liveTargetOrders: 180,
+      liveKpiType: 'Cam kết',
+      liveDealPriceInfo: 'Bộ Ampoule 30ml tặng Mặt nạ Rejuran trị giá 450k',
+      liveVoucherInfo: 'Voucher Mega Live 20% tối đa 200k',
+      liveCommittedStock: 350,
+      liveAdsBudget: 8000000,
+      liveTeasingSchedule: '1 Video Teasing + Ghim rổ hàng trước phiên Live 48h',
+      liveExclusivityNote: 'Độc quyền ngành hàng serum phục hồi cao cấp trong phiên',
+      liveKocConfirmed: true,
+      liveBrandConfirmed: true,
+      liveLeaderConfirmed: true,
+      contractAppendixStatus: 'ĐÃ_KÝ',
+      paymentStatus: 'Chờ nghiệm thu',
+    },
+    {
+      id: 'ABL-LIVE-2611-001',
+      maBooking: 'LIVE-2611-001',
+      thangPlan: '2026/11',
+      dot: 'Đợt 1',
+      brandName: 'ClubClio',
+      storeName: 'ClubClio_TikTok_E2E-S',
+      nguoiPhuTrach: 'Nguyễn Thị Ngọc Tâm',
+      leaderName: 'Nguyễn Thị Ngọc Tâm',
+      idKenh: 'vo.ha.linh',
+      tenKenh: 'Võ Hà Linh',
+      follower: 4200000,
+      sanPham: 'Mega Live 11/11: Trọn bộ ClubClio Cushion + Bảng mắt Pro Eye Palette',
+      klGrade: 'KL7',
+      netFee: 45000000,
+      plannedAirDate: '2026-11-10',
+      actualAirDate: '',
+      linkAir: '',
+      views30d: 0,
+      orders30d: 0,
+      gmv30d: 0,
+      liveStartTime: '20:00',
+      liveEndTime: '23:00',
+      liveCommittedMinutes: 180,
+      liveSessionsCount: 1,
+      liveCommissionPct: 15,
+      liveGmvBonusTier: 'Đạt 400tr thưởng thêm 4% GMV vượt mốc',
+      liveTargetGmv: 400000000,
+      liveTargetOrders: 950,
+      liveKpiType: 'Cam kết',
+      liveDealPriceInfo: 'Deal 11.11 Mua 1 Cushion tặng 1 Son tint fullsize',
+      liveVoucherInfo: 'Voucher 25% Mega Sale 11.11 + Freeship 0đ',
+      liveCommittedStock: 1500,
+      liveAdsBudget: 12000000,
+      liveTeasingSchedule: '2 Video Teasing trước ngày 10/11',
+      liveExclusivityNote: 'Độc quyền ngành hàng Makeup Hàn Quốc trong khung giờ 20h-22h',
+      liveKocConfirmed: true,
+      liveBrandConfirmed: true,
+      liveLeaderConfirmed: false,
+      contractAppendixStatus: 'CHỜ_KÝ',
+      paymentStatus: 'Chờ nghiệm thu',
+    },
+    {
+      id: 'ABL-LIVE-2611-002',
+      maBooking: 'LIVE-2611-002',
+      thangPlan: '2026/11',
+      dot: 'Đợt 1',
+      brandName: 'Cindy Bloom',
+      storeName: 'CindyBloom_TikTok_E2E-S',
+      nguoiPhuTrach: 'Nguyễn Thị Ngọc Tâm',
+      leaderName: 'Nguyễn Thị Ngọc Tâm',
+      idKenh: 'chole.review',
+      tenKenh: 'Chộ Lẹ Review',
+      follower: 530000,
+      sanPham: 'Bộ Nước hoa Cindy Bloom Aroma & Xịt thơm toàn thân 100ml',
+      klGrade: 'KL5',
+      netFee: 8500000,
+      plannedAirDate: '2026-11-11',
+      actualAirDate: '',
+      linkAir: '',
+      views30d: 0,
+      orders30d: 0,
+      gmv30d: 0,
+      liveStartTime: '19:00',
+      liveEndTime: '21:00',
+      liveCommittedMinutes: 120,
+      liveSessionsCount: 1,
+      liveCommissionPct: 18,
+      liveGmvBonusTier: 'Đạt 50tr thưởng thêm 3% hoa hồng',
+      liveTargetGmv: 50000000,
+      liveTargetOrders: 240,
+      liveKpiType: 'Tham chiếu',
+      liveDealPriceInfo: 'Combo Nước hoa 50ml + Body Mist giảm 35% còn 299k',
+      liveVoucherInfo: 'Voucher 11.11 giảm 50k cho đơn từ 299k',
+      liveCommittedStock: 450,
+      liveAdsBudget: 2500000,
+      liveTeasingSchedule: '1 Video Teasing ngày 09/11',
+      liveExclusivityNote: 'Không gắn nước hoa đối thủ trong phiên Live',
+      liveKocConfirmed: true,
+      liveBrandConfirmed: false,
+      liveLeaderConfirmed: false,
+      contractAppendixStatus: 'CHƯA_LẬP',
+      paymentStatus: 'Chờ nghiệm thu',
+    },
+  ];
+
+  return specs.map((s) =>
+    recalculateApprovedBookingItem({
+      id: s.id,
+      sourceSheetRowId: s.id,
+      sourceSheetKey: `${s.thangPlan}__${s.storeName}`,
+      createdAt: '2026-10-05T09:00:00.000Z',
+      updatedAt: '2026-10-20T09:00:00.000Z',
+      thangPlan: s.thangPlan,
+      dot: s.dot,
+      brandName: s.brandName,
+      storeName: s.storeName,
+      nguoiPhuTrach: s.nguoiPhuTrach,
+      leaderName: s.leaderName || '',
+      idKenh: s.idKenh,
+      tenKenh: s.tenKenh,
+      linkKenh: `https://www.tiktok.com/@${s.idKenh}`,
+      follower: s.follower,
+      sanPham: s.sanPham,
+      pillarContent: 'Livestream Mega Sale',
+      contentAngle: `Phiên Live ${s.liveStartTime}-${s.liveEndTime} (${s.liveCommittedMinutes} phút) — ${s.liveDealPriceInfo}`,
+      tepKenh: 'Livestream Host / KOC',
+      giaDeXuatNet: s.netFee,
+      maBooking: s.maBooking,
+      bookingOrderCreated: true,
+      bookingOrderCreatedAt: '2026-10-05T09:00:00.000Z',
+      pipelineStatus: s.linkAir ? 'Đã nghiệm thu video' : 'Đang thực thi (Đã tạo BO)',
+      acceptanceStatus: s.linkAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU',
+      plannedAirDate: s.plannedAirDate,
+      plannedSendSampleDate: '',
+      plannedScriptDate: '',
+      plannedDemoDate: '',
+      actualAirDate: s.actualAirDate,
+      ngayDienLinkAir: s.actualAirDate,
+      tuanReal: '',
+      thangAirReal: s.actualAirDate ? s.thangPlan : '',
+      diffDaysAir: 0,
+      phanLoaiVideo: 'Livestream',
+      linkAir: s.linkAir,
+      videoId: '',
+      trangThaiSlaAir: s.linkAir ? 'Đúng hạn' : 'Chưa đến hạn',
+      loaiTaiKhoanThanhToan: '(Thuế TNCN 10%) Tài khoản cá nhân',
+      chiPhiBookingNetCuoi: s.netFee,
+      chiPhiGrossKemThue: Math.round(s.netFee / 0.9),
+      klGrade: s.klGrade,
+      dinhDangNghiemThu: 'Phiên Livestream',
+      hinhThucHopTac: 'Rebook',
+      soTienTamUngTruoc: 0,
+      soTienCanThanhToan: s.netFee,
+      soTienDaThanhToan: 0,
+      trangThaiPhieuThanhToan: s.paymentStatus,
+      noiDungChuyenKhoan: '',
+      sparkAdsCode: '',
+      views14d: s.views30d,
+      orders14d: s.orders30d,
+      gmv14d: s.gmv30d,
+      gpm14d: 0,
+      roi14d: 0,
+      views30d: s.views30d,
+      orders30d: s.orders30d,
+      gmv30d: s.gmv30d,
+      gpm30d: 0,
+      roi30d: 0,
+      danhGiaHieuQuaVideo: '',
+      nguoiNhanHang: s.tenKenh,
+      sdtNhanHang: '',
+      diaChiNhanHang: '',
+      tenTaiKhoanNganHang: '',
+      soTaiKhoan: '',
+      nganHang: '',
+      soCccd: '',
+      ghiChu: `Hoa hồng ${s.liveCommissionPct}% · KPI GMV ${(s.liveTargetGmv / 1_000_000).toFixed(0)}M`,
+      masterContractCode: `HDNT-LIVE-${s.idKenh.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}`,
+      masterContractStatus: 'ĐÃ_KÝ',
+      contractAppendixCode: `SOW-${s.maBooking}`,
+      contractAppendixStatus: s.contractAppendixStatus,
+      bbntCode: s.linkAir ? `BBNT-${s.maBooking}` : undefined,
+      bbntStatus: s.linkAir ? 'ĐÃ_KÝ' : 'CHƯA_LẬP',
+      loaiThanhToanLark: 'Thanh toán Booking Livestream',
+      liveStartTime: s.liveStartTime,
+      liveEndTime: s.liveEndTime,
+      liveCommittedMinutes: s.liveCommittedMinutes,
+      liveActualMinutes: s.liveActualMinutes,
+      liveSessionsCount: s.liveSessionsCount,
+      liveCommissionPct: s.liveCommissionPct,
+      liveGmvBonusTier: s.liveGmvBonusTier,
+      liveTargetGmv: s.liveTargetGmv,
+      liveTargetOrders: s.liveTargetOrders,
+      liveKpiType: s.liveKpiType,
+      liveDealPriceInfo: s.liveDealPriceInfo,
+      liveVoucherInfo: s.liveVoucherInfo,
+      liveCommittedStock: s.liveCommittedStock,
+      liveAdsBudget: s.liveAdsBudget,
+      liveTeasingSchedule: s.liveTeasingSchedule,
+      liveExclusivityNote: s.liveExclusivityNote,
+      liveKocConfirmed: s.liveKocConfirmed,
+      liveBrandConfirmed: s.liveBrandConfirmed,
+      liveLeaderConfirmed: s.liveLeaderConfirmed,
+    })
+  );
+}
+
 /**
- * Khởi tạo dữ liệu mẫu ban đầu cho List Duyệt Book từ các dòng trong Sheet Listing Brand
+ * Khởi tạo danh sách List Duyệt Book từ 100% các dòng Brand chọn Yes thực tế trên Sheet Listing Brand
  */
 export function buildInitialApprovedBookingList(
   kocs: KocItem[],
@@ -1067,32 +1578,7 @@ export function buildInitialApprovedBookingList(
   deals: BookingDealItem[],
   defaultStaffName = 'Chuyên viên Booking'
 ): ApprovedBookingListItem[] {
-  const sheetCollection = loadStaffSheetCollection(kocs, stores, deals, defaultStaffName);
-  const storeMap = new Map(stores.map((s) => [s.storeName, s]));
-  const items: ApprovedBookingListItem[] = [];
-
-  Object.entries(sheetCollection.sheets).forEach(([sheetKey, rows]) => {
-    rows
-      .filter(
-        (row) =>
-          row &&
-          row.brandChon === 'Yes' &&
-          row.trangThai !== 'Từ chối' &&
-          row.trangThai !== 'Không phản hồi'
-      )
-      .slice(0, 2)
-      .forEach((row) => {
-        const storeObj = storeMap.get(row.store);
-        const base = buildApprovedBookingItemFromSheetRow({
-          row,
-          sheetKey,
-          store: storeObj,
-        });
-        items.push(base);
-      });
-  });
-
-  return items;
+  return buildRealBrandApprovedListFromSheets(kocs, stores, deals, defaultStaffName);
 }
 
 function mergeDealsAndKocsIntoApprovedList(
@@ -1100,7 +1586,12 @@ function mergeDealsAndKocsIntoApprovedList(
   kocs: KocItem[],
   deals: BookingDealItem[]
 ): ApprovedBookingListItem[] {
-  if (list.length === 0) return list;
+  const cleanedList = list.filter((i) => !isSyntheticApprovedBookingItem(i));
+  const hasLivestream = cleanedList.some((i) => isLivestreamBookingItem(i));
+  const workingList = hasLivestream
+    ? cleanedList
+    : [...buildDefaultLivestreamApprovedDeals(), ...cleanedList];
+  if (workingList.length === 0) return workingList;
 
   // RULE-PERF-01: O(1) Map lookup cho KOC và Deal
   const kocByHandle = new Map<string, KocItem>();
@@ -1119,7 +1610,7 @@ function mergeDealsAndKocsIntoApprovedList(
     if (d.jobId) dealByJobId.set(d.jobId, d);
   }
 
-  return list.map((rawItem) => {
+  return workingList.map((rawItem) => {
     const cleanHandle = normalizeTikTokId(rawItem.idKenh).toLowerCase();
     const matchedKoc =
       (rawItem.kocId ? kocById.get(rawItem.kocId) : undefined) ||
@@ -1260,13 +1751,7 @@ export function loadApprovedBookingList(
       deals,
       defaultStaffName
     );
-    return mergeDealsAndKocsIntoApprovedList(
-      realApproved.length > 0
-        ? realApproved
-        : buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
-      kocs,
-      deals
-    );
+    return mergeDealsAndKocsIntoApprovedList(realApproved, kocs, deals);
   }
 
   if (memoryApprovedListCache && memoryApprovedListCache.length > 0) {
@@ -1291,8 +1776,11 @@ export function loadApprovedBookingList(
   try {
     const raw = window.localStorage.getItem(APPROVED_BOOKING_LIST_STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as ApprovedBookingListItem[];
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      const rawParsed = JSON.parse(raw) as ApprovedBookingListItem[];
+      const parsed = Array.isArray(rawParsed)
+        ? rawParsed.filter((i) => !isSyntheticApprovedBookingItem(i))
+        : [];
+      if (parsed.length > 0) {
         const hasRealRows = parsed.some(
           (i) => i.sourceSheetRowId && i.sourceSheetRowId.startsWith('SSR-')
         );
@@ -1350,13 +1838,7 @@ export function loadApprovedBookingList(
   } catch {
     // ignore storage errors
   }
-  const initial = mergeDealsAndKocsIntoApprovedList(
-    realApproved.length > 0
-      ? realApproved
-      : buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
-    kocs,
-    deals
-  );
+  const initial = mergeDealsAndKocsIntoApprovedList(realApproved, kocs, deals);
   saveApprovedBookingList(initial, false);
   return initial;
 }

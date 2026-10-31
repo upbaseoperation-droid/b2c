@@ -80,7 +80,7 @@ export interface KocKolHubViewProps {
   onOpenContractForKoc?: (koc: KocItem, legalProfileId?: string) => void;
   onOpenKocMaster?: (kocId: string) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
-  onNavigateToBrandHub?: () => void;
+
   onNavigateToCtvHub?: () => void;
 }
 
@@ -100,7 +100,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = (props) => {
     const own = kocs.filter(k => k.id === props.currentUser?.linkedEntityId);
     if (!own.length) {
       return (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-700">
+        <div className="rounded-xl border border-line bg-white p-6 text-sm text-ink-2">
           Chưa có hồ sơ KOC được liên kết với tài khoản của bạn.
         </div>
       );
@@ -116,7 +116,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = (props) => {
   }
   if (!kocs.length) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-700">
+      <div className="rounded-xl border border-line bg-white p-6 text-sm text-ink-2">
         Chưa có hồ sơ KOC.
       </div>
     );
@@ -135,7 +135,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   onOpenContractForKoc,
   onOpenKocMaster,
   onNotify,
-  onNavigateToBrandHub,
+
   onNavigateToCtvHub
 }) => {
   const isKocPartner = currentUser?.role === 'KOC_PARTNER';
@@ -701,30 +701,30 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   return (
     <div className="space-y-6">
       {isManagerOrStaff && (
-        <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs space-y-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div className="bg-white rounded-xl border border-line/90 p-4 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
                 <Users className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-ink tracking-tight flex items-center gap-2">
                   <span>Trung Tâm Điều Hành KOC Đối Tác</span>
-                  <span className="text-2xs font-normal text-slate-500">
+                  <span className="text-2xs font-normal text-ink-3">
                     ({filteredKocs.length}/{kocs.length} KOC)
                   </span>
                 </h2>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/80 self-start sm:self-auto">
+            <div className="flex items-center gap-2 p-1 bg-sunken rounded-xl border border-line/80 self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setViewMode('NETWORK_COCKPIT')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${
                   viewMode === 'NETWORK_COCKPIT'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-accent-hover shadow-xs'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
@@ -734,10 +734,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('KOC_PORTAL')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${
                   viewMode === 'KOC_PORTAL'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-accent-hover shadow-xs'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -748,7 +748,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Tìm tên, kênh @, SĐT, CCCD..."
@@ -757,7 +757,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   setSearchQuery(e.target.value);
                   setCockpitPage(1);
                 }}
-                className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-2 rounded-lg border border-line bg-canvas/50 text-ink placeholder-ink-3 focus:bg-white focus:outline-none focus:border-accent"
               />
             </div>
 
@@ -768,7 +768,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   setFilterBrand(e.target.value);
                   setCockpitPage(1);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-lg border border-line bg-white text-ink-2 font-medium focus:outline-none focus:border-accent"
               >
                 <option value="ALL">Tất cả nhãn hàng</option>
                 {availableBrands.map(b => (
@@ -784,7 +784,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   setFilterTier(e.target.value);
                   setCockpitPage(1);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-lg border border-line bg-white text-ink-2 font-medium focus:outline-none focus:border-accent"
               >
                 <option value="ALL">Tất cả Cấp bậc (Tier)</option>
                 <option value="TIER_1_CELEB">Mega / Celeb (&gt;1M)</option>
@@ -801,7 +801,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   setFilterSalaryGrade(e.target.value);
                   setCockpitPage(1);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-lg border border-line bg-white text-ink-2 font-medium focus:outline-none focus:border-accent"
               >
                 <option value="ALL">Tất cả Khung lương (KL)</option>
                 <option value="KL1">{klLabel('KL1')}</option>
@@ -821,7 +821,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   setFilterTepKenh(e.target.value);
                   setCockpitPage(1);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-blue-500 truncate"
+                className="w-full px-3 py-2 rounded-lg border border-line bg-white text-ink-2 font-medium focus:outline-none focus:border-accent truncate"
               >
                 <option value="ALL">Tất cả Tệp kênh</option>
                 {availableTepKenhs.map(t => (
@@ -830,14 +830,14 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <select
                 value={filterPic}
                 onChange={(e) => {
                   setFilterPic(e.target.value);
                   setCockpitPage(1);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-blue-500 truncate"
+                className="w-full px-3 py-2 rounded-lg border border-line bg-white text-ink-2 font-medium focus:outline-none focus:border-accent truncate"
               >
                 <option value="ALL">Tất cả PIC Booking</option>
                 {availablePics.map(p => (
@@ -857,7 +857,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     setFilterPic('ALL');
                     setCockpitPage(1);
                   }}
-                  className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition shrink-0"
+                  className="px-2 py-2 rounded-lg bg-sunken hover:bg-sunken text-ink-2 transition shrink-0"
                   title="Xóa bộ lọc"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
@@ -871,64 +871,64 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
       {viewMode === 'NETWORK_COCKPIT' && isManagerOrStaff ? (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <div className="bg-white rounded-xl border border-line/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 mb-1">
                 <span>Mạng Lưới KOC Hợp Tác</span>
-                <Users className="w-4 h-4 text-blue-600" />
+                <Users className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-xl font-semibold text-slate-900 tracking-tight">
-                {filteredKocs.length} <span className="text-xs font-normal text-slate-500">/ {kocs.length} KOC</span>
+              <div className="text-xl font-semibold text-ink tracking-tight">
+                {filteredKocs.length} <span className="text-xs font-normal text-ink-3">/ {kocs.length} KOC</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <div className="bg-white rounded-xl border border-line/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 mb-1">
                 <span>Hợp Đồng Booking Đang Chạy</span>
-                <Briefcase className="w-4 h-4 text-emerald-600" />
+                <Briefcase className="w-4 h-4 text-positive" />
               </div>
-              <div className="text-xl font-semibold text-emerald-700 tracking-tight">
-                {networkStats.activeDealsCount} <span className="text-xs font-normal text-slate-500">deals</span>
+              <div className="text-xl font-semibold text-positive tracking-tight">
+                {networkStats.activeDealsCount} <span className="text-xs font-normal text-ink-3">deals</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <div className="bg-white rounded-xl border border-line/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 mb-1">
                 <span>Hàng Mẫu &amp; Video Đang Chạy</span>
-                <Truck className="w-4 h-4 text-amber-600" />
+                <Truck className="w-4 h-4 text-warning" />
               </div>
-              <div className="text-xl font-semibold text-amber-700 tracking-tight">
-                {networkStats.pendingSamples} <span className="text-xs font-normal text-slate-500">mẫu</span> • {networkStats.pendingReviews} <span className="text-xs font-normal text-slate-500">video chờ</span>
+              <div className="text-xl font-semibold text-warning tracking-tight">
+                {networkStats.pendingSamples} <span className="text-xs font-normal text-ink-3">mẫu</span> • {networkStats.pendingReviews} <span className="text-xs font-normal text-ink-3">video chờ</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <div className="bg-white rounded-xl border border-line/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 mb-1">
                 <span>Tổng GMV Thực Tế &amp; Dự Kiến</span>
-                <DollarSign className="w-4 h-4 text-blue-600" />
+                <DollarSign className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-xl font-semibold text-blue-700 tracking-tight">
+              <div className="text-xl font-semibold text-accent-hover tracking-tight">
                 {formatVndShort(networkStats.totalGmvEstimate)}
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-hidden">
+            <div className="px-5 py-4 border-b border-line/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
+                <h3 className="text-sm font-semibold text-ink tracking-tight">
                   Danh Bạ Mạng Lưới KOC Đối Tác ({filteredKocs.length} KOC)
                 </h3>
               </div>
 
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-500 text-2xs">
+                <span className="text-ink-3 text-2xs">
                   Trang {cockpitPage}/{totalCockpitPages}
                 </span>
                 <button
                   type="button"
                   disabled={cockpitPage <= 1}
                   onClick={() => setCockpitPage(prev => Math.max(1, prev - 1))}
-                  className="p-1 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
+                  className="p-1 rounded-md border border-line hover:bg-canvas disabled:opacity-40 transition"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
@@ -936,7 +936,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   type="button"
                   disabled={cockpitPage >= totalCockpitPages}
                   onClick={() => setCockpitPage(prev => Math.min(totalCockpitPages, prev + 1))}
-                  className="p-1 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
+                  className="p-1 rounded-md border border-line hover:bg-canvas disabled:opacity-40 transition"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -946,7 +946,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-50/75 border-b border-slate-200 text-2xs font-semibold text-slate-500">
+                  <tr className="bg-canvas/75 border-b border-line text-2xs font-semibold text-ink-3">
                     <th className="py-3 px-4">KOC / Creator</th>
                     <th className="py-3 px-3">Cấp Bậc &amp; Cast Chuẩn</th>
                     <th className="py-3 px-3">Tệp Kênh</th>
@@ -956,23 +956,23 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <th className="py-3 px-4 text-right">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {paginatedKocs.map((koc) => {
                     const kDeals = dealsOfKoc(deals, koc);
                     const kPerf = calculateKocPerformanceStats(deals, koc);
                     return (
-                      <tr key={koc.id} className="hover:bg-slate-50/60 transition group">
+                      <tr key={koc.id} className="hover:bg-canvas/60 transition group">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <Avatar name={koc.stageName} size={36} />
                             <div className="min-w-0">
-                              <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition flex items-center gap-1.5">
+                              <div className="font-semibold text-ink group-hover:text-accent transition flex items-center gap-2">
                                 <span>{koc.stageName}</span>
                                 {koc.realName && (
-                                  <span className="text-2xs font-normal text-slate-400">({koc.realName})</span>
+                                  <span className="text-2xs font-normal text-ink-3">({koc.realName})</span>
                                 )}
                               </div>
-                              <div className="text-2xs text-slate-500 flex items-center gap-2 mt-0.5 font-mono">
+                              <div className="text-2xs text-ink-3 flex items-center gap-2 mt-0.5 font-mono">
                                 <span>@{koc.channelId.replace(/^@/, '')}</span>
                                 <span>•</span>
                                 <span>{formatFollowers(koc.followers)} flw</span>
@@ -983,36 +983,36 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
                         <td className="py-3 px-3">
                           <div className="space-y-0.5">
-                            <div className="text-xs font-medium text-slate-800">
+                            <div className="text-xs font-medium text-ink">
                               {koc.tierLabel || koc.tier} <span className="text-slate-300">·</span>{' '}
-                              <span className="font-mono text-slate-600">{koc.salaryGrade}</span>
+                              <span className="font-mono text-ink-2">{koc.salaryGrade}</span>
                             </div>
-                            <div className="text-2xs text-slate-500 font-mono font-semibold">
+                            <div className="text-2xs text-ink-3 font-mono font-semibold">
                               {formatVndShort(koc.rateCardVideo || 3000000)}
                             </div>
                           </div>
                         </td>
 
                         <td className="py-3 px-3">
-                          <span className="text-xs text-slate-700">
+                          <span className="text-xs text-ink-2">
                             {koc.tepKenh || 'Chăm sóc da'}
                           </span>
                         </td>
 
                         <td className="py-3 px-3">
                           <div className="space-y-0.5 text-2xs">
-                            <div className="text-xs font-medium text-slate-800">
+                            <div className="text-xs font-medium text-ink">
                               {koc.brandName || 'Đa nhãn'} <span className="text-slate-300">·</span>{' '}
-                              <span className="text-slate-500 font-normal">{kDeals.length} chiến dịch</span>
+                              <span className="text-ink-3 font-normal">{kDeals.length} chiến dịch</span>
                             </div>
-                            <div className="text-slate-500 font-mono">
-                              GMV: <strong className="text-slate-800">{formatVndShort(kPerf.totalGmv)}</strong> · ROI: <strong className="text-emerald-700">{kPerf.overallRoi.toFixed(1)}x</strong>
+                            <div className="text-ink-3 font-mono">
+                              GMV: <strong className="text-ink">{formatVndShort(kPerf.totalGmv)}</strong> · ROI: <strong className="text-positive">{kPerf.overallRoi.toFixed(1)}x</strong>
                             </div>
                           </div>
                         </td>
 
                         <td className="py-3 px-3">
-                          <div className="text-xs text-slate-700 font-medium">
+                          <div className="text-xs text-ink-2 font-medium">
                             {koc.bookingPic || 'Lê Phương Thảo'}
                           </div>
                         </td>
@@ -1022,19 +1022,19 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <Status tone={hasLegalId(koc) ? 'ok' : 'warn'}>
                               {hasLegalId(koc) ? `${LEGAL_TYPE_LABEL[legalTypeOf(koc)]}: Đủ giấy tờ` : 'Thiếu giấy tờ'}
                             </Status>
-                            <div className="text-slate-500 font-mono">
+                            <div className="text-ink-3 font-mono">
                               {koc.bankName ? `${koc.bankName} · ${koc.bankAccount || '—'}` : `MST: ${koc.taxCode || 'Chưa có'}`}
                             </div>
                           </div>
                         </td>
 
                         <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-2">
                             {onOpenKocMaster && (
                               <button
                                 type="button"
                                 onClick={() => onOpenKocMaster(koc.id)}
-                                className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-2xs font-medium transition"
+                                className="px-2 py-2 bg-sunken hover:bg-sunken text-ink-2 rounded-lg text-2xs font-medium transition"
                                 title="Mở hồ sơ gốc tại Danh bạ KOC"
                               >
                                 Danh bạ
@@ -1047,10 +1047,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 setViewMode('KOC_PORTAL');
                                 notify(`Đang mở Cổng KOC: ${koc.stageName}`, 'info');
                               }}
-                              className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded-lg text-2xs font-semibold transition flex items-center gap-1"
+                              className="px-3 py-2 bg-accent-soft hover:bg-accent text-accent-hover hover:text-white rounded-lg text-2xs font-semibold transition flex items-center gap-1"
                             >
                               <span>Mở cổng KOC</span>
-                              <ArrowRight className="w-3 h-3" />
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -1061,16 +1061,16 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </table>
             </div>
 
-            <div className="px-5 py-3 border-t border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <span className="text-slate-500 text-2xs">
+            <div className="px-5 py-3 border-t border-line/80 bg-canvas/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <span className="text-ink-3 text-2xs">
                 Hiển thị {paginatedKocs.length} trên tổng số {filteredKocs.length} KOC phù hợp bộ lọc
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   disabled={cockpitPage <= 1}
                   onClick={() => setCockpitPage(prev => Math.max(1, prev - 1))}
-                  className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-semibold disabled:opacity-40 transition"
+                  className="px-3 py-1 rounded-md border border-line bg-white hover:bg-canvas text-ink-2 text-2xs font-semibold disabled:opacity-40 transition"
                 >
                   Trang Trước
                 </button>
@@ -1083,8 +1083,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       onClick={() => setCockpitPage(p)}
                       className={`w-7 h-7 rounded-md text-2xs font-semibold transition ${
                         cockpitPage === p
-                          ? 'bg-blue-600 text-white shadow-2xs'
-                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                          ? 'bg-accent text-white shadow-2xs'
+                          : 'bg-white border border-line text-ink-2 hover:bg-canvas'
                       }`}
                     >
                       {p}
@@ -1095,7 +1095,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   type="button"
                   disabled={cockpitPage >= totalCockpitPages}
                   onClick={() => setCockpitPage(prev => Math.min(totalCockpitPages, prev + 1))}
-                  className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-semibold disabled:opacity-40 transition"
+                  className="px-3 py-1 rounded-md border border-line bg-white hover:bg-canvas text-ink-2 text-2xs font-semibold disabled:opacity-40 transition"
                 >
                   Trang Sau
                 </button>
@@ -1106,19 +1106,19 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
       ) : (
         <div className="space-y-6">
           {isManagerOrStaff && (
-            <div className="flex flex-wrap items-center justify-between gap-2 bg-blue-50/70 border border-blue-200/80 px-4 py-2.5 rounded-xl text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-accent-soft/70 border border-accent/80 px-4 py-3 rounded-xl text-xs">
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setViewMode('NETWORK_COCKPIT')}
-                  className="font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1.5 transition"
+                  className="font-semibold text-accent-hover hover:text-accent-hover flex items-center gap-2 transition"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Quay lại Bảng Giám Sát Mạng Lưới ({filteredKocs.length} KOC)</span>
                 </button>
                 <span className="text-slate-300">|</span>
-                <span className="text-slate-600">
-                  Đang quản lý Cổng đối tác KOC: <strong className="text-slate-900">{activeKoc.stageName}</strong>
+                <span className="text-ink-2">
+                  Đang quản lý Cổng đối tác KOC: <strong className="text-ink">{activeKoc.stageName}</strong>
                 </span>
               </div>
 
@@ -1127,9 +1127,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onOpenKocMaster(activeKoc.id)}
-                    className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 font-semibold text-2xs flex items-center gap-1 transition"
+                    className="px-3 py-1 rounded-lg bg-white border border-accent/30 text-accent-hover hover:bg-accent-soft font-semibold text-2xs flex items-center gap-1 transition"
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                     <span>Xem tại Danh bạ KOC</span>
                   </button>
                 )}
@@ -1137,35 +1137,35 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
+          <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-4">
                 <div className="relative shrink-0">
                   <Avatar name={activeKoc.stageName} src={activeKoc.avatarUrl} size={48} />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-positive border-2 border-white rounded-full"></span>
                 </div>
 
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+                    <h2 className="text-base font-semibold text-ink tracking-tight">
                       {activeKoc.stageName}
                     </h2>
                     {activeKoc.realName && (
-                      <span className="text-xs text-slate-500">({activeKoc.realName})</span>
+                      <span className="text-xs text-ink-3">({activeKoc.realName})</span>
                     )}
-                    <span className="text-xs font-medium text-slate-600">
+                    <span className="text-xs font-medium text-ink-2">
                       · {activeKoc.salaryGrade} · {activeKoc.segment}
                     </span>
-                    <span className="font-mono text-xs text-slate-500">
+                    <span className="font-mono text-xs text-ink-3">
                       · @{activeKoc.channelId.replace(/^@/, '')}
                     </span>
                     <Status tone={legalComplete ? 'ok' : 'warn'}>
                       {legalComplete ? `${LEGAL_TYPE_LABEL[legalType]} · Đủ pháp lý` : 'Thiếu hồ sơ pháp lý'}
                     </Status>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Cast chuẩn: <strong className="text-slate-800 font-mono">{formatVndShort(activeKoc.rateCardVideo || 3000000)}</strong> • Followers: <strong className="text-slate-800 font-mono">{formatFollowers(activeKoc.followers)}</strong> • Ngân hàng: <strong className="text-slate-700">{activeKoc.bankName || 'Chưa cập nhật'} ({activeKoc.bankAccount || '—'})</strong> • Địa chỉ nhận mẫu: <span className="text-slate-700">{addressForm.address}</span> (
-                    <button type="button" onClick={() => setActiveTab('PROFILE')} className="text-blue-600 hover:underline font-medium">
+                  <p className="text-xs text-ink-3 mt-1">
+                    Cast chuẩn: <strong className="text-ink font-mono">{formatVndShort(activeKoc.rateCardVideo || 3000000)}</strong> • Followers: <strong className="text-ink font-mono">{formatFollowers(activeKoc.followers)}</strong> • Ngân hàng: <strong className="text-ink-2">{activeKoc.bankName || 'Chưa cập nhật'} ({activeKoc.bankAccount || '—'})</strong> • Địa chỉ nhận mẫu: <span className="text-ink-2">{addressForm.address}</span> (
+                    <button type="button" onClick={() => setActiveTab('PROFILE')} className="text-accent hover:underline font-medium">
                       Quản lý hồ sơ
                     </button>
                     )
@@ -1177,32 +1177,32 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsQrModalOpen(true)}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
+                  className="px-3 py-2 bg-canvas hover:bg-sunken text-ink-2 border border-line rounded-lg text-xs font-medium flex items-center gap-2 transition"
                 >
-                  <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                  <QrCode className="w-3.5 h-3.5 text-positive" />
                   <span>Mã QR nhận thù lao</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsOcrOpen(true)}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
+                  className="px-3 py-2 bg-canvas hover:bg-sunken text-ink-2 border border-line rounded-lg text-xs font-medium flex items-center gap-2 transition"
                 >
-                  <FileScan className="w-3.5 h-3.5 text-blue-600" />
+                  <FileScan className="w-3.5 h-3.5 text-accent" />
                   <span>Đọc ảnh CCCD</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-3 overflow-x-auto text-xs">
+          <div className="flex items-center gap-2 border-b border-line/80 pb-3 overflow-x-auto text-xs">
             <button
               type="button"
               onClick={() => setActiveTab('OVERVIEW')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'OVERVIEW'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -1212,10 +1212,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('PROFILE')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'PROFILE'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
@@ -1225,10 +1225,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('APPROVALS')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'APPROVALS'
-                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-accent text-white font-semibold shadow-xs'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <AlertCircle className="w-3.5 h-3.5" />
@@ -1238,10 +1238,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('ACTIVE_JOBS')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'ACTIVE_JOBS'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
@@ -1251,10 +1251,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('CONTRACTS')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'CONTRACTS'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -1264,10 +1264,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('HISTORY')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'HISTORY'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <HistoryIcon className="w-3.5 h-3.5" />
@@ -1277,10 +1277,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('PERFORMANCE')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'PERFORMANCE'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
@@ -1290,10 +1290,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('DISCUSSION')}
-              className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'DISCUSSION'
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-ink-2 hover:text-ink hover:bg-sunken'
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -1304,78 +1304,78 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
           {activeTab === 'OVERVIEW' && (
             <div className="space-y-6 animate-in fade-in duration-150">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Chiến dịch &amp; Lịch sử hợp tác</span>
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Chiến dịch &amp; Lịch sử hợp tác</span>
                   <div className="mt-1 flex items-baseline justify-between">
-                    <span className="text-lg font-semibold font-mono text-slate-900">{stats.totalJobs}</span>
-                    <span className="text-2xs text-emerald-600 font-medium">{perfStats.completedDeals} đã lên sóng</span>
+                    <span className="text-lg font-semibold font-mono text-ink">{stats.totalJobs}</span>
+                    <span className="text-2xs text-positive font-medium">{perfStats.completedDeals} đã lên sóng</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('HISTORY')}
-                    className="text-2xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                    className="text-2xs text-accent hover:underline mt-1 inline-flex items-center gap-1"
                   >
                     <span>Xem lịch sử hợp tác</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Hợp đồng &amp; Thù lao Cast</span>
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Hợp đồng &amp; Thù lao Cast</span>
                   <div className="mt-1 flex items-baseline justify-between">
-                    <span className="text-lg font-semibold font-mono text-emerald-600">{formatVndShort(stats.totalEarnings)}</span>
-                    <span className="text-2xs text-slate-500">{stats.signedContractsCount}/{stats.acceptedJobs} HĐ đã ký</span>
+                    <span className="text-lg font-semibold font-mono text-positive">{formatVndShort(stats.totalEarnings)}</span>
+                    <span className="text-2xs text-ink-3">{stats.signedContractsCount}/{stats.acceptedJobs} HĐ đã ký</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('CONTRACTS')}
-                    className="text-2xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                    className="text-2xs text-accent hover:underline mt-1 inline-flex items-center gap-1"
                   >
                     <span>Quản lý hợp đồng &amp; duyệt chi</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Doanh số GMV &amp; ROI tạo ra</span>
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Doanh số GMV &amp; ROI tạo ra</span>
                   <div className="mt-1 flex items-baseline justify-between">
-                    <span className="text-lg font-semibold font-mono text-blue-600">{formatVndShort(perfStats.totalGmv)}</span>
-                    <span className="text-2xs text-emerald-600 font-semibold font-mono">ROI {perfStats.overallRoi.toFixed(1)}x</span>
+                    <span className="text-lg font-semibold font-mono text-accent">{formatVndShort(perfStats.totalGmv)}</span>
+                    <span className="text-2xs text-positive font-semibold font-mono">ROI {perfStats.overallRoi.toFixed(1)}x</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('PERFORMANCE')}
-                    className="text-2xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                    className="text-2xs text-accent hover:underline mt-1 inline-flex items-center gap-1"
                   >
                     <span>Xem phân tích hiệu quả</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Hồ sơ pháp lý &amp; Nhận mẫu</span>
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Hồ sơ pháp lý &amp; Nhận mẫu</span>
                   <div className="mt-1 flex items-baseline justify-between">
-                    <span className={`text-sm font-semibold ${legalComplete ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    <span className={`text-sm font-semibold ${legalComplete ? 'text-positive' : 'text-warning'}`}>
                       {legalComplete ? 'Đã xác thực CCCD/MST' : 'Cần bổ sung giấy tờ'}
                     </span>
-                    <span className="text-2xs text-slate-500">{stats.pendingSamples} mẫu đang giao</span>
+                    <span className="text-2xs text-ink-3">{stats.pendingSamples} mẫu đang giao</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('PROFILE')}
-                    className="text-2xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                    className="text-2xs text-accent hover:underline mt-1 inline-flex items-center gap-1"
                   >
                     <span>Cập nhật thông tin cá nhân</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+              <div className="bg-white rounded-xl p-5 border border-line/80 shadow-xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-xs font-semibold text-ink flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-accent" />
                       <span>Liên Thông Dữ Liệu Giữa Các Phân Hệ Vận Hành</span>
                     </h3>
                     
@@ -1384,7 +1384,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenKocMaster(activeKoc.id)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xs font-semibold inline-flex items-center gap-1.5 transition self-start"
+                      className="px-3 py-2 rounded-lg bg-sunken hover:bg-sunken text-ink text-2xs font-semibold inline-flex items-center gap-2 transition self-start"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       <span>Mở Hồ Sơ Tại Danh Bạ KOC</span>
@@ -1393,43 +1393,43 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
+                  <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">1. Thông tin cá nhân</span>
-                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
+                      <span className="font-semibold text-ink">1. Thông tin cá nhân</span>
+                      <span className="text-2xs font-medium text-positive">Đồng bộ</span>
                     </div>
-                    <p className="text-2xs text-slate-500">
-                      CCCD: <strong className="font-mono text-slate-700">{legalIdOf(activeKoc) || 'Chưa có'}</strong> • NH: <strong className="text-slate-700">{activeKoc.bankName || '—'}</strong>
+                    <p className="text-2xs text-ink-3">
+                      CCCD: <strong className="font-mono text-ink-2">{legalIdOf(activeKoc) || 'Chưa có'}</strong> • NH: <strong className="text-ink-2">{activeKoc.bankName || '—'}</strong>
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
+                  <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">2. Hợp đồng &amp; Duyệt chi</span>
-                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
+                      <span className="font-semibold text-ink">2. Hợp đồng &amp; Duyệt chi</span>
+                      <span className="text-2xs font-medium text-positive">Đồng bộ</span>
                     </div>
-                    <p className="text-2xs text-slate-500">
-                      Đã ký: <strong className="font-mono text-slate-700">{stats.signedContractsCount} HĐ</strong> • Đã tạm ứng: <strong className="font-mono text-emerald-700">{formatVndShort(stats.advancePaid)}</strong>
+                    <p className="text-2xs text-ink-3">
+                      Đã ký: <strong className="font-mono text-ink-2">{stats.signedContractsCount} HĐ</strong> • Đã tạm ứng: <strong className="font-mono text-positive">{formatVndShort(stats.advancePaid)}</strong>
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
+                  <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">3. Lịch sử hợp tác</span>
-                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
+                      <span className="font-semibold text-ink">3. Lịch sử hợp tác</span>
+                      <span className="text-2xs font-medium text-positive">Đồng bộ</span>
                     </div>
-                    <p className="text-2xs text-slate-500">
-                      Tổng: <strong className="font-mono text-slate-700">{currentKocDeals.length} deal</strong> • Điểm uy tín: <strong className="font-mono text-amber-600">{perfStats.avgRatingScore > 0 ? `${perfStats.avgRatingScore.toFixed(1)}/5.0` : '5.0/5.0'}</strong>
+                    <p className="text-2xs text-ink-3">
+                      Tổng: <strong className="font-mono text-ink-2">{currentKocDeals.length} deal</strong> • Điểm uy tín: <strong className="font-mono text-warning">{perfStats.avgRatingScore > 0 ? `${perfStats.avgRatingScore.toFixed(1)}/5.0` : '5.0/5.0'}</strong>
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
+                  <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">4. Hiệu quả &amp; Kênh</span>
-                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
+                      <span className="font-semibold text-ink">4. Hiệu quả &amp; Kênh</span>
+                      <span className="text-2xs font-medium text-positive">Đồng bộ</span>
                     </div>
-                    <p className="text-2xs text-slate-500">
-                      GMV: <strong className="font-mono text-slate-700">{formatVndShort(perfStats.totalGmv)}</strong> • Đúng hạn đăng: <strong className="font-mono text-emerald-700">{perfStats.onTimePostRate.toFixed(0)}%</strong>
+                    <p className="text-2xs text-ink-3">
+                      GMV: <strong className="font-mono text-ink-2">{formatVndShort(perfStats.totalGmv)}</strong> • Đúng hạn đăng: <strong className="font-mono text-positive">{perfStats.onTimePostRate.toFixed(0)}%</strong>
                     </p>
                   </div>
                 </div>
@@ -1439,9 +1439,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
           {activeTab === 'PROFILE' && (
             <form onSubmit={handleSaveProfile} className="space-y-6 animate-in fade-in duration-150">
-              <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Thông tin KOC &amp; Hồ sơ pháp lý
                   </h3>
                 </div>
@@ -1449,14 +1449,14 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsOcrOpen(true)}
-                    className="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold inline-flex items-center gap-1.5 transition"
+                    className="px-3 py-2 rounded-lg border border-accent/30 bg-accent-soft hover:bg-accent-soft text-accent-hover text-xs font-semibold inline-flex items-center gap-2 transition"
                   >
                     <FileScan className="w-4 h-4" />
                     <span>Đọc ảnh CCCD / Giấy tờ</span>
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-2xs transition"
+                    className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-xs font-semibold inline-flex items-center gap-2 shadow-2xs transition"
                   >
                     <Check className="w-4 h-4" />
                     <span>Lưu &amp; Đồng Bộ Hồ Sơ</span>
@@ -1465,72 +1465,72 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
-                <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
-                      <Users className="w-4 h-4 text-blue-600" />
+                <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <h4 className="font-semibold text-ink text-xs flex items-center gap-2">
+                      <Users className="w-4 h-4 text-accent" />
                       <span>1. Thông Tin Kênh &amp; Định Giá Cast</span>
                     </h4>
-                    <span className="font-mono text-2xs font-semibold text-slate-600">
+                    <span className="font-mono text-2xs font-semibold text-ink-2">
                       {getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0)} · {getSegmentFromSalaryGrade(getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0))}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Nghệ danh / Tên kênh *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Nghệ danh / Tên kênh *</label>
                       <input
                         type="text"
                         required
                         value={profileForm.stageName}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, stageName: e.target.value }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-medium text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent font-medium text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">ID Kênh TikTok (@handle) *</label>
+                      <label className="block text-ink-2 font-medium mb-1">ID Kênh TikTok (@handle) *</label>
                       <input
                         type="text"
                         required
                         value={profileForm.channelId}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, channelId: e.target.value }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Số điện thoại liên hệ / Zalo *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Số điện thoại liên hệ / Zalo *</label>
                       <input
                         type="tel"
                         required
                         value={profileForm.phone}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Email nhận hợp đồng điện tử</label>
+                      <label className="block text-ink-2 font-medium mb-1">Email nhận hợp đồng điện tử</label>
                       <input
                         type="email"
                         value={profileForm.email}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Tệp kênh (Niche)</label>
+                      <label className="block text-ink-2 font-medium mb-1">Tệp kênh (Niche)</label>
                       <input
                         type="text"
                         value={profileForm.tepKenh}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, tepKenh: e.target.value as TepKenh }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Ngành hàng thế mạnh</label>
+                      <label className="block text-ink-2 font-medium mb-1">Ngành hàng thế mạnh</label>
                       <select
                         value={profileForm.kocCategory}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, kocCategory: e.target.value as KocCategory }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg bg-white focus:outline-none focus:border-accent text-ink"
                       >
                         <option value="Personal care">Personal care (Mỹ phẩm &amp; Chăm sóc cá nhân)</option>
                         <option value="Mom and baby">Mom and baby (Mẹ và bé)</option>
@@ -1542,7 +1542,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">
+                      <label className="block text-ink-2 font-medium mb-1">
                         Đơn giá Cast / Video (VNĐ) · {getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0)}
                       </label>
                       <input
@@ -1550,26 +1550,26 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         step={500000}
                         value={profileForm.rateCardVideo}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, rateCardVideo: Number(e.target.value) }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono font-semibold focus:outline-none focus:border-blue-500 text-emerald-700"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono font-semibold focus:outline-none focus:border-accent text-positive"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Đơn giá Phiên Livestream (VNĐ)</label>
+                      <label className="block text-ink-2 font-medium mb-1">Đơn giá Phiên Livestream (VNĐ)</label>
                       <input
                         type="number"
                         step={500000}
                         value={profileForm.rateCardLive}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, rateCardLive: Number(e.target.value) }))}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <h4 className="font-semibold text-ink text-xs flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-positive" />
                       <span>2. Giấy Tờ Pháp Lý &amp; Mã Số Thuế (Dùng Soạn Hợp Đồng)</span>
                     </h4>
                     <Status tone={legalComplete ? 'ok' : 'warn'}>
@@ -1577,136 +1577,136 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     </Status>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Họ và tên pháp lý trên CCCD *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Họ và tên pháp lý trên CCCD *</label>
                       <input
                         type="text"
                         value={profileForm.realName}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, realName: e.target.value }))}
                         placeholder="VD: Nguyễn Thị Minh Thư"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-medium text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent font-medium text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Số CCCD (12 chữ số) *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Số CCCD (12 chữ số) *</label>
                       <input
                         type="text"
                         value={profileForm.cccd}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, cccd: e.target.value }))}
                         placeholder="00119900xxxx"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Ngày sinh</label>
+                      <label className="block text-ink-2 font-medium mb-1">Ngày sinh</label>
                       <input
                         type="text"
                         value={profileForm.dob}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, dob: e.target.value }))}
                         placeholder="DD/MM/YYYY"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Ngày cấp &amp; Nơi cấp CCCD</label>
+                      <label className="block text-ink-2 font-medium mb-1">Ngày cấp &amp; Nơi cấp CCCD</label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
                           type="text"
                           value={profileForm.issueDate}
                           onChange={(e) => setProfileForm(prev => ({ ...prev, issueDate: e.target.value }))}
                           placeholder="Ngày cấp"
-                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                          className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                         />
                         <input
                           type="text"
                           value={profileForm.issuePlace}
                           onChange={(e) => setProfileForm(prev => ({ ...prev, issuePlace: e.target.value }))}
                           placeholder="Cục CS QLHC"
-                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                          className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Mã số thuế TNCN / Doanh nghiệp</label>
+                      <label className="block text-ink-2 font-medium mb-1">Mã số thuế TNCN / Doanh nghiệp</label>
                       <input
                         type="text"
                         value={profileForm.taxCode}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, taxCode: e.target.value }))}
                         placeholder="MST cá nhân hoặc công ty"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Tên Công ty / Hộ kinh doanh (Nếu có)</label>
+                      <label className="block text-ink-2 font-medium mb-1">Tên Công ty / Hộ kinh doanh (Nếu có)</label>
                       <input
                         type="text"
                         value={profileForm.companyName}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, companyName: e.target.value }))}
                         placeholder="Để trống nếu ký cá nhân"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-slate-600 font-medium mb-1">Địa chỉ thường trú trên CCCD / Trụ sở</label>
+                      <label className="block text-ink-2 font-medium mb-1">Địa chỉ thường trú trên CCCD / Trụ sở</label>
                       <input
                         type="text"
                         value={profileForm.permanentAddress}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, permanentAddress: e.target.value }))}
                         placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-emerald-600" />
+                <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <h4 className="font-semibold text-ink text-xs flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-positive" />
                       <span>3. Tài Khoản Ngân Hàng Nhận Thù Lao &amp; Mã QR</span>
                     </h4>
                     <button
                       type="button"
                       onClick={() => setIsQrModalOpen(true)}
-                      className="text-2xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
+                      className="text-2xs font-semibold text-accent hover:underline inline-flex items-center gap-1"
                     >
                       <QrCode className="w-3.5 h-3.5" />
                       <span>Xem Mã QR</span>
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Ngân hàng thụ hưởng *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Ngân hàng thụ hưởng *</label>
                       <input
                         type="text"
                         value={profileForm.bankName}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, bankName: e.target.value }))}
                         placeholder="VD: Vietcombank, Techcombank, MB Bank..."
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-medium text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent font-medium text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Số tài khoản ngân hàng *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Số tài khoản ngân hàng *</label>
                       <input
                         type="text"
                         value={profileForm.bankAccount}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, bankAccount: e.target.value }))}
                         placeholder="Nhập chính xác số tài khoản"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono font-semibold focus:outline-none focus:border-blue-500 text-emerald-700"
+                        className="w-full px-3 py-2 border border-line rounded-lg font-mono font-semibold focus:outline-none focus:border-accent text-positive"
                       />
                     </div>
-                    <div className="sm:col-span-2 p-3 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <div className="sm:col-span-2 p-3 rounded-lg bg-canvas border border-line flex items-center justify-between">
                       <div>
-                        <span className="text-2xs text-slate-400 block">Chủ tài khoản thụ hưởng (theo tên pháp lý)</span>
-                        <span className="font-semibold text-slate-900 uppercase">
+                        <span className="text-2xs text-ink-3 block">Chủ tài khoản thụ hưởng (theo tên pháp lý)</span>
+                        <span className="font-semibold text-ink">
                           {profileForm.realName || profileForm.stageName}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-2xs text-slate-400 block">Chế độ thuế áp dụng</span>
-                        <span className="text-2xs font-semibold text-slate-700">
+                        <span className="text-2xs text-ink-3 block">Chế độ thuế áp dụng</span>
+                        <span className="text-2xs font-semibold text-ink-2">
                           {profileForm.companyName ? 'Hóa đơn VAT (Doanh nghiệp/HKD)' : 'Khấu trừ 10% TNCN tại nguồn'}
                         </span>
                       </div>
@@ -1714,82 +1714,82 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
-                      <Package className="w-4 h-4 text-amber-600" />
+                <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <h4 className="font-semibold text-ink text-xs flex items-center gap-2">
+                      <Package className="w-4 h-4 text-warning" />
                       <span>4. Địa Chỉ Nhận Hàng Mẫu &amp; Thông Số Sản Phẩm</span>
                     </h4>
-                    <span className="text-2xs text-slate-500">Liên thông phân hệ Hàng mẫu</span>
+                    <span className="text-2xs text-ink-3">Liên thông phân hệ Hàng mẫu</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="sm:col-span-3">
-                      <label className="block text-slate-600 font-medium mb-1">Địa chỉ giao nhận hàng mẫu (Shipper GHN/GHTK) *</label>
+                      <label className="block text-ink-2 font-medium mb-1">Địa chỉ giao nhận hàng mẫu (Shipper GHN/GHTK) *</label>
                       <input
                         type="text"
                         value={profileForm.shippingAddress}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, shippingAddress: e.target.value }))}
                         placeholder="Số nhà, ngõ, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Loại da / Tình trạng da</label>
+                      <label className="block text-ink-2 font-medium mb-1">Loại da / Tình trạng da</label>
                       <input
                         type="text"
                         value={profileForm.skinType}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, skinType: e.target.value }))}
                         placeholder="VD: Da dầu nhạy cảm"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Size trang phục / Giày</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <label className="block text-ink-2 font-medium mb-1">Size trang phục / Giày</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
                           type="text"
                           value={profileForm.clothingSize}
                           onChange={(e) => setProfileForm(prev => ({ ...prev, clothingSize: e.target.value }))}
                           placeholder="Áo: S/M/L"
-                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                          className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                         />
                         <input
                           type="text"
                           value={profileForm.shoeSize}
                           onChange={(e) => setProfileForm(prev => ({ ...prev, shoeSize: e.target.value }))}
                           placeholder="Giày: 37"
-                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                          className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Thông số bé (Mẹ &amp; Bé)</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <label className="block text-ink-2 font-medium mb-1">Thông số bé (Mẹ &amp; Bé)</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
                           type="number"
                           value={profileForm.babyAgeMonths}
                           onChange={(e) => setProfileForm(prev => ({ ...prev, babyAgeMonths: e.target.value }))}
                           placeholder="Tháng tuổi"
-                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                          className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                         />
                         <input
                           type="number"
                           value={profileForm.babyWeightKg}
                           onChange={(e) => setProfileForm(prev => ({ ...prev, babyWeightKg: e.target.value }))}
                           placeholder="Cân nặng kg"
-                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                          className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                         />
                       </div>
                     </div>
                     <div className="sm:col-span-3">
-                      <label className="block text-slate-600 font-medium mb-1">Ghi chú dị ứng / Lưu ý gửi hàng mẫu</label>
+                      <label className="block text-ink-2 font-medium mb-1">Ghi chú dị ứng / Lưu ý gửi hàng mẫu</label>
                       <input
                         type="text"
                         value={profileForm.specialNotes}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, specialNotes: e.target.value }))}
                         placeholder="VD: Giao giờ hành chính, gọi trước khi giao, dị ứng hương liệu mạnh..."
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900"
+                        className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-accent text-ink"
                       />
                     </div>
                   </div>
@@ -1801,19 +1801,19 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
           {activeTab === 'APPROVALS' && (
             <div className="space-y-4 animate-in fade-in duration-150">
               {pendingActionCount === 0 && (
-                <div className="p-8 rounded-xl bg-white border border-slate-200/80 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                <div className="p-8 rounded-xl bg-white border border-line/80 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-positive-soft text-positive flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
+                    <h4 className="text-sm font-semibold text-ink">
                       Tất cả các mục đã được xác nhận hoàn tất!
                     </h4>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('ACTIVE_JOBS')}
-                    className="mt-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition"
+                    className="mt-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition"
                   >
                     <span>Xem công việc đang chạy</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1822,34 +1822,34 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               )}
 
               {pendingActionCount > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-hidden">
+                  <div className="p-4 border-b border-line flex items-center justify-between">
                     <div>
-                      <h3 className="text-xs font-semibold text-slate-900">
+                      <h3 className="text-xs font-semibold text-ink">
                         Hộp Việc Cần Xác Nhận &amp; Phản Hồi ({pendingActionCount} mục)
                       </h3>
                       
                     </div>
                   </div>
 
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-line">
                     {currentKocDeals
                       .filter(d => (!d.kocResponseStatus || d.kocResponseStatus === 'ĐANG_THƯƠNG_LƯỢNG') && d.status === 'CONTACTING')
                       .map(deal => (
-                        <div key={deal.id} className="p-4 hover:bg-slate-50/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div key={deal.id} className="p-4 hover:bg-canvas/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-semibold text-xs flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent-hover font-semibold text-xs flex items-center justify-center shrink-0">
                               <Briefcase className="w-4 h-4" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-slate-900 text-xs">{deal.campaignTitle}</span>
-                                <span className="text-2xs font-medium text-slate-500">
+                                <span className="font-semibold text-ink text-xs">{deal.campaignTitle}</span>
+                                <span className="text-2xs font-medium text-ink-3">
                                   · {deal.brandName}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                Sản phẩm: <span className="text-slate-800 font-medium">{deal.productName}</span> • Mức cast: <strong className="text-emerald-700 font-mono text-sm">{formatVndShort(deal.totalValue || 3000000)}</strong>
+                              <p className="text-xs text-ink-3 mt-0.5">
+                                Sản phẩm: <span className="text-ink font-medium">{deal.productName}</span> • Mức cast: <strong className="text-positive font-mono text-sm">{formatVndShort(deal.totalValue || 3000000)}</strong>
                               </p>
                             </div>
                           </div>
@@ -1858,7 +1858,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleAcceptDeal(deal.id)}
-                              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-2xs"
+                              className="px-3 py-2 rounded-lg bg-positive hover:bg-positive text-white font-semibold text-xs transition shadow-2xs"
                             >
                               Đồng Ý Nhận Job
                             </button>
@@ -1868,14 +1868,14 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 setNegotiatingDeal(deal);
                                 setCounterRate(deal.totalValue || activeKoc.rateCardVideo || 3000000);
                               }}
-                              className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition"
+                              className="px-3 py-2 rounded-lg border border-line hover:bg-canvas text-ink-2 font-medium text-xs transition"
                             >
                               Đề Xuất Cast
                             </button>
                             <button
                               type="button"
                               onClick={() => setRejectingDeal(deal)}
-                              className="px-2.5 py-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 font-medium text-xs transition"
+                              className="px-3 py-2 rounded-lg border border-critical/30 hover:bg-critical-soft text-critical font-medium text-xs transition"
                             >
                               Từ Chối
                             </button>
@@ -1886,18 +1886,18 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     {currentKocDeals
                       .filter(d => d.status !== 'CANCELLED' && !d.contractCreatedAt && d.totalValue > 0)
                       .map(deal => (
-                        <div key={`contract-${deal.id}`} className="p-4 hover:bg-slate-50/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div key={`contract-${deal.id}`} className="p-4 hover:bg-canvas/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 font-semibold text-xs flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-positive-soft text-positive font-semibold text-xs flex items-center justify-center shrink-0">
                               <FileText className="w-4 h-4" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-slate-900 text-xs">Hợp đồng dịch vụ KOC: {deal.dealCode}</span>
+                                <span className="font-semibold text-ink text-xs">Hợp đồng dịch vụ KOC: {deal.dealCode}</span>
                                 <Status tone="warn">Chờ ký xác nhận</Status>
                               </div>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                Nhãn hàng: <strong>{deal.brandName}</strong> • Giá trị Gross: <strong className="font-mono text-slate-800">{formatVnd(deal.totalValue)}</strong> (Thực nhận Net: <strong className="font-mono text-emerald-700">{formatVnd(Math.round(deal.totalValue * 0.9))}</strong>)
+                              <p className="text-xs text-ink-3 mt-0.5">
+                                Nhãn hàng: <strong>{deal.brandName}</strong> • Giá trị Gross: <strong className="font-mono text-ink">{formatVnd(deal.totalValue)}</strong> (Thực nhận Net: <strong className="font-mono text-positive">{formatVnd(Math.round(deal.totalValue * 0.9))}</strong>)
                               </p>
                             </div>
                           </div>
@@ -1906,14 +1906,14 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <button
                               type="button"
                               onClick={() => setPreviewContractDeal(deal)}
-                              className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition"
+                              className="px-3 py-2 rounded-lg border border-line hover:bg-canvas text-ink-2 font-medium text-xs transition"
                             >
                               Xem hợp đồng
                             </button>
                             <button
                               type="button"
                               onClick={() => handleKocSignContract(deal)}
-                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-2xs"
+                              className="px-3 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold text-xs transition shadow-2xs"
                             >
                               Ký xác nhận hợp đồng
                             </button>
@@ -1924,17 +1924,17 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     {currentKocDeals
                       .filter(d => d.sampleStatus === 'ĐANG_GIAO')
                       .map(deal => (
-                        <div key={`sample-${deal.id}`} className="p-4 hover:bg-slate-50/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div key={`sample-${deal.id}`} className="p-4 hover:bg-canvas/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 font-semibold text-xs flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-warning-soft text-warning font-semibold text-xs flex items-center justify-center shrink-0">
                               <Truck className="w-4 h-4" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-slate-900 text-xs">Kiện hàng mẫu: {deal.productName || 'Combo sản phẩm'}</span>
-                                <span className="font-mono text-2xs text-slate-500">· {deal.jobId || 'GHN-89421'}</span>
+                                <span className="font-semibold text-ink text-xs">Kiện hàng mẫu: {deal.productName || 'Combo sản phẩm'}</span>
+                                <span className="font-mono text-2xs text-ink-3">· {deal.jobId || 'GHN-89421'}</span>
                               </div>
-                              <p className="text-xs text-slate-500 mt-0.5">
+                              <p className="text-xs text-ink-3 mt-0.5">
                                 Nhãn hàng: <strong>{deal.brandName}</strong> • Giao đến: {addressForm.address}
                               </p>
                             </div>
@@ -1943,7 +1943,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleConfirmReceivedSample(deal.id)}
-                            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-2xs shrink-0 self-end sm:self-auto"
+                            className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold text-xs transition shadow-2xs shrink-0 self-end sm:self-auto"
                           >
                             <Check className="w-3.5 h-3.5 inline mr-1" />
                             Xác Nhận Đã Nhận Mẫu
@@ -1958,12 +1958,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
           {activeTab === 'ACTIVE_JOBS' && (
             <div className="space-y-4 animate-in fade-in duration-150">
-              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200/80 w-fit text-xs">
+              <div className="flex items-center gap-2 bg-canvas p-2 rounded-xl border border-line/80 w-fit text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveJobsSubTab('DEALS')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                    activeJobsSubTab === 'DEALS' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  className={`px-3 py-2 rounded-lg font-medium transition ${
+                    activeJobsSubTab === 'DEALS' ? 'bg-white text-ink font-semibold shadow-xs' : 'text-ink-2 hover:text-ink'
                   }`}
                 >
                   Danh sách Deals ({currentKocDeals.length})
@@ -1971,8 +1971,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveJobsSubTab('SAMPLES')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                    activeJobsSubTab === 'SAMPLES' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  className={`px-3 py-2 rounded-lg font-medium transition ${
+                    activeJobsSubTab === 'SAMPLES' ? 'bg-white text-ink font-semibold shadow-xs' : 'text-ink-2 hover:text-ink'
                   }`}
                 >
                   Hàng mẫu ({stats.pendingSamples})
@@ -1980,8 +1980,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveJobsSubTab('SUBMISSION')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                    activeJobsSubTab === 'SUBMISSION' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  className={`px-3 py-2 rounded-lg font-medium transition ${
+                    activeJobsSubTab === 'SUBMISSION' ? 'bg-white text-ink font-semibold shadow-xs' : 'text-ink-2 hover:text-ink'
                   }`}
                 >
                   Nộp Video &amp; Spark Ads
@@ -1998,21 +1998,21 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     return (
                       <div
                         key={deal.id}
-                        className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        className="bg-white rounded-xl border border-line/80 p-4 shadow-xs hover:border-line-strong transition flex flex-col md:flex-row md:items-center justify-between gap-4"
                       >
-                        <div className="space-y-1.5 flex-1">
+                        <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-2xs text-slate-500">
+                            <span className="font-mono text-2xs text-ink-3">
                               {deal.dealCode || deal.jobId || 'DEAL-KOC'}
                             </span>
                             <span className="text-slate-300">·</span>
-                            <span className="text-2xs font-medium text-slate-700">
+                            <span className="text-2xs font-medium text-ink-2">
                               {deal.brandName}
                             </span>
                             {deal.storeName && (
                               <>
                                 <span className="text-slate-300">·</span>
-                                <span className="text-2xs text-slate-500">{deal.storeName}</span>
+                                <span className="text-2xs text-ink-3">{deal.storeName}</span>
                               </>
                             )}
                             <Status tone={isAccepted ? 'ok' : isNegotiating ? 'warn' : isRejected ? 'neutral' : 'info'}>
@@ -2026,32 +2026,32 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             </Status>
                           </div>
 
-                          <h3 className="text-sm font-semibold text-slate-900">{deal.campaignTitle}</h3>
+                          <h3 className="text-sm font-semibold text-ink">{deal.campaignTitle}</h3>
 
-                          <div className="text-xs text-slate-500 flex items-center gap-3 flex-wrap">
-                            <span>Sản phẩm: <strong className="text-slate-700">{deal.productName || 'Combo sản phẩm'}</strong></span>
+                          <div className="text-xs text-ink-3 flex items-center gap-3 flex-wrap">
+                            <span>Sản phẩm: <strong className="text-ink-2">{deal.productName || 'Combo sản phẩm'}</strong></span>
                             <span>•</span>
-                            <span>Trụ cột: <strong className="text-blue-600">{deal.contentPillar || 'Review thực tế'}</strong></span>
+                            <span>Trụ cột: <strong className="text-accent">{deal.contentPillar || 'Review thực tế'}</strong></span>
                             <span>•</span>
-                            <span>PIC: <strong className="text-slate-700">{deal.bookingPic || deal.assignedStaff}</strong></span>
+                            <span>PIC: <strong className="text-ink-2">{deal.bookingPic || deal.assignedStaff}</strong></span>
                             <span>•</span>
-                            <span>Hạn đăng: <strong className="text-slate-700 font-mono">{deal.slaDeadline || '2026-10-25'}</strong></span>
+                            <span>Hạn đăng: <strong className="text-ink-2 font-mono">{deal.slaDeadline || '2026-10-25'}</strong></span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5 shrink-0 justify-between md:justify-end">
+                        <div className="flex items-center gap-3 border-t md:border-t-0 md:border-l border-line pt-3 md:pt-0 md:pl-5 shrink-0 justify-between md:justify-end">
                           <div className="text-right">
-                            <div className="text-2xs text-slate-400 font-semibold">Thù lao Cast</div>
-                            <div className="text-base font-semibold font-mono text-emerald-600">
+                            <div className="text-2xs text-ink-3 font-semibold">Thù lao Cast</div>
+                            <div className="text-base font-semibold font-mono text-positive">
                               {(deal.totalValue || 0) === 0 ? 'FOC 0đ' : formatVndShort(deal.totalValue || 0)}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => setPreviewContractDeal(deal)}
-                              className="px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition"
+                              className="px-3 py-2 border border-line hover:bg-canvas text-ink-2 text-xs font-medium rounded-lg transition"
                             >
                               Xem hợp đồng
                             </button>
@@ -2060,7 +2060,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleAcceptDeal(deal.id)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition shadow-2xs"
+                                className="px-3 py-2 bg-positive hover:bg-positive text-white text-xs font-semibold rounded-lg transition shadow-2xs"
                               >
                                 Nhận Job
                               </button>
@@ -2078,7 +2078,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                     notes: ''
                                   });
                                 }}
-                                className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-2xs"
+                                className="px-3 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition flex items-center gap-2 shadow-2xs"
                               >
                                 <Video className="w-3.5 h-3.5" />
                                 Nộp Video
@@ -2094,12 +2094,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
               {activeJobsSubTab === 'SAMPLES' && (
                 <div className="space-y-4">
-                  <div className="bg-white rounded-xl border border-slate-200/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="bg-white rounded-xl border border-line/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div>
-                      <span className="text-slate-500">Địa chỉ nhận hàng mẫu hiện tại: </span>
-                      <strong className="text-slate-900">{addressForm.recipient} ({addressForm.phone}) — {addressForm.address}</strong>
+                      <span className="text-ink-3">Địa chỉ nhận hàng mẫu hiện tại: </span>
+                      <strong className="text-ink">{addressForm.recipient} ({addressForm.phone}) — {addressForm.address}</strong>
                       {activeKoc.samplePreferences?.skinType && (
-                        <span className="ml-2 text-2xs text-slate-600">
+                        <span className="ml-2 text-2xs text-ink-2">
                           · Da: {activeKoc.samplePreferences.skinType}
                         </span>
                       )}
@@ -2107,40 +2107,40 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setEditingAddress(true)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-2xs shrink-0"
+                      className="px-3 py-2 rounded-lg border border-line hover:bg-canvas text-ink-2 font-semibold text-2xs shrink-0"
                     >
                       Sửa địa chỉ nhận mẫu
                     </button>
                   </div>
 
-                  <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-x-auto">
+                  <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-x-auto">
                     <table className="w-full min-w-[640px] text-left text-xs">
-                      <thead className="bg-slate-50/50 text-slate-500 border-b border-slate-100 font-medium text-2xs">
+                      <thead className="bg-canvas/50 text-ink-3 border-b border-line font-medium text-2xs">
                         <tr>
-                          <th className="py-2.5 px-4">Chiến dịch &amp; Sản phẩm</th>
-                          <th className="py-2.5 px-4">Nhãn hàng</th>
-                          <th className="py-2.5 px-4">Mã vận đơn</th>
-                          <th className="py-2.5 px-4 text-right">Giá trị mẫu</th>
-                          <th className="py-2.5 px-4 text-center">Trạng thái</th>
-                          <th className="py-2.5 px-4 text-right">Thao tác</th>
+                          <th className="py-3 px-4">Chiến dịch &amp; Sản phẩm</th>
+                          <th className="py-3 px-4">Nhãn hàng</th>
+                          <th className="py-3 px-4">Mã vận đơn</th>
+                          <th className="py-3 px-4 text-right">Giá trị mẫu</th>
+                          <th className="py-3 px-4 text-center">Trạng thái</th>
+                          <th className="py-3 px-4 text-right">Thao tác</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line">
                         {currentKocDeals.map(d => {
                           const isReceived = d.sampleStatus === 'ĐÃ_NHẬN';
                           const trackingCode = d.sampleTrackingCode || 'Chưa cập nhật';
 
                           return (
-                            <tr key={d.id} className="hover:bg-slate-50/40 transition">
+                            <tr key={d.id} className="hover:bg-canvas/40 transition">
                               <td className="py-3 px-4">
-                                <div className="font-semibold text-slate-900">{d.productName || 'Sản phẩm mẫu'}</div>
-                                <div className="text-2xs text-slate-400">{d.campaignTitle}</div>
+                                <div className="font-semibold text-ink">{d.productName || 'Sản phẩm mẫu'}</div>
+                                <div className="text-2xs text-ink-3">{d.campaignTitle}</div>
                               </td>
-                              <td className="py-3 px-4 font-medium text-slate-800">{d.brandName}</td>
-                              <td className="py-3 px-4 font-mono text-2xs text-blue-600 font-semibold">
+                              <td className="py-3 px-4 font-medium text-ink">{d.brandName}</td>
+                              <td className="py-3 px-4 font-mono text-2xs text-accent font-semibold">
                                 {trackingCode}
                               </td>
-                              <td className="py-3 px-4 text-right font-mono text-slate-700">
+                              <td className="py-3 px-4 text-right font-mono text-ink-2">
                                 {d.focSampleCost ? formatVndShort(d.focSampleCost) : '—'}
                               </td>
                               <td className="py-3 px-4 text-center">
@@ -2153,12 +2153,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleConfirmReceivedSample(d.id)}
-                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-2xs font-semibold transition"
+                                    className="px-3 py-1 bg-positive hover:bg-positive text-white rounded text-2xs font-semibold transition"
                                   >
                                     Đã nhận được hàng
                                   </button>
                                 ) : (
-                                  <span className="text-2xs text-slate-400">Hạn nộp bài: {d.slaDeadline}</span>
+                                  <span className="text-2xs text-ink-3">Hạn nộp bài: {d.slaDeadline}</span>
                                 )}
                               </td>
                             </tr>
@@ -2172,29 +2172,29 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
               {activeJobsSubTab === 'SUBMISSION' && (
                 <div className="space-y-4">
-                  <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-                    <h3 className="text-xs font-semibold text-slate-900 mb-4">Cổng Nộp Video Nghiệm Thu &amp; Mã Spark Ads</h3>
+                  <div className="bg-white p-5 rounded-xl border border-line/80 shadow-xs">
+                    <h3 className="text-xs font-semibold text-ink mb-4">Cổng Nộp Video Nghiệm Thu &amp; Mã Spark Ads</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {currentKocDeals.map(d => (
-                        <div key={d.id} className="border border-slate-100 rounded-xl p-3.5 space-y-2 bg-slate-50/50 text-xs">
+                        <div key={d.id} className="border border-line rounded-xl p-4 space-y-2 bg-canvas/50 text-xs">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-slate-800">{d.brandName} · <span className="font-mono text-slate-500 font-normal">{d.dealCode}</span></span>
+                            <span className="font-semibold text-ink">{d.brandName} · <span className="font-mono text-ink-3 font-normal">{d.dealCode}</span></span>
                             <Status tone={d.tiktokVideoUrl ? 'ok' : 'warn'}>
                               {d.tiktokVideoUrl ? 'Đã nộp video' : 'Chưa nộp video'}
                             </Status>
                           </div>
 
-                          <div className="font-semibold text-slate-900">{d.productName || d.campaignTitle}</div>
+                          <div className="font-semibold text-ink">{d.productName || d.campaignTitle}</div>
 
                           {d.tiktokVideoUrl && (
-                            <div className="text-2xs font-mono text-slate-600 bg-white p-2 rounded border border-slate-200 truncate">
-                              Link: <a href={d.tiktokVideoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{d.tiktokVideoUrl}</a>
+                            <div className="text-2xs font-mono text-ink-2 bg-white p-2 rounded border border-line truncate">
+                              Link: <a href={d.tiktokVideoUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">{d.tiktokVideoUrl}</a>
                             </div>
                           )}
 
                           {d.sparkAdsCode && (
-                            <div className="text-2xs font-mono text-emerald-700 truncate">
+                            <div className="text-2xs font-mono text-positive truncate">
                               Spark Ads: {d.sparkAdsCode}
                             </div>
                           )}
@@ -2210,7 +2210,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 notes: ''
                               });
                             }}
-                            className="w-full py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5"
+                            className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2"
                           >
                             <Play className="w-3.5 h-3.5" />
                             {d.tiktokVideoUrl ? 'Cập nhật lại video / mã Ads' : 'Nộp video & mã Spark Ads'}
@@ -2227,54 +2227,54 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
           {activeTab === 'CONTRACTS' && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Tổng giá trị Hợp đồng (Gross)</span>
-                  <div className="text-lg font-semibold font-mono text-slate-900 mt-1">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Tổng giá trị Hợp đồng (Gross)</span>
+                  <div className="text-lg font-semibold font-mono text-ink mt-1">
                     {formatVnd(stats.totalEarnings)}
                   </div>
-                  <span className="text-2xs text-slate-400 mt-0.5 block">
+                  <span className="text-2xs text-ink-3 mt-0.5 block">
                     Trên {currentKocDeals.filter(d => d.status !== 'CANCELLED').length} thỏa thuận hợp tác
                   </span>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Thuế TNCN khấu trừ (10%)</span>
-                  <div className="text-lg font-semibold font-mono text-amber-600 mt-1">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Thuế TNCN khấu trừ (10%)</span>
+                  <div className="text-lg font-semibold font-mono text-warning mt-1">
                     {formatVnd(Math.round(stats.totalEarnings * 0.1))}
                   </div>
-                  <span className="text-2xs text-slate-400 mt-0.5 block">
+                  <span className="text-2xs text-ink-3 mt-0.5 block">
                     Kế toán Upbase kê khai &amp; nộp hộ
                   </span>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Thực nhận sau thuế (Net 90%)</span>
-                  <div className="text-lg font-semibold font-mono text-emerald-600 mt-1">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Thực nhận sau thuế (Net 90%)</span>
+                  <div className="text-lg font-semibold font-mono text-positive mt-1">
                     {formatVnd(Math.round(stats.totalEarnings * 0.9))}
                   </div>
-                  <span className="text-2xs text-emerald-600 mt-0.5 block">
+                  <span className="text-2xs text-positive mt-0.5 block">
                     Chuyển khoản về {activeKoc.bankName || 'Ngân hàng'}
                   </span>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs font-medium text-slate-500">Đã giải ngân tạm ứng / quyết toán</span>
-                  <div className="text-lg font-semibold font-mono text-blue-600 mt-1">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs font-medium text-ink-3">Đã giải ngân tạm ứng / quyết toán</span>
+                  <div className="text-lg font-semibold font-mono text-accent mt-1">
                     {formatVnd(stats.advancePaid)}
                   </div>
-                  <span className="text-2xs text-slate-400 mt-0.5 block">
+                  <span className="text-2xs text-ink-3 mt-0.5 block">
                     Còn chờ quyết toán: {formatVndShort(Math.max(0, Math.round(stats.totalEarnings * 0.9) - stats.advancePaid))}
                   </span>
                 </div>
               </div>
 
               {/* KHỐI 1: LAYER HỒ SƠ PHÁP LÝ — HỢP ĐỒNG NGUYÊN TẮC (HĐNT KHUNG) */}
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+              <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-hidden">
+                <div className="px-5 py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-canvas/50">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white text-3xs font-bold">1</span>
-                      <h3 className="text-sm font-semibold text-slate-900">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-ink text-white text-2xs font-bold">1</span>
+                      <h3 className="text-sm font-semibold text-ink">
                         Layer 1: Hồ sơ pháp lý &amp; Hợp đồng nguyên tắc khung ({kocLegalProfiles.length})
                       </h3>
                     </div>
@@ -2283,7 +2283,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenContractForKoc(activeKoc)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium inline-flex items-center gap-1.5 transition self-start sm:self-auto"
+                      className="px-3 py-2 rounded-lg bg-ink hover:bg-ink text-white text-xs font-medium inline-flex items-center gap-2 transition self-start sm:self-auto"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>Soạn HĐNT Khung</span>
@@ -2293,18 +2293,18 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/75 text-slate-500 border-b border-slate-200 font-semibold text-2xs">
+                    <thead className="bg-canvas/75 text-ink-3 border-b border-line font-semibold text-2xs">
                       <tr>
-                        <th className="py-2.5 px-4">Tên Hồ Sơ &amp; Nhãn Pháp Lý</th>
-                        <th className="py-2.5 px-3">Chủ Thể Bên B</th>
-                        <th className="py-2.5 px-3">Tài Khoản Ngân Hàng</th>
-                        <th className="py-2.5 px-3">Số HĐNT Khung</th>
-                        <th className="py-2.5 px-3 text-center">Tiến Độ Ký Số WeSign</th>
-                        <th className="py-2.5 px-3 text-center">Trạng Thái HĐNT</th>
-                        <th className="py-2.5 px-4 text-right">Thao Tác</th>
+                        <th className="py-3 px-4">Tên Hồ Sơ &amp; Nhãn Pháp Lý</th>
+                        <th className="py-3 px-3">Chủ Thể Bên B</th>
+                        <th className="py-3 px-3">Tài Khoản Ngân Hàng</th>
+                        <th className="py-3 px-3">Số HĐNT Khung</th>
+                        <th className="py-3 px-3 text-center">Tiến Độ Ký Số WeSign</th>
+                        <th className="py-3 px-3 text-center">Trạng Thái HĐNT</th>
+                        <th className="py-3 px-4 text-right">Thao Tác</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-line">
                       {kocLegalProfiles.map((profile, pIdx) => {
                         const linkedHdnt = kocContracts.find(
                           c => (documentOfTemplate(c.templateId) === 'HDNT' || c.templateId.includes('HDNT')) &&
@@ -2317,28 +2317,28 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         const isSigned = hdntStatus === 'ĐÃ_KÝ';
 
                         const legalTypeTag = profile.legalType === 'COMPANY'
-                          ? { label: 'Doanh nghiệp / MCN', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
+                          ? { label: 'Doanh nghiệp / MCN', cls: 'bg-accent-soft text-accent-hover border-accent/30' }
                           : profile.legalType === 'HOUSEHOLD'
-                            ? { label: 'Hộ kinh doanh', cls: 'bg-blue-50 text-blue-700 border-blue-200' }
-                            : { label: 'Cá nhân', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+                            ? { label: 'Hộ kinh doanh', cls: 'bg-accent-soft text-accent-hover border-accent/30' }
+                            : { label: 'Cá nhân', cls: 'bg-positive-soft text-positive border-positive/30' };
 
                         return (
-                          <tr key={profile.id || `profile-${pIdx}`} className="hover:bg-slate-50/60 transition">
-                            <td className="py-3 px-4 font-medium text-slate-900">
+                          <tr key={profile.id || `profile-${pIdx}`} className="hover:bg-canvas/60 transition">
+                            <td className="py-3 px-4 font-medium text-ink">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold">{profile.holderName || profile.profileCode || `Hồ sơ #${pIdx + 1}`}</span>
-                                <span className={`text-3xs px-2 py-0.5 rounded border font-medium ${legalTypeTag.cls}`}>
+                                <span className={`text-2xs px-2 py-0.5 rounded border font-medium ${legalTypeTag.cls}`}>
                                   {legalTypeTag.label}
                                 </span>
                               </div>
-                              <span className="text-3xs text-slate-400 block mt-0.5 font-mono">
+                              <span className="text-2xs text-ink-3 block mt-0.5 font-mono">
                                 Mã hồ sơ: {profile.profileCode || profile.id}
                               </span>
                             </td>
 
-                            <td className="py-3 px-3 text-slate-700">
+                            <td className="py-3 px-3 text-ink-2">
                               <div className="font-medium">{profile.holderName || activeKoc.realName || activeKoc.stageName}</div>
-                              <div className="text-3xs text-slate-400 font-mono mt-0.5">
+                              <div className="text-2xs text-ink-3 font-mono mt-0.5">
                                 {profile.legalType === 'INDIVIDUAL' && profile.cccd && (
                                   <span>CCCD: {profile.cccd}</span>
                                 )}
@@ -2348,25 +2348,25 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                               </div>
                             </td>
 
-                            <td className="py-3 px-3 text-slate-700">
+                            <td className="py-3 px-3 text-ink-2">
                               <div className="font-mono text-2xs font-medium">
                                 {profile.bankAccount || profile.bankAccountNumber || activeKoc.bankAccount || '—'}
                               </div>
-                              <div className="text-3xs text-slate-400">
+                              <div className="text-2xs text-ink-3">
                                 {profile.bankName || activeKoc.bankName || '—'}
                               </div>
                             </td>
 
                             <td className="py-3 px-3">
                               {hdntCode ? (
-                                <div className="font-mono text-xs font-semibold text-slate-900">
+                                <div className="font-mono text-xs font-semibold text-ink">
                                   {hdntCode}
                                 </div>
                               ) : (
-                                <span className="text-3xs text-slate-400 italic">Chưa ký HĐNT Khung</span>
+                                <span className="text-2xs text-ink-3 italic">Chưa ký HĐNT Khung</span>
                               )}
                               {profile.frameworkContractSignedAt && (
-                                <div className="text-3xs text-slate-400 mt-0.5">
+                                <div className="text-2xs text-ink-3 mt-0.5">
                                   Ký ngày: {profile.frameworkContractSignedAt}
                                 </div>
                               )}
@@ -2375,23 +2375,23 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <td className="py-3 px-3 text-center">
                               {progress ? (
                                 <div className="inline-flex flex-col items-center gap-1">
-                                  <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                  <div className="w-20 bg-sunken rounded-full h-1.5 overflow-hidden">
                                     <div
-                                      className={`h-full ${progress.progressPercent === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                      className={`h-full ${progress.progressPercent === 100 ? 'bg-positive' : 'bg-accent'}`}
                                       style={{ width: `${progress.progressPercent}%` }}
                                     />
                                   </div>
-                                  <span className="text-3xs font-medium text-slate-600">
+                                  <span className="text-2xs font-medium text-ink-2">
                                     {progress.completedCount}/{progress.totalCount} bên ký ({progress.progressPercent}%)
                                   </span>
                                 </div>
                               ) : isSigned ? (
-                                <span className="inline-flex items-center gap-1 text-3xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                                  <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-positive bg-positive-soft px-2 py-0.5 rounded">
+                                  <Check className="w-3.5 h-3.5 text-positive" />
                                   <span>2/2 bên đã ký</span>
                                 </span>
                               ) : (
-                                <span className="text-3xs text-slate-400">—</span>
+                                <span className="text-2xs text-ink-3">—</span>
                               )}
                             </td>
 
@@ -2406,13 +2406,13 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             </td>
 
                             <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
+                              <div className="flex items-center justify-end gap-2">
                                 {profile.frameworkContractDriveUrl && (
                                   <a
                                     href={profile.frameworkContractDriveUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-2xs font-semibold transition"
+                                    className="px-2 py-1 rounded-lg border border-line hover:bg-canvas text-ink-2 text-2xs font-semibold transition"
                                   >
                                     Xem file
                                   </a>
@@ -2421,7 +2421,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => onOpenContractForKoc(activeKoc, profile.id)}
-                                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xs font-medium transition inline-flex items-center gap-1"
+                                    className="px-2 py-1 rounded-lg bg-sunken hover:bg-sunken text-ink text-2xs font-medium transition inline-flex items-center gap-1"
                                     title="Mở soạn / xem HĐNT Khung tại phân hệ Hợp đồng"
                                   >
                                     <span>{isSigned ? 'Mở HĐNT' : 'Soạn HĐNT'}</span>
@@ -2439,12 +2439,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
 
               {/* KHỐI 2: LAYER DEAL & BOOKING — PHỤ LỤC SOW & BIÊN BẢN NGHIỆM THU (BBNT) */}
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-hidden">
+                <div className="px-5 py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white text-3xs font-bold">2</span>
-                      <h3 className="text-sm font-semibold text-slate-900">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-ink text-white text-2xs font-bold">2</span>
+                      <h3 className="text-sm font-semibold text-ink">
                         Layer 2: Phụ lục SOW &amp; Nghiệm thu BBNT theo Booking / Deal ({currentKocDeals.filter(d => d.status !== 'CANCELLED').length})
                       </h3>
                     </div>
@@ -2453,9 +2453,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsQrModalOpen(true)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition"
+                      className="px-3 py-2 rounded-lg border border-line hover:bg-canvas text-ink-2 text-xs font-medium flex items-center gap-2 transition"
                     >
-                      <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                      <QrCode className="w-3.5 h-3.5 text-positive" />
                       <span>Mã QR thụ hưởng</span>
                     </button>
                   </div>
@@ -2463,19 +2463,19 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/75 text-slate-500 border-b border-slate-200 font-semibold text-2xs">
+                    <thead className="bg-canvas/75 text-ink-3 border-b border-line font-semibold text-2xs">
                       <tr>
-                        <th className="py-2.5 px-4">Mã Deal / Chiến Dịch</th>
-                        <th className="py-2.5 px-3">Hồ Sơ Pháp Lý Bên B</th>
-                        <th className="py-2.5 px-3">HĐNT Khung Kế Thừa</th>
-                        <th className="py-2.5 px-3 text-right">Giá Trị Gross</th>
-                        <th className="py-2.5 px-3 text-right">Thực Nhận Net (90%)</th>
-                        <th className="py-2.5 px-3 text-center">Tiến Độ Ký Phụ Lục SOW</th>
-                        <th className="py-2.5 px-3 text-center">Trạng Thái BBNT</th>
-                        <th className="py-2.5 px-4 text-right">Thao Tác</th>
+                        <th className="py-3 px-4">Mã Deal / Chiến Dịch</th>
+                        <th className="py-3 px-3">Hồ Sơ Pháp Lý Bên B</th>
+                        <th className="py-3 px-3">HĐNT Khung Kế Thừa</th>
+                        <th className="py-3 px-3 text-right">Giá Trị Gross</th>
+                        <th className="py-3 px-3 text-right">Thực Nhận Net (90%)</th>
+                        <th className="py-3 px-3 text-center">Tiến Độ Ký Phụ Lục SOW</th>
+                        <th className="py-3 px-3 text-center">Trạng Thái BBNT</th>
+                        <th className="py-3 px-4 text-right">Thao Tác</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-line">
                       {currentKocDeals
                         .filter(d => d.status !== 'CANCELLED')
                         .map((deal, idx) => {
@@ -2501,12 +2501,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                           const netValue = Math.round(grossValue * 0.9);
 
                           return (
-                            <tr key={deal.id || `deal-${idx}`} className="hover:bg-slate-50/60 transition">
+                            <tr key={deal.id || `deal-${idx}`} className="hover:bg-canvas/60 transition">
                               <td className="py-3 px-4">
-                                <div className="font-mono text-xs font-semibold text-slate-900">
+                                <div className="font-mono text-xs font-semibold text-ink">
                                   {deal.dealCode || `DEAL-${idx + 1}`}
                                 </div>
-                                <div className="text-2xs text-slate-600 mt-0.5 line-clamp-1 font-medium">
+                                <div className="text-2xs text-ink-2 mt-0.5 line-clamp-1 font-medium">
                                   {deal.brandName || 'Nhãn hàng'} — {deal.campaignTitle || deal.campaignCode || 'Chiến dịch'}
                                 </div>
                               </td>
@@ -2514,52 +2514,52 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                               <td className="py-3 px-3">
                                 {dealProfile ? (
                                   <div>
-                                    <div className="font-medium text-slate-900">{dealProfile.holderName || dealProfile.profileCode}</div>
-                                    <div className="text-3xs text-slate-400 mt-0.5">
+                                    <div className="font-medium text-ink">{dealProfile.holderName || dealProfile.profileCode}</div>
+                                    <div className="text-2xs text-ink-3 mt-0.5">
                                       {dealProfile.legalType === 'INDIVIDUAL'
                                         ? `Cá nhân (${dealProfile.cccd ? `CCCD: ${dealProfile.cccd}` : 'Chưa có CCCD'})`
                                         : `HKD/DN (${dealProfile.taxCode ? `MST: ${dealProfile.taxCode}` : 'Chưa có MST'})`}
                                     </div>
                                   </div>
                                 ) : (
-                                  <span className="text-3xs text-slate-400 italic">Mặc định theo KOC</span>
+                                  <span className="text-2xs text-ink-3 italic">Mặc định theo KOC</span>
                                 )}
                               </td>
 
                               <td className="py-3 px-3">
-                                <div className="font-mono text-2xs font-medium text-slate-700">
+                                <div className="font-mono text-2xs font-medium text-ink-2">
                                   {inheritedHdntCode}
                                 </div>
-                                <div className="text-3xs text-emerald-600 flex items-center gap-0.5 mt-0.5">
+                                <div className="text-2xs text-positive flex items-center gap-0.5 mt-0.5">
                                   <Check className="w-2.5 h-2.5" />
                                   <span>HĐNT Khung hợp lệ</span>
                                 </div>
                               </td>
 
-                              <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-slate-900">
+                              <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-ink">
                                 {formatVnd(grossValue)}
                               </td>
 
-                              <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-emerald-700">
+                              <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-positive">
                                 {formatVnd(netValue)}
                               </td>
 
                               <td className="py-3 px-3 text-center">
                                 {sowProgress ? (
                                   <div className="inline-flex flex-col items-center gap-1">
-                                    <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                    <div className="w-16 bg-sunken rounded-full h-1.5 overflow-hidden">
                                       <div
-                                        className={`h-full ${sowProgress.progressPercent === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                        className={`h-full ${sowProgress.progressPercent === 100 ? 'bg-positive' : 'bg-accent'}`}
                                         style={{ width: `${sowProgress.progressPercent}%` }}
                                       />
                                     </div>
-                                    <span className="text-3xs font-medium text-slate-600">
+                                    <span className="text-2xs font-medium text-ink-2">
                                       {sowProgress.completedCount}/{sowProgress.totalCount} bên ({sowProgress.progressPercent}%)
                                     </span>
                                   </div>
                                 ) : isSowSigned ? (
-                                  <span className="inline-flex items-center gap-1 text-3xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                                    <Check className="w-3 h-3 text-emerald-600" />
+                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-positive bg-positive-soft px-2 py-0.5 rounded">
+                                    <Check className="w-3.5 h-3.5 text-positive" />
                                     <span>Đã ký SOW</span>
                                   </span>
                                 ) : (
@@ -2573,16 +2573,16 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 ) : isSowSigned ? (
                                   <Status tone="warn">Chờ nghiệm thu</Status>
                                 ) : (
-                                  <span className="text-3xs text-slate-400">—</span>
+                                  <span className="text-2xs text-ink-3">—</span>
                                 )}
                               </td>
 
                               <td className="py-3 px-4 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
+                                <div className="flex items-center justify-end gap-2">
                                   <button
                                     type="button"
                                     onClick={() => setPreviewContractDeal(deal)}
-                                    className="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-2xs font-semibold transition"
+                                    className="px-2 py-1 rounded-lg border border-line hover:bg-canvas text-ink-2 text-2xs font-semibold transition"
                                   >
                                     Xem
                                   </button>
@@ -2591,7 +2591,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => onOpenContractForDeal(deal, isSowSigned ? 'BBNT' : 'SOW')}
-                                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xs font-medium transition inline-flex items-center gap-1"
+                                      className="px-2 py-1 rounded-lg bg-sunken hover:bg-sunken text-ink text-2xs font-medium transition inline-flex items-center gap-1"
                                       title={isSowSigned ? 'Lập Biên bản nghiệm thu BBNT' : 'Soạn Phụ lục SOW'}
                                     >
                                       <span>{isSowSigned ? 'Nghiệm thu' : 'Soạn SOW'}</span>
@@ -2613,56 +2613,56 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
           {activeTab === 'HISTORY' && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs text-slate-500">Tổng chiến dịch</span>
-                  <div className="text-base font-semibold font-mono text-slate-900 mt-0.5">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs text-ink-3">Tổng chiến dịch</span>
+                  <div className="text-base font-semibold font-mono text-ink mt-0.5">
                     {perfStats.totalDeals} chiến dịch
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs text-slate-500">Video đã lên sóng</span>
-                  <div className="text-base font-semibold font-mono text-emerald-600 mt-0.5">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs text-ink-3">Video đã lên sóng</span>
+                  <div className="text-base font-semibold font-mono text-positive mt-0.5">
                     {perfStats.completedDeals} video
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs text-slate-500">Tổng đầu tư (Cast + FOC + Ads)</span>
-                  <div className="text-base font-semibold font-mono text-slate-900 mt-0.5">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs text-ink-3">Tổng đầu tư (Cast + FOC + Ads)</span>
+                  <div className="text-base font-semibold font-mono text-ink mt-0.5">
                     {formatVndShort(perfStats.totalInvestment)}
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs text-slate-500">Tổng GMV tạo ra</span>
-                  <div className="text-base font-semibold font-mono text-blue-600 mt-0.5">
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs text-ink-3">Tổng GMV tạo ra</span>
+                  <div className="text-base font-semibold font-mono text-accent mt-0.5">
                     {formatVndShort(perfStats.totalGmv)}
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
-                  <span className="text-2xs text-slate-500">Điểm đánh giá hợp tác</span>
-                  <div className="text-base font-semibold font-mono text-amber-600 mt-0.5 flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <div className="bg-white rounded-xl p-4 border border-line/80 shadow-xs">
+                  <span className="text-2xs text-ink-3">Điểm đánh giá hợp tác</span>
+                  <div className="text-base font-semibold font-mono text-warning mt-0.5 flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-warning text-warning" />
                     <span>{perfStats.avgRatingScore > 0 ? perfStats.avgRatingScore.toFixed(1) : '5.0'} / 5.0</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="bg-white rounded-xl border border-line/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       placeholder="Tìm mã deal, chiến dịch, sản phẩm..."
                       value={historySearch}
                       onChange={(e) => setHistorySearch(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-blue-500"
+                      className="pl-8 pr-3 py-2 rounded-lg border border-line text-xs focus:outline-none focus:border-accent"
                     />
                   </div>
 
                   <select
                     value={historyBrandFilter}
                     onChange={(e) => setHistoryBrandFilter(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none"
+                    className="px-3 py-2 rounded-lg border border-line bg-white text-ink-2 font-medium focus:outline-none"
                   >
                     <option value="ALL">Tất cả nhãn hàng ({historyBrands.length})</option>
                     {historyBrands.map(b => (
@@ -2670,7 +2670,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     ))}
                   </select>
 
-                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                  <div className="flex items-center gap-1 bg-sunken p-1 rounded-lg">
                     {(
                       [
                         { key: 'ALL', label: 'Tất cả' },
@@ -2683,10 +2683,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         key={item.key}
                         type="button"
                         onClick={() => setHistoryFormatFilter(item.key)}
-                        className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition ${
+                        className={`px-3 py-1 rounded-md text-2xs font-semibold transition ${
                           historyFormatFilter === item.key
-                            ? 'bg-white text-slate-900 shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-white text-ink shadow-2xs'
+                            : 'text-ink-2 hover:text-ink'
                         }`}
                       >
                         {item.label}
@@ -2695,15 +2695,15 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   </div>
                 </div>
 
-                <span className="text-2xs text-slate-500">
+                <span className="text-2xs text-ink-3">
                   Hiển thị {filteredHistoryDeals.length} / {currentKocDeals.length} bản ghi hợp tác
                 </span>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/75 text-slate-500 border-b border-slate-200 font-semibold text-2xs">
+                    <thead className="bg-canvas/75 text-ink-3 border-b border-line font-semibold text-2xs">
                       <tr>
                         <th className="py-3 px-4">Chiến Dịch &amp; Sản Phẩm</th>
                         <th className="py-3 px-3">Hình Thức &amp; Ngày Đăng</th>
@@ -2713,7 +2713,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         <th className="py-3 px-4 text-right">Thao Tác</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-line">
                       {filteredHistoryDeals.map(deal => {
                         const gmv = deal.affiliateGmv || deal.gmv30 || 0;
                         const isFoc = (deal.totalValue || 0) === 0;
@@ -2721,70 +2721,70 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         const roi = invest > 0 ? gmv / invest : deal.roi || 0;
 
                         return (
-                          <tr key={deal.id} className="hover:bg-slate-50/50 transition">
+                          <tr key={deal.id} className="hover:bg-canvas/50 transition">
                             <td className="py-3 px-4">
-                              <div className="flex items-center gap-1.5 flex-wrap text-2xs">
-                                <span className="font-mono text-slate-500">
+                              <div className="flex items-center gap-2 flex-wrap text-2xs">
+                                <span className="font-mono text-ink-3">
                                   {deal.dealCode}
                                 </span>
                                 <span className="text-slate-300">·</span>
-                                <span className="font-medium text-slate-700">
+                                <span className="font-medium text-ink-2">
                                   {deal.brandName}
                                 </span>
                                 {deal.storeName && (
                                   <>
                                     <span className="text-slate-300">·</span>
-                                    <span className="text-slate-400">{deal.storeName}</span>
+                                    <span className="text-ink-3">{deal.storeName}</span>
                                   </>
                                 )}
                               </div>
-                              <div className="font-semibold text-slate-900 mt-1">{deal.campaignTitle}</div>
-                              <div className="text-2xs text-slate-500">
+                              <div className="font-semibold text-ink mt-1">{deal.campaignTitle}</div>
+                              <div className="text-2xs text-ink-3">
                                 SP: {deal.productName} • PIC: {deal.bookingPic || deal.assignedStaff}
                               </div>
                             </td>
 
                             <td className="py-3 px-3">
                               <div className="space-y-0.5">
-                                <div className="text-xs font-medium text-slate-800">
+                                <div className="text-xs font-medium text-ink">
                                   {isFoc ? 'Suất gửi mẫu miễn phí (FOC 0đ)' : 'Video KOC trả phí (Paid)'}
                                 </div>
-                                <div className="text-2xs text-slate-500 font-mono">
+                                <div className="text-2xs text-ink-3 font-mono">
                                   Ngày đăng: {deal.postedDate || deal.slaDeadline || '—'}
                                 </div>
                               </div>
                             </td>
 
                             <td className="py-3 px-3 text-right font-mono">
-                              <div className="font-semibold text-slate-900">
+                              <div className="font-semibold text-ink">
                                 Cast: {isFoc ? '0 đ' : formatVndShort(deal.totalValue || 0)}
                               </div>
-                              <div className="text-2xs text-slate-500">
+                              <div className="text-2xs text-ink-3">
                                 Mẫu: {formatVndShort(deal.focSampleCost || 0)} · Ads: {formatVndShort(deal.adCost || 0)}
                               </div>
                             </td>
 
                             <td className="py-3 px-3 text-right font-mono">
-                              <div className="font-semibold text-blue-600">{formatVndShort(gmv)}</div>
-                              <div className="text-2xs text-slate-500">
-                                {deal.ordersCount || 0} đơn · <strong className="text-emerald-700">ROI {roi.toFixed(1)}x</strong>
+                              <div className="font-semibold text-accent">{formatVndShort(gmv)}</div>
+                              <div className="text-2xs text-ink-3">
+                                {deal.ordersCount || 0} đơn · <strong className="text-positive">ROI {roi.toFixed(1)}x</strong>
                               </div>
                             </td>
 
                             <td className="py-3 px-3">
                               <div className="space-y-1 text-2xs">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2">
                                   <Status tone={deal.isPostOnTime !== false ? 'ok' : 'err'}>
                                     {deal.isPostOnTime !== false ? 'Đúng hạn SLA' : 'Trễ SLA'}
                                   </Status>
                                   {deal.ratingScore && (
-                                    <span className="font-mono font-semibold text-amber-600">
+                                    <span className="font-mono font-semibold text-warning">
                                       {deal.ratingScore.toFixed(1)}/5.0
                                     </span>
                                   )}
                                 </div>
                                 {(deal.picCollabReview || deal.brandFeedback) && (
-                                  <p className="text-slate-500 truncate max-w-[220px]" title={deal.picCollabReview || deal.brandFeedback}>
+                                  <p className="text-ink-3 truncate max-w-[220px]" title={deal.picCollabReview || deal.brandFeedback}>
                                     &ldquo;{deal.picCollabReview || deal.brandFeedback}&rdquo;
                                   </p>
                                 )}
@@ -2792,21 +2792,21 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             </td>
 
                             <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
+                              <div className="flex items-center justify-end gap-2">
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setSelectedHistoryDeal(deal);
                                     setKocSelfFeedback(deal.holdingReason || '');
                                   }}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-2xs font-semibold transition"
+                                  className="px-3 py-1 rounded-lg bg-sunken hover:bg-sunken text-ink-2 text-2xs font-semibold transition"
                                 >
                                   Chi tiết
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setPreviewContractDeal(deal)}
-                                  className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-2xs font-medium transition"
+                                  className="px-3 py-1 rounded-lg border border-line hover:bg-canvas text-ink-2 text-2xs font-medium transition"
                                 >
                                   Hợp đồng
                                 </button>
@@ -2824,11 +2824,11 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
           {activeTab === 'PERFORMANCE' && (
             <div className="space-y-6 animate-in fade-in duration-150">
-              <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-accent" />
                       <span>1. Hiệu Quả Thương Mại &amp; Tuân Thủ SLA Lũy Kế ({perfStats.totalDeals} Chiến Dịch)</span>
                     </h3>
                     
@@ -2836,7 +2836,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsMetricsModalOpen(true)}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition self-start"
+                    className="px-3 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-xs font-semibold inline-flex items-center gap-2 transition self-start"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Cập nhật chỉ số kênh TikTok</span>
@@ -2844,62 +2844,62 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Tổng GMV tạo ra</span>
-                    <span className="text-base font-semibold font-mono text-blue-600 mt-1 block">
+                  <div className="p-4 rounded-xl bg-canvas border border-line">
+                    <span className="text-2xs text-ink-3 block">Tổng GMV tạo ra</span>
+                    <span className="text-base font-semibold font-mono text-accent mt-1 block">
                       {formatVndShort(perfStats.totalGmv)}
                     </span>
-                    <span className="text-2xs text-slate-400">
+                    <span className="text-2xs text-ink-3">
                       TB {formatVndShort(perfStats.totalDeals > 0 ? Math.round(perfStats.totalGmv / perfStats.totalDeals) : 0)}/video
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">ROI tổng hợp</span>
-                    <span className="text-base font-semibold font-mono text-emerald-600 mt-1 block">
+                  <div className="p-4 rounded-xl bg-canvas border border-line">
+                    <span className="text-2xs text-ink-3 block">ROI tổng hợp</span>
+                    <span className="text-base font-semibold font-mono text-positive mt-1 block">
                       {perfStats.overallRoi.toFixed(2)}x
                     </span>
-                    <span className="text-2xs text-slate-400">Đầu tư: {formatVndShort(perfStats.totalInvestment)}</span>
+                    <span className="text-2xs text-ink-3">Đầu tư: {formatVndShort(perfStats.totalInvestment)}</span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Tổng đơn hàng (Orders)</span>
-                    <span className="text-base font-semibold font-mono text-slate-900 mt-1 block">
+                  <div className="p-4 rounded-xl bg-canvas border border-line">
+                    <span className="text-2xs text-ink-3 block">Tổng đơn hàng (Orders)</span>
+                    <span className="text-base font-semibold font-mono text-ink mt-1 block">
                       {perfStats.totalOrders.toLocaleString('vi-VN')} đơn
                     </span>
-                    <span className="text-2xs text-slate-400">CPO: {formatVndShort(perfStats.avgCpo)}/đơn</span>
+                    <span className="text-2xs text-ink-3">CPO: {formatVndShort(perfStats.avgCpo)}/đơn</span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Đúng hạn kịch bản</span>
-                    <span className="text-base font-semibold font-mono text-emerald-600 mt-1 block">
+                  <div className="p-4 rounded-xl bg-canvas border border-line">
+                    <span className="text-2xs text-ink-3 block">Đúng hạn kịch bản</span>
+                    <span className="text-base font-semibold font-mono text-positive mt-1 block">
                       {perfStats.onTimeScriptRate.toFixed(0)}%
                     </span>
-                    <span className="text-2xs text-slate-400">SLA nộp kịch bản</span>
+                    <span className="text-2xs text-ink-3">SLA nộp kịch bản</span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Đúng hạn lên sóng</span>
-                    <span className="text-base font-semibold font-mono text-emerald-600 mt-1 block">
+                  <div className="p-4 rounded-xl bg-canvas border border-line">
+                    <span className="text-2xs text-ink-3 block">Đúng hạn lên sóng</span>
+                    <span className="text-base font-semibold font-mono text-positive mt-1 block">
                       {perfStats.onTimePostRate.toFixed(0)}%
                     </span>
-                    <span className="text-2xs text-slate-400">SLA đăng video</span>
+                    <span className="text-2xs text-ink-3">SLA đăng video</span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Cấp mã Spark Ads</span>
-                    <span className="text-base font-semibold font-mono text-blue-600 mt-1 block">
+                  <div className="p-4 rounded-xl bg-canvas border border-line">
+                    <span className="text-2xs text-ink-3 block">Cấp mã Spark Ads</span>
+                    <span className="text-base font-semibold font-mono text-accent mt-1 block">
                       {perfStats.sparkComplianceRate.toFixed(0)}%
                     </span>
-                    <span className="text-2xs text-slate-400">Ủy quyền chạy Ads</span>
+                    <span className="text-2xs text-ink-3">Ủy quyền chạy Ads</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="bg-white rounded-xl border border-line/80 shadow-xs overflow-hidden">
+                <div className="px-5 py-4 border-b border-line flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">
+                    <h3 className="text-sm font-semibold text-ink">
                       2. Bóc Tách Doanh Số Tự Nhiên (Organic) &amp; Quảng Cáo (Spark Ads) Theo Video
                     </h3>
                   </div>
@@ -2907,19 +2907,19 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/75 text-slate-500 border-b border-slate-200 font-semibold text-2xs">
+                    <thead className="bg-canvas/75 text-ink-3 border-b border-line font-semibold text-2xs">
                       <tr>
-                        <th className="py-2.5 px-4">Mã Deal &amp; Video</th>
-                        <th className="py-2.5 px-3">Mã Spark Ads</th>
-                        <th className="py-2.5 px-3 text-right">Lượt Xem (Views)</th>
-                        <th className="py-2.5 px-3 text-right">Organic GMV</th>
-                        <th className="py-2.5 px-3 text-right">Chi Phí Ads</th>
-                        <th className="py-2.5 px-3 text-right">Spark Ads GMV</th>
-                        <th className="py-2.5 px-3 text-right">ROAS Ads</th>
-                        <th className="py-2.5 px-4 text-right">Giữ Chân (Hook 2s / Xem hết)</th>
+                        <th className="py-3 px-4">Mã Deal &amp; Video</th>
+                        <th className="py-3 px-3">Mã Spark Ads</th>
+                        <th className="py-3 px-3 text-right">Lượt Xem (Views)</th>
+                        <th className="py-3 px-3 text-right">Organic GMV</th>
+                        <th className="py-3 px-3 text-right">Chi Phí Ads</th>
+                        <th className="py-3 px-3 text-right">Spark Ads GMV</th>
+                        <th className="py-3 px-3 text-right">ROAS Ads</th>
+                        <th className="py-3 px-4 text-right">Giữ Chân (Hook 2s / Xem hết)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-line">
                       {currentKocDeals.map(deal => {
                         const totalGmv = deal.affiliateGmv || deal.gmv30 || 0;
                         const adGmv = deal.adGmv ?? Math.round(totalGmv * 0.45);
@@ -2928,36 +2928,36 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         const roas = deal.adRoas ?? (adCost > 0 ? adGmv / adCost : 0);
 
                         return (
-                          <tr key={deal.id} className="hover:bg-slate-50/50 transition">
+                          <tr key={deal.id} className="hover:bg-canvas/50 transition">
                             <td className="py-3 px-4">
-                              <div className="font-semibold text-slate-900">{deal.productName || deal.campaignTitle}</div>
-                              <div className="text-2xs text-slate-500 font-mono">{deal.dealCode} • {deal.brandName}</div>
+                              <div className="font-semibold text-ink">{deal.productName || deal.campaignTitle}</div>
+                              <div className="text-2xs text-ink-3 font-mono">{deal.dealCode} • {deal.brandName}</div>
                             </td>
                             <td className="py-3 px-3 font-mono text-2xs">
                               {deal.sparkAdsCode ? (
-                                <span className="text-emerald-700 font-semibold">
+                                <span className="text-positive font-semibold">
                                   {deal.sparkAdsCode}
                                 </span>
                               ) : (
-                                <span className="text-slate-400">Chưa cấp mã</span>
+                                <span className="text-ink-3">Chưa cấp mã</span>
                               )}
                             </td>
-                            <td className="py-3 px-3 text-right font-mono text-slate-800">
+                            <td className="py-3 px-3 text-right font-mono text-ink">
                               {(deal.viewsCount || activeKoc.avgViews || 28000).toLocaleString('vi-VN')}
                             </td>
-                            <td className="py-3 px-3 text-right font-mono font-semibold text-slate-800">
+                            <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
                               {formatVndShort(organicGmv)}
                             </td>
-                            <td className="py-3 px-3 text-right font-mono text-amber-700">
+                            <td className="py-3 px-3 text-right font-mono text-warning">
                               {formatVndShort(adCost)}
                             </td>
-                            <td className="py-3 px-3 text-right font-mono font-semibold text-blue-600">
+                            <td className="py-3 px-3 text-right font-mono font-semibold text-accent">
                               {formatVndShort(adGmv)}
                             </td>
-                            <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-600">
+                            <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
                               {roas.toFixed(1)}x
                             </td>
-                            <td className="py-3 px-4 text-right font-mono text-2xs text-slate-600">
+                            <td className="py-3 px-4 text-right font-mono text-2xs text-ink-2">
                               Hook: <strong>{deal.adHookRate2s ?? 38}%</strong> · Full: <strong>{deal.adCompletionRate ?? 16}%</strong>
                             </td>
                           </tr>
@@ -2969,75 +2969,75 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs">
-                <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 className="font-semibold text-slate-900 flex items-center gap-2">
-                      <Award className="w-4 h-4 text-blue-600" />
+                <div className="lg:col-span-2 bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <h4 className="font-semibold text-ink flex items-center gap-2">
+                      <Award className="w-4 h-4 text-accent" />
                       <span>3. Chỉ Số Kênh TikTok Seller Center (30 Ngày Gần Nhất)</span>
                     </h4>
-                    <span className="text-2xs text-slate-400">
+                    <span className="text-2xs text-ink-3">
                       Cập nhật: {activeKoc.metricsUpdatedAt ? new Date(activeKoc.metricsUpdatedAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <span className="text-2xs text-slate-500 block">Followers kênh</span>
-                      <span className="text-sm font-semibold font-mono text-slate-900 mt-0.5 block">
+                    <div className="p-3 rounded-lg bg-canvas border border-line">
+                      <span className="text-2xs text-ink-3 block">Followers kênh</span>
+                      <span className="text-sm font-semibold font-mono text-ink mt-0.5 block">
                         {formatFollowers(activeKoc.followers)}
                       </span>
-                      <span className="text-2xs text-emerald-600 font-mono">
+                      <span className="text-2xs text-positive font-mono">
                         +{activeKoc.tiktokFollowerGrowth30d ?? 12.5}% (30d)
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <span className="text-2xs text-slate-500 block">GMV Kênh 30 ngày</span>
-                      <span className="text-sm font-semibold font-mono text-blue-600 mt-0.5 block">
+                    <div className="p-3 rounded-lg bg-canvas border border-line">
+                      <span className="text-2xs text-ink-3 block">GMV Kênh 30 ngày</span>
+                      <span className="text-sm font-semibold font-mono text-accent mt-0.5 block">
                         {formatVndShort(activeKoc.recentRevenue ?? (perfStats.totalGmv || 120000000))}
                       </span>
-                      <span className="text-2xs text-slate-400 font-mono">
+                      <span className="text-2xs text-ink-3 font-mono">
                         GPM: {formatVndShort(activeKoc.gpm ?? 185000)}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <span className="text-2xs text-slate-500 block">Tỷ lệ CTR &amp; CVR</span>
-                      <span className="text-sm font-semibold font-mono text-emerald-600 mt-0.5 block">
+                    <div className="p-3 rounded-lg bg-canvas border border-line">
+                      <span className="text-2xs text-ink-3 block">Tỷ lệ CTR &amp; CVR</span>
+                      <span className="text-sm font-semibold font-mono text-positive mt-0.5 block">
                         CTR {activeKoc.tiktokAvgCtr ?? 4.8}% · CVR {activeKoc.tiktokAvgCvr ?? 3.6}%
                       </span>
-                      <span className="text-2xs text-slate-400 font-mono">
+                      <span className="text-2xs text-ink-3 font-mono">
                         AOV: {formatVndShort(activeKoc.aov ?? 265000)}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <span className="text-2xs text-slate-500 block">Điểm uy tín &amp; Hoàn hủy</span>
-                      <span className="text-sm font-semibold font-mono text-amber-600 mt-0.5 block">
+                    <div className="p-3 rounded-lg bg-canvas border border-line">
+                      <span className="text-2xs text-ink-3 block">Điểm uy tín &amp; Hoàn hủy</span>
+                      <span className="text-sm font-semibold font-mono text-warning mt-0.5 block">
                         {activeKoc.tiktokShopRating ?? 4.8} / 5.0
                       </span>
-                      <span className="text-2xs text-slate-400 font-mono">
+                      <span className="text-2xs text-ink-3 font-mono">
                         Tỷ lệ hủy: {activeKoc.tiktokCancellationRate ?? 2.4}%
                       </span>
                     </div>
                   </div>
 
                   <div className="pt-2 space-y-2">
-                    <div className="flex items-center justify-between text-2xs font-medium text-slate-600">
+                    <div className="flex items-center justify-between text-2xs font-medium text-ink-2">
                       <span>Cơ cấu GMV theo định dạng nội dung</span>
                       <span className="font-mono">
                         Video {activeKoc.gmvShareVideo ?? 75}% · Live {activeKoc.gmvShareLive ?? 20}% · Trưng bày {activeKoc.gmvShareProductCard ?? 5}%
                       </span>
                     </div>
-                    <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden flex">
+                    <div className="h-2.5 w-full rounded-full bg-sunken overflow-hidden flex">
                       <div
                         style={{ width: `${activeKoc.gmvShareVideo ?? 75}%` }}
-                        className="bg-blue-600 h-full"
+                        className="bg-accent h-full"
                         title="Video gắn giỏ hàng"
                       />
                       <div
                         style={{ width: `${activeKoc.gmvShareLive ?? 20}%` }}
-                        className="bg-emerald-500 h-full"
+                        className="bg-positive h-full"
                         title="Livestream"
                       />
                       <div
@@ -3049,39 +3049,39 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h4 className="font-semibold text-slate-900">Chân Dung Khán Giả Kênh</h4>
+                <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+                  <div className="border-b border-line pb-3">
+                    <h4 className="font-semibold text-ink">Chân Dung Khán Giả Kênh</h4>
                   </div>
 
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-2xs mb-1">
-                        <span className="text-slate-600">Tỷ lệ Nữ / Nam</span>
-                        <span className="font-mono font-semibold text-slate-900">
+                        <span className="text-ink-2">Tỷ lệ Nữ / Nam</span>
+                        <span className="font-mono font-semibold text-ink">
                           Nữ {activeKoc.femaleRatio ?? 82}% · Nam {activeKoc.maleRatio ?? 18}%
                         </span>
                       </div>
-                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden flex">
-                        <div style={{ width: `${activeKoc.femaleRatio ?? 82}%` }} className="bg-rose-500 h-full" />
-                        <div style={{ width: `${activeKoc.maleRatio ?? 18}%` }} className="bg-blue-500 h-full" />
+                      <div className="h-2 rounded-full bg-sunken overflow-hidden flex">
+                        <div style={{ width: `${activeKoc.femaleRatio ?? 82}%` }} className="bg-critical h-full" />
+                        <div style={{ width: `${activeKoc.maleRatio ?? 18}%` }} className="bg-accent h-full" />
                       </div>
                     </div>
 
-                    <div className="pt-2 space-y-1.5">
-                      <span className="text-2xs text-slate-500 block">Phân bổ độ tuổi người mua</span>
+                    <div className="pt-2 space-y-2">
+                      <span className="text-2xs text-ink-3 block">Phân bổ độ tuổi người mua</span>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
-                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                          <span className="text-2xs text-slate-400 block">18 - 24</span>
-                          <span className="font-mono font-semibold text-slate-800">{activeKoc.age18_24 ?? 40}%</span>
+                        <div className="p-2 rounded-lg bg-canvas border border-line">
+                          <span className="text-2xs text-ink-3 block">18 - 24</span>
+                          <span className="font-mono font-semibold text-ink">{activeKoc.age18_24 ?? 40}%</span>
                         </div>
-                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                          <span className="text-2xs text-slate-400 block">25 - 34</span>
-                          <span className="font-mono font-semibold text-blue-600">{activeKoc.age25_34 ?? 48}%</span>
+                        <div className="p-2 rounded-lg bg-canvas border border-line">
+                          <span className="text-2xs text-ink-3 block">25 - 34</span>
+                          <span className="font-mono font-semibold text-accent">{activeKoc.age25_34 ?? 48}%</span>
                         </div>
-                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                          <span className="text-2xs text-slate-400 block">35+</span>
-                          <span className="font-mono font-semibold text-slate-800">{activeKoc.age35Plus ?? 12}%</span>
+                        <div className="p-2 rounded-lg bg-canvas border border-line">
+                          <span className="text-2xs text-ink-3 block">35+</span>
+                          <span className="font-mono font-semibold text-ink">{activeKoc.age35Plus ?? 12}%</span>
                         </div>
                       </div>
                     </div>
@@ -3112,7 +3112,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         footer={
           previewContractDeal ? (
             <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-              <span className="text-2xs text-slate-500">
+              <span className="text-2xs text-ink-3">
                 Đối tác xem và xác nhận trực tuyến bằng mã OTP / Chữ ký số
               </span>
               <div className="flex items-center gap-2">
@@ -3134,35 +3134,35 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         }
       >
         {previewContractDeal && (
-          <div className="space-y-4 text-xs leading-relaxed text-slate-700">
+          <div className="space-y-4 text-xs leading-relaxed text-ink-2">
             <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line font-mono">
               <span>Mã Deal: <strong className="text-ink">{previewContractDeal.dealCode}</strong></span>
               <span>·</span>
               <span className="font-sans">Chiến dịch: <strong className="text-ink">{previewContractDeal.campaignTitle}</strong></span>
             </div>
 
-            <div className="text-center space-y-1 border-b border-slate-100 pb-4">
-              <div className="font-semibold text-slate-900 uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-              <div className="text-2xs text-slate-500">Độc lập - Tự do - Hạnh phúc</div>
-              <h4 className="text-sm font-semibold text-slate-900 pt-2 uppercase">
+            <div className="text-center space-y-1 border-b border-line pb-4">
+              <div className="font-semibold text-ink">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+              <div className="text-2xs text-ink-3">Độc lập - Tự do - Hạnh phúc</div>
+              <h4 className="text-sm font-semibold text-ink pt-2">
                 HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU (BOOKING KOC/KOL)
               </h4>
-              <div className="font-mono text-2xs text-blue-600">
+              <div className="font-mono text-2xs text-accent">
                 Số: HĐ-B2C-2026/{previewContractDeal.dealCode}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                <div className="font-semibold text-slate-900">BÊN A (BÊN THUÊ DỊCH VỤ):</div>
+              <div className="p-4 rounded-xl bg-canvas border border-line/80 space-y-1">
+                <div className="font-semibold text-ink">BÊN A (BÊN THUÊ DỊCH VỤ):</div>
                 <div><strong>CÔNG TY CỔ PHẦN CÔNG NGHỆ UPBASE</strong></div>
                 <div>Mã số thuế: <span className="font-mono">0109876543</span></div>
                 <div>Đại diện: <strong>Bà Đặng Thị Yến Nhi</strong> — Giám Đốc Marketing B2C</div>
                 <div>Chuyên viên phụ trách (PIC): <strong>{previewContractDeal.bookingPic || previewContractDeal.assignedStaff}</strong></div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-1">
-                <div className="font-semibold text-slate-900">BÊN B (ĐỐI TÁC SÁNG TẠO / KOC):</div>
+              <div className="p-4 rounded-xl bg-accent-soft/50 border border-accent/80 space-y-1">
+                <div className="font-semibold text-ink">BÊN B (ĐỐI TÁC SÁNG TẠO / KOC):</div>
                 <div>Họ và tên pháp lý: <strong>{activeKoc.realName || activeKoc.stageName}</strong> (Kênh: @{activeKoc.channelId.replace(/^@/, '')})</div>
                 <div>Số CCCD / ĐKKD: <strong className="font-mono">{legalIdOf(activeKoc) || 'Chưa cập nhật'}</strong></div>
                 <div>Mã số thuế: <span className="font-mono">{activeKoc.taxCode || 'Chưa cập nhật'}</span></div>
@@ -3170,13 +3170,13 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-              <div className="font-semibold text-slate-900">ĐIỀU KHOẢN HỢP TÁC &amp; ĐỊNH MỨC THÙ LAO:</div>
-              <ul className="list-disc pl-4 space-y-1 text-2xs text-slate-600">
+            <div className="p-4 rounded-xl bg-canvas border border-line/80 space-y-2">
+              <div className="font-semibold text-ink">ĐIỀU KHOẢN HỢP TÁC &amp; ĐỊNH MỨC THÙ LAO:</div>
+              <ul className="list-disc pl-4 space-y-1 text-2xs text-ink-2">
                 <li>Bên B thực hiện sản xuất <strong>01 Video TikTok</strong> quảng bá sản phẩm theo đúng Brief và Kịch bản được duyệt.</li>
                 <li>Thời lượng video cam kết từ <strong>45s - 60s</strong>, gắn link giỏ hàng chính hãng của nhãn <strong>{previewContractDeal.brandName}</strong>.</li>
-                <li>Mức thù lao thỏa thuận trọn gói: <strong className="text-slate-900 font-mono text-xs">{formatVnd(previewContractDeal.totalValue || 0)}</strong> (Đã bao gồm thuế TNCN 10% do Bên A khấu trừ và nộp thay theo luật định).</li>
-                <li>Thực nhận sau thuế: <strong className="text-blue-600 font-mono text-xs">{formatVnd(Math.round((previewContractDeal.totalValue || 0) * 0.9))}</strong>.</li>
+                <li>Mức thù lao thỏa thuận trọn gói: <strong className="text-ink font-mono text-xs">{formatVnd(previewContractDeal.totalValue || 0)}</strong> (Đã bao gồm thuế TNCN 10% do Bên A khấu trừ và nộp thay theo luật định).</li>
+                <li>Thực nhận sau thuế: <strong className="text-accent font-mono text-xs">{formatVnd(Math.round((previewContractDeal.totalValue || 0) * 0.9))}</strong>.</li>
                 <li>Thời hạn thanh toán: Trong vòng <strong>07 ngày làm việc</strong> sau khi Video lên sóng đạt nghiệm thu và KOC hoàn tất đối soát link.</li>
               </ul>
             </div>
@@ -3206,20 +3206,20 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <span className="text-2xs text-slate-400 block font-sans">Thù lao Cast</span>
-                <strong className="text-slate-900">{formatVnd(selectedHistoryDeal.totalValue || 0)}</strong>
+              <div className="p-3 rounded-lg bg-canvas border border-line">
+                <span className="text-2xs text-ink-3 block font-sans">Thù lao Cast</span>
+                <strong className="text-ink">{formatVnd(selectedHistoryDeal.totalValue || 0)}</strong>
               </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <span className="text-2xs text-slate-400 block font-sans">Lượt xem</span>
-                <strong className="text-slate-900">{(selectedHistoryDeal.viewsCount || selectedHistoryDeal.views30 || 0).toLocaleString()}</strong>
+              <div className="p-3 rounded-lg bg-canvas border border-line">
+                <span className="text-2xs text-ink-3 block font-sans">Lượt xem</span>
+                <strong className="text-ink">{(selectedHistoryDeal.viewsCount || selectedHistoryDeal.views30 || 0).toLocaleString()}</strong>
               </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <span className="text-2xs text-slate-400 block font-sans">GMV mang về</span>
-                <strong className="text-emerald-700">{formatVnd(selectedHistoryDeal.affiliateGmv || selectedHistoryDeal.gmv30 || 0)}</strong>
+              <div className="p-3 rounded-lg bg-canvas border border-line">
+                <span className="text-2xs text-ink-3 block font-sans">GMV mang về</span>
+                <strong className="text-positive">{formatVnd(selectedHistoryDeal.affiliateGmv || selectedHistoryDeal.gmv30 || 0)}</strong>
               </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <span className="text-2xs text-slate-400 block font-sans">Đánh giá sao</span>
+              <div className="p-3 rounded-lg bg-canvas border border-line">
+                <span className="text-2xs text-ink-3 block font-sans">Đánh giá sao</span>
                 <strong className="text-ink font-mono inline-flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 fill-current text-warning" />
                   <span>{(selectedHistoryDeal.ratingScore || 5).toFixed(1)} / 5.0</span>
@@ -3227,21 +3227,21 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-semibold text-slate-700 block">Đánh giá từ Brand / Account Upbase:</label>
-              <div className="p-3 rounded-lg bg-slate-50 text-slate-600 text-xs italic border border-slate-100">
+            <div className="space-y-2">
+              <label className="font-semibold text-ink-2 block">Đánh giá từ Brand / Account Upbase:</label>
+              <div className="p-3 rounded-lg bg-canvas text-ink-2 text-xs italic border border-line">
                 &ldquo;{selectedHistoryDeal.brandFeedback || selectedHistoryDeal.accountComment || 'Video lên sóng đúng hạn, chỉ số tương tác tự nhiên tốt và tương tác giỏ hàng cao.'}&rdquo;
               </div>
             </div>
 
-            <div className="space-y-1.5 pt-2">
-              <label className="font-semibold text-slate-700 block">Phản hồi của KOC về chiến dịch này:</label>
+            <div className="space-y-2 pt-2">
+              <label className="font-semibold text-ink-2 block">Phản hồi của KOC về chiến dịch này:</label>
               <textarea
                 rows={2}
                 value={kocSelfFeedback}
                 onChange={(e) => setKocSelfFeedback(e.target.value)}
                 placeholder="Gửi cảm nhận về sản phẩm hoặc quá trình làm việc cùng nhãn..."
-                className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
+                className="w-full text-xs p-3 rounded-lg border border-line focus:outline-none focus:border-accent"
               />
               <div className="flex justify-end pt-1">
                 <Button
@@ -3282,17 +3282,17 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         }
       >
         <div className="text-center space-y-4">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 inline-flex flex-col items-center space-y-2">
-            <QrCode className="w-28 h-28 text-slate-800" />
-            <span className="text-2xs font-mono text-emerald-700 font-semibold">
+          <div className="p-4 rounded-xl bg-canvas border border-line inline-flex flex-col items-center space-y-2">
+            <QrCode className="w-28 h-28 text-ink" />
+            <span className="text-2xs font-mono text-positive font-semibold">
               Chuẩn chuyển khoản Napas 247
             </span>
           </div>
 
-          <div className="text-xs space-y-1 text-slate-700">
-            <div className="font-semibold text-slate-900 uppercase">{activeKoc.realName || activeKoc.stageName}</div>
-            <div className="font-mono text-sm font-semibold text-blue-600">{activeKoc.bankAccount || 'Chưa cập nhật STK'}</div>
-            <div className="text-slate-500">{activeKoc.bankName || 'Chưa cập nhật ngân hàng'}</div>
+          <div className="text-xs space-y-1 text-ink-2">
+            <div className="font-semibold text-ink">{activeKoc.realName || activeKoc.stageName}</div>
+            <div className="font-mono text-sm font-semibold text-accent">{activeKoc.bankAccount || 'Chưa cập nhật STK'}</div>
+            <div className="text-ink-3">{activeKoc.bankName || 'Chưa cập nhật ngân hàng'}</div>
           </div>
         </div>
       </Modal>
@@ -3322,39 +3322,39 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         <form onSubmit={handleSaveChannelMetrics} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
-              <label className="block text-slate-600 font-medium mb-1">Followers hiện tại</label>
+              <label className="block text-ink-2 font-medium mb-1">Followers hiện tại</label>
               <input
                 type="number"
                 value={metricsForm.followers}
                 onChange={(e) => setMetricsForm(prev => ({ ...prev, followers: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+                className="w-full px-3 py-2 border border-line rounded-lg font-mono text-xs"
               />
             </div>
             <div>
-              <label className="block text-slate-600 font-medium mb-1">View trung bình / video</label>
+              <label className="block text-ink-2 font-medium mb-1">View trung bình / video</label>
               <input
                 type="number"
                 value={metricsForm.avgViews}
                 onChange={(e) => setMetricsForm(prev => ({ ...prev, avgViews: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+                className="w-full px-3 py-2 border border-line rounded-lg font-mono text-xs"
               />
             </div>
             <div>
-              <label className="block text-slate-600 font-medium mb-1">GMV Kênh 30 ngày (VNĐ)</label>
+              <label className="block text-ink-2 font-medium mb-1">GMV Kênh 30 ngày (VNĐ)</label>
               <input
                 type="number"
                 value={metricsForm.tiktokGmv30d}
                 onChange={(e) => setMetricsForm(prev => ({ ...prev, tiktokGmv30d: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+                className="w-full px-3 py-2 border border-line rounded-lg font-mono text-xs"
               />
             </div>
             <div>
-              <label className="block text-slate-600 font-medium mb-1">GPM (GMV / 1.000 views)</label>
+              <label className="block text-ink-2 font-medium mb-1">GPM (GMV / 1.000 views)</label>
               <input
                 type="number"
                 value={metricsForm.gpm}
                 onChange={(e) => setMetricsForm(prev => ({ ...prev, gpm: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+                className="w-full px-3 py-2 border border-line rounded-lg font-mono text-xs"
               />
             </div>
           </div>
@@ -3386,28 +3386,28 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         {negotiatingDeal && (
           <div className="space-y-3 text-xs">
             <div>
-              <span className="text-slate-500">Chiến dịch:</span> <strong className="text-slate-800">{negotiatingDeal.campaignTitle}</strong>
+              <span className="text-ink-3">Chiến dịch:</span> <strong className="text-ink">{negotiatingDeal.campaignTitle}</strong>
             </div>
 
             <div>
-              <label className="block text-slate-600 font-semibold mb-1">Mức thù lao mong muốn (VND)</label>
+              <label className="block text-ink-2 font-semibold mb-1">Mức thù lao mong muốn (VND)</label>
               <input
                 type="number"
                 step="500000"
                 value={counterRate}
                 onChange={(e) => setCounterRate(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono font-semibold focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg text-sm font-mono font-semibold focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-slate-600 font-semibold mb-1">Ghi chú gửi Account Upbase</label>
+              <label className="block text-ink-2 font-semibold mb-1">Ghi chú gửi Account Upbase</label>
               <textarea
                 rows={3}
                 placeholder="Lý do đề xuất..."
                 value={counterNote}
                 onChange={(e) => setCounterNote(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg text-xs focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
           </div>
@@ -3441,7 +3441,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <select
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-xs focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg bg-white text-xs focus:outline-none"
             >
               <option value="Lệch định hướng kênh / không phù hợp sản phẩm">Lệch định hướng kênh / không phù hợp sản phẩm</option>
               <option value="Đã kẹt lịch air / không kịp timeline tháng này">Đã kẹt lịch air / không kịp timeline tháng này</option>
@@ -3484,36 +3484,36 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Link Video Demo (Google Drive / TikTok) *</label>
+              <label className="block text-ink-2 font-semibold mb-1">Link Video Demo (Google Drive / TikTok) *</label>
               <input
                 type="url"
                 required
                 placeholder="https://drive.google.com/... hoặc https://vt.tiktok.com/..."
                 value={submissionForm.videoUrl}
                 onChange={(e) => setSubmissionForm(prev => ({ ...prev, videoUrl: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg text-xs focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Mã ủy quyền Spark Ads Code (TikTok)</label>
+              <label className="block text-ink-2 font-semibold mb-1">Mã ủy quyền Spark Ads Code (TikTok)</label>
               <input
                 type="text"
                 placeholder="VD: 7412894723984729384..."
                 value={submissionForm.sparkAdsCode}
                 onChange={(e) => setSubmissionForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg font-mono text-xs focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Ghi chú cho Brand / Content Lead</label>
+              <label className="block text-ink-2 font-semibold mb-1">Ghi chú cho Brand / Content Lead</label>
               <textarea
                 rows={2}
                 placeholder="Lưu ý về góc quay, thời điểm xuất hiện sản phẩm..."
                 value={submissionForm.notes}
                 onChange={(e) => setSubmissionForm(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg text-xs focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
           </form>
@@ -3553,32 +3553,32 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
       >
         <div className="space-y-3 text-xs">
           <div>
-            <label className="block text-slate-600 font-semibold mb-1">Họ tên người nhận</label>
+            <label className="block text-ink-2 font-semibold mb-1">Họ tên người nhận</label>
             <input
               type="text"
               value={addressForm.recipient}
               onChange={(e) => setAddressForm(prev => ({ ...prev, recipient: e.target.value }))}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none text-xs"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-slate-600 font-semibold mb-1">Số điện thoại</label>
+            <label className="block text-ink-2 font-semibold mb-1">Số điện thoại</label>
             <input
               type="tel"
               value={addressForm.phone}
               onChange={(e) => setAddressForm(prev => ({ ...prev, phone: e.target.value }))}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none text-xs"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-slate-600 font-semibold mb-1">Địa chỉ chi tiết</label>
+            <label className="block text-ink-2 font-semibold mb-1">Địa chỉ chi tiết</label>
             <textarea
               rows={2}
               value={addressForm.address}
               onChange={(e) => setAddressForm(prev => ({ ...prev, address: e.target.value }))}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none text-xs"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none text-xs"
             />
           </div>
         </div>

@@ -1,14 +1,13 @@
 /**
  * Script nạp và chuyển đổi toàn diện dữ liệu sang Supabase PostgreSQL thực tế:
- * 1. Nhân sự B2C & Phân cấp phê duyệt (User table)
- * 2. Gian hàng B2C & Phân công nhân sự (StorePortfolio & StoreStaffAssignment)
- * 3. Master Catalog & Access Policy RBAC (AppSharedRecord)
- * 4. Hồ sơ 42 Thương hiệu B2C (BrandProfileRecord)
- * 5. Hồ sơ hợp đồng & Chụp mẫu Word pháp chế (ContractHubRecord & ContractTemplateSnapshot)
- * 6. KOC Profiles & Booking Deals (KocProfile & BookingDeal)
+ * 1. Gian hàng B2C (StorePortfolio)
+ * 2. Master Catalog & Access Policy RBAC (AppSharedRecord)
+ * 3. Hồ sơ 42 Thương hiệu B2C (BrandProfileRecord)
+ * 4. Hồ sơ hợp đồng & Chụp mẫu Word pháp chế (ContractHubRecord & ContractTemplateSnapshot)
+ * 5. KOC Profiles & Lịch sử hợp tác (KocProfile & AppSharedRecord)
  */
 
-import { PrismaClient, Role, ServiceModel, AccountStatus, SalaryGrade, CreatorSegment, KocCategory, StoreAssignmentRole } from '@prisma/client';
+import { PrismaClient, ServiceModel, AccountStatus, SalaryGrade, CreatorSegment, KocCategory } from '@prisma/client';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -16,10 +15,13 @@ import { DEFAULT_MASTER_CATALOG } from '../src/lib/masterCatalog';
 import { defaultPolicy } from '../src/lib/server/accessPolicy';
 import { getFallbackProfiles } from '../src/lib/brands/store';
 import { REAL_B2C_69_STORES } from '../src/lib/realB2cPlanData';
-import { USERS, INITIAL_KOCS, INITIAL_DEALS, INITIAL_STORE_PORTFOLIOS } from '../src/lib/mockData';
+import { INITIAL_KOCS, INITIAL_DEALS as SAMPLE_DEALS, INITIAL_STORE_PORTFOLIOS } from '../src/lib/mockData';
+import { REAL_KOC_COOPERATION_DEALS } from '../src/lib/realKocDealsData';
 import { REAL_LARK_LISTINGS_BY_BOARD_KEY, REAL_LARK_LISTINGS_SYNC_VERSION } from '../src/lib/realLarkListings2026';
 import { loadStaffSheetCollection } from '../src/lib/staffBrandListingSheet';
 import { loadApprovedBookingList } from '../src/lib/approvedBookingList';
+
+const INITIAL_DEALS = [...SAMPLE_DEALS, ...REAL_KOC_COOPERATION_DEALS];
 
 const prisma = new PrismaClient();
 
@@ -27,90 +29,9 @@ async function main() {
   console.log('🚀 Bắt đầu chuyển đổi dữ liệu sang Supabase PostgreSQL...');
 
   // =========================================================================
-  // 1. SEED / UPSERT USERS (Cơ cấu phòng B2C)
+  // 1. STORE PORTFOLIO (69 Gian hàng B2C)
   // =========================================================================
-  console.log('\n--- 1. Cập nhật nhân sự phòng B2C (User table) ---');
-  
-  // CEO
-  const ceo = await prisma.user.upsert({
-    where: { email: 'giangdv@upbase.vn' },
-    update: { name: 'Đỗ Văn Giang', role: Role.HEAD_OF_B2C, team: 'Ban Giám Đốc' },
-    create: {
-      id: 'user-admin-giang',
-      email: 'giangdv@upbase.vn',
-      name: 'Đỗ Văn Giang',
-      role: Role.HEAD_OF_B2C,
-      team: 'Ban Giám Đốc',
-      avatarUrl: 'DG',
-    },
-  });
-
-  // Lead B2C
-  const leadB2c = await prisma.user.upsert({
-    where: { email: 'nhidty@upbase.vn' },
-    update: { name: 'Đặng Thị Yến Nhi', role: Role.LEAD_B2C, team: 'Ban Quản Lý B2C', leadId: ceo.id },
-    create: {
-      id: 'user-yen-nhi',
-      email: 'nhidty@upbase.vn',
-      name: 'Đặng Thị Yến Nhi',
-      role: Role.LEAD_B2C,
-      team: 'Ban Quản Lý B2C',
-      leadId: ceo.id,
-      avatarUrl: 'YN',
-    },
-  });
-
-  // Leader Booking (Nguyễn Thị Ngọc Tâm)
-  const leaderTam = await prisma.user.upsert({
-    where: { email: 'tamntn@upbase.vn' },
-    update: { name: 'Nguyễn Thị Ngọc Tâm', role: Role.MANAGER, team: 'Nhóm 8 Gian Hàng Chiến Lược', leadId: leadB2c.id },
-    create: {
-      id: 'user-ngoc-tam',
-      email: 'tamntn@upbase.vn',
-      name: 'Nguyễn Thị Ngọc Tâm',
-      role: Role.MANAGER,
-      team: 'Nhóm 8 Gian Hàng Chiến Lược',
-      leadId: leadB2c.id,
-      avatarUrl: 'NT',
-    },
-  });
-
-  // Chuyên viên B2C
-  const specialists = [
-    { email: 'phuongthao@upbase.vn', name: 'Lê Phương Thảo', team: 'Booking Team 1', leadId: leaderTam.id },
-    { email: 'nhuquynh@upbase.vn', name: 'Lương Thị Như Quỳnh', team: 'Booking Team 1', leadId: leaderTam.id },
-    { email: 'thanhhai@upbase.vn', name: 'Lê Thanh Hải', team: 'Booking Team 1', leadId: leaderTam.id },
-    { email: 'thuhang@upbase.vn', name: 'Phạm Thị Thu Hằng', team: 'Booking Team 2', leadId: leadB2c.id },
-    { email: 'hailong@upbase.vn', name: 'Hoàng Hải Long', team: 'Booking Team 2', leadId: leadB2c.id },
-    { email: 'haiphuong@upbase.vn', name: 'Trần Hải Phượng', team: 'Booking Team 2', leadId: leadB2c.id },
-    { email: 'dieuanh@upbase.vn', name: 'Phan Diệu Ánh', team: 'Booking Team 3', leadId: leadB2c.id },
-    { email: 'bichlien@upbase.vn', name: 'Đinh Thị Bích Liên', team: 'Booking Team 2', leadId: leadB2c.id },
-    { email: 'ngocanh@upbase.vn', name: 'Bùi Ngọc Ánh', team: 'Booking Team 3', leadId: leadB2c.id },
-    { email: 'dieuthuy@upbase.vn', name: 'Hoàng Diệu Thùy', team: 'Key Visual / SIS', leadId: leadB2c.id },
-    { email: 'hoailam@upbase.vn', name: 'Vũ Hoài Lâm', team: 'Booking Team 3', leadId: leadB2c.id },
-    { email: 'maianh@upbase.vn', name: 'Nguyễn Thị Mai Anh', team: 'Booking Team 3', leadId: leadB2c.id },
-    { email: 'haott@upbase.vn', name: 'Trần Thị Hảo', team: 'FOC Free Samples', leadId: leadB2c.id },
-  ];
-
-  for (const s of specialists) {
-    await prisma.user.upsert({
-      where: { email: s.email },
-      update: { name: s.name, role: Role.BOOKING_MEMBER, team: s.team, leadId: s.leadId },
-      create: {
-        email: s.email,
-        name: s.name,
-        role: Role.BOOKING_MEMBER,
-        team: s.team,
-        leadId: s.leadId,
-      },
-    });
-  }
-  console.log(`✅ Đã đồng bộ ${specialists.length + 3} nhân sự B2C chuẩn vào bảng User.`);
-
-  // =========================================================================
-  // 2. STORE PORTFOLIO & ASSIGNMENTS (69 Gian hàng B2C)
-  // =========================================================================
-  console.log('\n--- 2. Cập nhật 69 Gian hàng B2C (StorePortfolio table) ---');
+  console.log('\n--- 1. Cập nhật 69 Gian hàng B2C (StorePortfolio table) ---');
   for (const store of REAL_B2C_69_STORES) {
     await prisma.storePortfolio.upsert({
       where: { storeName: store.storeName },
@@ -178,10 +99,10 @@ async function main() {
   console.log(`✅ Đã đồng bộ toàn bộ 69 gian hàng B2C vào StorePortfolio.`);
 
   // =========================================================================
-  // 3. MASTER CATALOG & ACCESS POLICY (AppSharedRecord)
+  // 2. MASTER CATALOG & ACCESS POLICY (AppSharedRecord)
   // =========================================================================
-  console.log('\n--- 3. Đồng bộ Master Catalog & Access Policy vào AppSharedRecord ---');
-  
+  console.log('\n--- 2. Đồng bộ Master Catalog & Access Policy vào AppSharedRecord ---');
+
   await prisma.$executeRaw`
     INSERT INTO "AppSharedRecord" (key, revision, data)
     VALUES ('master-catalog', 1, ${JSON.stringify(DEFAULT_MASTER_CATALOG)}::jsonb)
@@ -196,9 +117,9 @@ async function main() {
   console.log('✅ Đã lưu trữ master-catalog và access-policy vào PostgreSQL.');
 
   // =========================================================================
-  // 4. BRAND PROFILES (BrandProfileRecord)
+  // 3. BRAND PROFILES (BrandProfileRecord)
   // =========================================================================
-  console.log('\n--- 4. Kiểm tra và bổ sung BrandProfileRecord (42 Brands) ---');
+  console.log('\n--- 3. Kiểm tra và bổ sung BrandProfileRecord (42 Brands) ---');
   const profiles = getFallbackProfiles();
   const existingRecords = await prisma.brandProfileRecord.findMany({ select: { key: true } });
   const existingKeys = new Set(existingRecords.map(r => r.key));
@@ -217,11 +138,10 @@ async function main() {
   console.log(`✅ Tổng BrandProfileRecord trong DB: ${totalBrandProfiles} (${missing.length} bản ghi mới thêm).`);
 
   // =========================================================================
-  // 5. CONTRACT HUB & TEMPLATE SNAPSHOTS
+  // 4. CONTRACT HUB & TEMPLATE SNAPSHOTS
   // =========================================================================
-  console.log('\n--- 5. Chuyển đổi Hợp đồng & Snapshot mẫu Word sang PostgreSQL ---');
-  
-  // A. Lưu hồ sơ hợp đồng
+  console.log('\n--- 4. Chuyển đổi Hợp đồng & Snapshot mẫu Word sang PostgreSQL ---');
+
   const contractJsonPath = path.resolve(process.cwd(), '.contract-data/records.json');
   if (existsSync(contractJsonPath)) {
     const contracts = JSON.parse(readFileSync(contractJsonPath, 'utf8'));
@@ -231,7 +151,6 @@ async function main() {
         VALUES (${c.id}, ${c.revision || 1}, ${JSON.stringify(c)}::jsonb, NOW())
         ON CONFLICT (id) DO UPDATE SET data = ${JSON.stringify(c)}::jsonb, revision = ${c.revision || 1}
       `;
-      // Nếu có signing
       if (Array.isArray(c.signing)) {
         for (const s of c.signing) {
           if (s.documentId) {
@@ -247,7 +166,6 @@ async function main() {
     console.log(`✅ Đã nạp ${contracts.length} hồ sơ hợp đồng vào ContractHubRecord.`);
   }
 
-  // B. Snapshot các mẫu Word trong Quản lý hợp đồng vào ContractTemplateSnapshot
   const templateDir = path.resolve(process.cwd(), '..', 'Quản lý hợp đồng');
   const SOURCES = [
     ['IND-HD', '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'],
@@ -277,9 +195,9 @@ async function main() {
   console.log(`✅ Đã lưu ${snapCount}/8 bản mẫu Word gốc vào ContractTemplateSnapshot trong DB.`);
 
   // =========================================================================
-  // 6. KOC PROFILES & BOOKING DEALS (274 KOC Chủ Lực & 930+ Lịch sử hợp tác)
+  // 5. KOC PROFILES & LỊCH SỬ HỢP TÁC
   // =========================================================================
-  console.log('\n--- 6. Đồng bộ Danh bạ KOC Chủ lực & Lịch sử hợp tác vào PostgreSQL ---');
+  console.log('\n--- 5. Đồng bộ Danh bạ KOC Chủ lực & Lịch sử hợp tác vào PostgreSQL ---');
   let kocCount = 0;
   for (const koc of INITIAL_KOCS) {
     const anyKoc = koc as any;
@@ -335,14 +253,10 @@ async function main() {
         phone: anyKoc.phone || null,
         zalo: anyKoc.zalo || anyKoc.phone || null,
         email: anyKoc.email || null,
-        cccdNumber: anyKoc.cccd || null,
+        cccd: anyKoc.cccd || null,
         taxCode: anyKoc.taxCode || null,
         bankName: anyKoc.bankName || null,
         bankAccount: anyKoc.bankAccount || null,
-        bankHolderName: anyKoc.companyName || anyKoc.realName || null,
-        isOcrVerified: Boolean(anyKoc.isOcrVerified),
-        totalDeals: anyKoc.totalPastDeals || 0,
-        avgRoi: anyKoc.historicalRoi || 0,
         reliabilityScore: anyKoc.reliabilityScore || 9.0,
       },
       create: {
@@ -362,14 +276,10 @@ async function main() {
         phone: anyKoc.phone || null,
         zalo: anyKoc.zalo || anyKoc.phone || null,
         email: anyKoc.email || null,
-        cccdNumber: anyKoc.cccd || null,
+        cccd: anyKoc.cccd || null,
         taxCode: anyKoc.taxCode || null,
         bankName: anyKoc.bankName || null,
         bankAccount: anyKoc.bankAccount || null,
-        bankHolderName: anyKoc.companyName || anyKoc.realName || null,
-        isOcrVerified: Boolean(anyKoc.isOcrVerified),
-        totalDeals: anyKoc.totalPastDeals || 0,
-        avgRoi: anyKoc.historicalRoi || 0,
         reliabilityScore: anyKoc.reliabilityScore || 9.0,
       },
     });
@@ -385,9 +295,9 @@ async function main() {
   console.log(`✅ Đã đồng bộ metadata KOC (${INITIAL_KOCS.length} KOC & ${INITIAL_DEALS.length} Deal lịch sử hợp tác) vào PostgreSQL.`);
 
   // =========================================================================
-  // 7. LARK BASE 3.1 LISTING KOC, STAFF SHEETS & APPROVED BOOKING LIST
+  // 6. LARK BASE 3.1 LISTING KOC, STAFF SHEETS & APPROVED BOOKING LIST
   // =========================================================================
-  console.log('\n--- 7. Đồng bộ Bảng 3.1 Listing KOC (59 Kế hoạch / 2.561 KOC) vào AppSharedRecord PostgreSQL ---');
+  console.log('\n--- 6. Đồng bộ Bảng 3.1 Listing KOC (59 Kế hoạch / 2.561 KOC) vào AppSharedRecord PostgreSQL ---');
   let boardCount = 0;
   let listingItemCount = 0;
   for (const [boardKey, items] of Object.entries(REAL_LARK_LISTINGS_BY_BOARD_KEY)) {

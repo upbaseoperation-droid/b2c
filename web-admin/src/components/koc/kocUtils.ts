@@ -40,18 +40,18 @@ export function inferLegalTypeFromText(holderName?: string, taxAccountType?: str
   const tax = (taxAccountType || '').toLowerCase();
   const holder = (holderName || '').toUpperCase();
   if (
-    tax.includes('doanh nghiệp') ||
-    tax.includes('vat') ||
-    /CONG TY|CÔNG TY|CTY|TNHH|CO PHAN|CỔ PHẦN|MEDIA|NETWORK|ENTERTAINMENT|AGENCY|GROUP/.test(holder)
-  ) {
-    return 'COMPANY';
-  }
-  if (
     tax.includes('hộ kinh doanh') ||
     tax.includes('hkd') ||
     /HO KINH DOANH|HỘ KINH DOANH|HKD/.test(holder)
   ) {
     return 'HOUSEHOLD';
+  }
+  if (
+    tax.includes('doanh nghiệp') ||
+    tax.includes('vat') ||
+    /CONG TY|CÔNG TY|CTY|TNHH|CO PHAN|CỔ PHẦN|MEDIA|NETWORK|ENTERTAINMENT|AGENCY|GROUP/.test(holder)
+  ) {
+    return 'COMPANY';
   }
   return 'INDIVIDUAL';
 }
@@ -369,7 +369,6 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
       }
 
       const hasSignedContract = Boolean(k.contractDriveUrl) && idx === 0;
-      const numCode = k.id.replace(/\D/g, '') || '01';
       const holder = p.holderName || k.companyName || k.realName || k.stageName;
       const bankAcc = p.bankAccount || (idx === 0 ? k.bankAccount : undefined);
 
@@ -408,16 +407,9 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
         bankAccount: bankAcc,
         bankAccountNumber: bankAcc,
         bankHolderName: holder,
-        isOcrVerified: idx === 0 ? Boolean(k.isOcrVerified) : true,
-        frameworkContractCode:
-          hasSignedContract || (p.dealsCount && p.dealsCount > 0)
-            ? `HĐNT-2026-${numCode.padStart(4, '0')}-${idx + 1}`
-            : undefined,
-        frameworkContractStatus: hasSignedContract
-          ? 'ĐÃ_KÝ'
-          : p.dealsCount && p.dealsCount > 0
-            ? 'ĐÃ_KÝ'
-            : 'CHƯA_KÝ',
+        isOcrVerified: idx === 0 ? Boolean(k.isOcrVerified) : false,
+        frameworkContractCode: undefined,
+        frameworkContractStatus: hasSignedContract ? 'ĐÃ_KÝ' : 'CHƯA_KÝ',
         frameworkContractDriveUrl: idx === 0 ? k.contractDriveUrl : undefined,
         dealsUsedCount: p.dealsCount || (idx === 0 ? k.totalPastDeals : undefined),
         latestBrandUsed: p.latestBrand || (idx === 0 ? k.brandName : undefined),
@@ -441,8 +433,7 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
         : lType === 'HOUSEHOLD'
           ? 'HKD xuất hóa đơn'
           : '(Thuế TNCN 10%) Tài khoản cá nhân');
-    const numCode = k.id.replace(/\D/g, '') || '01';
-    const hasSigned = Boolean(k.contractDriveUrl || (k.totalPastDeals && k.totalPastDeals > 0 && primaryLegalId));
+    const hasSigned = Boolean(k.contractDriveUrl);
     const holder =
       (lType !== 'INDIVIDUAL' ? k.companyName || k.realName : k.realName) || k.stageName;
 
@@ -487,7 +478,7 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
       bankAccountNumber: k.bankAccount,
       bankHolderName: holder,
       isOcrVerified: Boolean(k.isOcrVerified),
-      frameworkContractCode: hasSigned ? `HĐNT-2026-${numCode.padStart(4, '0')}-1` : undefined,
+      frameworkContractCode: undefined,
       frameworkContractStatus: hasSigned ? 'ĐÃ_KÝ' : 'CHƯA_KÝ',
       frameworkContractDriveUrl: k.contractDriveUrl,
       dealsUsedCount: k.totalPastDeals || undefined,

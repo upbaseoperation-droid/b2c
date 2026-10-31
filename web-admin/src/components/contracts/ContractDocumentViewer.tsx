@@ -424,7 +424,7 @@ export function ContractDocumentViewer({
         title={`${fieldTitle}${f.required ? ' (Bắt buộc điền)' : ' (Tùy chọn)'}${onSelectField ? ' · Bấm để nhập' : ''}`}
         className={`field-mark inline-flex items-center gap-1 rounded px-2 py-0.5 font-sans text-2xs leading-snug transition-colors ${
           f.required
-            ? 'bg-warning-soft/75 text-warning-strong border border-dashed border-warning font-medium'
+            ? 'bg-warning-soft/75 text-warning border border-dashed border-warning font-medium'
             : 'bg-sunken text-ink-2 border border-dashed border-line-strong'
         } ${isSelected ? 'ring-2 ring-accent bg-warning-soft' : ''} ${
           onSelectField ? 'cursor-pointer hover:border-accent' : ''
@@ -475,7 +475,7 @@ export function ContractDocumentViewer({
               </span>
             )}
             {isLegal && (
-              <span className="px-2 py-0.5 rounded bg-warning-soft text-warning-strong font-medium">
+              <span className="px-2 py-0.5 rounded bg-warning-soft text-warning font-medium">
                 Pháp chế duyệt
               </span>
             )}
@@ -575,7 +575,7 @@ export function ContractDocumentViewer({
                                   ? 'text-positive'
                                   : signer.action === 3
                                     ? 'text-critical'
-                                    : 'text-warning-strong'
+                                    : 'text-warning'
                               }`}
                             >
                               <span className="inline-flex items-center gap-1">
@@ -1086,7 +1086,7 @@ export function ContractDocumentViewer({
 
           {clauseDiffs.length > 0 && (
             <>
-              <span className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-md border border-warning/40 bg-warning-soft/70 text-warning-strong font-medium">
+              <span className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-md border border-warning/40 bg-warning-soft/70 text-warning font-medium">
                 {clauseDiffs.length} điều khoản sửa đổi
               </span>
               <button
@@ -1109,7 +1109,7 @@ export function ContractDocumentViewer({
                 className={`inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-md border ${
                   missingRequired.length === 0
                     ? 'border-positive/30 bg-positive-soft/60 text-positive font-medium'
-                    : 'border-warning/40 bg-warning-soft/70 text-warning-strong font-medium'
+                    : 'border-warning/40 bg-warning-soft/70 text-warning font-medium'
                 }`}
               >
                 {missingRequired.length === 0 ? (
@@ -1121,7 +1121,7 @@ export function ContractDocumentViewer({
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="w-3.5 h-3.5 text-warning-strong" />
+                    <AlertCircle className="w-3.5 h-3.5 text-warning" />
                     {compactToolbar
                       ? `Đã điền ${requiredFields.length - missingRequired.length}/${requiredFields.length} mục bắt buộc`
                       : `Còn ${missingRequired.length} mục bắt buộc chưa điền (${requiredFields.length - missingRequired.length}/${requiredFields.length})`}

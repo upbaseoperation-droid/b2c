@@ -188,7 +188,7 @@ export function StoreHandoverDialog({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMessage && (
-          <div className="p-2.5 rounded-md bg-critical-soft text-critical text-2xs font-medium">
+          <div className="p-3 rounded-md bg-critical-soft text-critical text-2xs font-medium">
             {errorMessage}
           </div>
         )}
@@ -214,15 +214,15 @@ export function StoreHandoverDialog({
         </div>
 
         <Field label={`Nhân viên hỗ trợ cùng thực thi (${supportStaff.length} nhân sự)`}>
-          <div className="space-y-2 rounded-lg border border-line bg-canvas p-2.5">
+          <div className="space-y-2 rounded-lg border border-line bg-canvas p-3">
             {supportStaff.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-line">
+              <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-line">
                 {supportStaff.map(name => (
                   <span
                     key={name}
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent-soft text-accent border border-accent/20 text-xs font-medium"
                   >
-                    <Users className="w-3 h-3 shrink-0" />
+                    <Users className="w-3.5 h-3.5 shrink-0" />
                     <span>{name}</span>
                     <button
                       type="button"
@@ -230,13 +230,13 @@ export function StoreHandoverDialog({
                       className="ml-0.5 hover:text-critical cursor-pointer"
                       title={`Gỡ ${name} khỏi danh sách hỗ trợ`}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
                 ))}
               </div>
             ) : (
-              <div className="text-2xs text-ink-3 pb-1.5 border-b border-line">
+              <div className="text-2xs text-ink-3 pb-2 border-b border-line">
                 Chưa chọn nhân viên hỗ trợ. Tích chọn một hoặc nhiều nhân sự bên dưới.
               </div>
             )}
@@ -248,11 +248,11 @@ export function StoreHandoverDialog({
                 value={supportSearch}
                 onChange={e => setSupportSearch(e.target.value)}
                 placeholder="Tìm tên nhân viên hỗ trợ..."
-                className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                className="w-full pl-8 pr-3 py-2 text-xs bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
               />
             </div>
 
-            <div className="max-h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+            <div className="max-h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
               {filteredSupportOptions.map(s => {
                 const isSelected = supportStaff.some(
                   n => n.toLowerCase() === s.name.toLowerCase()
@@ -262,7 +262,7 @@ export function StoreHandoverDialog({
                     key={s.id}
                     type="button"
                     onClick={() => toggleSupportStaff(s.name)}
-                    className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-left text-xs transition cursor-pointer ${
+                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-left text-xs transition cursor-pointer ${
                       isSelected
                         ? 'bg-accent-soft border-accent/30 text-accent font-semibold'
                         : 'bg-surface border-line text-ink hover:bg-sunken'
@@ -281,7 +281,7 @@ export function StoreHandoverDialog({
                           : 'border-line-strong bg-surface'
                       }`}
                     >
-                      {isSelected && <Check className="w-3 h-3" />}
+                      {isSelected && <Check className="w-3.5 h-3.5" />}
                     </span>
                   </button>
                 );

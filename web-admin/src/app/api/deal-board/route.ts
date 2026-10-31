@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   const canViewFullPii =
-    ['FINANCE', 'ADMIN', 'BRAND_DIRECTOR'].includes(String(actor.role || '')) &&
+    (['FINANCE', 'LEGAL', 'ADMIN', 'MANAGER'].includes(String(actor.role || '')) ||
+      Boolean(actor.permissions?.includes('ALL_PERMISSIONS')) ||
+      Boolean(actor.permissions?.includes('canApprovePayment'))) &&
     !String(actor.role || '').includes('_PARTNER') &&
     !actor.partnerType;
   const fetchAll = request.nextUrl.searchParams.get('all') === '1';

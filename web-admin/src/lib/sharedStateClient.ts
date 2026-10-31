@@ -2,12 +2,43 @@
  * Shared State Client
  * Module client đồng bộ dữ liệu hai chiều giữa localStorage và PostgreSQL thông qua /api/shared-state (AppSharedRecord).
  */
+import {
+  isSyntheticMultiPlatformSeedItem,
+  isSyntheticMultiPlatformSeedReup,
+} from './multiPlatformListing';
+import {
+  isSyntheticApprovedBookingItem,
+  recalculateApprovedBookingItem,
+  type ApprovedBookingListItem,
+} from './approvedBookingList';
+import { isSyntheticBrandMonthlyPlanItem } from './monthlyPlanData';
+
+function sanitizeClientSharedState(dbKey: SharedStateDbKey, data: unknown): unknown {
+  if (!Array.isArray(data)) return data;
+  if (dbKey === 'multi-platform-listings-v1') {
+    return data.filter((item) => !isSyntheticMultiPlatformSeedItem(item));
+  }
+  if (dbKey === 'multi-platform-reups-v1') {
+    return data.filter((item) => !isSyntheticMultiPlatformSeedReup(item));
+  }
+  if (dbKey === 'approved-booking-list-v2') {
+    return data
+      .filter((item) => !isSyntheticApprovedBookingItem(item))
+      .map((item) => recalculateApprovedBookingItem(item as ApprovedBookingListItem));
+  }
+  if (dbKey === 'brand-monthly-plans-v1') {
+    return data.filter((item) => !isSyntheticBrandMonthlyPlanItem(item));
+  }
+  return data;
+}
 
 export type SharedStateDbKey =
   | 'brand-monthly-plans-v1'
   | 'store-air-plans-v1'
   | 'approved-booking-list-v2'
   | 'staff-brand-listing-sheets-v1'
+  | 'multi-platform-listings-v1'
+  | 'multi-platform-reups-v1'
   | 'video-acceptance-screenshots-v1'
   | 'store-overrides-v1'
   | 'sla-tasks-v1'
@@ -41,9 +72,17 @@ export const SHARED_STATE_REGISTRY: Record<SharedStateDbKey, SharedStateMapping>
     aliasEvents: ['upbase-approved-booking-list-updated'],
   },
   'staff-brand-listing-sheets-v1': {
-    localStorageKey: 'upbase_b2c_staff_brand_listing_sheets_v1',
+    localStorageKey: 'upbase_b2c_staff_brand_listing_sheets_v2',
     eventName: 'upbase:staff-brand-listing-sheet-updated',
     aliasEvents: ['upbase-staff-brand-sheet-updated'],
+  },
+  'multi-platform-listings-v1': {
+    localStorageKey: 'upbase_b2c_multi_platform_listings_v1',
+    eventName: 'upbase:multi-platform-listings-updated',
+  },
+  'multi-platform-reups-v1': {
+    localStorageKey: 'upbase_b2c_multi_platform_reups_v1',
+    eventName: 'upbase:multi-platform-reups-updated',
   },
   'video-acceptance-screenshots-v1': {
     localStorageKey: 'upbase_b2c_video_acceptance_screenshots_v1',
@@ -158,7 +197,7 @@ export async function hydrateAllSharedStatesFromDb(): Promise<
         rec.data !== undefined
       ) {
         try {
-          let dataToStore = rec.data;
+          let dataToStore = sanitizeClientSharedState(dbKey, rec.data);
           if (dbKey === 'video-acceptance-screenshots-v1' && Array.isArray(dataToStore)) {
             dataToStore = dataToStore.slice(0, 40);
           }
@@ -166,9 +205,12 @@ export async function hydrateAllSharedStatesFromDb(): Promise<
           if (dbKey === 'sow-point-policies-v1') {
             window.localStorage.setItem('upbase_b2c_sow_point_policy_v1', JSON.stringify(dataToStore));
           }
-          window.dispatchEvent(new CustomEvent(cfg.eventName, { detail: rec.data }));
+          if (dbKey === 'staff-brand-listing-sheets-v1') {
+            window.dispatchEvent(new CustomEvent('upbase:staff-sheet-db-hydrated', { detail: dataToStore }));
+          }
+          window.dispatchEvent(new CustomEvent(cfg.eventName, { detail: dataToStore }));
           for (const alias of cfg.aliasEvents || []) {
-            window.dispatchEvent(new CustomEvent(alias, { detail: rec.data }));
+            window.dispatchEvent(new CustomEvent(alias, { detail: dataToStore }));
           }
         } catch {
           // Bỏ qua lỗi quota trình duyệt
@@ -180,8 +222,11 @@ export async function hydrateAllSharedStatesFromDb(): Promise<
           if (!raw && dbKey === 'sow-point-policies-v1') {
             raw = window.localStorage.getItem('upbase_b2c_sow_point_policy_v1');
           }
+          if (!raw && dbKey === 'staff-brand-listing-sheets-v1') {
+            raw = window.localStorage.getItem('upbase_b2c_staff_brand_listing_sheets_v1');
+          }
           if (raw) {
-            const parsed = JSON.parse(raw);
+            const parsed = sanitizeClientSharedState(dbKey, JSON.parse(raw));
             if (parsed !== null && parsed !== undefined) {
               initialBackfill[dbKey] = parsed;
             }

@@ -310,7 +310,7 @@ export function DashboardStaffReport({
               />
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-2xs text-ink-2">
                 {scatter.counts.map((q) => (
-                  <span key={q.key} className="flex items-center gap-1.5">
+                  <span key={q.key} className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ background: q.color }} />
                     {q.label} ({q.n})
                   </span>

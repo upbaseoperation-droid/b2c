@@ -261,7 +261,7 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
       />
 
       {/* Thanh điều khiển nhập liệu tuần & API phát sinh mới */}
-      <div className="bg-surface border border-line rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-surface border border-line rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {!targetKoc ? (
             <Tabs
@@ -296,7 +296,7 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-sunken px-2 py-1 rounded-lg border border-line">
+          <div className="flex items-center gap-2 bg-sunken px-2 py-1 rounded-lg border border-line">
             <Calendar className="w-3.5 h-3.5 text-ink-3" />
             <span className="text-2xs text-ink-3">Kỳ nạp:</span>
             <select
@@ -389,7 +389,7 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm theo Video ID, Mã BO, @koc..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-lg focus:outline-none focus:border-focus"
+                className="w-full pl-8 pr-3 py-2 text-xs bg-surface border border-line-strong rounded-lg focus:outline-none focus:border-focus"
               />
             </div>
 
@@ -442,17 +442,17 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
             <table className="w-full text-xs text-left">
               <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                 <tr>
-                  <th className="py-2.5 px-3">Kỳ tuần</th>
-                  <th className="py-2.5 px-3">Mã Video ID &amp; Mã BO hệ thống</th>
-                  <th className="py-2.5 px-3">Kênh KOC</th>
-                  <th className="py-2.5 px-3">Brand / Sản phẩm</th>
-                  <th className="py-2.5 px-3 text-right">Cát-xê Net</th>
-                  <th className="py-2.5 px-3 text-right">Chi phí Ads tuần</th>
-                  <th className="py-2.5 px-3 text-right">GMV tuần</th>
-                  <th className="py-2.5 px-3 text-center">ROAS Ads</th>
-                  <th className="py-2.5 px-3 text-right">Đơn hàng</th>
-                  <th className="py-2.5 px-3 text-center">Giữ chân 2s</th>
-                  <th className="py-2.5 px-3 text-center">Chuỗi tuần</th>
+                  <th className="py-3 px-3">Kỳ tuần</th>
+                  <th className="py-3 px-3">Mã Video ID &amp; Mã BO hệ thống</th>
+                  <th className="py-3 px-3">Kênh KOC</th>
+                  <th className="py-3 px-3">Brand / Sản phẩm</th>
+                  <th className="py-3 px-3 text-right">Cát-xê Net</th>
+                  <th className="py-3 px-3 text-right">Chi phí Ads tuần</th>
+                  <th className="py-3 px-3 text-right">GMV tuần</th>
+                  <th className="py-3 px-3 text-center">ROAS Ads</th>
+                  <th className="py-3 px-3 text-right">Đơn hàng</th>
+                  <th className="py-3 px-3 text-center">Giữ chân 2s</th>
+                  <th className="py-3 px-3 text-center">Chuỗi tuần</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -471,12 +471,12 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                 ) : (
                   filteredSnapshots.slice(0, 80).map((row) => (
                     <tr key={row.id} className="hover:bg-canvas transition">
-                      <td className="py-2.5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <span className="font-mono font-semibold text-ink block">{row.weekKey}</span>
                         <span className="text-2xs text-ink-3">{row.reportDateRange}</span>
                       </td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-1.5">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
                           <span className="font-mono font-semibold text-accent">{row.videoId}</span>
                           {row.linkAir && (
                             <a
@@ -486,11 +486,11 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                               className="text-ink-3 hover:text-accent"
                               title="Mở video gốc trên TikTok"
                             >
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
+                        <div className="flex items-center gap-2 mt-0.5 text-2xs text-ink-3">
                           <span className="font-mono text-ink-2">{row.dealCode}</span>
                           <span>·</span>
                           <span className="truncate max-w-[180px]" title={row.videoTitle}>
@@ -498,26 +498,26 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                           </span>
                         </div>
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-3 px-3">
                         <div className="font-semibold text-ink">{row.kocStageName}</div>
                         <div className="text-2xs text-ink-3 font-mono">@{row.kocChannelId.replace(/^@/, '')}</div>
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-3 px-3">
                         <div className="font-medium text-ink">{row.brandName}</div>
                         <div className="text-2xs text-ink-3 truncate max-w-[160px]" title={row.productName}>
                           {row.productName}
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-ink-2">
+                      <td className="py-3 px-3 text-right font-mono text-ink-2">
                         {row.bookingCostNet > 0 ? formatVndShort(row.bookingCostNet) : '0đ (FOC)'}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
                         {formatVnd(row.adsSpend)}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
                         {formatVnd(row.gmv)}
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-3 px-3 text-center">
                         <span
                           className={`font-mono font-semibold ${
                             row.roas >= 5
@@ -530,13 +530,13 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                           {row.roas}x
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-ink-2">
+                      <td className="py-3 px-3 text-right font-mono text-ink-2">
                         {row.orders.toLocaleString()}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono text-ink-2">
+                      <td className="py-3 px-3 text-center font-mono text-ink-2">
                         {row.hookRate2s}%
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-3 px-3 text-center">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -564,39 +564,39 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
             <table className="w-full text-xs text-left">
               <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                 <tr>
-                  <th className="py-2.5 px-3">KOC &amp; Kênh TikTok</th>
-                  <th className="py-2.5 px-3">Nhãn hàng hợp tác</th>
-                  <th className="py-2.5 px-3 text-center">Số Video ID</th>
-                  <th className="py-2.5 px-3">Chuỗi tuần hoạt động</th>
-                  <th className="py-2.5 px-3 text-right">Tổng Cát-xê Net</th>
-                  <th className="py-2.5 px-3 text-right">Lũy kế Chi phí Ads</th>
-                  <th className="py-2.5 px-3 text-right">Lũy kế GMV</th>
-                  <th className="py-2.5 px-3 text-center">ROAS Ads</th>
-                  <th className="py-2.5 px-3 text-center">ROI Tổng</th>
-                  <th className="py-2.5 px-3 text-right">Tổng đơn</th>
+                  <th className="py-3 px-3">KOC &amp; Kênh TikTok</th>
+                  <th className="py-3 px-3">Nhãn hàng hợp tác</th>
+                  <th className="py-3 px-3 text-center">Số Video ID</th>
+                  <th className="py-3 px-3">Chuỗi tuần hoạt động</th>
+                  <th className="py-3 px-3 text-right">Tổng Cát-xê Net</th>
+                  <th className="py-3 px-3 text-right">Lũy kế Chi phí Ads</th>
+                  <th className="py-3 px-3 text-right">Lũy kế GMV</th>
+                  <th className="py-3 px-3 text-center">ROAS Ads</th>
+                  <th className="py-3 px-3 text-center">ROI Tổng</th>
+                  <th className="py-3 px-3 text-right">Tổng đơn</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {filteredKocSummaries.slice(0, 60).map((k) => (
                   <tr key={k.kocChannelId} className="hover:bg-canvas transition">
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3">
                       <div className="font-semibold text-ink">{k.kocStageName}</div>
                       <div className="text-2xs text-ink-3 font-mono">@{k.kocChannelId.replace(/^@/, '')}</div>
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3">
                       <div className="text-ink-2 truncate max-w-[180px]" title={k.brands.join(', ')}>
                         {k.brands.join(', ') || '—'}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-semibold text-ink">
+                    <td className="py-3 px-3 text-center font-mono font-semibold text-ink">
                       {k.totalRegisteredVideos}
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3">
                       <div className="flex flex-wrap gap-1">
                         {k.weeklyTimeline.map((wt) => (
                           <span
                             key={wt.weekKey}
-                            className="px-1.5 py-0.5 rounded bg-sunken border border-line font-mono text-2xs text-ink-2"
+                            className="px-2 py-0.5 rounded bg-sunken border border-line font-mono text-2xs text-ink-2"
                             title={`${wt.weekLabel}: GMV ${formatVndShort(wt.gmv)} · ROAS ${wt.roas}x`}
                           >
                             {wt.weekKey.replace('2026-', '')}: {formatVndShort(wt.gmv)}
@@ -604,22 +604,22 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                         ))}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-ink-2">
+                    <td className="py-3 px-3 text-right font-mono text-ink-2">
                       {formatVndShort(k.totalBookingCostNet)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                    <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
                       {formatVnd(k.cumulativeAdsSpend)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
+                    <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
                       {formatVnd(k.cumulativeGmv)}
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-semibold text-accent">
+                    <td className="py-3 px-3 text-center font-mono font-semibold text-accent">
                       {k.overallAdsRoas}x
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-semibold text-positive">
+                    <td className="py-3 px-3 text-center font-mono font-semibold text-positive">
                       {k.overallTotalRoi}x
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-ink-2">
+                    <td className="py-3 px-3 text-right font-mono text-ink-2">
                       {k.cumulativeOrders.toLocaleString()}
                     </td>
                   </tr>
@@ -637,26 +637,26 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
             <table className="w-full text-xs text-left">
               <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                 <tr>
-                  <th className="py-2.5 px-3">Kỳ tuần</th>
-                  <th className="py-2.5 px-3">Nguồn dữ liệu / Tên file</th>
-                  <th className="py-2.5 px-3 text-center">Hình thức</th>
-                  <th className="py-2.5 px-3 text-right">Số Video khớp hệ thống</th>
-                  <th className="py-2.5 px-3 text-right">Video mới phát sinh</th>
-                  <th className="py-2.5 px-3 text-right">Tổng Chi phí Ads</th>
-                  <th className="py-2.5 px-3 text-right">Tổng GMV</th>
-                  <th className="py-2.5 px-3 text-center">ROAS</th>
-                  <th className="py-2.5 px-3">Người thực hiện</th>
+                  <th className="py-3 px-3">Kỳ tuần</th>
+                  <th className="py-3 px-3">Nguồn dữ liệu / Tên file</th>
+                  <th className="py-3 px-3 text-center">Hình thức</th>
+                  <th className="py-3 px-3 text-right">Số Video khớp hệ thống</th>
+                  <th className="py-3 px-3 text-right">Video mới phát sinh</th>
+                  <th className="py-3 px-3 text-right">Tổng Chi phí Ads</th>
+                  <th className="py-3 px-3 text-right">Tổng GMV</th>
+                  <th className="py-3 px-3 text-center">ROAS</th>
+                  <th className="py-3 px-3">Người thực hiện</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {batches.map((b) => (
                   <tr key={b.id} className="hover:bg-canvas transition">
-                    <td className="py-2.5 px-3 font-mono font-semibold text-ink">{b.weekKey}</td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3 font-mono font-semibold text-ink">{b.weekKey}</td>
+                    <td className="py-3 px-3">
                       <div className="font-medium text-ink">{b.fileName}</div>
                       <div className="text-2xs text-ink-3">{b.weekLabel}</div>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
+                    <td className="py-3 px-3 text-center">
                       <Status tone={b.sourceType === 'API_INGEST' ? 'info' : 'positive'}>
                         {b.sourceType === 'API_INGEST'
                           ? 'API'
@@ -665,22 +665,22 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
                           : 'Đồng bộ gốc'}
                       </Status>
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
+                    <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
                       {b.matchedSystemVideos}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-ink-2">
+                    <td className="py-3 px-3 text-right font-mono text-ink-2">
                       {b.unmatchedVideos}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-ink">
+                    <td className="py-3 px-3 text-right font-mono text-ink">
                       {formatVnd(b.totalAdsSpend)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
+                    <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
                       {formatVnd(b.totalGmv)}
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-semibold text-accent">
+                    <td className="py-3 px-3 text-center font-mono font-semibold text-accent">
                       {b.overallRoas}x
                     </td>
-                    <td className="py-2.5 px-3 text-ink-2">{b.importedBy}</td>
+                    <td className="py-3 px-3 text-ink-2">{b.importedBy}</td>
                   </tr>
                 ))}
               </tbody>
@@ -728,31 +728,31 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
               <table className="w-full text-xs text-left">
                 <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                   <tr>
-                    <th className="py-2.5 px-3">Tuần</th>
-                    <th className="py-2.5 px-3 text-right">Chi phí Ads</th>
-                    <th className="py-2.5 px-3 text-right">Doanh thu GMV</th>
-                    <th className="py-2.5 px-3 text-center">ROAS tuần</th>
-                    <th className="py-2.5 px-3 text-right">Đơn hàng</th>
-                    <th className="py-2.5 px-3 text-right">Lượt xem</th>
-                    <th className="py-2.5 px-3 text-center">Giữ chân 2s</th>
-                    <th className="py-2.5 px-3">Nguồn nạp</th>
+                    <th className="py-3 px-3">Tuần</th>
+                    <th className="py-3 px-3 text-right">Chi phí Ads</th>
+                    <th className="py-3 px-3 text-right">Doanh thu GMV</th>
+                    <th className="py-3 px-3 text-center">ROAS tuần</th>
+                    <th className="py-3 px-3 text-right">Đơn hàng</th>
+                    <th className="py-3 px-3 text-right">Lượt xem</th>
+                    <th className="py-3 px-3 text-center">Giữ chân 2s</th>
+                    <th className="py-3 px-3">Nguồn nạp</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {selectedVideoTimelineRows.map((w) => (
                     <tr key={w.id}>
-                      <td className="py-2.5 px-3 font-mono font-semibold text-ink">{w.weekKey}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">{formatVnd(w.adsSpend)}</td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
+                      <td className="py-3 px-3 font-mono font-semibold text-ink">{w.weekKey}</td>
+                      <td className="py-3 px-3 text-right font-mono">{formatVnd(w.adsSpend)}</td>
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
                         {formatVnd(w.gmv)}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono font-semibold text-accent">
+                      <td className="py-3 px-3 text-center font-mono font-semibold text-accent">
                         {w.roas}x
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono">{w.orders.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">{w.views.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-center font-mono">{w.hookRate2s}%</td>
-                      <td className="py-2.5 px-3 text-2xs text-ink-3 truncate max-w-[180px]" title={w.sourceFileName}>
+                      <td className="py-3 px-3 text-right font-mono">{w.orders.toLocaleString()}</td>
+                      <td className="py-3 px-3 text-right font-mono">{w.views.toLocaleString()}</td>
+                      <td className="py-3 px-3 text-center font-mono">{w.hookRate2s}%</td>
+                      <td className="py-3 px-3 text-2xs text-ink-3 truncate max-w-[180px]" title={w.sourceFileName}>
                         {w.sourceFileName}
                       </td>
                     </tr>

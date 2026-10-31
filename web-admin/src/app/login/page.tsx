@@ -67,7 +67,7 @@ function GoogleMark({ className = 'w-4 h-4' }: { className?: string }) {
 function LoginFallback() {
   return (
     <div className="min-h-dvh bg-canvas flex items-center justify-center">
-      <span className="text-[13px] text-ink-3">Đang tải…</span>
+      <span className="text-xs text-ink-3">Đang tải…</span>
     </div>
   );
 }
@@ -256,7 +256,7 @@ function LoginContent() {
           {activePortalTab === 'INTERNAL' && (
             <div className="space-y-4 animate-in fade-in duration-150">
               {larkError && (
-                <div role="alert" className="flex items-start gap-2.5 p-3 rounded-md bg-critical-soft text-critical text-[13px]">
+                <div role="alert" className="flex items-start gap-3 p-3 rounded-md bg-critical-soft text-critical text-xs">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{larkError}</span>
                 </div>
@@ -272,7 +272,7 @@ function LoginContent() {
                 <span>Đăng nhập bằng Lark (UpBase SSO)</span>
               </Button>
 
-              <section className="space-y-2.5" aria-labelledby="sandbox-title">
+              <section className="space-y-3" aria-labelledby="sandbox-title">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 id="sandbox-title" className="text-[13.5px] font-medium">Chọn vai trò đăng nhập</h2>
@@ -298,7 +298,7 @@ function LoginContent() {
                         aria-checked={isSelected}
                         onClick={() => setSelectedUser(u.id)}
                         onDoubleClick={() => handleSandboxLogin(u.id)}
-                        className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 sm:gap-3 transition-colors ${isSelected ? 'bg-sunken' : 'hover:bg-canvas'}`}
+                        className={`w-full text-left px-3 py-3 flex items-center gap-3 sm:gap-3 transition-colors ${isSelected ? 'bg-sunken' : 'hover:bg-canvas'}`}
                       >
                         <span
                           className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${isSelected ? 'border-accent' : 'border-line-strong'}`}
@@ -307,7 +307,7 @@ function LoginContent() {
                           {isSelected && <span className="w-2 h-2 rounded-full bg-accent" />}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-[13px] font-medium truncate">{u.name}</span>
+                          <span className="block text-xs font-medium truncate">{u.name}</span>
                           <span className="block text-2xs text-ink-3 truncate">{u.roleTitle}</span>
                         </span>
                         <Status tone={customBadge ? customBadge.tone : (ROLE_TONE[u.role] ?? 'neutral')} className="hidden xs:inline-flex sm:inline-flex shrink-0">
@@ -319,7 +319,7 @@ function LoginContent() {
                 </div>
 
                 {sandboxError && (
-                  <div role="alert" className="flex items-start gap-2 p-2.5 rounded-lg bg-critical-soft text-critical text-xs leading-relaxed">
+                  <div role="alert" className="flex items-start gap-2 p-3 rounded-lg bg-critical-soft text-critical text-xs leading-relaxed">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{sandboxError}</span>
                   </div>
@@ -337,7 +337,7 @@ function LoginContent() {
               </section>
 
               {/* Kiểm tra cổng đăng nhập từ danh bạ 1.011 nhân sự */}
-              <section className="p-3 sm:p-3.5 rounded-xl border border-line bg-surface space-y-2.5">
+              <section className="p-3 sm:p-4 rounded-xl border border-line bg-surface space-y-3">
                 <div>
                   <h3 className="text-xs font-semibold text-ink">
                     Kiểm tra đăng nhập theo Mã NV / Email (Danh bạ 1.011 nhân sự)
@@ -349,7 +349,7 @@ function LoginContent() {
                     type="text"
                     value={staffIdentifierInput}
                     onChange={(e) => setStaffIdentifierInput(e.target.value)}
-                    placeholder="VD: HN222 (Growth), HN862 (Media), HN782 (Bị chặn)..."
+                    placeholder="VD: HN220 (B2C), HN601 (Booking), HN782 (Bị chặn)..."
                     className="flex-1 text-xs"
                   />
                   <Button
@@ -363,14 +363,14 @@ function LoginContent() {
                   </Button>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                <div className="flex flex-wrap gap-2 pt-0.5">
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedUser('user-hai-long');
                       handleSandboxLogin('user-hai-long');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
                   >
                     HN220 · Hoàng Hải Long (Nhân viên B2C)
                   </button>
@@ -380,7 +380,7 @@ function LoginContent() {
                       setSelectedUser('user-thanh-hai');
                       handleSandboxLogin('user-thanh-hai');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
                   >
                     HN241 · Lê Thanh Hải (Nhân viên B2C)
                   </button>
@@ -390,7 +390,7 @@ function LoginContent() {
                       setSelectedUser('user-bich-lien');
                       handleSandboxLogin('user-bich-lien');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
                   >
                     HN601 · Đinh Thị Bích Liên (Booking B2C)
                   </button>
@@ -400,7 +400,7 @@ function LoginContent() {
                       setSelectedUser('user-dieu-anh');
                       handleSandboxLogin('user-dieu-anh');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
                   >
                     HN889 · Phan Diệu Ánh (Booking B2C)
                   </button>
@@ -410,7 +410,7 @@ function LoginContent() {
                       setSelectedUser('user-ngoc-anh');
                       handleSandboxLogin('user-ngoc-anh');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
                   >
                     HN240 · Bùi Ngọc Ánh (Content B2C)
                   </button>
@@ -420,29 +420,29 @@ function LoginContent() {
                       setSelectedUser('user-dieu-thuy');
                       handleSandboxLogin('user-dieu-thuy');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
                   >
                     HN206 · Hoàng Diệu Thùy (Content / Key Visual)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setStaffIdentifierInput('HN028');
-                      handleDirectoryStaffLogin('HN028');
+                      setSelectedUser('user-accounting-1');
+                      handleSandboxLogin('user-accounting-1');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
+                    className="text-2xs px-3 py-2 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
                   >
-                    HN028 · Nguyễn Thị Thu Thủy (TP Growth)
+                    HN512 · Phạm Thị Hồng Nhung (Kế toán B2C)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setStaffIdentifierInput('HN862');
-                      handleDirectoryStaffLogin('HN862');
+                      setSelectedUser('user-legal-1');
+                      handleSandboxLogin('user-legal-1');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
+                    className="text-2xs px-3 py-2 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
                   >
-                    HN862 · Đức Quảng (TP Media)
+                    HN405 · Vũ Minh Quân (Pháp chế B2C)
                   </button>
                   <button
                     type="button"
@@ -450,7 +450,7 @@ function LoginContent() {
                       setStaffIdentifierInput('HN782');
                       handleDirectoryStaffLogin('HN782');
                     }}
-                    className="text-2xs px-2.5 py-1.5 rounded bg-critical-soft text-critical border border-line font-medium"
+                    className="text-2xs px-3 py-2 rounded bg-critical-soft text-critical border border-line font-medium"
                   >
                     Thử HN782 · Phòng Livestream (Chặn Login)
                   </button>
@@ -462,9 +462,9 @@ function LoginContent() {
                   type="button"
                   onClick={handleLarkLogin}
                   disabled={isLoading}
-                  className="text-xs text-ink-3 hover:text-ink transition-colors inline-flex items-center gap-1.5 underline decoration-line-strong"
+                  className="text-xs text-ink-3 hover:text-ink transition-colors inline-flex items-center gap-2 underline decoration-line-strong"
                 >
-                  <LarkMark className="w-3 h-3" />
+                  <LarkMark className="w-3.5 h-3.5" />
                   <span>Hoặc đăng nhập bằng Lark</span>
                 </button>
               </div>
@@ -473,7 +473,7 @@ function LoginContent() {
 
           {activePortalTab === 'GMAIL_PARTNER' && (
             <div className="space-y-5 animate-in fade-in duration-150">
-              <div className="bg-accent-soft border border-line rounded-xl p-3.5 text-xs text-ink space-y-1">
+              <div className="bg-accent-soft border border-line rounded-xl p-4 text-xs text-ink space-y-1">
                 <div className="font-semibold text-accent">
                   Cổng đăng nhập đối tác
                 </div>
@@ -483,7 +483,7 @@ function LoginContent() {
               </div>
 
               {partnerError && (
-                <div role="alert" className="flex items-start gap-2.5 p-3 rounded-md bg-critical-soft text-critical text-[13px]">
+                <div role="alert" className="flex items-start gap-3 p-3 rounded-md bg-critical-soft text-critical text-xs">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{partnerError}</span>
                 </div>
@@ -508,12 +508,12 @@ function LoginContent() {
                           setSelectedPartnerId(acc.id);
                           setPartnerEmail(acc.gmail);
                         }}
-                        className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+                        className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-colors ${
                           isSelected ? 'bg-accent-soft text-ink' : 'hover:bg-sunken text-ink'
                         }`}
                       >
                         <div className="min-w-0">
-                          <div className="font-semibold text-xs flex items-center gap-1.5 truncate">
+                          <div className="font-semibold text-xs flex items-center gap-2 truncate">
                             {isBrand && <Building className="w-3.5 h-3.5 text-accent shrink-0" />}
                             {isKoc && <Users className="w-3.5 h-3.5 text-ink-2 shrink-0" />}
                             {isCtv && <Video className="w-3.5 h-3.5 text-positive shrink-0" />}
@@ -531,7 +531,7 @@ function LoginContent() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <label className="text-2xs font-medium text-ink-3 block">Hoặc nhập địa chỉ Gmail khác</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />

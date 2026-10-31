@@ -158,7 +158,7 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
       header: 'Họ và tên nhân sự',
       width: 210,
       render: (s) => (
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <Avatar name={s.name} size={28} />
           <div className="min-w-0 leading-tight">
             <span className="block truncate font-semibold text-ink text-xs" title={s.name}>
@@ -243,7 +243,7 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
 
   return (
     <Panel flush>
-      <div className="p-4 border-b border-line grid gap-2.5">
+      <div className="p-4 border-b border-line grid gap-3">
         <FilterBar
           search={{
             value: search,
@@ -292,7 +292,7 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
                 </Button>
               )}
 
-              <div className="ml-auto hidden xl:flex items-center gap-1.5 text-2xs text-ink-3">
+              <div className="ml-auto hidden xl:flex items-center gap-2 text-2xs text-ink-3">
                 <Shield className="w-3.5 h-3.5 text-positive" />
                 <span>
                   {allowedCount} được phép Login / {enrichedStaff.length} tổng số

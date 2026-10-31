@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { readStoreOverrides, resolveStoreSheetLink, STORE_SHEET_OVERRIDES_EVENT } from '../../../lib/storeSheetLinks';
+import { StoreSheetLinkModal, type StoreSheetLinkTarget } from '../StoreSheetLinkModal';
 import { codeForName, withStaffCode } from '../../../lib/staffIdentity';
 import { storeCoBookings } from '../../../lib/storePositions';
 import { AssignmentLogList } from './AssignmentLogList';
@@ -15,7 +17,8 @@ import {
   Eye,
   Edit3,
   SlidersHorizontal,
-  Store
+  Store,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   ActionMenu,
@@ -100,6 +103,23 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   // Detail Modal & Handover Modal State
   const [selectedStoreForDetail, setSelectedStoreForDetail] = useState<StorePortfolioItem | null>(null);
   const [handoverStore, setHandoverStore] = useState<StorePortfolioItem | null>(null);
+
+  // Link Google Sheet lưu ngay (không qua bản nháp), đọc cả bản ghi đè trên máy
+  const [sheetEditStoreId, setSheetEditStoreId] = useState<string | null>(null);
+  const [storeOverrides, setStoreOverrides] = useState(() => readStoreOverrides());
+  useEffect(() => {
+    const sync = () => setStoreOverrides(readStoreOverrides());
+    window.addEventListener(STORE_SHEET_OVERRIDES_EVENT, sync);
+    return () => window.removeEventListener(STORE_SHEET_OVERRIDES_EVENT, sync);
+  }, []);
+  const toSheetTarget = (s: StorePortfolioItem): StoreSheetLinkTarget => ({
+    storeId: s.id,
+    storeName: s.storeName,
+    brandName: s.brandName,
+    platform: s.platform,
+    link: resolveStoreSheetLink(s, storeOverrides),
+  });
+  const sheetEditStore = sheetEditStoreId ? stores.find(s => s.id === sheetEditStoreId) : undefined;
 
   // Extract unique sorted brand list
   const uniqueBrands = useMemo(() => {
@@ -579,7 +599,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       header: 'Nền tảng',
       width: 130,
       render: (s) => (
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <ChannelTag channel={s.platform} />
           {s.storeUrl && (
             <a
@@ -589,7 +609,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               className="text-ink-3 hover:text-ink transition-colors"
               title="Mở link gian hàng sàn"
             >
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}
         </div>
@@ -606,7 +626,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             onClick={() => {
               if (onNavigateToBrandProfile) onNavigateToBrandProfile(s.brandName);
             }}
-            className="font-medium text-ink hover:text-primary hover:underline flex items-center gap-1.5 text-xs cursor-pointer truncate"
+            className="font-medium text-ink hover:text-primary hover:underline flex items-center gap-2 text-xs cursor-pointer truncate"
             title="Xem hồ sơ thương hiệu"
           >
             <BrandAvatar brandName={s.brandName} brandId={s.brandId} size={22} rounded="md" />
@@ -657,7 +677,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         const assign = resolveStoreStaffAssignment(s, 'Chưa gán');
         return (
           <div className="space-y-0.5 leading-tight text-xs whitespace-nowrap">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-2xs text-ink-3 w-11 shrink-0 font-normal">Chính:</span>
               <span className="font-medium text-ink truncate" title={assign.primaryPic}>
                 {assign.primaryPic}
@@ -672,7 +692,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               )}
             </div>
             {assign.supportStaff.length > 0 && (
-              <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="text-2xs text-ink-3 w-11 shrink-0 font-normal">Hỗ trợ:</span>
                 <span
                   className="text-ink-2 truncate"
@@ -682,7 +702,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-2xs text-ink-3 w-11 shrink-0 font-normal">Leader:</span>
               <span className="text-ink-2 font-medium truncate" title={hasLeaderTeam ? s.bookingLeader : 'Không có leader'}>
                 {hasLeaderTeam ? s.bookingLeader : '—'}
@@ -717,6 +737,40 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <span className="text-xs font-normal select-none">—</span>
               )}
             </button>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'sheet',
+      header: 'Google Sheet',
+      align: 'center',
+      width: 100,
+      render: (s) => {
+        const url = resolveStoreSheetLink(s, storeOverrides).bookingSheetUrl;
+        return (
+          <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {url ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-2xs text-ink-2 hover:text-accent"
+                title="Mở Google Sheet"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" /> Mở
+              </a>
+            ) : canEdit ? (
+              <button
+                type="button"
+                onClick={() => setSheetEditStoreId(s.id)}
+                className="text-2xs text-ink-3 hover:text-accent cursor-pointer"
+              >
+                + Gắn
+              </button>
+            ) : (
+              <span className="text-xs text-ink-4">—</span>
+            )}
           </div>
         );
       },
@@ -763,6 +817,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               icon: Edit3,
               onSelect: () => handleOpenEdit(s),
             },
+            ...(canEdit
+              ? [{ label: 'Google Sheet', icon: FileSpreadsheet, onSelect: () => setSheetEditStoreId(s.id) }]
+              : []),
             {
               label: 'Offboard gian hàng',
               icon: Archive,
@@ -789,7 +846,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       </PageActions>
 
       <Panel flush>
-        <div className="p-4 border-b border-line grid gap-2.5">
+        <div className="p-4 border-b border-line grid gap-3">
           <FilterBar
             search={{
               value: search,
@@ -1003,6 +1060,19 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       )}
       </Presence>
 
+      <StoreSheetLinkModal
+        target={sheetEditStore ? toSheetTarget(sheetEditStore) : null}
+        brandSiblings={
+          sheetEditStore
+            ? stores
+                .filter(s => s.isB2cManaged !== false && s.brandName.toLowerCase() === sheetEditStore.brandName.toLowerCase())
+                .map(toSheetTarget)
+            : []
+        }
+        onClose={() => setSheetEditStoreId(null)}
+        onNotify={onNotify}
+      />
+
       {/* 5. MODAL: LẬP LỆNH BÀN GIAO GIỮA KỲ */}
       <Presence show={!!handoverStore}>
       {handoverStore && (
@@ -1022,7 +1092,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         title="Thêm Gian Hàng Mới (Dữ Liệu Gốc)"
         size="lg"
       >
-        <form onSubmit={handleQuickAddStore} className="space-y-3.5 text-xs">
+        <form onSubmit={handleQuickAddStore} className="space-y-4 text-xs">
           <div>
             <label className="block text-ink-2 font-semibold mb-1">
               Tên gian hàng vận hành *
@@ -1065,7 +1135,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     key={p}
                     type="button"
                     onClick={() => setQuickPlatform(p)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer ${
                       isSelected
                         ? 'bg-ink text-white border-line-strong shadow-xs'
                         : 'bg-white text-ink-2 border-line hover:bg-canvas'
@@ -1090,7 +1160,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             <button
               type="submit"
               disabled={!quickStoreName.trim()}
-              className="px-4 py-2 bg-ink hover:bg-ink disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-ink hover:bg-ink disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               Tạo gian hàng vào Master Data
@@ -1109,7 +1179,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         title={editingStore ? `Cập nhật Gian hàng [${editingStore.storeName}]` : 'Cập nhật Gian hàng'}
         size="lg"
       >
-        <form onSubmit={handleSave} className="space-y-3.5 text-xs">
+        <form onSubmit={handleSave} className="space-y-4 text-xs">
               {/* Group 1: Identity */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1120,7 +1190,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     placeholder="VD: Brand_Platform_Service"
                     value={form.storeName}
                     onChange={(e) => setForm(prev => ({ ...prev, storeName: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
@@ -1132,7 +1202,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     placeholder="VD: SO-B2C-001"
                     value={form.storeOperationId}
                     onChange={(e) => setForm(prev => ({ ...prev, storeOperationId: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
                 </div>
               </div>
@@ -1144,7 +1214,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <select
                     value={form.brandName}
                     onChange={(e) => setForm(prev => ({ ...prev, brandName: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
+                    className="w-full px-3 py-2 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
                   >
                     {uniqueBrands.map(b => (
                       <option key={b} value={b}>{b}</option>
@@ -1157,7 +1227,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <select
                     value={form.platform}
                     onChange={(e) => setForm(prev => ({ ...prev, platform: e.target.value as StorePortfolioItem['platform'] }))}
-                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong"
                   >
                     <option value="TikTok Shop">TikTok Shop</option>
                     <option value="Shopee Mall">Shopee Mall</option>
@@ -1170,7 +1240,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <select
                     value={form.operationStatus}
                     onChange={(e) => setForm(prev => ({ ...prev, operationStatus: e.target.value as NonNullable<StorePortfolioItem['operationStatus']> }))}
-                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
+                    className="w-full px-3 py-2 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
                   >
                     <option value="Live">Live (Đang chạy)</option>
                     <option value="Off">Off (Dừng hợp tác)</option>
@@ -1188,7 +1258,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     placeholder="VD: E2E-S, Live-S..."
                     value={form.servicePackage}
                     onChange={(e) => setForm(prev => ({ ...prev, servicePackage: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
@@ -1199,7 +1269,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     placeholder="VD: TTS_VN_839219"
                     value={form.platformStoreId}
                     onChange={(e) => setForm(prev => ({ ...prev, platformStoreId: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
@@ -1211,7 +1281,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     max={100}
                     value={form.affiliateRate}
                     onChange={(e) => setForm(prev => ({ ...prev, affiliateRate: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
@@ -1220,7 +1290,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <select
                     value={form.difficultyTier}
                     onChange={(e) => setForm(prev => ({ ...prev, difficultyTier: e.target.value as StoreDifficultyTier }))}
-                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
+                    className="w-full px-3 py-2 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
                   >
                     {STORE_COEFFICIENT_TABLE_2.rows.map(rule => (
                       <option key={rule.tier} value={rule.tier}>
@@ -1240,7 +1310,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     placeholder="https://..."
                     value={form.storeUrl}
                     onChange={(e) => setForm(prev => ({ ...prev, storeUrl: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:border-line-strong"
+                    className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
@@ -1262,7 +1332,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <span className="text-xs font-semibold text-ink block">
                   Hạn mức Kế hoạch Tháng
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-ink-2 text-2xs font-semibold mb-1">
                       Hạn mức Net Kế toán duyệt (VNĐ)
@@ -1273,7 +1343,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       step={1000000}
                       value={form.monthlyBudget}
                       onChange={(e) => setForm(prev => ({ ...prev, monthlyBudget: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
@@ -1287,7 +1357,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       step={1000000}
                       value={form.monthlyTargetGmv}
                       onChange={(e) => setForm(prev => ({ ...prev, monthlyTargetGmv: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
@@ -1300,7 +1370,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       min={0}
                       value={form.targetAffiliateContents}
                       onChange={(e) => setForm(prev => ({ ...prev, targetAffiliateContents: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
@@ -1313,14 +1383,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       min={0}
                       value={form.targetSelfChannelContents}
                       onChange={(e) => setForm(prev => ({ ...prev, targetSelfChannelContents: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Group 5: Team Organization */}
-              <div className="pt-2 border-t border-line space-y-2.5">
+              <div className="pt-2 border-t border-line space-y-3">
                 <div className="text-xs font-semibold text-ink flex items-center justify-between">
                   <span>Cơ cấu Nhân sự Phụ trách (2 Tầng)</span>
                   <span className="text-2xs text-ink-3 font-normal">Trưởng phòng: Đặng Thị Yến Nhi</span>
@@ -1373,7 +1443,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </div>
 
                 {editingStore && (
-                  <div className="text-2xs text-ink-2 bg-canvas border border-line rounded-lg px-2.5 py-2 space-y-1">
+                  <div className="text-2xs text-ink-2 bg-canvas border border-line rounded-lg px-3 py-2 space-y-1">
                     <div>
                       <span className="font-medium text-ink">Booking cùng làm: </span>
                       {storeCoBookings({ ...editingStore, backupOwnerName: form.backupOwnerName, primaryPic: form.b2cOwnerName }).join(', ') || 'Chưa có'}
@@ -1404,7 +1474,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       value={form.backupReason}
                       placeholder="Nghỉ phép, công tác, quá tải..."
                       onChange={(e) => setForm(prev => ({ ...prev, backupReason: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
                     />
                   </div>
                   <div>
@@ -1413,7 +1483,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       type="date"
                       value={form.backupFrom}
                       onChange={(e) => setForm(prev => ({ ...prev, backupFrom: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
                     />
                   </div>
                   <div>
@@ -1423,7 +1493,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       value={form.backupTo}
                       min={form.backupFrom || undefined}
                       onChange={(e) => setForm(prev => ({ ...prev, backupTo: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
+                      className="w-full px-3 py-2 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
                     />
                   </div>
                   <label className="flex items-center gap-2 text-2xs text-ink-2 cursor-pointer sm:col-span-2">
@@ -1443,7 +1513,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 
               {/* Group 6: Scope */}
               <div className="pt-2 border-t border-line">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-canvas p-2.5 rounded-lg border border-line text-2xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-canvas p-3 rounded-lg border border-line text-2xs">
                   <label className="flex items-start gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1477,13 +1547,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 border border-line rounded-xl text-ink-2 hover:bg-canvas transition font-medium"
+                  className="px-4 py-2 border border-line rounded-xl text-ink-2 hover:bg-canvas transition font-medium"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-ink hover:bg-ink text-white font-semibold rounded-xl transition shadow-xs"
+                  className="px-4 py-2 bg-ink hover:bg-ink text-white font-semibold rounded-xl transition shadow-xs"
                 >
                   Lưu thông tin gian hàng
                 </button>
@@ -1500,7 +1570,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       >
         {deletingStore && (
           <div className="space-y-4">
-            <div className="p-3 bg-canvas rounded-xl border border-line space-y-1.5 text-xs">
+            <div className="p-3 bg-canvas rounded-xl border border-line space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-ink">{deletingStore.storeName}</span>
                 <span className="font-mono text-2xs text-ink-3">#{deletingStore.storeOperationId || deletingStore.id}</span>
@@ -1518,7 +1588,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleOffboardStore(deletingStore)}
-                className="w-full py-2.5 px-3 rounded-xl border border-accent/20 bg-accent-soft hover:bg-accent-soft text-accent font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-3 px-3 rounded-xl border border-accent/20 bg-accent-soft hover:bg-accent-soft text-accent font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
               >
                 <Archive className="w-3.5 h-3.5 text-accent" />
                 <span>Chuyển sang &quot;Off / Dừng hợp tác&quot; (Khuyên dùng)</span>
@@ -1529,14 +1599,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               <button
                 type="button"
                 onClick={() => setDeletingStore(null)}
-                className="px-3.5 py-1.5 border border-line rounded-xl text-ink-2 hover:bg-canvas transition text-xs font-medium cursor-pointer"
+                className="px-4 py-2 border border-line rounded-xl text-ink-2 hover:bg-canvas transition text-xs font-medium cursor-pointer"
               >
                 Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={() => handleHardDeleteStore(deletingStore)}
-                className="px-4 py-1.5 bg-critical hover:bg-critical text-white font-semibold rounded-xl transition text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-4 py-2 bg-critical hover:bg-critical text-white font-semibold rounded-xl transition text-xs flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Xóa vĩnh viễn

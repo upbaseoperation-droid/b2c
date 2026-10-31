@@ -444,7 +444,7 @@ export function DraftBbntPreviewModal({
           )}
 
           {/* Thanh liên thông 13 bước contract-system dành cho Biên bản nghiệm thu (BBNT) */}
-          <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
+          <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <FileCode2 className="w-4 h-4 text-accent shrink-0" />
@@ -455,18 +455,18 @@ export function DraftBbntPreviewModal({
                   Mã BBNT: {stableBbntCode}
                 </span>
                 {(template.signTags || []).map(tag => (
-                  <span key={tag} className="font-code text-2xs px-1.5 py-0.5 rounded bg-accent-soft/60 border border-accent/25 text-accent">
+                  <span key={tag} className="font-code text-2xs px-2 py-0.5 rounded bg-accent-soft/60 border border-accent/25 text-accent">
                     {tag}
                   </span>
                 ))}
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {activeBbntRecord?.contractSystem?.googleDocsUrl && (
                   <a
                     href={activeBbntRecord.contractSystem.googleDocsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-2xs font-medium text-accent hover:bg-sunken"
+                    className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-line-strong bg-surface text-2xs font-medium text-accent hover:bg-sunken"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Mở BBNT trên Google Docs
@@ -490,7 +490,7 @@ export function DraftBbntPreviewModal({
                       activeBbntRecord?.contractSystem?.signedFileUrl ||
                       `/api/contracts/${activeBbntRecord?.id}/document?signed=1`
                     }
-                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-positive/40 bg-positive-soft text-2xs font-semibold text-positive hover:underline"
+                    className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-positive/40 bg-positive-soft text-2xs font-semibold text-positive hover:underline"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Bản BBNT đã ký (.pdf/.docx)
@@ -555,7 +555,7 @@ export function DraftBbntPreviewModal({
           </div>
 
           {/* Khối 1: Bảng đối soát Phụ lục Job (1 Deal -> N Job -> N Bảng công việc) */}
-          <div className="p-3.5 rounded-xl border border-line bg-sunken/40 space-y-3">
+          <div className="p-4 rounded-xl border border-line bg-sunken/40 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code font-semibold">
@@ -596,7 +596,7 @@ export function DraftBbntPreviewModal({
 
             {/* Thanh chuyển đổi giữa các Bảng công việc (Job) trong Deal */}
             {draftJobTables.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {draftJobTables.map((jt, jIdx) => {
                   const isActive = jIdx === safeActiveIdx;
                   const activeAddonsSum = (jt.addonItems || [])
@@ -608,7 +608,7 @@ export function DraftBbntPreviewModal({
                       key={jt.id || jIdx}
                       type="button"
                       onClick={() => setActiveJobTableIdx(jIdx)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-colors ${
                         isActive
                           ? 'border-accent bg-accent-soft/40 text-ink font-semibold'
                           : 'border-line bg-surface text-ink-2 hover:bg-sunken'
@@ -620,7 +620,7 @@ export function DraftBbntPreviewModal({
                       <span className="truncate max-w-[140px]">
                         {jt.productName || jt.jobTitle}
                       </span>
-                      <span className="font-code text-2xs px-1.5 py-0.5 rounded bg-surface border border-line text-ink">
+                      <span className="font-code text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink">
                         {formatNumber(jobSub)}đ
                       </span>
                     </button>
@@ -630,7 +630,7 @@ export function DraftBbntPreviewModal({
             )}
 
             {/* Hạng mục 1 của Job đang chọn: Video chính */}
-            <div className="p-2.5 rounded-lg border border-line bg-surface space-y-2">
+            <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-ink">
                   Bảng công việc #{safeActiveIdx + 1} ({activeJobTable?.jobCode || breakdown.jobCode}) · 1. Video chính ({activeJobTable?.productName || breakdown.videoItem.productName || deal.brandName})
@@ -639,7 +639,7 @@ export function DraftBbntPreviewModal({
                   {activeJobTable?.videoUrl ? 'Đã có Link Air' : 'Chờ Link Air'}
                 </Status>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Field label="Ngày đăng tải thực tế (Air Date)">
                   <Input
                     value={activeJobTable?.airDate || breakdown.videoItem.airDate || ''}
@@ -671,7 +671,7 @@ export function DraftBbntPreviewModal({
             </div>
 
             {/* Task #2..N: Các Task đi kèm trong Phụ lục SOW của Job */}
-            <div className="p-2.5 rounded-lg border border-line bg-surface space-y-2">
+            <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-ink">
                   Các Task đi kèm trong Phụ lục SOW ({draftAddons.filter(a => a.includedInSow !== false).length}/{draftAddons.length} Task áp dụng cho Job này)
@@ -684,7 +684,7 @@ export function DraftBbntPreviewModal({
                 </span>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {draftAddons.map((addon, idx) => {
                   const isIncluded = addon.includedInSow !== false;
                   const info = SOW_TASK_DELIVERABLE_INFO[addon.termType] || SOW_TASK_DELIVERABLE_INFO.ADS_CODE;
@@ -692,7 +692,7 @@ export function DraftBbntPreviewModal({
                   return (
                     <div
                       key={addon.id || idx}
-                      className={`p-2 rounded border space-y-1.5 ${
+                      className={`p-2 rounded border space-y-2 ${
                         isIncluded ? 'border-line bg-sunken/30' : 'border-dashed border-line bg-sunken/15 opacity-70'
                       }`}
                     >
@@ -710,7 +710,7 @@ export function DraftBbntPreviewModal({
                             }}
                             className="rounded border-line text-accent focus:ring-accent"
                           />
-                          <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs">
+                          <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs">
                             Task #{taskNo} · {addon.taskCode || `${breakdown.jobCode}-T0${taskNo}`}
                           </span>
                           <span>{addon.termLabel}</span>
@@ -814,7 +814,7 @@ export function DraftBbntPreviewModal({
             </div>
 
             {/* Khối tổng hợp quyết toán theo Phụ lục Job */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-2.5 rounded-lg border border-line bg-surface font-code">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 rounded-lg border border-line bg-surface font-code">
               <div>
                 <span className="text-2xs text-ink-3 block">Tổng Phụ lục SOW</span>
                 <strong className="text-ink">{formatNumber(breakdown.financials.plannedTotalNet)}đ</strong>

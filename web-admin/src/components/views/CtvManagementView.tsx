@@ -376,10 +376,10 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       header: 'CTV / VJ',
       width: 230,
       render: (c) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[260px]">
+        <div className="flex items-center gap-3 min-w-0 max-w-[260px]">
           <Avatar name={c.name} src={c.avatar} size={34} />
           <div className="min-w-0 leading-tight">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <span className="truncate font-medium text-ink">{c.name}</span>
               <span className="text-2xs font-mono text-ink-3">
                 · {c.code || c.id.toUpperCase()}
@@ -517,7 +517,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       )}
 
       <Panel flush>
-        <div className="p-4 border-b border-line space-y-2.5">
+        <div className="p-4 border-b border-line space-y-3">
           <FilterBar
             search={{
               value: search,
@@ -629,7 +629,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
           </>
         }
       >
-        <form id="create-ctv-full-form" onSubmit={handleCreateCtv} className="grid gap-3.5">
+        <form id="create-ctv-full-form" onSubmit={handleCreateCtv} className="grid gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Họ và tên CTV / VJ">
               <Input
@@ -1136,7 +1136,7 @@ export function CtvProfileDetail({
       width: 230,
       render: (t) => (
         <div className="leading-tight max-w-[250px]">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="font-mono text-2xs text-ink-3">{t.taskCode}</span>
             {t.videoFormat && (
               <span className="text-2xs text-ink-3">
@@ -1181,7 +1181,7 @@ export function CtvProfileDetail({
                 className="text-accent hover:underline inline-flex items-center gap-1 text-xs font-medium"
               >
                 <span>Video v{t.videoDeliverables.currentVersion || 1}</span>
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             ) : (
               <span className="text-ink-2 text-xs">
@@ -1236,11 +1236,11 @@ export function CtvProfileDetail({
     <div className="space-y-6">
       {/* Thanh điều hướng quay lại & chuyển CTV */}
       <div className="flex items-center justify-between gap-3">
-        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack} className="-ml-2.5">
+        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack} className="-ml-3">
           Danh bạ CTV / VJ
         </Button>
         {(nav.onPrev || nav.onNext) && (
-          <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+          <div className="flex items-center gap-2 text-2xs text-ink-3">
             {nav.position && nav.total ? (
               <span className="tabular-nums mr-1">
                 {nav.position} / {nav.total}
@@ -1270,7 +1270,7 @@ export function CtvProfileDetail({
 
       {/* Header Hồ sơ CTV */}
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3.5 min-w-0">
+        <div className="flex items-start gap-4 min-w-0">
           <Avatar name={ctv.name} src={ctv.avatar} size={52} />
           <div className="min-w-0 grid gap-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -1285,7 +1285,7 @@ export function CtvProfileDetail({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-2">
               <span className="font-medium text-ink">{CTV_ROLE_LABELS[ctv.role]}</span>
               <span className="text-ink-3">· {ctv.nicheSpecialty.join(' · ')}</span>
               {ctv.channelLink && (
@@ -1318,13 +1318,13 @@ export function CtvProfileDetail({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-2">
               {ctv.contentPic && <Person name={ctv.contentPic} sub="Content PIC" size={20} />}
               {ctv.partnershipPic && (
                 <Person name={ctv.partnershipPic} sub="Partnership (Hợp đồng)" size={20} />
               )}
               <span className="inline-flex items-center gap-1 text-2xs font-medium text-ink-2 tabular-nums">
-                <Star className="w-3 h-3 text-warning fill-current" />
+                <Star className="w-3.5 h-3.5 text-warning fill-current" />
                 {ctv.ratingScore.toFixed(1)} / 5.0
               </span>
             </div>
@@ -1354,7 +1354,7 @@ export function CtvProfileDetail({
           <Panel>
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-ink text-[13px]">Pháp lý &amp; Hợp đồng CTV</h3>
+                <h3 className="font-semibold text-ink text-xs">Pháp lý &amp; Hợp đồng CTV</h3>
                 <button
                   type="button"
                   onClick={onScanDocs}
@@ -1400,7 +1400,7 @@ export function CtvProfileDetail({
           <Panel>
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-ink text-[13px]">Tài khoản nhận thù lao</h3>
+                <h3 className="font-semibold text-ink text-xs">Tài khoản nhận thù lao</h3>
                 <button
                   type="button"
                   onClick={onShowQr}
@@ -1429,7 +1429,7 @@ export function CtvProfileDetail({
           {/* 3. Định mức đơn giá (Rate Card) & Công suất */}
           <Panel>
             <div className="space-y-3 text-xs">
-              <h3 className="font-semibold text-ink text-[13px]">Định mức đơn giá &amp; Công suất</h3>
+              <h3 className="font-semibold text-ink text-xs">Định mức đơn giá &amp; Công suất</h3>
               <dl className="grid gap-2 tabular-nums">
                 <div className="flex justify-between gap-2">
                   <dt className="text-ink-3">Quay dựng trọn gói</dt>
@@ -1455,7 +1455,7 @@ export function CtvProfileDetail({
                     {ctv.unitRateScriptOnly ? formatVnd(ctv.unitRateScriptOnly) : '—'}
                   </dd>
                 </div>
-                <div className="flex justify-between gap-2 pt-1.5 border-t border-line">
+                <div className="flex justify-between gap-2 pt-2 border-t border-line">
                   <dt className="text-ink-3">Công suất cam kết</dt>
                   <dd className="font-medium text-ink">
                     Tối đa {ctv.monthlyCapacityVideos || 12} video/tháng
@@ -1468,7 +1468,7 @@ export function CtvProfileDetail({
           {/* 4. Hậu cần gửi hàng mẫu (SLA 48h) & Bối cảnh quay */}
           <Panel>
             <div className="space-y-3 text-xs">
-              <h3 className="font-semibold text-ink text-[13px]">Hậu cần gửi mẫu &amp; Bối cảnh VJ</h3>
+              <h3 className="font-semibold text-ink text-xs">Hậu cần gửi mẫu &amp; Bối cảnh VJ</h3>
               <dl className="grid gap-2">
                 <div className="flex justify-between gap-2">
                   <dt className="text-ink-3">Người nhận</dt>
@@ -1492,7 +1492,7 @@ export function CtvProfileDetail({
                   )}
                 </div>
                 {ctv.studioBackdrops && ctv.studioBackdrops.length > 0 && (
-                  <div className="pt-1.5 border-t border-line">
+                  <div className="pt-2 border-t border-line">
                     <dt className="text-ink-3 text-2xs mb-0.5">Bối cảnh quay sẵn có:</dt>
                     <dd className="text-ink-2 text-xs leading-relaxed">
                       {ctv.studioBackdrops.join(' · ')}
@@ -1500,7 +1500,7 @@ export function CtvProfileDetail({
                   </div>
                 )}
                 {ctv.personalTraits && (
-                  <div className="pt-1.5 border-t border-line">
+                  <div className="pt-2 border-t border-line">
                     <dt className="text-ink-3 text-2xs">Đặc điểm nhân vật / VJ:</dt>
                     <dd className="text-ink-2 mt-0.5 leading-relaxed">{ctv.personalTraits}</dd>
                   </div>
@@ -1556,7 +1556,7 @@ export function CtvProfileDetail({
                       {brandHistoryStats.map((b) => (
                         <div
                           key={b.brandName}
-                          className="p-3 rounded-xl border border-line bg-canvas/60 space-y-1.5 text-xs"
+                          className="p-3 rounded-xl border border-line bg-canvas/60 space-y-2 text-xs"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold text-ink truncate">{b.brandName}</span>
@@ -1567,7 +1567,7 @@ export function CtvProfileDetail({
                           <div className="text-2xs text-ink-3">
                             Định dạng: {b.formats.length > 0 ? b.formats.join(', ') : 'Review voice'}
                           </div>
-                          <div className="flex items-center justify-between pt-1.5 border-t border-line/70 tabular-nums">
+                          <div className="flex items-center justify-between pt-2 border-t border-line/70 tabular-nums">
                             <span className="text-2xs text-positive font-medium">
                               Đạt lần 1: {Math.round((b.firstPassCount / Math.max(1, b.totalTasks)) * 100)}%
                             </span>
@@ -1630,7 +1630,7 @@ export function CtvProfileDetail({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Cột kịch bản & Link bàn giao */}
-                      <div className="space-y-2.5 p-3.5 rounded-xl bg-sunken/50 border border-line">
+                      <div className="space-y-3 p-4 rounded-xl bg-sunken/50 border border-line">
                         <div className="font-semibold text-ink flex items-center justify-between">
                           <span>1. Kịch bản &amp; File bàn giao của CTV</span>
                           <span className="text-2xs font-mono text-ink-3">
@@ -1638,7 +1638,7 @@ export function CtvProfileDetail({
                           </span>
                         </div>
                         {selectedTaskForLog.scriptContent ? (
-                          <div className="space-y-1.5 text-ink-2">
+                          <div className="space-y-2 text-ink-2">
                             <div>
                               <span className="font-semibold text-ink">Hook 3s đầu: </span>
                               <span>{selectedTaskForLog.scriptContent.hook}</span>
@@ -1665,7 +1665,7 @@ export function CtvProfileDetail({
                               className="text-accent hover:underline inline-flex items-center gap-1 font-medium"
                             >
                               <span>Link Video Demo (Drive)</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                           {selectedTaskForLog.videoDeliverables?.storeDriveFolderUrl && (
@@ -1675,7 +1675,7 @@ export function CtvProfileDetail({
                               rel="noreferrer"
                               className="text-ink-2 hover:text-ink hover:underline inline-flex items-center gap-1 font-medium"
                             >
-                              <FolderOpen className="w-3 h-3" />
+                              <FolderOpen className="w-3.5 h-3.5" />
                               <span>Drive tổng gian hàng</span>
                             </a>
                           )}
@@ -1687,14 +1687,14 @@ export function CtvProfileDetail({
                               className="text-positive hover:underline inline-flex items-center gap-1 font-medium"
                             >
                               <span>Bài đăng thực tế trên kênh Brand</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                         </div>
                       </div>
 
                       {/* Cột Lịch sử nhận xét & sửa bài (Feedback Logs) */}
-                      <div className="space-y-2.5 p-3.5 rounded-xl bg-surface border border-line">
+                      <div className="space-y-3 p-4 rounded-xl bg-surface border border-line">
                         <div className="font-semibold text-ink">
                           2. Lịch sử duyệt &amp; Nhận xét chỉnh sửa ({(selectedTaskForLog.feedbackLogs || []).length} lượt)
                         </div>
@@ -1707,7 +1707,7 @@ export function CtvProfileDetail({
                             {selectedTaskForLog.feedbackLogs.map((fb) => (
                               <div
                                 key={fb.id}
-                                className="p-2.5 rounded-lg border border-line bg-canvas/60 space-y-1"
+                                className="p-3 rounded-lg border border-line bg-canvas/60 space-y-1"
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="font-semibold text-ink">
@@ -1746,14 +1746,14 @@ export function CtvProfileDetail({
                   <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-line bg-sunken/60 text-ink-3 font-semibold text-2xs">
-                        <th className="py-2.5 px-4">MÃ PHIẾU DNTT</th>
-                        <th className="py-2.5 px-3">KỲ QUYẾT TOÁN</th>
-                        <th className="py-2.5 px-3 text-center">SỐ VIDEO</th>
-                        <th className="py-2.5 px-3 text-right">TỔNG GROSS</th>
-                        <th className="py-2.5 px-3 text-right">THUẾ TNCN (10%)</th>
-                        <th className="py-2.5 px-3 text-right">THỰC NHẬN (NET)</th>
-                        <th className="py-2.5 px-3">MÃ UNC / NGÀY CHI</th>
-                        <th className="py-2.5 px-4 text-right">TRẠNG THÁI</th>
+                        <th className="py-3 px-4">MÃ PHIẾU DNTT</th>
+                        <th className="py-3 px-3">KỲ QUYẾT TOÁN</th>
+                        <th className="py-3 px-3 text-center">SỐ VIDEO</th>
+                        <th className="py-3 px-3 text-right">TỔNG GROSS</th>
+                        <th className="py-3 px-3 text-right">THUẾ TNCN (10%)</th>
+                        <th className="py-3 px-3 text-right">THỰC NHẬN (NET)</th>
+                        <th className="py-3 px-3">MÃ UNC / NGÀY CHI</th>
+                        <th className="py-3 px-4 text-right">TRẠNG THÁI</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
@@ -1862,7 +1862,7 @@ export function CtvProfileDetail({
                       (ctv.onHandProducts || []).map((sku) => (
                         <span
                           key={sku}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive border border-line text-xs font-mono font-medium"
+                          className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-positive-soft text-positive border border-line text-xs font-mono font-medium"
                         >
                           <Package className="w-3.5 h-3.5" />
                           <span>{sku}</span>
@@ -1903,29 +1903,29 @@ export function CtvProfileDetail({
                   <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-line bg-sunken/60 text-ink-3 font-semibold text-2xs">
-                        <th className="py-2.5 px-4">MÃ VẬN ĐƠN</th>
-                        <th className="py-2.5 px-3">MÃ SKU &amp; SẢN PHẨM</th>
-                        <th className="py-2.5 px-3">ĐẦU VIỆC GẮN KÈM</th>
-                        <th className="py-2.5 px-3">NGÀY GỬI / CẬP NHẬT</th>
-                        <th className="py-2.5 px-3">TRẠNG THÁI GIAO</th>
-                        <th className="py-2.5 px-4">ĐỐI SOÁT HÀNG MẪU</th>
+                        <th className="py-3 px-4">MÃ VẬN ĐƠN</th>
+                        <th className="py-3 px-3">MÃ SKU &amp; SẢN PHẨM</th>
+                        <th className="py-3 px-3">ĐẦU VIỆC GẮN KÈM</th>
+                        <th className="py-3 px-3">NGÀY GỬI / CẬP NHẬT</th>
+                        <th className="py-3 px-3">TRẠNG THÁI GIAO</th>
+                        <th className="py-3 px-4">ĐỐI SOÁT HÀNG MẪU</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
                       {sampleShippingHistory.map((item) => (
                         <tr key={item.id} className="hover:bg-sunken/40">
-                          <td className="py-2.5 px-4 font-mono font-semibold text-ink">
+                          <td className="py-3 px-4 font-mono font-semibold text-ink">
                             {item.trackingCode}
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-3 px-3">
                             <span className="font-mono font-semibold text-ink block">{item.sku}</span>
                             <span className="text-2xs text-ink-3">{item.brandName}</span>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-2xs text-ink-2">{item.taskCode}</td>
-                          <td className="py-2.5 px-3 font-mono text-2xs text-ink-3">
+                          <td className="py-3 px-3 font-mono text-2xs text-ink-2">{item.taskCode}</td>
+                          <td className="py-3 px-3 font-mono text-2xs text-ink-3">
                             {formatDate(item.shippedAt)}
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-3 px-3">
                             <Status
                               tone={
                                 item.shippingStatus.includes('nhà') || item.shippingStatus.includes('thành công')
@@ -1936,7 +1936,7 @@ export function CtvProfileDetail({
                               {item.shippingStatus}
                             </Status>
                           </td>
-                          <td className="py-2.5 px-4 text-2xs text-ink-2">{item.reconciliationNote}</td>
+                          <td className="py-3 px-4 text-2xs text-ink-2">{item.reconciliationNote}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2269,7 +2269,7 @@ export function CtvVietQrModal({ ctv, onClose }: { ctv: Contributor; onClose: ()
             {ctv.bankName} · {ctv.bankAccountName}
           </p>
         </div>
-        <dl className="grid gap-1.5 text-xs">
+        <dl className="grid gap-2 text-xs">
           <div className="flex justify-between">
             <dt className="text-ink-3">Mã CTV</dt>
             <dd className="font-mono text-ink">{ctv.code || ctv.id}</dd>

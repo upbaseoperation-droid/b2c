@@ -173,6 +173,23 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MasterDataSubTab>(initialSubTab);
 
+  useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab !== 'master-data') return;
+      if (
+        detail.subView === 'stores' ||
+        detail.subView === 'cast-tiers' ||
+        detail.subView === 'staff' ||
+        detail.subView === 'brands'
+      ) {
+        setActiveSubTab(detail.subView);
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
+  }, []);
+
   // Brand state (Tải 625 thương hiệu chuẩn Upbase Master Data)
   const [brandList, setBrandList] = useState<BrandDetail[]>(() => 
     clientMasterCatalogCache?.data.brands || (brands && brands.length > 0 ? brands : DEFAULT_MASTER_CATALOG.brands)

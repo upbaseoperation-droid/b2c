@@ -36,11 +36,11 @@ export async function GET(req: NextRequest) {
     let state = await getVnCartBridgeState(vnBridgeUrl);
     let pending = Object.values(state.pending || {});
 
-    // Long-Polling: Giữ kết nối tối đa 8s nếu chưa có video chờ để trả về ngay khi có link
+    // Long-Polling: Giữ kết nối tối đa 7.5s nếu chưa có video chờ để trả về ngay khi có link (chu kỳ 350ms)
     if (isLongPoll && pending.length === 0) {
-      const waitDeadline = Date.now() + 8000;
+      const waitDeadline = Date.now() + 7500;
       while (Date.now() < waitDeadline && pending.length === 0) {
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 350));
         state = await getVnCartBridgeState();
         pending = Object.values(state.pending || {});
       }
@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
     };
 
     const forcePurge = sp.get('purge') === '1' || sp.get('refresh') === '1';
+    const isFastMode = sp.get('fast') === '1';
 
     if (videoUrl || frameId || coverUrl) {
       const captured = await captureTikTokProductFrameBuffer({
@@ -122,6 +123,7 @@ export async function GET(req: NextRequest) {
         captureSec: Number.isFinite(sec) ? sec : 3.5,
         frameId: forcePurge ? null : frameId,
         overlayMeta,
+        fastMode: isFastMode,
       });
       if (captured.buffer && captured.buffer.length > 300) {
         const isPng = captured.buffer[0] === 0x89 && captured.buffer[1] === 0x50;

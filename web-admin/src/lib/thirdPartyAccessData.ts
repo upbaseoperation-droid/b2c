@@ -2,93 +2,6 @@ import { ThirdPartyAccessAccount, UserProfile, UserRole } from './types';
 
 export const INITIAL_THIRD_PARTY_ACCOUNTS: ThirdPartyAccessAccount[] = [
   // =========================================================================
-  // 1. BRAND PARTNERS (ĐỐI TÁC THƯƠNG HIỆU / NHÃN HÀNG)
-  // Đăng nhập Gmail -> Vào thẳng view Cổng Đối Tác Brand (BrandHubView)
-  // =========================================================================
-  {
-    id: 'tpa-brand-kutieskin',
-    gmail: 'marketing.kutieskin@gmail.com',
-    displayName: 'Minh Tuấn (Brand Lead Kutieskin)',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-    partnerType: 'BRAND',
-    linkedEntityId: 'brand-kutieskin',
-    linkedEntityName: 'Kutieskin Mama & Baby',
-    linkedStoreNames: [
-      'Shopee Mall Kutieskin Chính Hãng',
-      'Kutieskin Official TikTok Shop'
-    ],
-    permissions: {
-      canApproveDeals: true,
-      canReviewScripts: true,
-      canViewGmvAndRoas: true,
-      canViewFinancials: true,
-      canSubmitVideos: false,
-      canProvideSparkAds: false,
-      canClaimSamples: false
-    },
-    status: 'ACTIVE',
-    lastLoginAt: '2026-10-08 14:30',
-    loginCount: 42,
-    createdAt: '2026-09-01',
-    createdBy: 'Vân Ngọc (Operations Head)',
-    notes: 'Tài khoản đại diện nhãn hàng Kutieskin duyệt đề xuất KOC và đối soát doanh thu sàn.'
-  },
-  {
-    id: 'tpa-brand-lrp',
-    gmail: 'brand.larocheposay.vn@gmail.com',
-    displayName: 'Thanh Hà (Marketing Director LRP)',
-    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
-    partnerType: 'BRAND',
-    linkedEntityId: 'brand-lrp',
-    linkedEntityName: 'La Roche-Posay',
-    linkedStoreNames: [
-      'La Roche-Posay Vietnam Official'
-    ],
-    permissions: {
-      canApproveDeals: true,
-      canReviewScripts: true,
-      canViewGmvAndRoas: true,
-      canViewFinancials: true,
-      canSubmitVideos: false,
-      canProvideSparkAds: false,
-      canClaimSamples: false
-    },
-    status: 'ACTIVE',
-    lastLoginAt: '2026-10-07 09:15',
-    loginCount: 28,
-    createdAt: '2026-09-05',
-    createdBy: 'Đặng Mai Hà Linh (Brand PIC)',
-    notes: 'Kiểm soát chặt chẽ claim y khoa và duyệt video trước khi lên sóng TikTok Shop.'
-  },
-  {
-    id: 'tpa-brand-royal',
-    gmail: 'royalausnz.partner@gmail.com',
-    displayName: 'Hoàng Nam (Brand Manager Royal Ausnz)',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-    partnerType: 'BRAND',
-    linkedEntityId: 'brand-royal',
-    linkedEntityName: 'Royal Ausnz',
-    linkedStoreNames: [
-      'Royal Ausnz Official Store'
-    ],
-    permissions: {
-      canApproveDeals: true,
-      canReviewScripts: true,
-      canViewGmvAndRoas: true,
-      canViewFinancials: false,
-      canSubmitVideos: false,
-      canProvideSparkAds: false,
-      canClaimSamples: false
-    },
-    status: 'ACTIVE',
-    lastLoginAt: '2026-10-06 18:00',
-    loginCount: 19,
-    createdAt: '2026-09-10',
-    createdBy: 'Vân Ngọc (Operations Head)',
-    notes: 'Nhãn sữa hoàng gia Úc, theo dõi danh sách KOC mẹ bỉm và duyệt bài đăng.'
-  },
-
-  // =========================================================================
   // 2. KOC / KOL PARTNERS (CREATORS ĐỐI TÁC)
   // Đăng nhập Gmail -> Vào thẳng view Hub Đối Tác KOC (KocKolHubView)
   // =========================================================================
@@ -276,9 +189,9 @@ export function isThirdPartyPartner(user?: UserProfile | null): boolean {
 /**
  * Lấy Tab điều hướng mặc định theo vai trò đối tác
  */
-export function getPartnerLandingTab(user?: UserProfile | null): 'brand-hub' | 'koc-hub' | 'self-channel-hub' | 'dashboard-bi' {
+export function getPartnerLandingTab(user?: UserProfile | null): 'koc-listing' | 'koc-hub' | 'self-channel-hub' | 'dashboard-bi' {
   if (!user) return 'dashboard-bi';
-  if (user.role === 'BRAND_PARTNER') return 'brand-hub';
+  if (user.role === 'BRAND_PARTNER') return 'koc-listing';
   if (user.role === 'KOC_PARTNER') return 'koc-hub';
   if (user.role === 'CTV_PARTNER') return 'self-channel-hub';
   return 'dashboard-bi';

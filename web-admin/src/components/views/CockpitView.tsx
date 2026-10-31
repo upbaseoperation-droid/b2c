@@ -92,7 +92,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-ink-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-ink-2">
           <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={26} />
           <span className="font-semibold text-ink">{currentUser.name}</span>
           <span className="text-ink-3">·</span>
@@ -174,9 +174,9 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               return (
                 <div
                   key={task.id}
-                  className={`px-4 py-3.5 hover:bg-canvas transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  className={`px-4 py-4 hover:bg-canvas transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     task.urgency === 'done' ? 'opacity-60 bg-canvas' : 'bg-surface'
-                  } ${task.urgency === 'critical' ? 'border-l-2 border-critical pl-3.5' : ''}`}
+                  } ${task.urgency === 'critical' ? 'border-l-2 border-critical pl-4' : ''}`}
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <button
@@ -190,11 +190,11 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                           : 'border-line-strong hover:border-accent bg-surface'
                       }`}
                     >
-                      {task.urgency === 'done' && <CheckCircle2 className="w-3 h-3" />}
+                      {task.urgency === 'done' && <CheckCircle2 className="w-3.5 h-3.5" />}
                     </button>
 
                     <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span
                           onClick={() => onTaskActionClick && onTaskActionClick(task)}
                           className={`text-xs font-semibold cursor-pointer hover:text-accent transition truncate ${

@@ -14,8 +14,6 @@ export const HIDDEN_SCREENS = new Set([
   // Bị chuyển hướng (TAB_ALIASES trong lib/navGroups.ts)
   'BrandView', 'PushProductsView', 'Workload3dMapView', 'PerformanceP3View', 'AuditTrailView',
   'CloudflareAdminView', 'AirBookingReportHubView', 'BrandHubView',
-  // Không màn nào hiển thị
-  'OverviewView', 'LeaderboardView', 'KocPipelineMonitorView', 'MasterDataMindmapView', 'PlanDealBoard',
   // Không có trên menu, còn nút dẫn vào
   'BookingView', 'SampleTrackerView', 'StoreManagementView',
   // Văn bản pháp lý in: giữ nguyên định dạng

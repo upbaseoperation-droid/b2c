@@ -6,7 +6,7 @@ export const DEMO_ACTORS: ContractActor[] = [
   { id: 'contract-demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: [], allBrands: true },
   { id: 'contract-demo-legal', name: 'Pháp chế (kiểm thử)', roles: ['LEGAL'], brands: [], allBrands: true },
   { id: 'contract-demo-finance', name: 'Kế toán (kiểm thử)', roles: ['FINANCE'], brands: [], allBrands: true },
-  { id: 'user-ngoc-tam', name: 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm)', roles: ['LEAD', 'CREATOR'], brands: ['ClubClio', 'Cindy Bloom', 'EUPC', 'Mine', 'Cathy Doll', 'L\'Occitane Việt Nam', 'Bye Bye Blemish', 'Rejuran'], allBrands: true },
+  { id: 'user-ngoc-tam', name: 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm)', roles: ['LEAD', 'CREATOR'], brands: ['ClubClio', 'Cindy Bloom', 'EUPC', 'Mine', 'L\'Occitane Việt Nam', 'Bye Bye Blemish', 'Rejuran'], allBrands: false },
   { id: 'user-yen-nhi', name: 'Đặng Thị Yến Nhi (Giám đốc Marketing B2C)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'user-admin-giang', name: 'Đỗ Văn Giang (Tổng Giám Đốc)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'contract-demo-sign', name: 'Điều phối ký (kiểm thử)', roles: ['SIGN_COORDINATOR'], brands: [], allBrands: true },

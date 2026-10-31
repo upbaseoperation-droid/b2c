@@ -364,7 +364,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
       header: 'Họ tên CTV / VJ',
       width: 180,
       render: (c) => (
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <Avatar name={c.name} src={c.avatar} size={30} />
           <span className="truncate font-semibold text-ink text-xs">{c.name}</span>
         </div>
@@ -544,7 +544,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
       </PageActions>
 
       <Panel flush>
-        <div className="p-4 border-b border-line grid gap-2.5">
+        <div className="p-4 border-b border-line grid gap-3">
           <FilterBar
             search={{
               value: search,
@@ -705,7 +705,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
           </>
         }
       >
-        <form id="create-ctv-master-form" onSubmit={handleCreateCtv} className="space-y-3.5 text-xs">
+        <form id="create-ctv-master-form" onSubmit={handleCreateCtv} className="space-y-4 text-xs">
           <div>
             <label className="block text-ink font-semibold mb-1">
               Họ và tên CTV / VJ <span className="text-critical">*</span>
@@ -732,7 +732,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 placeholder="VD: 0981 234 567"
                 value={createForm.phone}
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -742,7 +742,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 placeholder="Tự sinh nếu để trống"
                 value={createForm.code}
                 onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
-                className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -755,7 +755,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 onChange={(e) =>
                   setCreateForm({ ...createForm, role: e.target.value as ContributorRole })
                 }
-                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               >
                 <option value="ALL_IN_ONE">Quay dựng trọn gói</option>
                 <option value="CREATIVE_ACTOR">VJ / Diễn viên</option>
@@ -769,7 +769,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 type="text"
                 value={createForm.contentPic}
                 onChange={(e) => setCreateForm({ ...createForm, contentPic: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -782,7 +782,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 step="50000"
                 value={createForm.rate}
                 onChange={(e) => setCreateForm({ ...createForm, rate: Number(e.target.value) })}
-                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -792,7 +792,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 placeholder="ctv@gmail.com"
                 value={createForm.email}
                 onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -804,7 +804,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
               value={createForm.niche}
               onChange={(e) => setCreateForm({ ...createForm, niche: e.target.value })}
               placeholder="VD: Mẹ & Bé, Dược mỹ phẩm, Thực phẩm chức năng"
-              className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
 
@@ -815,7 +815,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
               value={createForm.shippingAddress}
               onChange={(e) => setCreateForm({ ...createForm, shippingAddress: e.target.value })}
               placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
-              className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
         </form>

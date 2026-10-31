@@ -230,7 +230,7 @@ export const SLA_QUICK_REFERENCE: SlaQuickLookupItem[] = [
     deadline: 'Tối đa 24 – 48 giờ làm việc',
     pic: 'Đại diện thương hiệu / Chuyên viên Brand',
     escalationRule: 'Quá 48h chưa duyệt: Chuyên viên Brand đôn đốc trực tiếp để tránh trễ lịch gửi mẫu',
-    relatedTab: 'brand-hub',
+    relatedTab: 'koc-listing',
   },
   {
     code: 'SLA-KOC-01',

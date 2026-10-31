@@ -50,11 +50,11 @@ export function AssignmentLogList({ entityId }: { entityId: string }) {
 
   return (
     <details className="text-2xs border border-line rounded-lg bg-surface">
-      <summary className="px-2.5 py-1.5 cursor-pointer text-ink-2 font-medium flex items-center gap-1.5">
-        <History className="w-3 h-3" aria-hidden />
+      <summary className="px-3 py-2 cursor-pointer text-ink-2 font-medium flex items-center gap-2">
+        <History className="w-3.5 h-3.5" aria-hidden />
         Nhật ký phân công{entries ? ` (${entries.length})` : ''}
       </summary>
-      <div className="px-2.5 pb-2 max-h-48 overflow-y-auto">
+      <div className="px-3 pb-2 max-h-48 overflow-y-auto">
         {error ? (
           <div className="text-critical py-1">{error}</div>
         ) : !entries ? (
@@ -64,7 +64,7 @@ export function AssignmentLogList({ entityId }: { entityId: string }) {
         ) : (
           <ul className="divide-y divide-line">
             {entries.map((e, i) => (
-              <li key={`${e.at}-${e.field}-${i}`} className="py-1.5">
+              <li key={`${e.at}-${e.field}-${i}`} className="py-2">
                 <div className="text-ink">
                   <span className="font-medium">{FIELD_LABEL[e.field] || e.field}</span>: {e.from || '—'} → {e.to || '—'}
                 </div>

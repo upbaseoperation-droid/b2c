@@ -244,6 +244,18 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // View mode: false = Màn hình Quản Lý Kế Hoạch Theo Tháng (MonthlyPlanHub), true = Studio Chi tiết Phân Rã
   const [isShowingStudio, setIsShowingStudio] = useState<boolean>(initialShowStudio);
 
+  useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab !== 'input-plan') return;
+      if (detail.subView === 'BRAND_PLANS' || detail.subView === 'STORE_GOVERNANCE') {
+        setIsShowingStudio(false);
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
+  }, []);
+
   // Main Plan State (default from Fresh balanced scenario or active plan)
   const [planState, setPlanState] = useState<InputPlanBreakdownState>(INITIAL_MONTHLY_PLANS[0]);
 
@@ -1212,15 +1224,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   };
 
   const handleOpenWeeklyMatrixStep = () => {
-    if (!isPlanLocked) {
-      const currentRows = resolveWeekRows(planState);
-      const hasStep2Data = (planState.items || []).some(it => !it.id.startsWith('WB-') && (it.qty > 0 || it.totalBudget > 0));
-      if (!hasBreakdownData(currentRows) && hasStep2Data) {
-        const nextRows = distributeItemsToWeeks(planState, 'EVEN');
-        setPlanState(prev => ({ ...prev, weeklyBreakdown: nextRows }));
-        notify('Đã tự động chia đều số lượng & ngân sách Bước 2 xuống 4 tuần (có thể đổi tỷ trọng hoặc sửa từng ô).');
-      }
-    }
     setActiveTab('WEEKLY_MATRIX');
   };
 
@@ -1349,10 +1352,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     let authorName = currentUser?.name || targetPlan.pic;
     let authorTitle = 'Booking Specialist PIC';
     if (currentRole === 'LEAD') {
-      authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Đặng Thị Yến Nhi';
-      authorTitle = 'Giám đốc Marketing B2C';
+      if (currentUser?.role === 'LEADER') {
+        authorName = currentUser.name;
+        authorTitle = 'Trưởng nhóm B2C';
+      } else {
+        authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Đặng Thị Yến Nhi';
+        authorTitle = 'Giám đốc Marketing B2C';
+      }
     } else if (currentRole === 'BOOKING') {
-      authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || targetPlan.pic || 'Lê Phương Thảo';
+      authorName = (currentUser?.role === 'BOOKING_MEMBER' || currentUser?.role === 'MEMBER' ? currentUser.name : null) || targetPlan.pic || 'Lê Phương Thảo';
       authorTitle = 'Booking Specialist PIC';
     }
 
@@ -1727,7 +1735,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const isApprovedStatus = ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus);
   const resolvedBookingLeader = resolveStoreBookingLeader(planState.storeName || planState.brandName, planState.bookingLeader);
   const hasLeader = Boolean(resolvedBookingLeader);
-  const isPlanLeaderUser = hasLeader && Boolean(planState.bookingLeader) && (currentUser?.name || '').trim().toLowerCase() === (planState.bookingLeader || '').trim().toLowerCase();
+  const isPlanLeaderUser = hasLeader && Boolean(resolvedBookingLeader) && (currentUser?.name || '').trim().toLowerCase() === (resolvedBookingLeader || '').trim().toLowerCase();
   const studioVersionSnapshots = getPlanVersionSnapshots(planState);
   const activeVersionCode = planState.currentVersionCode || 'v1.0';
 

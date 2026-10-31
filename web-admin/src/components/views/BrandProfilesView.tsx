@@ -242,6 +242,24 @@ export function BrandProfilesView({
     }
   }
 
+  useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab !== 'brand-knowledge') return;
+      if (detail.subView === 'PRODUCTS') {
+        setDetailTab('PRODUCTS');
+        if (!openKey && visible.length > 0) {
+          setOpenKey(visible[0].key);
+        }
+      } else if (detail.subView === 'OVERVIEW') {
+        setDetailTab('OVERVIEW');
+        setOpenKey(null);
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
+  }, [openKey, visible]);
+
   if (loadError && !profiles) {
     return (
       <Panel>

@@ -1,5 +1,5 @@
 import { resolveStoreBookingLeader } from '../larkPaymentRequestEngine';
-import { isPlanManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
+import { isPlanManagedByUser, isStaffGlobalAdminOrManager, isStoreManagedByUser } from '../rbacScope';
 import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
 import { readMasterCatalog } from './masterCatalogStore';
@@ -110,6 +110,19 @@ const planInclude = {
 type PlanRow = Prisma.MonthlyPlanGetPayload<{ include: typeof planInclude }>;
 
 const PLANS_CACHE_TTL_MS = 25_000;
+const DEPRECATED_MOCK_PLAN_IDS = new Set([
+  'PLAN-2026-09-CLIO',
+  'PLAN-2026-09-LEMONADE',
+  'PLAN-2026-09-SENKA',
+  'PLAN-2026-08-TMCLEAN',
+  'PLAN-2026-08-FRESH',
+]);
+
+function isDeprecatedMockPlanId(id?: string | null): boolean {
+  if (!id) return false;
+  return DEPRECATED_MOCK_PLAN_IDS.has(id) || id.startsWith('PLAN-AUDIT-G3-');
+}
+
 let cachedPlansState: {
   expiresAt: number;
   list: StoredMonthlyPlan[];
@@ -158,7 +171,7 @@ function ensureMemoryPlansSeeded() {
   memoryPlansSeeded = true;
   const now = new Date();
   for (const plan of [...INITIAL_MONTHLY_PLANS, ...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026]) {
-    if (!plan?.id || memoryPlansById.has(plan.id)) continue;
+    if (!plan?.id || isDeprecatedMockPlanId(plan.id) || memoryPlansById.has(plan.id)) continue;
     memoryPlansById.set(plan.id, {
       plan: structuredClone(plan),
       revision: 1,
@@ -330,6 +343,7 @@ function checkPlanAccessWithCatalog(
 }
 
 async function getStoredPlanByIdFast(id: string): Promise<StoredMonthlyPlan | null> {
+  if (isDeprecatedMockPlanId(id)) return null;
   if (!isPostgresMonthlyPlanEnabled()) {
     ensureMemoryPlansSeeded();
     const mem = memoryPlansById.get(id);
@@ -394,9 +408,12 @@ export async function assertStoreBookingAccess(storeIdOrName: string, actor: Use
   const allowed = stores.some(store => {
     const brand = catalog.brands.find(b => brandKey(b.name) === brandKey(store.brandName || '')) as BrandDetail | undefined;
     const positions = storePositionsOf(actor, store, brand);
-    return isBookingExecutor(positions) || positions.has('LEADER');
+    const isBrandReviewer =
+      (actor.role === 'BRAND_PARTNER' || actor.role === 'BRAND_MEMBER') &&
+      isStoreManagedByUser(store, actor, true);
+    return isBookingExecutor(positions) || positions.has('LEADER') || isBrandReviewer;
   });
-  if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Chỉ nhân sự Booking hoặc Leader của gian được thao tác Sheet của gian này.');
+  if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Chỉ nhân sự Booking, Leader hoặc Đại diện Nhãn hàng của gian được thao tác Sheet của gian này.');
 }
 
 /** Bối cảnh quyền trên một kế hoạch: vị trí của người dùng trên gian, nhãn, Account PIC. Dùng cho các bảng làm việc theo người sở hữu. */
@@ -585,7 +602,7 @@ async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMon
         });
       }
     }
-    const list = rows.map(toStored);
+    const list = rows.filter(r => !isDeprecatedMockPlanId(r.id)).map(toStored);
     const byId = new Map(list.map(item => [item.plan.id, item]));
     cachedPlansState = {
       expiresAt: Date.now() + PLANS_CACHE_TTL_MS,

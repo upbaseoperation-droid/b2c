@@ -90,6 +90,19 @@ export const ContentView: React.FC<ContentViewProps> = ({
   const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
   const [selectedScript, setSelectedScript] = useState<ScriptReviewItem | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('CONTENT_PLAN');
+
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab === 'content' && detail.subView) {
+        if (detail.subView === 'CONTENT_PLAN' || detail.subView === 'SCRIPTS') {
+          setActiveSubTab(detail.subView as ContentSubTab);
+        }
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', handler);
+    return () => window.removeEventListener('upbase-sidebar-subview', handler);
+  }, []);
   const [approvingDraftVideo, setApprovingDraftVideo] = useState<string | null>(null);
   const [approvedDraftVideos, setApprovedDraftVideos] = useState<Set<string>>(new Set());
   const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
@@ -757,7 +770,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
             </>
           }
         >
-          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken/30 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken/30 px-4 py-3">
             <Select value={filterBrand} onChange={e => setFilterBrand(e.target.value)} className="max-w-[220px]">
               <option value="ALL">Tất cả Thương hiệu (Brand)</option>
               {profiles.map(p => (
@@ -782,7 +795,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
             {filteredContentItems.map((item) => (
               <div key={item.id} className="p-4 sm:p-5 hover:bg-canvas transition space-y-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-code text-accent font-semibold text-xs">{item.contentCode}</span>
                     <span className="text-ink-3 text-xs">
                       · BO: <strong className="text-ink font-code">{item.dealCode}</strong>
@@ -804,7 +817,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-sunken/50 p-3.5 rounded-lg border border-line space-y-1.5 text-xs">
+                <div className="bg-sunken/50 p-4 rounded-lg border border-line space-y-2 text-xs">
                   <div className="text-ink-2 font-medium">
                     Góc tiếp cận: <strong className="text-ink">{item.angle}</strong>
                   </div>
@@ -863,7 +876,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
             </>
           }
         >
-          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken/30 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken/30 px-4 py-3">
             <Select value={filterBrand} onChange={e => setFilterBrand(e.target.value)} className="max-w-[220px]">
               <option value="ALL">Tất cả Thương hiệu (Brand)</option>
               {profiles.map(p => (
@@ -891,7 +904,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
                 onClick={() => setSelectedScript(item)}
                 className="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-canvas transition cursor-pointer group"
               >
-                <div className="space-y-1.5 max-w-2xl">
+                <div className="space-y-2 max-w-2xl">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-ink text-sm group-hover:text-accent transition-colors">
                       {item.kocName}
@@ -919,7 +932,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {item.status === 'PENDING' ? (
                     <>
                       <Status tone="warning">
@@ -957,10 +970,10 @@ export const ContentView: React.FC<ContentViewProps> = ({
                 {approvedDraftVideos.has('DF-VID-1') ? 'Đã duyệt lên sóng' : 'Chờ nghiệm thu'}
               </Status>
             </div>
-            <div className="aspect-video bg-sunken border border-line rounded-lg flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center gap-1.5">
+            <div className="aspect-video bg-sunken border border-line rounded-lg flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center gap-2">
               <Video className="w-9 h-9 text-accent opacity-80" />
               <div className="font-semibold text-ink">Video nháp v1: Test Camera UV 8h ngoài trời</div>
-              <div className="rounded bg-surface px-2.5 py-1 text-2xs text-ink-2 border border-line">
+              <div className="rounded bg-surface px-3 py-1 text-2xs text-ink-2 border border-line">
                 #UpBeauty #MegaSale1010 · Đã gắn giỏ hàng
               </div>
             </div>
@@ -988,10 +1001,10 @@ export const ContentView: React.FC<ContentViewProps> = ({
               <span className="font-semibold text-ink text-sm">Minh Đan Daily — Video review thu đông</span>
               <Status tone="positive">Đã lên sóng</Status>
             </div>
-            <div className="aspect-video bg-sunken border border-line rounded-lg flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center gap-1.5">
+            <div className="aspect-video bg-sunken border border-line rounded-lg flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center gap-2">
               <Video className="w-9 h-9 text-positive opacity-80" />
               <div className="font-semibold text-ink">TikTok: @danxinhdaily/video/74182910293847</div>
-              <div className="rounded bg-surface px-2.5 py-1 text-2xs text-positive font-medium border border-line tabular-nums">
+              <div className="rounded bg-surface px-3 py-1 text-2xs text-positive font-medium border border-line tabular-nums">
                 42.000 lượt xem · GMV: 68.000.000 ₫
               </div>
             </div>
@@ -1041,13 +1054,13 @@ export const ContentView: React.FC<ContentViewProps> = ({
             <table className="w-full min-w-[1060px] text-left text-xs border-collapse">
               <thead className="bg-sunken text-ink-3 border-b border-line text-2xs font-medium">
                 <tr>
-                  <th className="p-3.5 pl-5 w-[220px] min-w-[220px]">Mã & KOC</th>
-                  <th className="p-3.5 w-[200px] min-w-[200px]">Link bài đăng & kênh</th>
-                  <th className="p-3.5 w-[220px] min-w-[220px]">Mã ủy quyền Spark Ads</th>
-                  <th className="p-3.5 w-[140px] min-w-[140px] text-right">Lượt xem / Thích</th>
-                  <th className="p-3.5 w-[160px] min-w-[160px] text-right">GMV thực nhận</th>
-                  <th className="p-3.5 w-[140px] min-w-[140px] text-right">Hiệu quả</th>
-                  <th className="p-3.5 pr-5 text-right w-[160px] min-w-[160px] sm:sticky sm:right-0 sm:z-10 bg-sunken border-l border-line">
+                  <th className="p-4 pl-5 w-[220px] min-w-[220px]">Mã & KOC</th>
+                  <th className="p-4 w-[200px] min-w-[200px]">Link bài đăng & kênh</th>
+                  <th className="p-4 w-[220px] min-w-[220px]">Mã ủy quyền Spark Ads</th>
+                  <th className="p-4 w-[140px] min-w-[140px] text-right">Lượt xem / Thích</th>
+                  <th className="p-4 w-[160px] min-w-[160px] text-right">GMV thực nhận</th>
+                  <th className="p-4 w-[140px] min-w-[140px] text-right">Hiệu quả</th>
+                  <th className="p-4 pr-5 text-right w-[160px] min-w-[160px] sm:sticky sm:right-0 sm:z-10 bg-sunken border-l border-line">
                     Đối soát
                   </th>
                 </tr>
@@ -1055,12 +1068,12 @@ export const ContentView: React.FC<ContentViewProps> = ({
               <tbody className="divide-y divide-line">
                 {publications.map((pub) => (
                   <tr key={pub.id} className="group hover:bg-canvas transition">
-                    <td className="p-3.5 pl-5">
+                    <td className="p-4 pl-5">
                       <span className="font-mono text-positive font-semibold block text-2xs">{pub.publicationCode}</span>
                       <span className="font-semibold text-ink text-xs">{pub.creatorName}</span>
                       <div className="text-2xs text-ink-3">Mã nội dung: {pub.contentCode}</div>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-4">
                       <a
                         href={pub.platformPostUrl}
                         target="_blank"
@@ -1068,11 +1081,11 @@ export const ContentView: React.FC<ContentViewProps> = ({
                         className="font-mono text-accent hover:underline inline-flex items-center gap-1 text-2xs"
                       >
                         <span>{pub.platform}</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                       <span className="text-2xs text-ink-3 block mt-0.5">Ngày đăng: {pub.publishedAt}</span>
                     </td>
-                    <td className="p-3.5 font-mono">
+                    <td className="p-4 font-mono">
                       {pub.sparkAdsCode ? (
                         <div className="text-2xs font-medium text-ink">
                           {pub.sparkAdsCode} ({pub.sparkAdsExpiryDays} ngày)
@@ -1084,21 +1097,21 @@ export const ContentView: React.FC<ContentViewProps> = ({
                         {pub.isMediaHandedOff ? 'Đã bàn giao nhóm Ads' : 'Chưa bàn giao Ads'}
                       </span>
                     </td>
-                    <td className="p-3.5 font-mono text-right tabular-nums">
+                    <td className="p-4 font-mono text-right tabular-nums">
                       <div className="font-semibold text-ink">{(pub.viewsCount / 1000).toFixed(0)}k xem</div>
                       <div className="text-2xs text-ink-3">{(pub.likesCount / 1000).toFixed(1)}k thích</div>
                     </td>
-                    <td className="p-3.5 font-mono text-right tabular-nums">
+                    <td className="p-4 font-mono text-right tabular-nums">
                       <div className="font-semibold text-positive whitespace-nowrap">
                         {formatVndShort(pub.affiliateGmv)}
                       </div>
                       <div className="text-2xs text-ink-3">{pub.itemsSold} món bán</div>
                     </td>
-                    <td className="p-3.5 font-mono text-right tabular-nums">
+                    <td className="p-4 font-mono text-right tabular-nums">
                       <span className="text-xs font-semibold text-ink">ROI: {pub.roi}x</span>
                       <div className="text-2xs text-ink-3 mt-0.5">CP: {formatVndShort(pub.costAttributed)}</div>
                     </td>
-                    <td className="p-3.5 pr-5 text-right sm:sticky sm:right-0 sm:z-10 bg-surface group-hover:bg-canvas border-l border-line">
+                    <td className="p-4 pr-5 text-right sm:sticky sm:right-0 sm:z-10 bg-surface group-hover:bg-canvas border-l border-line">
                       <div className="flex flex-col items-end gap-1">
                         <Status tone="positive">Đã đối soát</Status>
                         <button
@@ -1320,7 +1333,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
           </Field>
 
           {newBriefMode === 'VETTING_GUARDRAILS' ? (
-            <div className="space-y-3 rounded-lg border border-accent/40 bg-accent-soft/20 p-3.5">
+            <div className="space-y-3 rounded-lg border border-accent/40 bg-accent-soft/20 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-accent">
                   Bộ tham số kiểm duyệt KOL (KL6 / KL7 — Không bắt buộc Hook/Angle định hướng)
@@ -1421,7 +1434,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
 
           {draftCompliance && (
             <div
-              className={`p-3 rounded-lg border text-xs space-y-1.5 ${
+              className={`p-3 rounded-lg border text-xs space-y-2 ${
                 draftCompliance.complianceStatus === 'FAIL'
                   ? 'bg-critical-soft/40 border-critical/40 text-critical'
                   : draftCompliance.complianceStatus === 'WARNING'
@@ -1430,7 +1443,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
               }`}
             >
               <div className="flex items-center justify-between gap-2 font-semibold">
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 shrink-0" />
                   <span>Đối chiếu quy chuẩn {newBrandName}: {draftCompliance.overallScore}/100 điểm</span>
                 </span>

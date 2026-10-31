@@ -1,7 +1,8 @@
 import type { ContractActor, ContractEvent, ContractRecord, ReviewStep, SigningAttempt } from './types';
 export class ContractError extends Error { constructor(message: string, public status = 400) { super(message); } }
 export function requireCondition(condition: unknown, message: string, status = 400): asserts condition { if (!condition) throw new ContractError(message, status); }
-export const inScope = (brand: string, actor: ContractActor) => actor.allBrands || actor.brands.includes(brand);
+export const inScope = (brand: string, actor: ContractActor) =>
+  brand === 'UPBASE' || actor.allBrands || actor.roles.includes('LEGAL') || actor.brands.includes(brand);
 export function canRead(record: ContractRecord, actor: ContractActor) {
   if (
     record.id.startsWith('CTR-DEMO-') ||
@@ -74,7 +75,7 @@ export function editContract(record: ContractRecord, actor: ContractActor, input
   });
   Object.assign(next, input); next.version++; next.steps = []; next.approval = 'DRAFT'; event(next, actor, 'EDIT'); return next;
 }
-export function submitContract(record: ContractRecord, actor: ContractActor, reviewers: ContractActor[], options?: { requireLegal?: boolean }) {
+export function submitContract(record: ContractRecord, actor: ContractActor, reviewers: ContractActor[], _options?: { requireLegal?: boolean }) {
   const isOwnerOrDemo = record.ownerId === actor.id || record.id.startsWith('CTR-DEMO-') || record.ownerId === 'contract-demo-owner' || record.ownerId === 'demo-owner';
   requireCondition(isOwnerOrDemo && inScope(record.brand, actor), 'Không có quyền gửi hồ sơ.', 403);
   requireCondition(['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval), 'Hồ sơ không ở trạng thái có thể gửi duyệt.');
@@ -83,50 +84,30 @@ export function submitContract(record: ContractRecord, actor: ContractActor, rev
   const finance = reviewers.find(r => r.roles.includes('FINANCE'));
   requireCondition(finance && finance.id !== actor.id && inScope(record.brand, finance), 'Kế toán không có quyền hoặc trùng người tạo.');
 
-  const legal = reviewers.find(r => r.roles.includes('LEGAL'));
-  const needsLegal = Boolean(
-    record.isKocOwnForm ||
-    record.hasCustomTerms ||
-    options?.requireLegal ||
-    (options?.requireLegal === undefined && Boolean(legal))
-  );
-  if (needsLegal) {
-    requireCondition(legal && legal.id !== actor.id && inScope(record.brand, legal), 'Pháp chế không có quyền hoặc trùng người tạo.');
-    requireCondition(legal.id !== finance.id, 'Pháp chế và kế toán cần hai người độc lập.');
-  }
-
   const next = structuredClone(record);
-  const steps: ReviewStep[] = [];
-  if (legal && needsLegal) {
-    steps.push({ role: 'LEGAL', reviewerId: legal.id, reviewerName: legal.name, status: 'PENDING', note: '', version: record.version });
-  }
-  steps.push({ role: 'FINANCE', reviewerId: finance.id, reviewerName: finance.name, status: 'PENDING', note: '', version: record.version });
-
-  const lead = reviewers.find(r => r.roles.includes('LEAD'));
-  if (lead) {
-    requireCondition(lead.id !== actor.id && inScope(record.brand, lead), 'Lead không có quyền hoặc trùng người tạo.');
-    steps.push({ role: 'LEAD', reviewerId: lead.id, reviewerName: lead.name, status: 'PENDING', note: '', version: record.version });
-  }
+  const steps: ReviewStep[] = [
+    { role: 'FINANCE', reviewerId: finance.id, reviewerName: finance.name, status: 'PENDING', note: '', version: record.version },
+  ];
 
   next.steps = steps;
   next.approval = 'IN_REVIEW';
-  event(next, actor, 'SUBMIT', needsLegal ? '' : 'Mẫu chuẩn: Miễn duyệt Pháp chế');
+  const isHdnt = record.templateId.endsWith('-HDNT') || record.brand === 'UPBASE';
+  const notifyNote = isHdnt
+    ? 'Đã chuyển Kế toán duyệt · Đã thông báo Pháp chế và Giám đốc Marketing B2C (Đặng Thị Yến Nhi) để quản lý, theo dõi'
+    : 'Đã chuyển Kế toán duyệt · Đã thông báo Pháp chế để quản lý, theo dõi';
+  event(next, actor, 'SUBMIT', notifyNote);
   return next;
 }
 export function decideContract(record: ContractRecord, actor: ContractActor, decision: ReviewStep['status'], note: string) {
   requireCondition(record.approval === 'IN_REVIEW', 'Hồ sơ không đang chờ duyệt.');
-  let index = record.steps.findIndex(s => s.reviewerId === actor.id && s.status === 'PENDING' && actor.roles.includes(s.role) && s.version === record.version);
+  requireCondition(actor.roles.includes('FINANCE'), 'Chỉ Kế toán mới có quyền phê duyệt hợp đồng.', 403);
+  let index = record.steps.findIndex(s => s.reviewerId === actor.id && s.status === 'PENDING' && s.role === 'FINANCE' && s.version === record.version);
   if (index < 0) {
-    index = record.steps.findIndex(s => s.status === 'PENDING' && actor.roles.includes(s.role) && s.version === record.version);
+    index = record.steps.findIndex(s => s.status === 'PENDING' && s.role === 'FINANCE' && s.version === record.version);
   }
   requireCondition(index >= 0 && actor.id !== record.ownerId && inScope(record.brand, actor), 'Không có bước duyệt được giao cho bạn.', 403);
   requireCondition(['APPROVED', 'CHANGES', 'REJECTED'].includes(decision), 'Quyết định không hợp lệ.');
   requireCondition(decision === 'APPROVED' || note.trim(), 'Cần nêu lý do yêu cầu sửa hoặc từ chối.');
-  if (decision === 'APPROVED' && index > 0) {
-    const previousPending = record.steps.slice(0, index).find(s => s.status !== 'APPROVED');
-    // Mọi luồng, kể cả Google Doc: Pháp chế duyệt xong thì Kế toán mới duyệt.
-    requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
-  }
   const next = structuredClone(record);
   Object.assign(next.steps[index], {
     reviewerId: actor.id,
@@ -135,8 +116,7 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
     note,
     decidedAt: new Date().toISOString(),
   });
-  // Kế toán duyệt FINAL trên luồng Google Docs: chốt hồ sơ thành APPROVED
-  const isFinanceFinal = Boolean(record.googleDocsUrl) && (actor.roles.includes('FINANCE') || actor.roles.includes('LEAD')) && decision === 'APPROVED';
+  const isFinanceFinal = actor.roles.includes('FINANCE') && decision === 'APPROVED';
   next.approval = decision === 'CHANGES'
     ? 'CHANGES'
     : decision === 'REJECTED'
@@ -149,13 +129,10 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
 export function assertCanSign(record: ContractRecord, actor: ContractActor) {
   requireCondition(actor.roles.includes('SIGN_COORDINATOR') && inScope(record.brand, actor), 'Không có quyền trình ký.', 403);
   const hasFinance = record.steps.some(s => s.role === 'FINANCE' && s.status === 'APPROVED' && s.version === record.version);
-  const hasLegal = record.steps.some(s => s.role === 'LEGAL');
-  const legalApproved = !hasLegal || record.steps.some(s => s.role === 'LEGAL' && s.status === 'APPROVED' && s.version === record.version) || Boolean(record.googleDocsUrl);
   requireCondition(
     record.approval === 'APPROVED' &&
     record.steps.length >= 1 &&
-    hasFinance &&
-    legalApproved,
+    hasFinance,
     'Chỉ phiên bản đã được Kế toán phê duyệt cuối cùng (FINAL) mới được bắt đầu luồng trình ký.'
   );
 }

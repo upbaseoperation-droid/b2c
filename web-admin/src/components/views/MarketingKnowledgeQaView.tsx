@@ -205,7 +205,7 @@ function renderFormattedAnswer(markdown: string) {
 
         if (line.startsWith('### ')) {
           return (
-            <h3 key={idx} className="text-sm font-semibold text-ink pt-1.5 border-b border-line pb-1">
+            <h3 key={idx} className="text-sm font-semibold text-ink pt-2 border-b border-line pb-1">
               {line.replace('### ', '')}
             </h3>
           );
@@ -222,7 +222,7 @@ function renderFormattedAnswer(markdown: string) {
           const boldSplit = content.split('**');
           return (
             <div key={idx} className="flex items-start gap-2 pl-1 text-xs text-ink-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
               <span>
                 {boldSplit.map((part, pIdx) =>
                   pIdx % 2 === 1 ? (
@@ -810,7 +810,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               value={globalSearchQuery}
               onChange={e => setGlobalSearchQuery(e.target.value)}
               placeholder="Tra cứu nhanh toàn bộ 18 Chuyên đề, 42 FAQ, 22 mốc SLA, kịch bản đàm phán KOC, thuế TNCN, khung lương..."
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-line bg-canvas text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent transition-colors"
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-line bg-canvas text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent transition-colors"
             />
             {globalSearchQuery && (
               <button
@@ -859,12 +859,12 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 {/* Khối Chuyên đề quy trình */}
                 <div className="p-3 rounded-xl bg-canvas border border-line space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-semibold text-accent flex items-center gap-1.5">
+                    <span className="text-2xs font-semibold text-accent flex items-center gap-2">
                       <BookOpen className="w-3.5 h-3.5" />
                       Chuyên đề ({globalSearchResults.articles.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {globalSearchResults.articles.slice(0, 4).map(art => (
                       <button
                         key={art.id}
@@ -882,12 +882,12 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 {/* Khối Câu hỏi thường gặp FAQ */}
                 <div className="p-3 rounded-xl bg-canvas border border-line space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-semibold text-positive flex items-center gap-1.5">
+                    <span className="text-2xs font-semibold text-positive flex items-center gap-2">
                       <HelpCircle className="w-3.5 h-3.5" />
                       Câu hỏi FAQ ({globalSearchResults.faqs.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {globalSearchResults.faqs.slice(0, 4).map(faq => (
                       <button
                         key={faq.id}
@@ -905,12 +905,12 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 {/* Khối Mốc cam kết SLA */}
                 <div className="p-3 rounded-xl bg-canvas border border-line space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-semibold text-warning flex items-center gap-1.5">
+                    <span className="text-2xs font-semibold text-warning flex items-center gap-2">
                       <Clock className="w-3.5 h-3.5" />
                       Thời hạn SLA ({globalSearchResults.slas.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {globalSearchResults.slas.slice(0, 4).map(sla => (
                       <button
                         key={sla.code}
@@ -931,12 +931,12 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 {/* Khối Kịch bản đàm phán KOC */}
                 <div className="p-3 rounded-xl bg-canvas border border-line space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-semibold text-ink flex items-center gap-1.5">
+                    <span className="text-2xs font-semibold text-ink flex items-center gap-2">
                       <MessageSquare className="w-3.5 h-3.5" />
                       Kịch bản đàm phán ({globalSearchResults.objections.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {globalSearchResults.objections.slice(0, 4).map(obj => (
                       <button
                         key={obj.id}
@@ -980,7 +980,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
       {activeTab === 'hub' && (
         <div className="space-y-6">
           {/* LƯỚI 4 TRỤ CỘT TRI THỨC B2C */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div
               onClick={() => setActiveTab('library')}
               className="p-5 rounded-xl bg-surface border border-line hover:border-accent hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
@@ -1098,7 +1098,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 <Users className="w-4 h-4 text-accent" />
                 Lọc nội dung theo vai trò vận hành của bạn
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {[
                   { key: 'ALL', label: 'Toàn bộ phòng B2C' },
                   { key: 'BOOKING', label: 'Chuyên viên Booking' },
@@ -1110,7 +1110,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     key={r.key}
                     type="button"
                     onClick={() => setTargetRoleFilter(r.key as TargetRoleFilter)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                       targetRoleFilter === r.key
                         ? 'bg-ink text-surface'
                         : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -1122,7 +1122,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
               {ROLE_SUGGESTED_QUESTIONS.filter(
                 q => targetRoleFilter === 'ALL' || q.role === targetRoleFilter
               )
@@ -1140,7 +1140,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <span className="text-xs font-semibold text-ink">{item.label}</span>
                     <span className="text-2xs text-accent font-medium flex items-center gap-1">
                       Hỏi quy trình
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </button>
                 ))}
@@ -1186,7 +1186,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <div
                       key={item.id}
                       onClick={() => handleOpenArticleFromSearch(item.id)}
-                      className="py-3.5 flex items-start justify-between gap-4 hover:bg-canvas rounded-lg px-2 -mx-2 transition-colors cursor-pointer group"
+                      className="py-4 flex items-start justify-between gap-4 hover:bg-canvas rounded-lg px-2 -mx-2 transition-colors cursor-pointer group"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -1208,12 +1208,12 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
             {/* Cột phải (5/12): Máy tính thuế & Đối soát khung lương */}
             <div className="lg:col-span-5 space-y-4">
               <Panel title="Tính nhanh thuế hợp đồng & Khung lương">
-                <div className="space-y-3.5">
-                  <div className="grid grid-cols-3 gap-1.5">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setCalcEntity('INDIVIDUAL')}
-                      className={`py-1.5 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
+                      className={`py-2 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
                         calcEntity === 'INDIVIDUAL'
                           ? 'bg-accent text-surface'
                           : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -1224,7 +1224,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <button
                       type="button"
                       onClick={() => setCalcEntity('HKD')}
-                      className={`py-1.5 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
+                      className={`py-2 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
                         calcEntity === 'HKD'
                           ? 'bg-accent text-surface'
                           : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -1235,7 +1235,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <button
                       type="button"
                       onClick={() => setCalcEntity('COMPANY')}
-                      className={`py-1.5 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
+                      className={`py-2 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
                         calcEntity === 'COMPANY'
                           ? 'bg-accent text-surface'
                           : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -1264,7 +1264,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     />
                   </Field>
 
-                  <div className="p-3.5 rounded-xl bg-canvas border border-line space-y-2 text-xs">
+                  <div className="p-4 rounded-xl bg-canvas border border-line space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-ink-2 font-medium">Giá trị ghi trên hợp đồng (Gross):</span>
                       <span className="font-semibold text-ink tabular-nums text-sm">
@@ -1277,7 +1277,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                         {formatVnd(quickTaxCalculation.tax)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between pt-1.5 border-t border-line">
+                    <div className="flex items-center justify-between pt-2 border-t border-line">
                       <span className="text-ink-2 font-medium">Thực nhận về tài khoản KOC (Net):</span>
                       <span className="font-semibold text-positive tabular-nums text-sm">
                         {formatVnd(quickTaxCalculation.net)}
@@ -1417,7 +1417,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                       key={art.id}
                       type="button"
                       onClick={() => setSelectedArticleId(art.id)}
-                      className={`w-full text-left p-3.5 rounded-xl border transition-colors cursor-pointer ${
+                      className={`w-full text-left p-4 rounded-xl border transition-colors cursor-pointer ${
                         isSelected
                           ? 'bg-accent-soft/60 border-accent text-ink'
                           : 'bg-surface hover:bg-canvas border-line text-ink'
@@ -1479,7 +1479,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <div className="space-y-6">
                       {/* Hộp thông số cốt lõi của tài liệu */}
                       {currentArticle.keyFacts.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-canvas border border-line">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-canvas border border-line">
                           {currentArticle.keyFacts.map((fact, idx) => (
                             <div key={idx} className="space-y-0.5">
                               <span className="text-2xs text-ink-3 block">{fact.label}</span>
@@ -1492,7 +1492,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                       {/* Các phần nội dung chi tiết */}
                       {currentArticle.sections.map((sec, sIdx) => (
                         <div key={sIdx} className="space-y-3">
-                          <h3 className="text-base font-semibold text-ink border-b border-line pb-1.5">
+                          <h3 className="text-base font-semibold text-ink border-b border-line pb-2">
                             {sec.heading}
                           </h3>
                           {sec.body.map((p, pIdx) => (
@@ -1503,7 +1503,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                           {sec.bullets && sec.bullets.length > 0 && (
                             <ul className="space-y-2 pl-1">
                               {sec.bullets.map((b, bIdx) => (
-                                <li key={bIdx} className="flex items-start gap-2.5 text-sm text-ink-2">
+                                <li key={bIdx} className="flex items-start gap-3 text-sm text-ink-2">
                                   <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
                                   <span>{b}</span>
                                 </li>
@@ -1523,7 +1523,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                                     {sec.table.headers.map((h, hIdx) => (
                                       <th
                                         key={hIdx}
-                                        className="px-3.5 py-2.5 text-2xs font-semibold text-ink-2"
+                                        className="px-4 py-3 text-2xs font-semibold text-ink-2"
                                       >
                                         {h}
                                       </th>
@@ -1536,7 +1536,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                                       {row.map((cell, cIdx) => (
                                         <td
                                           key={cIdx}
-                                          className={`px-3.5 py-2.5 align-top ${
+                                          className={`px-4 py-3 align-top ${
                                             cIdx === 0 ? 'font-medium text-ink' : 'text-ink-2'
                                           }`}
                                         >
@@ -1551,7 +1551,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                           )}
                           {sec.callout && (
                             <div
-                              className={`p-3.5 rounded-xl border ${
+                              className={`p-4 rounded-xl border ${
                                 sec.callout.tone === 'warning'
                                   ? 'bg-warning-soft border-line text-warning'
                                   : sec.callout.tone === 'critical'
@@ -1581,7 +1581,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                                   setActiveTab('qa');
                                   handleAskQuestion(sq);
                                 }}
-                                className="px-3 py-1.5 rounded-md bg-sunken hover:bg-accent-soft text-xs text-ink-2 hover:text-accent transition-colors cursor-pointer text-left"
+                                className="px-3 py-2 rounded-md bg-sunken hover:bg-accent-soft text-xs text-ink-2 hover:text-accent transition-colors cursor-pointer text-left"
                               >
                                 {sq}
                               </button>
@@ -1665,7 +1665,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                         </div>
                       )}
                       {faq.detailedSteps && faq.detailedSteps.length > 0 && (
-                        <div className="space-y-1.5 pt-1">
+                        <div className="space-y-2 pt-1">
                           <span className="text-2xs font-medium text-ink-3 block">
                             Các bước xử lý chi tiết:
                           </span>
@@ -1701,7 +1701,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     </Button>
                   }
                 >
-                  <div className="space-y-2.5 text-xs">
+                  <div className="space-y-3 text-xs">
                     <div>
                       <span className="text-ink-3 font-medium">Nguyên nhân gốc: </span>
                       <span className="text-ink-2">{obj.rootCause}</span>
@@ -1950,7 +1950,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                         {formatVnd(quickTaxCalculation.net)}
                       </span>
                     </div>
-                    <div className="pt-2 border-t border-line space-y-1.5 text-2xs">
+                    <div className="pt-2 border-t border-line space-y-2 text-2xs">
                       <div>
                         <span className="text-ink-3">Chính sách áp dụng: </span>
                         <span className="font-medium text-ink">{quickTaxCalculation.taxNote}</span>
@@ -2030,14 +2030,14 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               <div className="space-y-4">
                 {/* Gợi ý câu hỏi nhanh theo chủ đề */}
                 <div className="pb-3 border-b border-line">
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {ROLE_SUGGESTED_QUESTIONS.map((item, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleAskQuestion(item.question)}
                         disabled={isAsking}
-                        className="px-2.5 py-1.5 rounded-md bg-sunken hover:bg-accent-soft hover:text-accent text-ink-2 text-2xs font-medium transition-colors text-left cursor-pointer"
+                        className="px-3 py-2 rounded-md bg-sunken hover:bg-accent-soft hover:text-accent text-ink-2 text-2xs font-medium transition-colors text-left cursor-pointer"
                       >
                         {item.label}
                       </button>
@@ -2067,7 +2067,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     const synth = msg.synthesized;
                     return (
                       <div key={msg.id} className="rounded-xl bg-surface border border-line p-4 space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-line">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line">
                           <div className="flex items-center gap-2">
                             <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-accent-soft text-accent">
                               <BookOpen className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -2081,7 +2081,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2099,7 +2099,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                         {/* Thẻ dữ liệu Nhãn hàng / Gian hàng trực tiếp nếu phát hiện trong câu hỏi */}
                         {synth?.detectedLiveEntity && (
                           <div className="p-3 rounded-lg bg-sunken border border-line flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0">
                               <Building2 className="w-4 h-4 text-accent shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold text-ink truncate">
@@ -2133,10 +2133,10 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                               {synth.citations.map(cit => (
                                 <div
                                   key={cit.id}
-                                  className="p-2.5 rounded-lg bg-canvas border border-line flex flex-col justify-between gap-2"
+                                  className="p-3 rounded-lg bg-canvas border border-line flex flex-col justify-between gap-2"
                                 >
                                   <div>
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-2">
                                       <span className="font-code text-2xs font-medium text-accent">
                                         {cit.code}
                                       </span>
@@ -2157,7 +2157,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                                       }}
                                       className="text-2xs font-medium text-accent hover:underline cursor-pointer inline-flex items-center gap-1"
                                     >
-                                      <FileText className="w-3 h-3" />
+                                      <FileText className="w-3.5 h-3.5" />
                                       <span>Xem quy trình</span>
                                     </button>
                                     {cit.relatedTab && onNavigateToTab && (
@@ -2167,7 +2167,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                                         className="text-2xs font-medium text-ink-2 hover:text-ink cursor-pointer inline-flex items-center gap-1 ml-auto"
                                       >
                                         <span>{cit.relatedTabLabel || 'Mở màn hình'}</span>
-                                        <ArrowRight className="w-3 h-3" />
+                                        <ArrowRight className="w-3.5 h-3.5" />
                                       </button>
                                     )}
                                   </div>
@@ -2179,7 +2179,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
 
                         {/* Gợi ý câu hỏi đào sâu tiếp theo */}
                         {synth && synth.suggestedFollowUps.length > 0 && (
-                          <div className="pt-2 flex flex-wrap items-center gap-1.5">
+                          <div className="pt-2 flex flex-wrap items-center gap-2">
                             <span className="text-2xs text-ink-3 mr-1">Hỏi tiếp:</span>
                             {synth.suggestedFollowUps.map((fq, fIdx) => (
                               <button
@@ -2212,7 +2212,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     value={questionInput}
                     onChange={e => setQuestionInput(e.target.value)}
                     placeholder="Nhập câu hỏi nghiệp vụ (VD: Tính thuế cho KOC cá nhân, gian hàng không có Leader trình ai...)"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-line bg-canvas text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
+                    className="flex-1 px-4 py-3 rounded-xl border border-line bg-canvas text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
                     disabled={isAsking}
                   />
                   <Button
@@ -2231,12 +2231,12 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           {/* Cột phụ (4/12): Công cụ tính nhanh & Lịch mốc */}
           <div className="lg:col-span-4 space-y-4">
             <Panel title="Tính nhanh thuế hợp đồng & Khung lương">
-              <div className="space-y-3.5">
-                <div className="grid grid-cols-3 gap-1.5">
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setCalcEntity('INDIVIDUAL')}
-                    className={`py-1.5 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
                       calcEntity === 'INDIVIDUAL'
                         ? 'bg-accent text-surface'
                         : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -2247,7 +2247,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <button
                     type="button"
                     onClick={() => setCalcEntity('HKD')}
-                    className={`py-1.5 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
                       calcEntity === 'HKD'
                         ? 'bg-accent text-surface'
                         : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -2258,7 +2258,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <button
                     type="button"
                     onClick={() => setCalcEntity('COMPANY')}
-                    className={`py-1.5 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg text-2xs font-medium text-center transition-colors cursor-pointer ${
                       calcEntity === 'COMPANY'
                         ? 'bg-accent text-surface'
                         : 'bg-canvas text-ink-2 hover:bg-sunken'
@@ -2287,7 +2287,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   />
                 </Field>
 
-                <div className="p-3.5 rounded-xl bg-canvas border border-line space-y-2 text-xs">
+                <div className="p-4 rounded-xl bg-canvas border border-line space-y-2 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-ink-2 font-medium">Giá trị ghi hợp đồng:</span>
                     <span className="font-semibold text-ink tabular-nums">
@@ -2300,7 +2300,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                       {formatVnd(quickTaxCalculation.tax)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between pt-1.5 border-t border-line">
+                  <div className="flex items-center justify-between pt-2 border-t border-line">
                     <span className="text-ink-2 font-medium">Thực nhận về tài khoản KOC:</span>
                     <span className="font-semibold text-positive tabular-nums">
                       {formatVnd(quickTaxCalculation.net)}

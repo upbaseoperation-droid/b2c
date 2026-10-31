@@ -195,7 +195,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
           {label} {sublabel && <span className={`${badgeColorClass} font-normal`}>{sublabel}</span>}
         </label>
         {value && (
-          <span className="text-3xs text-positive font-medium flex items-center gap-0.5">
+          <span className="text-2xs text-positive font-medium flex items-center gap-0.5">
             <Check className="w-2.5 h-2.5" />
             <span>Đã chọn</span>
           </span>
@@ -225,7 +225,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
             setHighlightedIndex(0);
           }}
           onKeyDown={handleKeyDown}
-          className="w-full pl-8 pr-14 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition shadow-2xs"
+          className="w-full pl-8 pr-14 py-2 text-xs rounded-lg border border-line bg-surface text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition shadow-2xs"
           role="combobox"
           aria-expanded={isOpen}
           aria-controls={listboxId}
@@ -241,7 +241,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
               className="p-1 text-ink-3 hover:text-ink rounded hover:bg-sunken transition"
               title="Xóa lựa chọn"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
           <button
@@ -269,13 +269,13 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
           {filteredStaff.length === 0 ? (
             <div className="p-3 text-center text-ink-2 text-2xs space-y-1">
               <div>Không tìm thấy nhân sự khớp với &ldquo;<strong>{query}</strong>&rdquo;</div>
-              <div className="text-3xs text-ink-3">
+              <div className="text-2xs text-ink-3">
                 Bạn vẫn có thể tiếp tục sử dụng tên đã gõ.
               </div>
             </div>
           ) : (
             <>
-              <div className="px-3 py-1.5 bg-canvas text-3xs font-semibold uppercase tracking-wider text-ink-3 flex items-center justify-between">
+              <div className="px-3 py-2 bg-canvas text-2xs font-semibold text-ink-3 flex items-center justify-between">
                 <span>Gợi ý nhân sự ({filteredStaff.length})</span>
                 <span className="text-ink-3 font-normal">Enter để chọn</span>
               </div>
@@ -294,7 +294,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
                       handleSelectStaff(staff);
                     }}
                     onMouseEnter={() => setHighlightedIndex(idx)}
-                    className={`p-2.5 cursor-pointer transition flex items-center justify-between gap-2 ${
+                    className={`p-3 cursor-pointer transition flex items-center justify-between gap-2 ${
                       isHighlighted 
                         ? 'bg-accent-soft text-ink' 
                         : isSelected 
@@ -302,7 +302,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
                         : 'hover:bg-canvas text-ink'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       {/* Avatar / Initials */}
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs font-semibold shrink-0 shadow-2xs ${
                         isSelected 
@@ -316,16 +316,16 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
 
                       {/* Name & Details */}
                       <div className="min-w-0 truncate">
-                        <div className="font-semibold text-xs text-ink flex items-center gap-1.5 truncate">
+                        <div className="font-semibold text-xs text-ink flex items-center gap-2 truncate">
                           <span className="truncate">{staff.name}</span>
                           {staffCodeOf(staff) && (
-                            <span className="font-code text-3xs text-ink-3 font-normal shrink-0">
+                            <span className="font-code text-2xs text-ink-3 font-normal shrink-0">
                               ({staffCodeOf(staff)})
                             </span>
                           )}
                         </div>
 
-                        <div className="text-3xs text-ink-2 truncate flex items-center gap-1 mt-0.5">
+                        <div className="text-2xs text-ink-2 truncate flex items-center gap-1 mt-0.5">
                           {staff.position || staff.roleTitle ? (
                             <span className="truncate">{staff.position || staff.roleTitle}</span>
                           ) : null}
@@ -340,7 +340,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
                     </div>
 
                     {/* Department Tag & Selection Status */}
-                    <div className="shrink-0 flex items-center gap-1.5">
+                    <div className="shrink-0 flex items-center gap-2">
                       {staff.role && (
                         <span className="text-2xs font-medium text-ink-3">
                           {staff.role}

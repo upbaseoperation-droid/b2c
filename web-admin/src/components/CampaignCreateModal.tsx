@@ -352,7 +352,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
       size="xl"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-          <div className="text-2xs text-ink-3 flex items-center gap-1.5">
+          <div className="text-2xs text-ink-3 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-positive shrink-0" />
             <span>
               Liên kết kế hoạch tháng Brand <strong>{brand}</strong> ({coveredMonths.join(', ')})
@@ -383,7 +383,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('OVERVIEW_PHASES')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
             activeTab === 'OVERVIEW_PHASES'
               ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
               : 'border-transparent text-ink-2 hover:text-ink'
@@ -395,7 +395,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('STRATEGY_PROMO')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
             activeTab === 'STRATEGY_PROMO'
               ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
               : 'border-transparent text-ink-2 hover:text-ink'
@@ -407,7 +407,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('KEY_VISUAL')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
             activeTab === 'KEY_VISUAL'
               ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
               : 'border-transparent text-ink-2 hover:text-ink'
@@ -519,7 +519,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                 </div>
 
                 {/* Total Campaign Financials */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-canvas rounded-xl border border-line">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-canvas rounded-xl border border-line">
                   <div>
                     <label className="block text-2xs font-semibold text-ink-2 mb-1">
                       Tổng Ngân sách Chiến dịch (VNĐ)
@@ -529,7 +529,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       step={5000000}
                       value={budget}
                       onChange={e => setBudget(Number(e.target.value))}
-                      className="w-full bg-surface border border-line rounded-lg px-2.5 py-1.5 text-xs text-ink font-semibold"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-ink font-semibold"
                     />
                   </div>
                   <div>
@@ -541,7 +541,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       step={50000000}
                       value={targetGmv}
                       onChange={e => setTargetGmv(Number(e.target.value))}
-                      className="w-full bg-surface border border-line rounded-lg px-2.5 py-1.5 text-xs text-positive font-semibold"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-positive font-semibold"
                     />
                   </div>
                   <div>
@@ -553,7 +553,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       step={0.5}
                       value={targetCir}
                       onChange={e => setTargetCir(Number(e.target.value))}
-                      className="w-full bg-surface border border-line rounded-lg px-2.5 py-1.5 text-xs text-accent font-semibold"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-accent font-semibold"
                     />
                   </div>
                   <div>
@@ -564,7 +564,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       type="number"
                       value={targetKocCount}
                       onChange={e => setTargetKocCount(Number(e.target.value))}
-                      className="w-full bg-surface border border-line rounded-lg px-2.5 py-1.5 text-xs text-ink font-semibold"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-ink font-semibold"
                     />
                   </div>
                 </div>
@@ -578,7 +578,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                         Khung thời gian &amp; Chu kỳ kéo dài của Chiến dịch (1 tháng hoặc liên tháng 2–3 tháng)
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-2xs text-ink-3">Chọn nhanh:</span>
                       <button
                         type="button"
@@ -620,7 +620,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                         type="date"
                         value={startDate}
                         onChange={e => setStartDate(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink"
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-ink"
                       />
                     </div>
                     <div>
@@ -631,14 +631,14 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                         type="date"
                         value={endDate}
                         onChange={e => setEndDate(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink"
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-ink"
                       />
                     </div>
                     <div>
                       <label className="block text-2xs font-semibold text-ink-2 mb-1">
                         Các chu kỳ tháng áp dụng
                       </label>
-                      <div className="flex flex-wrap items-center gap-1.5 min-h-[32px] px-2.5 py-1 bg-surface rounded-lg border border-line text-xs text-ink font-medium">
+                      <div className="flex flex-wrap items-center gap-2 min-h-[32px] px-3 py-1 bg-surface rounded-lg border border-line text-xs text-ink font-medium">
                         {coveredMonths.map(m => `Tháng ${m}`).join(' · ')}
                       </div>
                     </div>
@@ -663,21 +663,21 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       <table className="w-full min-w-[640px] text-left border-collapse">
                         <thead>
                           <tr className="bg-canvas text-2xs font-semibold text-ink-2 border-b border-line">
-                            <th className="py-2 px-2.5 w-24">Tháng</th>
-                            <th className="py-2 px-2.5">Vai trò giai đoạn (Phase)</th>
-                            <th className="py-2 px-2.5 w-32">Ngân sách tháng</th>
-                            <th className="py-2 px-2.5 w-36">Mục tiêu GMV</th>
-                            <th className="py-2 px-2.5 w-20">Số KOC</th>
-                            <th className="py-2 px-2.5">Mốc Sale &amp; Ghi chú KV tháng</th>
+                            <th className="py-2 px-3 w-24">Tháng</th>
+                            <th className="py-2 px-3">Vai trò giai đoạn (Phase)</th>
+                            <th className="py-2 px-3 w-32">Ngân sách tháng</th>
+                            <th className="py-2 px-3 w-36">Mục tiêu GMV</th>
+                            <th className="py-2 px-3 w-20">Số KOC</th>
+                            <th className="py-2 px-3">Mốc Sale &amp; Ghi chú KV tháng</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-line">
                           {monthlyPhases.map(phase => (
                             <tr key={phase.month} className="hover:bg-canvas">
-                              <td className="py-2 px-2.5 font-mono font-semibold text-accent">
+                              <td className="py-2 px-3 font-mono font-semibold text-accent">
                                 {phase.month}
                               </td>
-                              <td className="py-2 px-2.5">
+                              <td className="py-2 px-3">
                                 <input
                                   type="text"
                                   value={phase.phaseName}
@@ -685,7 +685,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                                   className="w-full bg-canvas border border-line rounded px-2 py-1 text-xs text-ink"
                                 />
                               </td>
-                              <td className="py-2 px-2.5">
+                              <td className="py-2 px-3">
                                 <input
                                   type="number"
                                   step={5000000}
@@ -694,7 +694,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                                   className="w-full bg-canvas border border-line rounded px-2 py-1 text-xs font-semibold text-ink"
                                 />
                               </td>
-                              <td className="py-2 px-2.5">
+                              <td className="py-2 px-3">
                                 <input
                                   type="number"
                                   step={20000000}
@@ -703,7 +703,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                                   className="w-full bg-canvas border border-line rounded px-2 py-1 text-xs font-semibold text-positive"
                                 />
                               </td>
-                              <td className="py-2 px-2.5">
+                              <td className="py-2 px-3">
                                 <input
                                   type="number"
                                   value={phase.targetKocCount}
@@ -711,7 +711,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                                   className="w-full bg-canvas border border-line rounded px-2 py-1 text-xs font-semibold text-ink"
                                 />
                               </td>
-                              <td className="py-2 px-2.5">
+                              <td className="py-2 px-3">
                                 <input
                                   type="text"
                                   value={phase.saleMilestones || ''}
@@ -725,19 +725,19 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                         </tbody>
                         <tfoot>
                           <tr className="bg-canvas font-semibold text-2xs text-ink-2 border-t border-line">
-                            <td colSpan={2} className="py-2 px-2.5 text-right">
+                            <td colSpan={2} className="py-2 px-3 text-right">
                               Tổng cộng phân kỳ {monthlyPhases.length} tháng:
                             </td>
-                            <td className="py-2 px-2.5 text-ink">
+                            <td className="py-2 px-3 text-ink">
                               {formatVndShort(sumPhaseBudget)}
                             </td>
-                            <td className="py-2 px-2.5 text-positive">
+                            <td className="py-2 px-3 text-positive">
                               {formatVndShort(sumPhaseGmv)}
                             </td>
-                            <td className="py-2 px-2.5 text-ink">
+                            <td className="py-2 px-3 text-ink">
                               {monthlyPhases.reduce((s, p) => s + (p.targetKocCount || 0), 0)} KOC
                             </td>
-                            <td className="py-2 px-2.5 text-ink-3">
+                            <td className="py-2 px-3 text-ink-3">
                               Tự động liên kết xuống Plan tháng tương ứng
                             </td>
                           </tr>
@@ -750,7 +750,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
             )}
 
             {activeTab === 'STRATEGY_PROMO' && (
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
@@ -877,7 +877,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
             )}
 
             {activeTab === 'KEY_VISUAL' && (
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
@@ -945,7 +945,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-canvas rounded-xl border border-line">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-canvas rounded-xl border border-line">
                   <div>
                     <label className="block text-2xs font-semibold text-ink-2 mb-1">
                       1. Ngày cần lên Ref (Reference Date)
@@ -954,7 +954,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       type="date"
                       value={kvRefDate}
                       onChange={e => setKvRefDate(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-ink"
                     />
                   </div>
                   <div>
@@ -965,7 +965,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       type="date"
                       value={kvOrderDate}
                       onChange={e => setKvOrderDate(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-ink"
                     />
                   </div>
                   <div>
@@ -976,7 +976,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       type="date"
                       value={kvHangDate}
                       onChange={e => setKvHangDate(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs font-semibold text-positive"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs font-semibold text-positive"
                     />
                   </div>
                 </div>

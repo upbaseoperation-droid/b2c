@@ -1563,6 +1563,46 @@ export const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
       frameJpegBase64: SNAPSHOT_TIKTOK_FRAMES['7701316821709769991'],
       updatedAt: '2026-10-29T06:50:00.000Z',
     },
+    '7702104002401537287': {
+      videoId: '7702104002401537287',
+      videoUrl: 'https://www.tiktok.com/@tonycase96/video/7702104002401537287',
+      cartAnchorTitle:
+        'Vỏ dành cho iPhone 18 Pro Max, cũng tương thích với iPhone 17 Pro, 16, 15, 14, 13. cao cấp, bề mặt mờ, kết cấu vải, phong cách công sở, đơn giản, bao phủ toàn diện, chống sốc.',
+      cartAnchorUrl: 'https://shop.tiktok.com/vn/pdp/1738080772005332137?source=anchor',
+      cartProductId: '1738080772005332137',
+      cartSellerId: '8647125102487569577',
+      cartProducts: [
+        {
+          productId: '1738080772005332137',
+          title:
+            'Vỏ dành cho iPhone 18 Pro Max, cũng tương thích với iPhone 17 Pro, 16, 15, 14, 13. cao cấp, bề mặt mờ, kết cấu vải, phong cách công sở, đơn giản, bao phủ toàn diện, chống sốc.',
+          productUrl: 'https://shop.tiktok.com/vn/pdp/1738080772005332137?source=anchor',
+          sellerId: '8647125102487569577',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ],
+      updatedAt: '2026-10-31T02:56:30.000Z',
+    },
+    '7700954270161554708': {
+      videoId: '7700954270161554708',
+      videoUrl: 'https://www.tiktok.com/@thaotepvn/video/7700954270161554708',
+      cartAnchorTitle:
+        'Combo 10 Dao Rọc Giấy Đa Năng, Dao Cắt Giấy Carton Đóng Gói Tiện Dụng | HomeMartOnline68',
+      cartAnchorUrl: 'https://shop.tiktok.com/vn/pdp/1737702073033917546?source=anchor',
+      cartProductId: '1737702073033917546',
+      cartSellerId: '7494199011067724906',
+      cartProducts: [
+        {
+          productId: '1737702073033917546',
+          title:
+            'Combo 10 Dao Rọc Giấy Đa Năng, Dao Cắt Giấy Carton Đóng Gói Tiện Dụng | HomeMartOnline68',
+          productUrl: 'https://shop.tiktok.com/vn/pdp/1737702073033917546?source=anchor',
+          sellerId: '7494199011067724906',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ],
+      updatedAt: '2026-10-31T02:56:30.000Z',
+    },
   },
   pending: {},
 };
@@ -1584,7 +1624,7 @@ export async function getVnCartBridgeState(vnBridgeUrl?: string): Promise<VnCart
     const rec = await readRecord<VnCartBridgeState>(
       TIKTOK_VN_CART_CACHE_KEY,
       DEFAULT_VN_CART_BRIDGE_STATE,
-      { skipCache: true }
+      { skipCache: true, clone: false }
     );
     return {
       vnBridgeUrl: rec.data?.vnBridgeUrl,
@@ -1634,6 +1674,7 @@ export async function saveVnCartBridgeResolvedItems(
         nextItems[item.videoId] = {
           ...prev,
           ...item,
+          captureSec: item.captureSec ?? prev?.captureSec,
           cartProducts:
             Array.isArray(item.cartProducts) && item.cartProducts.length > 0
               ? item.cartProducts
@@ -1645,8 +1686,34 @@ export async function saveVnCartBridgeResolvedItems(
           frameJpegBase64: item.frameJpegBase64 || prev?.frameJpegBase64,
           updatedAt: item.updatedAt || new Date().toISOString(),
         };
-        delete nextPending[item.videoId];
+        const pendingReq = nextPending[item.videoId];
+        const pendingSec = Number(pendingReq?.captureSec || 0);
+        const itemSec = Number(item.captureSec || 0);
+        if (
+          !pendingReq ||
+          !pendingSec ||
+          !itemSec ||
+          Math.abs(pendingSec - itemSec) <= 1.5
+        ) {
+          delete nextPending[item.videoId];
+        }
       }
+
+      // Giới hạn dung lượng base64 ảnh trong bản ghi JSONB (chỉ giữ frameJpegBase64 cho 8 video mới nhất để tránh phình >3MB làm chậm truy vấn):
+      const sortedWithFrames = Object.values(nextItems)
+        .filter((it) => Boolean(it?.frameJpegBase64) && !SNAPSHOT_TIKTOK_FRAMES[it.videoId])
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+        );
+      for (let i = 8; i < sortedWithFrames.length; i++) {
+        const oldVid = sortedWithFrames[i]?.videoId;
+        if (oldVid && nextItems[oldVid]) {
+          const { frameJpegBase64: _dropped, ...rest } = nextItems[oldVid];
+          nextItems[oldVid] = rest;
+        }
+      }
+
       return {
         vnBridgeUrl: vnBridgeUrl?.trim() || cur?.vnBridgeUrl,
         items: nextItems,
@@ -1796,10 +1863,10 @@ async function resolveCartViaVietnamBridge(
     }
   }
 
-  // 4. Poll PostgreSQL for up to 4.5s for Vietnam Bridge Daemon response
-  const deadline = Date.now() + 4500;
+  // 4. Poll PostgreSQL for up to 6.5s for Vietnam Bridge Daemon response
+  const deadline = Date.now() + 6500;
   while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 450));
+    await new Promise((r) => setTimeout(r, 300));
     const latest = await getVnCartBridgeState();
     const resolved = latest.items?.[inspected.videoId];
     if (resolved) {
@@ -2049,7 +2116,7 @@ export async function checkSingleLinkServerless(
       }
     }
 
-    const mentionDetection = detectProductMentionMoments({
+    let mentionDetection = detectProductMentionMoments({
       segments: subtitleSegments,
       productName: inspected.cartAnchorTitle,
       cartAnchorTitle: inspected.cartAnchorTitle,
@@ -2083,11 +2150,38 @@ export async function checkSingleLinkServerless(
       inspected.durationSeconds && inspected.durationSeconds > 3
         ? Math.max(1.5, inspected.durationSeconds - 1.5)
         : 30;
-    const bestHoldingMomentSec =
+    let bestHoldingMomentSec =
       rawHoldingStartSec !== null
         ? Number(Math.min(maxSafeSec, Math.max(1.5, rawHoldingStartSec + 1.0)).toFixed(1))
         : 3.5;
     await resolveCartViaVietnamBridge(inspected, bestHoldingMomentSec);
+    if (
+      inspected.cartProducts &&
+      inspected.cartProducts.length > 0 &&
+      mentionDetection.productMentionMoments.length === 0 &&
+      subtitleSegments.length > 0
+    ) {
+      mentionDetection = detectProductMentionMoments({
+        segments: subtitleSegments,
+        productName: inspected.cartAnchorTitle,
+        cartAnchorTitle: inspected.cartAnchorTitle,
+        cartProducts: inspected.cartProducts,
+        caption: inspected.caption,
+        hashtags,
+        uspKeywords: expect.requiredKeywords,
+      });
+      if (!preferredHoldingMoment && mentionDetection.productMentionMoments.length > 0) {
+        preferredHoldingMoment =
+          mentionDetection.productMentionMoments.find((m) => holdingRegex.test(m.quote)) ||
+          mentionDetection.productMentionMoments.find((m) => m.startSec > 3) ||
+          mentionDetection.productMentionMoments[0];
+        if (preferredHoldingMoment) {
+          bestHoldingMomentSec = Number(
+            Math.min(maxSafeSec, Math.max(1.5, preferredHoldingMoment.startSec + 1.0)).toFixed(1)
+          );
+        }
+      }
+    }
     const bestHoldingMomentTimeLabel =
       preferredHoldingMoment?.timeLabel ||
       fallbackHoldingSeg?.timeLabel ||

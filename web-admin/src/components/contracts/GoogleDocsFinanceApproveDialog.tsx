@@ -59,6 +59,21 @@ export function GoogleDocsFinanceApproveDialog({
       onClose={onClose}
       title="Kế toán phê duyệt chốt (FINAL) & Đẩy sang WeSign"
       size="lg"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
+            Hủy
+          </Button>
+          <Button
+            variant="primary"
+            icon={Send}
+            disabled={busy}
+            onClick={handleApprove}
+          >
+            {busy ? 'Đang gửi...' : 'Phê duyệt & Đẩy sang WeSign'}
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4 text-xs">
         {signingHistory && <LegalProfileSigningHistoryBanner summary={signingHistory} />}
@@ -74,14 +89,14 @@ export function GoogleDocsFinanceApproveDialog({
                 : 'INDIVIDUAL'
           }
           defaultExpandPreview={true}
-          title="Đối chiếu trực tiếp CCCD & ĐKKD trước khi chốt duyệt (Cloudflare R2)"
+          title="Đối chiếu trực tiếp CCCD & ĐKKD trước khi chốt duyệt"
         />
 
         {/* Tóm tắt hồ sơ và các điều khoản */}
-        <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2.5">
+        <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-ink text-sm truncate">{record.title}</span>
-            <span className="text-2xs font-mono text-ink-3">Phiên bản {record.version}</span>
+            <span className="text-2xs font-code text-ink-3">Phiên bản {record.version}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-ink-2 pt-1 border-t border-line">
@@ -95,8 +110,8 @@ export function GoogleDocsFinanceApproveDialog({
             </div>
           </div>
 
-          <div className="rounded-lg bg-accent-soft/30 border border-line p-2.5 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-accent font-semibold">
+          <div className="rounded-lg bg-accent-soft/30 border border-line p-3 space-y-2">
+            <div className="flex items-center gap-2 text-accent font-semibold">
               <CreditCard className="w-3.5 h-3.5" />
               <span>Thẩm định tài chính Kế toán:</span>
             </div>
@@ -151,20 +166,6 @@ export function GoogleDocsFinanceApproveDialog({
               placeholder="koc@example.com"
             />
           </Field>
-        </div>
-
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
-          <Button variant="secondary" onClick={onClose} disabled={busy}>
-            Hủy
-          </Button>
-          <Button
-            variant="primary"
-            icon={Send}
-            disabled={busy}
-            onClick={handleApprove}
-          >
-            {busy ? 'Đang gửi...' : 'Phê duyệt & Đẩy sang WeSign'}
-          </Button>
         </div>
       </div>
     </Modal>

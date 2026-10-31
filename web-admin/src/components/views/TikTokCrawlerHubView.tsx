@@ -1998,10 +1998,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const reviewSummary = getChannelSummary(params.handle);
     const cleanHandle = params.handle.replace(/^@+/, '');
     return (
-      <div className="flex items-start gap-2.5 min-w-0">
+      <div className="flex items-start gap-3 min-w-0">
         <Avatar name={params.nickname || cleanHandle} src={params.avatarUrl} size={36} className="shrink-0 mt-0.5" />
         <div className="grid gap-1 min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <a
               href={params.channelUrl}
               target="_blank"
@@ -2011,18 +2011,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               title={`@${cleanHandle}`}
             >
               <span className="font-code text-xs font-semibold text-ink hover:text-accent break-all">@{cleanHandle}</span>
-              <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
+              <ExternalLink className="w-3.5 h-3.5 text-ink-3 shrink-0" />
             </a>
             {params.verified && (
               <span
                 title="Kênh có tích xanh TikTok"
-                className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-positive text-white text-3xs font-semibold shrink-0"
+                className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-positive text-white text-2xs font-semibold shrink-0"
               >
                 ✓
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             {renderKocStatusBadge(params.matchedKoc, params.isExisting, params.handle)}
             {reviewSummary && (
               <KocChannelReviewBadge
@@ -2041,7 +2041,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               />
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0 text-2xs text-ink-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0 text-2xs text-ink-2">
             <span className="truncate max-w-[150px] font-medium" title={params.nickname || cleanHandle}>
               {params.nickname || cleanHandle}
             </span>
@@ -2114,11 +2114,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       (params.affiliateVideoCount ?? 0) > 0 || (params.organicVideoCount ?? 0) > 0;
     return (
       <div className="grid gap-0.5 justify-items-end tabular-nums">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-ink">
             {formatFollowers(params.followers)} flw
           </span>
-          <span className="px-1.5 py-0.2 rounded bg-surface-2 border border-line text-3xs font-medium text-ink-2">
+          <span className="px-2 py-0.2 rounded bg-surface-2 border border-line text-2xs font-medium text-ink-2">
             {tierBadge}
           </span>
         </div>
@@ -2182,12 +2182,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
           title={params.caption}
-          className="text-xs text-ink hover:text-accent truncate inline-flex items-center gap-1.5 font-medium"
+          className="text-xs text-ink hover:text-accent truncate inline-flex items-center gap-2 font-medium"
         >
           <Video className="w-3.5 h-3.5 text-accent shrink-0" />
           <span className="truncate">{params.caption || 'Xem video TikTok'}</span>
         </a>
-        <div className="flex items-center gap-1.5 text-2xs text-ink-3 tabular-nums pl-5">
+        <div className="flex items-center gap-2 text-2xs text-ink-3 tabular-nums pl-5">
           <span className="font-semibold text-ink">
             {params.views ? `${formatNumber(params.views)} view` : 'Video mới'}
           </span>
@@ -2240,7 +2240,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-2xs font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
               title="Đánh giá kênh Phù hợp với Brand"
             >
-              <Check className="w-3 h-3 shrink-0" />
+              <Check className="w-3.5 h-3.5 shrink-0" />
               <span>Phù hợp</span>
             </button>
             <button
@@ -2249,7 +2249,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-2xs font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
               title="Đánh giá kênh Không phù hợp với Brand"
             >
-              <XCircle className="w-3 h-3 shrink-0" />
+              <XCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Không phù hợp</span>
             </button>
           </div>
@@ -2294,7 +2294,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   : reviewSummary.channelHandle || null
               )
             }
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-accent/35 bg-accent-soft text-accent text-3xs font-semibold hover:bg-accent-soft/80 transition cursor-pointer"
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded border border-accent/35 bg-accent-soft text-accent text-2xs font-semibold hover:bg-accent-soft/80 transition cursor-pointer"
             title="Xem nhanh toàn bộ lịch sử đánh giá của kênh ngay tại dòng"
           >
             <History className="w-2.5 h-2.5" />
@@ -2303,7 +2303,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           <button
             type="button"
             onClick={() => openForVerdict('SUITABLE')}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-3xs font-semibold hover:bg-positive-soft transition cursor-pointer"
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-2xs font-semibold hover:bg-positive-soft transition cursor-pointer"
           >
             <Check className="w-2.5 h-2.5" />
             <span>+ Phù hợp</span>
@@ -2311,7 +2311,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           <button
             type="button"
             onClick={() => openForVerdict('NOT_SUITABLE')}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-3xs font-semibold hover:bg-critical-soft transition cursor-pointer"
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-2xs font-semibold hover:bg-critical-soft transition cursor-pointer"
           >
             <XCircle className="w-2.5 h-2.5" />
             <span>+ K.Phù hợp</span>
@@ -2319,8 +2319,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         </div>
 
         {isQuickExpanded && (
-          <div className="mt-1 rounded-md border border-line bg-sunken/40 p-2 space-y-1.5 max-h-48 overflow-y-auto">
-            <div className="flex items-center justify-between gap-1 text-3xs font-semibold text-ink-2">
+          <div className="mt-1 rounded-md border border-line bg-sunken/40 p-2 space-y-2 max-h-48 overflow-y-auto">
+            <div className="flex items-center justify-between gap-1 text-2xs font-semibold text-ink-2">
               <span>Lịch sử ĐG ({reviewSummary.totalReviews} lượt)</span>
               <button
                 type="button"
@@ -2335,7 +2335,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               return (
                 <div
                   key={rev.id}
-                  className="rounded border border-line bg-surface p-1.5 text-3xs leading-snug space-y-0.5"
+                  className="rounded border border-line bg-surface p-2 text-2xs leading-snug space-y-0.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <span className="font-semibold text-ink">
@@ -2395,7 +2395,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       }
     };
     return (
-      <div className="flex items-center justify-end gap-1.5">
+      <div className="flex items-center justify-end gap-2">
         <Button
           size="sm"
           variant="secondary"
@@ -2580,7 +2580,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const c = r.competitorCollaboration;
         return (
           <div className="grid gap-0.5 min-w-0 max-w-[210px]">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Status
                 tone={
                   c.collaborationType === 'PAID_BOOKING'
@@ -2712,7 +2712,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const v = r.matchedHashtagVideo;
         return (
           <div className="grid gap-0.5 min-w-0 max-w-[210px]">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Status tone={v.breakoutRatio >= 1 ? 'positive' : 'neutral'}>
                 View/Flw {v.breakoutRatio}x
               </Status>
@@ -2779,7 +2779,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       header: 'Người bình luận',
       width: 210,
       render: (c) => (
-        <div className="flex items-start gap-2.5 min-w-0">
+        <div className="flex items-start gap-3 min-w-0">
           <Avatar name={c.nickname} src={c.avatarUrl} size={32} />
           <div className="grid gap-0.5 min-w-0">
             <a
@@ -2789,7 +2789,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1"
             >
               <span>@{c.username}</span>
-              <ExternalLink className="w-3 h-3 text-ink-3" />
+              <ExternalLink className="w-3.5 h-3.5 text-ink-3" />
             </a>
             <span className="text-2xs text-ink-3 truncate">{c.nickname}</span>
           </div>
@@ -2896,7 +2896,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       width: 200,
       render: (c) => (
         <div className="grid gap-0.5 min-w-0 max-w-[210px]">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Status tone="info">{c.categoryLabel || 'KOC Xu hướng'}</Status>
           </div>
           <span className="text-2xs text-ink-2 truncate" title={c.bio}>
@@ -3082,7 +3082,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       currentTab === 'HANDLE_SCRAPE';
 
     return (
-      <div className="inline-flex items-center gap-1.5">
+      <div className="inline-flex items-center gap-2">
         {showKocReviewBtn && (
           <Button
             size="sm"
@@ -3197,7 +3197,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 {rev.reasonTags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-1.5 py-0.5 rounded bg-sunken border border-line text-3xs text-ink-2"
+                    className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2"
                   >
                     {tag}
                   </span>
@@ -3226,7 +3226,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         align: 'right',
         width: 150,
         render: (rev) => (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-2">
             <Button
               size="sm"
               variant="secondary"
@@ -3251,9 +3251,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
     return (
       <div className="bg-surface border-b border-line">
-        <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
+        <div className="px-4 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
               <History className="w-3.5 h-3.5 text-accent" />
               <span>Lịch sử đánh giá KOC theo Brand ({channelReviews.length} lượt)</span>
             </span>
@@ -3268,7 +3268,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               onChange={setInlineReviewVerdictFilter}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <SearchInput
               value={inlineReviewSearch}
               onChange={setInlineReviewSearch}
@@ -3373,7 +3373,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         width: 280,
         render: (it) => (
           <div className="grid gap-0.5 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="font-code font-semibold text-xs text-ink truncate">
                 {it.queryLabel}
               </span>
@@ -3393,7 +3393,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         width: 260,
         render: (it) => (
           <div className="grid gap-0.5 min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Status tone="positive">
                 {it.resultCount} {unitLabel[it.tab]}
               </Status>
@@ -3429,7 +3429,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           const isToday = it.dateKey === todayVnDateKey;
           return (
             <div className="grid gap-0.5 tabular-nums">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Status tone={isToday ? 'positive' : 'neutral'}>{badge}</Status>
                 <span className="text-xs font-semibold text-ink font-code">
                   {it.timeLabel}
@@ -3446,7 +3446,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         align: 'right',
         width: 230,
         render: (it) => (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-2">
             <Button
               size="sm"
               variant="primary"
@@ -3484,9 +3484,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     return (
       <div className="bg-surface">
         {renderInlineKocReviewHistoryPanel(currentTab)}
-        <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
+        <div className="px-4 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
               <Clock className="w-3.5 h-3.5 text-accent" />
               <span>
                 Lịch sử crawl (7 ngày gần nhất) —{' '}
@@ -3505,7 +3505,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <SearchInput
               value={historySearchQuery}
               onChange={setHistorySearchQuery}
@@ -3641,7 +3641,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         >
           <span>Bảng Tạm KOC</span>
           {stagingKocs.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold tabular-nums">
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold tabular-nums">
               {stagingKocs.length}
             </span>
           )}
@@ -3664,7 +3664,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         >
           <span>Phân tích &amp; Khớp Brief</span>
           {runningBriefJobsCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
               {runningBriefJobsCount}
             </span>
           )}
@@ -3684,7 +3684,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             ) : (
               <Status tone="positive">Hoàn tất</Status>
             )}
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {briefAnalysisJobs.slice(0, 3).map((job) => {
                 const isRunning = job.status === 'QUEUED' || job.status === 'RUNNING';
                 return (
@@ -3692,12 +3692,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     key={job.jobId}
                     type="button"
                     onClick={() => setBriefMatcherOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-line bg-surface-2 hover:border-accent/50 text-2xs transition cursor-pointer"
+                    className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md border border-line bg-surface-2 hover:border-accent/50 text-2xs transition cursor-pointer"
                   >
                     {isRunning ? (
-                      <RefreshCw className="w-3 h-3 text-accent animate-spin shrink-0" />
+                      <RefreshCw className="w-3.5 h-3.5 text-accent animate-spin shrink-0" />
                     ) : (
-                      <Check className="w-3 h-3 text-positive shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-positive shrink-0" />
                     )}
                     <span className="font-medium text-ink">{job.briefCriteria.brandName}</span>
                     <span className="font-code text-ink-3">
@@ -3719,7 +3719,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           {/* Dòng 1: Thanh nhập đối thủ + chọn số lượng + nút quét (bên trái) & Thao tác kết quả + Lịch sử (bên phải) */}
           <div
-            className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
+            className={`px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
               compError ||
               compLoading ||
               compResults.length > 0 ||
@@ -3750,7 +3750,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   }
                 }}
                 placeholder="Nhập @handle hoặc thương hiệu đối thủ (VD: @hapas.official, @larocheposayvn)..."
-                className="w-full sm:w-72 lg:w-80 h-8 px-2.5 rounded-md border border-line-strong bg-surface text-xs text-ink focus:outline-none focus:border-focus font-code"
+                className="w-full sm:w-72 lg:w-80 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs text-ink focus:outline-none focus:border-focus font-code"
               />
 
               <div className="flex items-center gap-1 bg-surface-2 px-2 h-8 rounded-md border border-line">
@@ -3760,7 +3760,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     key={n}
                     type="button"
                     onClick={() => setCompTargetCount(n)}
-                    className={`px-1.5 py-0.5 rounded text-2xs font-code transition-colors ${
+                    className={`px-2 py-0.5 rounded text-2xs font-code transition-colors ${
                       compTargetCount === n
                         ? 'bg-accent text-white font-semibold'
                         : 'text-ink-2 hover:text-ink'
@@ -3844,7 +3844,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {(compLoading || compResults.length > 0) && (
                 <>
                   <Button
@@ -3888,7 +3888,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {renderTabWeeklyHistorySection('COMPETITOR_KOCS')}
 
           {compError && (
-            <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
+            <div className="mx-4 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="flex-1 font-medium leading-relaxed">{compError}</div>
             </div>
@@ -3897,7 +3897,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {/* Dòng 2: Gộp Tóm tắt đối thủ + Chips lọc nhanh + Bộ lọc chi tiết */}
           {!expandedWeeklyTableByTab.COMPETITOR_KOCS && (compLoading || compResults.length > 0) && (
             <>
-              <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
+              <div className="px-4 py-2 border-b border-line bg-sunken/30 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Chips<CompetitorFilterKey>
                     items={[
@@ -3956,7 +3956,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     onChange={setCompFilter}
                   />
 
-                  <div className="flex flex-wrap items-center gap-2.5 text-2xs tabular-nums">
+                  <div className="flex flex-wrap items-center gap-3 text-2xs tabular-nums">
                     {!compLoading &&
                       compResults.length > 0 &&
                       compResults.length < (compRequestedCount ?? compTargetCount) && (
@@ -3990,7 +3990,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   <SearchInput
                     value={compSearchQuery}
                     onChange={setCompSearchQuery}
@@ -4119,7 +4119,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {activeTab === 'HASHTAG_DISCOVERY' && (
         <Panel flush>
           <div
-            className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
+            className={`px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
               tagError ||
               tagLoading ||
               tagResults.length > 0 ||
@@ -4149,7 +4149,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   }
                 }}
                 placeholder="Nhập #hashtag hoặc từ khóa ngách (VD: #kemchongnang, #skincare, #clubclio)..."
-                className="w-full sm:w-72 lg:w-80 h-8 px-2.5 rounded-md border border-line-strong bg-surface text-xs text-ink focus:outline-none focus:border-focus font-code"
+                className="w-full sm:w-72 lg:w-80 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs text-ink focus:outline-none focus:border-focus font-code"
               />
 
               <div className="flex items-center gap-1 bg-surface-2 px-2 h-8 rounded-md border border-line">
@@ -4159,7 +4159,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     key={n}
                     type="button"
                     onClick={() => setTagTargetCount(n)}
-                    className={`px-1.5 py-0.5 rounded text-2xs font-code transition-colors ${
+                    className={`px-2 py-0.5 rounded text-2xs font-code transition-colors ${
                       tagTargetCount === n
                         ? 'bg-accent text-white font-semibold'
                         : 'text-ink-2 hover:text-ink'
@@ -4243,7 +4243,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {(tagLoading || tagResults.length > 0) && (
                 <>
                   <Button
@@ -4287,7 +4287,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {renderTabWeeklyHistorySection('HASHTAG_DISCOVERY')}
 
           {tagError && (
-            <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
+            <div className="mx-4 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="flex-1 font-medium leading-relaxed">{tagError}</div>
             </div>
@@ -4296,7 +4296,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {!expandedWeeklyTableByTab.HASHTAG_DISCOVERY &&
             (tagLoading || tagResults.length > 0) && (
             <>
-              <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
+              <div className="px-4 py-2 border-b border-line bg-sunken/30 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Chips<HashtagFilterKey>
                     items={[
@@ -4361,7 +4361,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   <SearchInput
                     value={tagSearchQuery}
                     onChange={setTagSearchQuery}
@@ -4490,7 +4490,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {activeTab === 'COMMENTS_AND_TRENDING' && (
         <Panel flush>
           <div
-            className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
+            className={`px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
               commentError ||
               commentLoading ||
               commentData ||
@@ -4520,7 +4520,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   }
                 }}
                 placeholder="Dán đường dẫn video TikTok cần cào bình luận (VD: https://www.tiktok.com/@user/video/...)..."
-                className="w-full sm:w-80 lg:w-96 h-8 px-2.5 rounded-md border border-line-strong bg-surface text-xs text-ink focus:outline-none focus:border-focus font-code"
+                className="w-full sm:w-80 lg:w-96 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs text-ink focus:outline-none focus:border-focus font-code"
               />
 
               <div className="flex items-center gap-1 bg-surface-2 px-2 h-8 rounded-md border border-line">
@@ -4530,7 +4530,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     key={n}
                     type="button"
                     onClick={() => setCommentTargetCount(n)}
-                    className={`px-1.5 py-0.5 rounded text-2xs font-code transition-colors ${
+                    className={`px-2 py-0.5 rounded text-2xs font-code transition-colors ${
                       commentTargetCount === n
                         ? 'bg-accent text-white font-semibold'
                         : 'text-ink-2 hover:text-ink'
@@ -4607,7 +4607,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {commentData && (
                 <>
                   <Button
@@ -4642,7 +4642,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {renderTabWeeklyHistorySection('COMMENTS_AND_TRENDING')}
 
           {commentError && (
-            <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
+            <div className="mx-4 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="flex-1 font-medium leading-relaxed">{commentError}</div>
             </div>
@@ -4676,7 +4676,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   }}
                 />
               )}
-              <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
+              <div className="px-4 py-2 border-b border-line bg-sunken/30 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Chips<CommentFilterKey>
                     items={[
@@ -4714,7 +4714,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     onChange={setCommentFilter}
                   />
 
-                  <div className="flex flex-wrap items-center gap-2.5 text-2xs tabular-nums">
+                  <div className="flex flex-wrap items-center gap-3 text-2xs tabular-nums">
                     {!commentLoading &&
                       commentData.comments.length < (commentRequestedCount ?? commentTargetCount) && (
                         <Status tone="warning">
@@ -4739,7 +4739,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   <SearchInput
                     value={commentSearch}
                     onChange={setCommentSearch}
@@ -4780,7 +4780,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && (
         <Panel flush>
           <div
-            className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
+            className={`px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
               trendingLoading ||
               trendingHandleSearching ||
               trendingCreators.length > 0 ||
@@ -4818,7 +4818,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="button"
                     disabled={trendingLoading}
                     onClick={() => setTrendingTargetCount(preset)}
-                    className={`px-1.5 py-0.5 rounded text-2xs font-code tabular-nums transition-colors ${
+                    className={`px-2 py-0.5 rounded text-2xs font-code tabular-nums transition-colors ${
                       trendingTargetCount === preset
                         ? 'bg-accent text-white font-semibold'
                         : 'text-ink-2 hover:text-ink'
@@ -4890,7 +4890,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
                 <>
                   {trendingSearch.trim().length >= 2 && (
@@ -4951,7 +4951,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {!expandedWeeklyTableByTab.CHANNEL_AND_VIDEO_TOOLS &&
             (trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
             <>
-              <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
+              <div className="px-4 py-2 border-b border-line bg-sunken/30 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Chips<TrendingFilterKey>
                     items={[
@@ -5027,7 +5027,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   <SearchInput
                     value={trendingSearch}
                     onChange={setTrendingSearch}

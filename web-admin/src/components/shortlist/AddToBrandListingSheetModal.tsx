@@ -161,7 +161,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
       }
     >
       <div className="space-y-4 min-w-0">
-        <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)_125px] gap-3 bg-sunken p-3.5 rounded-lg border border-line">
+        <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)_125px] gap-3 bg-sunken p-4 rounded-lg border border-line">
           <Field label="Plan Tháng" labelClassName="whitespace-nowrap">
             <Select className="w-full" value={monthKey} onChange={(e) => setMonthKey(e.target.value)}>
               {MONTH_OPTIONS.map((m) => (
@@ -252,7 +252,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
               onChange={(e) => setContentNote(e.target.value)}
               placeholder="Ghi chú định hướng nội dung gửi Brand..."
             />
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {CONTENT_NOTE_SUGGESTIONS.map((s) => (
                 <button
                   key={s}
@@ -273,7 +273,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
 
         <div className="border border-line rounded-lg overflow-hidden">
           <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-ink flex items-center gap-2">
               <FileSpreadsheet className="w-3.5 h-3.5 text-accent" />
               Dữ liệu hệ thống tự động điền ({targetKocs.length} kênh)
             </span>
@@ -288,9 +288,9 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
               return (
                 <div
                   key={`${handle}-${idx}`}
-                  className="px-3 py-2.5 flex items-center justify-between gap-3 text-xs bg-surface"
+                  className="px-3 py-3 flex items-center justify-between gap-3 text-xs bg-surface"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <Avatar name={k.stageName || handle} src={k.avatarUrl} size={28} />
                     <div className="min-w-0">
                       <div className="font-semibold text-ink truncate">

@@ -141,9 +141,26 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
   });
 
   // 4. Đồng bộ Nhân sự nội bộ (internalStaff): giữ cấu hình đã lưu và bổ sung nhân sự mới phát sinh trong code
-  const savedStaffList = Array.isArray(raw.internalStaff) && raw.internalStaff.length > 0
+  const savedStaffList = (Array.isArray(raw.internalStaff) && raw.internalStaff.length > 0
     ? [...raw.internalStaff]
-    : [...INITIAL_INTERNAL_STAFF_RBAC];
+    : [...INITIAL_INTERNAL_STAFF_RBAC]
+  ).map((s) => {
+    if (s.id === 'user-do-van-giang' || s.email.toLowerCase() === 'giangdv@upbase.vn') {
+      return { ...s, id: 'user-admin-giang' };
+    }
+    if (s.id === 'user-viet-hoang' && s.accessSource === 'DEPT_RULE' && s.role === 'LEADER') {
+      return {
+        ...s,
+        permissions: {
+          ...s.permissions,
+          canApprovePayment: false,
+          canViewAllBrands: false,
+          canManageMasterData: false,
+        },
+      };
+    }
+    return s;
+  });
   const existingIds = new Set(savedStaffList.map((s) => s.id));
   const existingEmails = new Set(savedStaffList.map((s) => s.email.toLowerCase()));
   for (const defStaff of INITIAL_INTERNAL_STAFF_RBAC) {
@@ -157,7 +174,7 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
     deptRules: reconciledDeptRules,
     roleAllowedTabs: reconciledTabs,
     roleDefaultLanding: reconciledLanding,
-    roleDataScope: raw.roleDataScope || ROLE_DEFAULT_DATA_SCOPE,
+    roleDataScope: { ...ROLE_DEFAULT_DATA_SCOPE, ...(raw.roleDataScope || {}) },
     internalStaff: savedStaffList,
     matrix: reconciledMatrix,
     audit: Array.isArray(raw.audit) ? raw.audit : [],
@@ -256,6 +273,9 @@ export async function actionAllowed(
   }
   if (feature === 'plan_target_month' && perms.includes('canApproveBudget')) {
     if (action === 'read' || action === 'approve') return true;
+  }
+  if (feature === 'data_sync_trigger' && perms.includes('canApproveBudget')) {
+    if (action === 'read' || action === 'update' || action === 'write') return true;
   }
   if (
     (feature === 'p3_performance_evaluation' || feature === 'performance_p3_scoring') &&

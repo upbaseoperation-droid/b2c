@@ -540,7 +540,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
       header: 'Gian hàng',
       render: (item) => (
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="truncate font-medium text-ink">{item.store.storeName}</span>
             <ChannelTag channel={item.store.platform} iconOnly />
           </div>
@@ -729,7 +729,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
           />
         }
       >
-        <div className="px-3.5 sm:px-4 py-3 border-b border-line">
+        <div className="px-4 sm:px-4 py-3 border-b border-line">
           <FilterBar
             search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Tìm gian hàng, thương hiệu, PIC' }}
             resultCount={filteredList.length}

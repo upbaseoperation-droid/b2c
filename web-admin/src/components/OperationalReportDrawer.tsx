@@ -89,8 +89,8 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-ink/40">
       <div className="bg-surface w-full max-w-2xl h-full border-l border-line flex flex-col overflow-hidden">
-        <div className="px-5 py-3.5 bg-surface border-b border-line flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="px-5 py-4 bg-surface border-b border-line flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
             <FileText className="w-4 h-4 text-accent shrink-0" />
             <h3 className="text-sm font-semibold text-ink truncate">{moduleTitle}</h3>
             <Status tone="neutral">{effectiveRoute.purpose.departmentTag}</Status>
@@ -108,7 +108,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
+              className="p-2 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -117,7 +117,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-surface">
           {isRunning ? (
-            <div className="py-16 text-center space-y-2.5">
+            <div className="py-16 text-center space-y-3">
               <RefreshCw className="w-6 h-6 text-accent animate-spin mx-auto" />
               <p className="text-xs font-medium text-ink-2">Đang tổng hợp số liệu báo cáo…</p>
             </div>
@@ -151,7 +151,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-ink">Số liệu đầu vào của kỳ báo cáo</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-sunken border border-line text-xs text-ink-2 font-mono leading-relaxed whitespace-pre-wrap">
+              <div className="p-4 rounded-xl bg-sunken border border-line text-xs text-ink-2 font-mono leading-relaxed whitespace-pre-wrap">
                 {contextDataText}
               </div>
             </div>

@@ -194,10 +194,10 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
             </StatRow>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl border border-line bg-surface flex flex-col justify-between gap-3">
-                <div className="space-y-1.5">
+              <div className="p-4 rounded-xl border border-line bg-surface flex flex-col justify-between gap-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                       <ArrowLeftRight className="w-4 h-4 text-accent" />
                       Đồng bộ Vi sai (Delta Cursor)
                     </span>
@@ -222,10 +222,10 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                 </Button>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-line bg-surface flex flex-col justify-between gap-3">
-                <div className="space-y-1.5">
+              <div className="p-4 rounded-xl border border-line bg-surface flex flex-col justify-between gap-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                       <ArrowDownToLine className="w-4 h-4 text-positive" />
                       Kéo toàn phần từ UpAffiliate
                     </span>
@@ -248,10 +248,10 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                 </Button>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-line bg-surface flex flex-col justify-between gap-3">
-                <div className="space-y-1.5">
+              <div className="p-4 rounded-xl border border-line bg-surface flex flex-col justify-between gap-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                       <ArrowUpFromLine className="w-4 h-4 text-warning" />
                       Đẩy KOC Mới &amp; Pháp lý lên UpAffiliate
                     </span>
@@ -308,44 +308,44 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                   </thead>
                   <tbody className="divide-y divide-line">
                     <tr>
-                      <td className="py-2.5 px-3 font-code text-ink font-medium">
+                      <td className="py-3 px-3 font-code text-ink font-medium">
                         creator + job_summary (deals &gt; 0)
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-ink">
+                      <td className="py-3 px-3 font-medium text-ink">
                         1. Bảng KOC Cũ kèm lịch sử (COOPERATED)
                       </td>
-                      <td className="py-2.5 px-3 font-code text-ink-2">
+                      <td className="py-3 px-3 font-code text-ink-2">
                         upaffiliateCreatorId + @channelId
                       </td>
-                      <td className="py-2.5 px-3 text-ink-2">
+                      <td className="py-3 px-3 text-ink-2">
                         Cập nhật tổng số chiến dịch, GMV, chi phí Cast, ROI, biên độ giá Min–Max và các Brand/PIC từng hợp tác.
                       </td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-3 font-code text-ink font-medium">
+                      <td className="py-3 px-3 font-code text-ink font-medium">
                         creator_legal_profile + payment_account (1:N)
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-ink">
+                      <td className="py-3 px-3 font-medium text-ink">
                         Hồ sơ pháp lý &amp; Thụ hưởng (1–N)
                       </td>
-                      <td className="py-2.5 px-3 font-code text-ink-2">
+                      <td className="py-3 px-3 font-code text-ink-2">
                         upaffiliateLegalProfileId + CCCD/MST
                       </td>
-                      <td className="py-2.5 px-3 text-ink-2">
+                      <td className="py-3 px-3 text-ink-2">
                         Đồng bộ danh sách pháp nhân (Cá nhân / HKD / Công ty), tài khoản ngân hàng thụ hưởng và số Hợp đồng nguyên tắc (HĐNT).
                       </td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-3 font-code text-ink font-medium">
+                      <td className="py-3 px-3 font-code text-ink font-medium">
                         creator_discovery / KOC_Tiem_Nang (deals = 0)
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-ink">
+                      <td className="py-3 px-3 font-medium text-ink">
                         2. Bảng KOC Mới / Tiềm năng (NEW)
                       </td>
-                      <td className="py-2.5 px-3 font-code text-ink-2">
+                      <td className="py-3 px-3 font-code text-ink-2">
                         @channelId (chuẩn hóa)
                       </td>
-                      <td className="py-2.5 px-3 text-ink-2">
+                      <td className="py-3 px-3 text-ink-2">
                         Đồng bộ chỉ số kênh 30d, độ sẵn sàng booking; tự động chuyển sang Bảng 1 khi phát sinh đơn BO nghiệm thu đầu tiên.
                       </td>
                     </tr>
@@ -489,7 +489,7 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
 
             <Panel title="Phạm vi Dữ liệu Đồng bộ trong Mỗi Chu kỳ">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <label className="flex items-start gap-2.5 p-3 rounded-lg border border-line bg-surface cursor-pointer">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-line bg-surface cursor-pointer">
                   <input
                     type="checkbox"
                     checked={draftConfig.scope.cooperatedKocs}
@@ -511,7 +511,7 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-2.5 p-3 rounded-lg border border-line bg-surface cursor-pointer">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-line bg-surface cursor-pointer">
                   <input
                     type="checkbox"
                     checked={draftConfig.scope.legalProfiles1toN}
@@ -533,7 +533,7 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-2.5 p-3 rounded-lg border border-line bg-surface cursor-pointer">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-line bg-surface cursor-pointer">
                   <input
                     type="checkbox"
                     checked={draftConfig.scope.newPotentialKocs}
@@ -555,7 +555,7 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-2.5 p-3 rounded-lg border border-line bg-surface cursor-pointer">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-line bg-surface cursor-pointer">
                   <input
                     type="checkbox"
                     checked={draftConfig.scope.autoPromoteNewToCooperated}
@@ -606,23 +606,23 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                 <table className="w-full text-xs text-left">
                   <thead className="bg-sunken text-ink-2 border-b border-line">
                     <tr>
-                      <th className="py-2.5 px-3">Thời điểm</th>
-                      <th className="py-2.5 px-3">Phương thức kích hoạt</th>
-                      <th className="py-2.5 px-3 text-right">KOC Cũ</th>
-                      <th className="py-2.5 px-3 text-right">KOC Mới</th>
-                      <th className="py-2.5 px-3 text-right">Hồ sơ pháp lý (1–N)</th>
-                      <th className="py-2.5 px-3 text-right">Đẩy lên UPA</th>
-                      <th className="py-2.5 px-3">Mã Cursor</th>
-                      <th className="py-2.5 px-3">Trạng thái</th>
+                      <th className="py-3 px-3">Thời điểm</th>
+                      <th className="py-3 px-3">Phương thức kích hoạt</th>
+                      <th className="py-3 px-3 text-right">KOC Cũ</th>
+                      <th className="py-3 px-3 text-right">KOC Mới</th>
+                      <th className="py-3 px-3 text-right">Hồ sơ pháp lý (1–N)</th>
+                      <th className="py-3 px-3 text-right">Đẩy lên UPA</th>
+                      <th className="py-3 px-3">Mã Cursor</th>
+                      <th className="py-3 px-3">Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {logs.map((log) => (
                       <tr key={log.id} className="hover:bg-surface-hover">
-                        <td className="py-2.5 px-3 font-code text-ink whitespace-nowrap">
+                        <td className="py-3 px-3 font-code text-ink whitespace-nowrap">
                           {formatSyncDateTime(log.completedAt)}
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="font-medium text-ink">
                             {log.triggerType === 'SCHEDULED_CRON'
                               ? 'Lịch định kỳ tự động'
@@ -632,25 +632,25 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
                           </div>
                           <div className="text-2xs text-ink-3">{log.triggeredBy}</div>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-code tabular-nums">
+                        <td className="py-3 px-3 text-right font-code tabular-nums">
                           {formatNumber(log.summary.pulledCooperatedCount)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-code tabular-nums">
+                        <td className="py-3 px-3 text-right font-code tabular-nums">
                           {formatNumber(log.summary.pulledNewCount)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-code tabular-nums">
+                        <td className="py-3 px-3 text-right font-code tabular-nums">
                           {formatNumber(log.summary.syncedLegalProfilesCount)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-code tabular-nums">
+                        <td className="py-3 px-3 text-right font-code tabular-nums">
                           {formatNumber(
                             log.summary.pushedNewKocsCount +
                               log.summary.pushedLegalProfilesCount,
                           )}
                         </td>
-                        <td className="py-2.5 px-3 font-code text-2xs text-ink-2">
+                        <td className="py-3 px-3 font-code text-2xs text-ink-2">
                           {log.cursorAfter}
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <Status
                             tone={
                               log.status === 'SUCCESS'

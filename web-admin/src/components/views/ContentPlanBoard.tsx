@@ -262,6 +262,24 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
     return CONTENT_ROWS.filter(r => req.weeks.some(w => (req.grid[w]?.[r.key] || 0) > 0) || slots.some(s => s.row === r.key));
   }, [req, slots]);
 
+  // RULE-PERF-01: Gom nhóm trước các dòng Brief theo hàng (row) và theo ô (week::row) bằng Map O(1)
+  const slotsIndex = useMemo(() => {
+    const byCell = new Map<string, ContentSlot[]>();
+    const placedQtyByRow = new Map<ContentRowKey, number>();
+    for (const s of slots) {
+      if (s.row && isPlaced(s)) {
+        placedQtyByRow.set(s.row, (placedQtyByRow.get(s.row) || 0) + slotTargetQty(s));
+      }
+      if (s.week && s.row) {
+        const key = `${s.week}::${s.row}`;
+        const list = byCell.get(key);
+        if (list) list.push(s);
+        else byCell.set(key, [s]);
+      }
+    }
+    return { byCell, placedQtyByRow };
+  }, [slots]);
+
   const setSlots = (next: ContentSlot[]) => update({ ...data, slots: ensureSequentialBriefCodes(next) });
 
   // --- kéo thả ---
@@ -763,22 +781,22 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
         }}
         onDragEnd={() => setDragId(null)}
         title={CONTENT_PILLARS.find(p => p.name === s.pillar)?.definition}
-        className="group cursor-grab rounded border border-line bg-surface px-2 py-1.5 text-2xs hover:border-accent/40 active:cursor-grabbing"
+        className="group cursor-grab rounded border border-line bg-surface px-2 py-2 text-2xs hover:border-accent/40 active:cursor-grabbing"
       >
         <div className="flex items-center justify-between gap-1">
           <button type="button" onClick={() => openEdit(s)} className="truncate font-semibold text-ink hover:text-accent">
             {code} · {qty} video
           </button>
           <div className="flex items-center gap-1 shrink-0">
-            <span className="rounded bg-sunken px-1 py-0.5 text-3xs font-medium text-ink-2">
+            <span className="rounded bg-sunken px-1 py-0.5 text-2xs font-medium text-ink-2">
               {stageShort}
             </span>
             {vetting && (
-              <span className="rounded bg-accent-soft px-1 py-0.5 text-3xs font-semibold text-accent">
+              <span className="rounded bg-accent-soft px-1 py-0.5 text-2xs font-semibold text-accent">
                 Khung duyệt
               </span>
             )}
-            <span className={`text-3xs ${ready ? 'text-positive font-medium' : 'text-ink-3'}`}>
+            <span className={`text-2xs ${ready ? 'text-positive font-medium' : 'text-ink-3'}`}>
               {vetting ? (ready ? 'Đủ tham số' : 'Thiếu tham số') : ready ? 'Brief đủ' : 'Nháp'}
             </span>
             {s.row !== 'SELF' && (
@@ -791,7 +809,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                 }}
                 className="rounded p-0.5 text-ink-3 hover:bg-accent-soft hover:text-accent"
               >
-                <UserPlus className="h-3 w-3" />
+                <UserPlus className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -822,7 +840,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
       {/* Thanh bộ lọc & Thao tác trên đầu */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="text-2xs font-semibold text-ink-3">Kỳ</span>
             <Select
               value={activeMonth}
@@ -841,7 +859,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
             </Select>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="text-2xs font-semibold text-ink-3">Gian hàng</span>
             <Select
               value={activePlanId || ''}
@@ -963,15 +981,13 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                   <tbody>
                     {rowsShown.map(row => {
                       const rowNeed = req.weeks.reduce((s, w) => s + (req.grid[w]?.[row.key] || 0), 0);
-                      const rowHave = slots
-                        .filter(s => s.row === row.key && isPlaced(s))
-                        .reduce((sum, s) => sum + slotTargetQty(s), 0);
+                      const rowHave = slotsIndex.placedQtyByRow.get(row.key) || 0;
                       return (
                         <tr key={row.key} className="border-t border-line align-top">
                           <td className="sticky left-0 z-10 bg-surface px-3 py-2 font-medium text-ink">{row.label}</td>
                           {req.weeks.map(w => {
                             const need = req.grid[w]?.[row.key] || 0;
-                            const cell = slots.filter(s => s.week === w && s.row === row.key);
+                            const cell = slotsIndex.byCell.get(`${w}::${row.key}`) || [];
                             const cellVideos = cell.reduce((sum, s) => sum + slotTargetQty(s), 0);
                             const tone = cellVideos === need ? 'text-positive' : cellVideos > need ? 'text-critical' : 'text-warning';
                             const canDrop = Boolean(dragging);
@@ -987,7 +1003,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                                   setDragId(null);
                                   if (id) placeSlot(id, w, row.key);
                                 }}
-                                className={`border-l border-line p-1.5 ${canDrop ? 'bg-accent-soft/40' : ''}`}
+                                className={`border-l border-line p-2 ${canDrop ? 'bg-accent-soft/40' : ''}`}
                               >
                                 <div className="mb-1 flex items-center justify-between">
                                   <span className={`text-2xs font-medium tabular-nums ${need === 0 && cellVideos === 0 ? 'text-ink-3' : tone}`}>
@@ -1036,7 +1052,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                     ))}
                   </Select>
                 </div>
-                <div className="grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
+                <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
                   {backlog.map(chip)}
                   {backlog.length === 0 && <div className="col-span-full px-2 py-6 text-center text-xs text-ink-3">Không có dòng Brief chưa xếp. Kéo từ bảng về đây để bỏ xếp tuần.</div>}
                 </div>
@@ -1047,7 +1063,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                   <span className="text-xs font-medium text-ink">Tỷ trọng nhóm Pillar & Kiểm tra ({diag.issues.length})</span>
                   <span className="text-2xs text-ink-3 tabular-nums">{diag.byPillarGroup.length} nhóm</span>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {diag.byPillarGroup.length === 0 && <div className="text-xs text-ink-3">Chưa có dòng Brief nào.</div>}
                   {diag.byPillarGroup.map(g => (
                     <div key={g.group} className="flex items-center gap-2 text-xs">
@@ -1061,28 +1077,28 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                 </div>
 
                 {diag.byProduct.length > 0 && (
-                  <div className="space-y-1.5 border-t border-line pt-2.5">
+                  <div className="space-y-2 border-t border-line pt-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-ink">Phân bổ theo Sản phẩm đẩy & Hạn mức mẫu</span>
                       <span className="text-2xs text-ink-3 tabular-nums">{diag.byProduct.length} SKU</span>
                     </div>
-                    <div className="max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                    <div className="max-h-40 space-y-2 overflow-y-auto pr-1">
                       {diag.byProduct.map(p => {
                         const share = diag.totalBriefVideos > 0 ? Math.min(100, Math.round((p.plannedVideos / diag.totalBriefVideos) * 100)) : 0;
                         const isOut = p.status === 'OUT_OF_STOCK' || p.status === 'STOPPED';
                         const overSample = p.sampleQuota !== null && p.focVideos > p.sampleQuota;
                         return (
-                          <div key={p.key} className="rounded border border-line bg-canvas/60 px-2.5 py-1.5 text-2xs">
+                          <div key={p.key} className="rounded border border-line bg-canvas/60 px-3 py-2 text-2xs">
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="shrink-0 rounded bg-accent-soft px-1.5 py-0.5 text-3xs font-semibold text-accent">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="shrink-0 rounded bg-accent-soft px-2 py-0.5 text-2xs font-semibold text-accent">
                                   {p.role}
                                 </span>
                                 <span className="truncate font-medium text-ink" title={p.productName}>
                                   {p.productName}
                                 </span>
                                 {isOut && (
-                                  <span className="shrink-0 rounded bg-critical/10 px-1.5 py-0.5 text-3xs font-semibold text-critical">
+                                  <span className="shrink-0 rounded bg-critical/10 px-2 py-0.5 text-2xs font-semibold text-critical">
                                     Hết hàng
                                   </span>
                                 )}
@@ -1437,7 +1453,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
               <div className="mb-1 text-2xs font-medium text-ink-2">
                 KOC đã gán vào dòng Brief này ({slotKocHandles(editing).length}/{slotTargetQty(editing)} video):
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {slotKocHandles(editing).map(h => (
                   <span key={h} className="inline-flex items-center gap-1 rounded bg-surface px-2 py-0.5 text-xs font-medium text-accent border border-line">
                     @{h.replace(/^@/, '')}
@@ -1670,7 +1686,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
                     onClick={() => setCopilotOpen(true)}
                     className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                   >
-                    <Lightbulb className="h-3 w-3" />
+                    <Lightbulb className="h-3.5 w-3.5" />
                     Gợi ý góc quay & Hook 3s
                   </button>
                 </div>

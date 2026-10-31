@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { getPlanActor, unauthorized } from '../monthly-plans/_shared';
+import { actionAllowed } from '@/lib/server/accessPolicy';
 import { normHandle, type FrameworkContract } from '@/lib/dealBoardRules';
 
 export const dynamic = 'force-dynamic';
@@ -33,18 +34,23 @@ export async function GET(request: NextRequest) {
   try {
     const rec = await readRecord<FrameworkData>(KEY, EMPTY);
     const allItems = rec.data.items || [];
-    const canSeeFullSensitive = ['ADMIN', 'MANAGER', 'DIRECTOR', 'LEADER', 'LEGAL', 'FINANCE', 'SIGN_ADMIN'].includes(
-      actor.role
-    );
-    const raw = request.nextUrl.searchParams.get('handles');
-    if (!raw) {
-      const items = canSeeFullSensitive
-        ? allItems
-        : allItems.map(it => ({
+    const canSeeFullSensitive =
+      (['ADMIN', 'MANAGER', 'LEGAL', 'FINANCE', 'SIGN_ADMIN'].includes(actor.role) ||
+        Boolean(actor.permissions?.includes('ALL_PERMISSIONS')) ||
+        Boolean(actor.permissions?.includes('canApprovePayment'))) &&
+      !actor.partnerType &&
+      !actor.role.endsWith('_PARTNER');
+    const maskItem = (it: FrameworkContract): FrameworkContract =>
+      canSeeFullSensitive
+        ? it
+        : {
             ...it,
             taxOrCccd: maskCode(it.taxOrCccd),
             bankAccount: maskCode(it.bankAccount),
-          }));
+          };
+    const raw = request.nextUrl.searchParams.get('handles');
+    if (!raw) {
+      const items = allItems.map(maskItem);
       return NextResponse.json({ items });
     }
     const wanted = Array.from(new Set(raw.split(',').map(normHandle).filter(Boolean)));
@@ -53,12 +59,12 @@ export async function GET(request: NextRequest) {
     for (const h of wanted) {
       const direct = directMap.get(h);
       if (direct) {
-        result.push(direct);
+        result.push(maskItem(direct));
         continue;
       }
       const mcnShared = allItems.find(i => (i.coveredHandles || []).map(normHandle).includes(h));
       if (mcnShared) {
-        result.push({ ...mcnShared, id: h, handle: h });
+        result.push(maskItem({ ...mcnShared, id: h, handle: h }));
       }
     }
     return NextResponse.json({ items: result });
@@ -73,6 +79,15 @@ export async function PUT(request: NextRequest) {
   if (!actor) return unauthorized();
   try {
     if (request.headers.get('origin') !== request.nextUrl.origin) throw new RecordError('Yêu cầu không xuất phát từ ứng dụng.', 403);
+    if (actor.partnerType || actor.role.endsWith('_PARTNER')) {
+      throw new RecordError('Tài khoản đối tác không được phép chỉnh sửa sổ hợp đồng nguyên tắc.', 403);
+    }
+    const canWriteContract =
+      ['ADMIN', 'MANAGER', 'LEADER', 'LEGAL', 'FINANCE', 'SIGN_ADMIN', 'BOOKING_MEMBER', 'MEMBER'].includes(actor.role) ||
+      (await actionAllowed(actor, 'contract_creation', 'write'));
+    if (!canWriteContract) {
+      throw new RecordError('Bạn không có quyền cập nhật sổ hợp đồng nguyên tắc.', 403);
+    }
     const body = (await request.json()) as Partial<FrameworkContract>;
     const id = normHandle(body.handle || '');
     if (!id) throw new RecordError('Thiếu ID kênh của KOC.', 400);

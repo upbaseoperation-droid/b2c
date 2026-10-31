@@ -160,7 +160,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
       </PageActions>
 
       <Panel flush>
-        <div className="p-4 border-b border-line grid gap-2.5">
+        <div className="p-4 border-b border-line grid gap-3">
           <FilterBar
             search={{
               value: search,
@@ -319,7 +319,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
           </>
         }
       >
-        <form id="cast-tier-form" onSubmit={handleSave} className="space-y-3.5 text-xs">
+        <form id="cast-tier-form" onSubmit={handleSave} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Mã bậc (Tier Code) *</label>
@@ -329,7 +329,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 placeholder="VD: KL8, TAP..."
                 value={form.tierCode}
                 onChange={(e) => setForm(prev => ({ ...prev, tierCode: e.target.value.toUpperCase() }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -339,7 +339,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 placeholder="VD: 500k - 1.5M"
                 value={form.priceRange}
                 onChange={(e) => setForm(prev => ({ ...prev, priceRange: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -349,7 +349,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
             <select
               value={form.creatorGroup}
               onChange={(e) => setForm(prev => ({ ...prev, creatorGroup: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             >
               <option value="Massive Creator">Massive Creator (Phủ số lượng lớn)</option>
               <option value="Mid Creator">Mid Creator (Tầm trung)</option>
@@ -365,7 +365,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 type="number"
                 value={form.minCast}
                 onChange={(e) => setForm(prev => ({ ...prev, minCast: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -374,7 +374,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 type="number"
                 value={form.maxCast}
                 onChange={(e) => setForm(prev => ({ ...prev, maxCast: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -383,7 +383,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 type="number"
                 value={form.baseAverage}
                 onChange={(e) => setForm(prev => ({ ...prev, baseAverage: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -396,7 +396,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 placeholder="Không mất / Thương lượng"
                 value={form.adsCost}
                 onChange={(e) => setForm(prev => ({ ...prev, adsCost: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -406,7 +406,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                 placeholder="Không mất / Thương lượng"
                 value={form.usageImageCost}
                 onChange={(e) => setForm(prev => ({ ...prev, usageImageCost: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -418,7 +418,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
               placeholder="Ghi chú về hiệu suất, mục tiêu sử dụng nhóm..."
               value={form.note}
               onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
         </form>

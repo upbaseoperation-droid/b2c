@@ -192,7 +192,7 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
         {breakdown && (
           <div className="space-y-4">
             {/* Tóm tắt thông tin Video & Chỉ số thực tế */}
-            <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface-2 flex flex-wrap items-center justify-between gap-3">
+            <div className="px-4 py-3 rounded-xl border border-line bg-surface-2 flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1 min-w-0 max-w-xl">
                 <div className="flex items-center gap-2 flex-wrap">
                   <a
@@ -203,14 +203,14 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                   >
                     <Video className="w-3.5 h-3.5 text-accent" />
                     <span>@{breakdown.authorHandle}</span>
-                    <ExternalLink className="w-3 h-3 text-ink-3" />
+                    <ExternalLink className="w-3.5 h-3.5 text-ink-3" />
                   </a>
                   <span className="text-2xs text-ink-3 tabular-nums">
                     · Đăng: {breakdown.publishedTimeFormatted} · Thời lượng: {breakdown.durationSeconds}s
                   </span>
                   {breakdown.hasCartAnchor && (
                     <Status tone="positive">
-                      <ShoppingBag className="w-3 h-3 mr-1 inline" />
+                      <ShoppingBag className="w-3.5 h-3.5 mr-1 inline" />
                       {breakdown.cartAnchorTitle || 'Có gắn giỏ hàng'}
                     </Status>
                   )}
@@ -247,9 +247,9 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
             >
               <div className="space-y-3">
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg border border-line bg-surface-2 space-y-1.5">
+                  <div className="p-3 rounded-lg border border-line bg-surface-2 space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wider">
+                      <span className="text-2xs font-semibold text-ink-2">
                         Lời mở đầu 3 giây đầu (00:00 - 00:03)
                       </span>
                       <button
@@ -263,7 +263,7 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                         }
                         className="text-2xs text-accent hover:underline inline-flex items-center gap-1"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="w-3.5 h-3.5" />
                         <span>{copiedKey === 'hook3s' ? 'Đã chép' : 'Sao chép'}</span>
                       </button>
                     </div>
@@ -272,8 +272,8 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-lg border border-line bg-surface-2 space-y-1.5">
-                    <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wider block">
+                  <div className="p-3 rounded-lg border border-line bg-surface-2 space-y-2">
+                    <span className="text-2xs font-semibold text-ink-2 block">
                       Chữ nổi trên màn hình & Cơ chế giữ chân
                     </span>
                     <div className="text-xs font-medium text-ink">
@@ -285,11 +285,11 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wider block">
+                <div className="space-y-2">
+                  <span className="text-2xs font-semibold text-ink-2 block">
                     Gợi ý 3 câu mở đầu 3 giây viết lại cho KOC UpBase
                   </span>
-                  <div className="grid gap-1.5">
+                  <div className="grid gap-2">
                     {breakdown.hookAnalysis.upbaseAdaptationHooks.map((hookLine, idx) => {
                       const k = `adapt-${idx}`;
                       return (
@@ -307,12 +307,12 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                           >
                             {copiedKey === k ? (
                               <>
-                                <Check className="w-3 h-3" />
+                                <Check className="w-3.5 h-3.5" />
                                 <span>Đã chép</span>
                               </>
                             ) : (
                               <>
-                                <Copy className="w-3 h-3" />
+                                <Copy className="w-3.5 h-3.5" />
                                 <span>Chép câu này</span>
                               </>
                             )}
@@ -331,7 +331,7 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                 {breakdown.scriptSections.map((sec) => (
                   <div
                     key={sec.stepIndex}
-                    className="p-3 rounded-lg border border-line bg-surface space-y-1.5"
+                    className="p-3 rounded-lg border border-line bg-surface space-y-2"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-semibold text-ink">
@@ -362,11 +362,11 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
                   <Status tone="neutral">{breakdown.subtitleSourceLabel}</Status>
                 }
               >
-                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
                   {breakdown.subtitleSegments.map((seg, i) => (
                     <div
                       key={`${seg.timeLabel}-${i}`}
-                      className="px-2.5 py-1.5 rounded border border-line bg-surface-2 flex items-start gap-2.5 text-xs"
+                      className="px-3 py-2 rounded border border-line bg-surface-2 flex items-start gap-3 text-xs"
                     >
                       <span className="font-code text-2xs text-accent font-semibold shrink-0 mt-0.5 tabular-nums">
                         [{seg.timeLabel}]
@@ -380,16 +380,16 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
               <Panel
                 title={`4. Luận điểm bán hàng & Bình luận hỏi mua (${breakdown.viewerReactions.buyingIntentRate}% hỏi mua)`}
               >
-                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                   {breakdown.detectedSellingPoints.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wider block">
+                      <span className="text-2xs font-semibold text-ink-2 block">
                         Điểm nhấn sản phẩm phát hiện trong video
                       </span>
                       {breakdown.detectedSellingPoints.map((pt, i) => (
                         <div
                           key={i}
-                          className="px-2.5 py-1.5 rounded border border-line bg-surface text-xs text-ink"
+                          className="px-3 py-2 rounded border border-line bg-surface text-xs text-ink"
                         >
                           • {pt}
                         </div>
@@ -399,13 +399,13 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
 
                   {breakdown.viewerReactions.topQuestionsAndComments.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wider block">
+                      <span className="text-2xs font-semibold text-ink-2 block">
                         Bình luận thực tế của người xem dưới video
                       </span>
                       {breakdown.viewerReactions.topQuestionsAndComments.map((cmt, i) => (
                         <div
                           key={i}
-                          className="px-2.5 py-1.5 rounded border border-line bg-surface-2 text-xs flex items-start justify-between gap-2"
+                          className="px-3 py-2 rounded border border-line bg-surface-2 text-xs flex items-start justify-between gap-2"
                         >
                           <div className="min-w-0">
                             <span className="font-semibold text-ink">@{cmt.username}: </span>

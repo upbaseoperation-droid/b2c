@@ -31,8 +31,8 @@ export const LEGAL_DOC_CATEGORY_LABEL: Record<LegalDocCategory, string> = {
 function formatFileSize(bytes?: number): string {
   if (!bytes || bytes <= 0) return '—';
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024).toLocaleString('vi-VN')} KB`;
+  return `${Math.round(bytes / (1024 * 1024)).toLocaleString('vi-VN')} MB`;
 }
 
 function formatUploadDate(iso?: string): string {

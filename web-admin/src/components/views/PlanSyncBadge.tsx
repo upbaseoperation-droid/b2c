@@ -16,31 +16,31 @@ const timeLabel = (d: Date | null) =>
 
 /** Nhãn trạng thái lưu kế hoạch: Đang tải / Chưa lưu / Đang lưu / Đã lưu hh:mm / Lỗi / Chưa kết nối. */
 export const PlanSyncBadge: React.FC<PlanSyncBadgeProps> = ({ status, lastSavedAt, errorMessage, onRetry }) => {
-  const base = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-semibold border whitespace-nowrap';
+  const base = 'inline-flex items-center gap-2 px-3 py-1 rounded-lg text-2xs font-semibold border whitespace-nowrap';
 
   switch (status) {
     case 'loading':
       return (
-        <span className={`${base} bg-slate-50 text-slate-500 border-slate-200`}>
-          <Loader2 className="w-3 h-3 animate-spin" /> Đang tải
+        <span className={`${base} bg-canvas text-ink-3 border-line`}>
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang tải
         </span>
       );
     case 'saving':
       return (
-        <span className={`${base} bg-slate-50 text-slate-600 border-slate-200`}>
-          <Loader2 className="w-3 h-3 animate-spin" /> Đang lưu...
+        <span className={`${base} bg-canvas text-ink-2 border-line`}>
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang lưu...
         </span>
       );
     case 'dirty':
       return (
-        <span className={`${base} bg-amber-50 text-amber-700 border-amber-200`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Chưa lưu
+        <span className={`${base} bg-warning-soft text-warning border-warning/30`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-warning" /> Chưa lưu
         </span>
       );
     case 'saved':
       return (
-        <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`} title="Đã lưu vào database">
-          <CheckCircle2 className="w-3 h-3" /> Đã lưu {timeLabel(lastSavedAt)}
+        <span className={`${base} bg-positive-soft text-positive border-positive/30`} title="Đã lưu vào database">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Đã lưu {timeLabel(lastSavedAt)}
         </span>
       );
     case 'error':
@@ -48,21 +48,21 @@ export const PlanSyncBadge: React.FC<PlanSyncBadgeProps> = ({ status, lastSavedA
         <button
           type="button"
           onClick={onRetry}
-          className={`${base} bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 cursor-pointer`}
+          className={`${base} bg-critical-soft text-critical border-critical/30 hover:bg-critical-soft cursor-pointer`}
           title={errorMessage || 'Lưu không thành công'}
         >
-          <AlertTriangle className="w-3 h-3" /> Lưu lỗi
-          <RefreshCw className="w-3 h-3" /> Thử lại
+          <AlertTriangle className="w-3.5 h-3.5" /> Lưu lỗi
+          <RefreshCw className="w-3.5 h-3.5" /> Thử lại
         </button>
       );
     case 'offline':
     default:
       return (
         <span
-          className={`${base} bg-rose-50 text-rose-700 border-rose-200`}
+          className={`${base} bg-critical-soft text-critical border-critical/30`}
           title={errorMessage || 'Không kết nối được database'}
         >
-          <CloudOff className="w-3 h-3" /> Chưa kết nối database — không lưu
+          <CloudOff className="w-3.5 h-3.5" /> Chưa kết nối database — không lưu
         </span>
       );
   }

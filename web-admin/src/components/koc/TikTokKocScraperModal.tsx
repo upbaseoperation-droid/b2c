@@ -442,12 +442,12 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       header: 'Số bài (Giỏ / Thường)',
       width: 175,
       render: (d) => (
-        <div className="flex flex-wrap items-center gap-1.5 text-2xs tabular-nums">
+        <div className="flex flex-wrap items-center gap-2 text-2xs tabular-nums">
           <span className="font-semibold text-ink">{d.totalVideos} bài</span>
-          <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-medium">
+          <span className="px-2 py-0.5 rounded bg-positive-soft text-positive font-medium">
             Giỏ: {d.affiliateVideos}
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 font-medium">
+          <span className="px-2 py-0.5 rounded bg-sunken text-ink-2 font-medium">
             Thường: {d.organicVideos}
           </span>
         </div>
@@ -625,7 +625,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         const bi = r.bookingIntelligence;
         if (!bi) return <span className="text-2xs text-ink-3">—</span>;
         return (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <Status
               tone={
                 bi.verdict === 'NÊN_BOOK'
@@ -715,7 +715,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       align: 'right',
       width: 140,
       render: (r) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center justify-end gap-2">
           <Button
             size="sm"
             variant={r.handle === activeResult?.handle ? 'primary' : 'secondary'}
@@ -753,16 +753,16 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             className="text-xs font-medium text-ink hover:text-accent line-clamp-2 leading-snug inline-flex items-start gap-1"
           >
             <span>{v.caption}</span>
-            <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
+            <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5 text-ink-3" />
           </a>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             {v.isViralOutlier && (
-              <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
+              <span className="px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
                 Đột biến &ge;4x trung vị
               </span>
             )}
             {v.isPinnedOldVideo && (
-              <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-medium">
+              <span className="px-2 py-0.5 rounded bg-warning-soft text-warning text-2xs font-medium">
                 Bài ghim cũ
               </span>
             )}
@@ -771,7 +771,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             </span>
           </div>
           {v.isAffiliate && (
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {v.productUrl ? (
                 <a
                   href={v.productUrl}
@@ -781,7 +781,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   className="text-2xs text-positive font-medium hover:underline truncate max-w-[260px] inline-flex items-center gap-1"
                   title={v.productName}
                 >
-                  <ShoppingBag className="w-3 h-3 shrink-0" />
+                  <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                   <span className="truncate">Giỏ hàng: {v.productName || 'Sản phẩm TikTok Shop'}</span>
                   <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                 </a>
@@ -791,7 +791,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 </span>
               )}
               {v.productId && (
-                <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
+                <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
                   SP: {v.productId}
                 </span>
               )}
@@ -808,7 +808,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         <div className="grid gap-0.5 min-w-0">
           <span className="text-xs text-ink tabular-nums">{formatDate(v.publishedAt)}</span>
           <span className="text-2xs text-ink-3 truncate inline-flex items-center gap-1" title={v.musicTitle}>
-            <Music className="w-3 h-3 shrink-0" />
+            <Music className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{v.musicTitle}</span>
           </span>
         </div>
@@ -944,8 +944,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         }
       >
         <div className="space-y-3">
-          <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_185px_auto] gap-2.5 items-center">
+          <div className="px-4 py-3 rounded-xl border border-line bg-surface space-y-2">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_185px_auto] gap-3 items-center">
               <input
                 id="tiktok-scraper-input"
                 type="text"
@@ -1002,7 +1002,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             </div>
 
             {resolvedShortLinks.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-2xs">
+              <div className="flex flex-wrap items-center gap-2 pt-0.5 text-2xs">
                 <span className="text-ink-3 font-medium">Đã giải mã link rút gọn:</span>
                 {resolvedShortLinks.map((sl) => (
                   <span
@@ -1093,7 +1093,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         key={r.handle}
                         type="button"
                         onClick={() => setSelectedHandle(r.handle)}
-                        className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border text-xs transition-colors ${
                           isSelected
                             ? 'bg-accent-soft border-accent text-ink font-semibold'
                             : 'bg-surface border-line text-ink-2 hover:bg-canvas'
@@ -1102,7 +1102,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         <span>@{r.handle}</span>
                         {bi && (
                           <span
-                            className={`px-1.5 py-0.5 rounded text-2xs font-semibold tabular-nums ${
+                            className={`px-2 py-0.5 rounded text-2xs font-semibold tabular-nums ${
                               bi.verdict === 'NÊN_BOOK'
                                 ? 'bg-positive-soft text-positive'
                                 : bi.verdict === 'CÂN_NHẮC'
@@ -1115,7 +1115,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         )}
                         {sum && (
                           <span
-                            className={`px-1.5 py-0.5 rounded-full text-2xs font-semibold ${
+                            className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
                               sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0
                                 ? 'bg-critical-soft text-critical'
                                 : sum.latestReview.verdict === 'SUITABLE'
@@ -1164,8 +1164,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
           {/* Chi tiết kênh & danh sách video của kênh đang chọn */}
           {activeResult && (
             <div className="space-y-3">
-              <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="px-4 py-3 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Avatar
                     name={activeResult.channelProfile.nickname}
                     src={activeResult.channelProfile.avatarUrl}
@@ -1183,7 +1183,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline font-code"
                       >
                         @{activeResult.channelProfile.handle}
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                       {matchedActiveKoc ? (
                         onOpenKocInMaster ? (
@@ -1191,9 +1191,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                             type="button"
                             onClick={() => onOpenKocInMaster(matchedActiveKoc)}
                             title="Mở hồ sơ KOC trong Danh bạ KOC"
-                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
+                            className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
                           >
-                            <UserCheck className="w-3 h-3 shrink-0" />
+                            <UserCheck className="w-3.5 h-3.5 shrink-0" />
                             <span>Đã có trong danh bạ · Xem hồ sơ</span>
                           </button>
                         ) : (
@@ -1248,7 +1248,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                           href={activeResult.bookingIntelligence.zaloDirectUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-surface hover:bg-canvas text-2xs font-medium text-accent"
+                          className="inline-flex items-center gap-2 h-7 px-3 rounded-md border border-line bg-surface hover:bg-canvas text-2xs font-medium text-accent"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>Nhắn Zalo ({activeResult.channelProfile.extractedPhone})</span>
@@ -1272,8 +1272,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                           : 'Làm mới trực tiếp'}
                       </Button>
                       {activeResult.scrapeDiagnostics && (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink-2 tabular-nums">
-                          <Activity className="w-3 h-3 text-accent shrink-0" />
+                        <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink-2 tabular-nums">
+                          <Activity className="w-3.5 h-3.5 text-accent shrink-0" />
                           <span>{activeResult.scrapeDiagnostics.engineLabel}</span>
                           <span>· {activeResult.scrapeDiagnostics.durationMs}ms</span>
                           <span>
@@ -1295,7 +1295,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </span>
                       {activeResult.channelProfile.externalSocialLinks &&
                         activeResult.channelProfile.externalSocialLinks.length > 0 && (
-                          <span className="inline-flex flex-wrap items-center gap-1.5 text-2xs">
+                          <span className="inline-flex flex-wrap items-center gap-2 text-2xs">
                             · Liên kết Bio:
                             {activeResult.channelProfile.externalSocialLinks.map((lnk) => {
                               const shortHost = lnk
@@ -1307,7 +1307,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                                   href={lnk}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="px-1.5 py-0.5 rounded bg-sunken border border-line text-accent hover:underline font-code"
+                                  className="px-2 py-0.5 rounded bg-sunken border border-line text-accent hover:underline font-code"
                                 >
                                   {shortHost}
                                 </a>
@@ -1361,7 +1361,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
               {/* Thanh chọn Cỡ mẫu, Bỏ ghim & Khoảng ngày tính View Trung vị / View TB (Tách Có giỏ vs. Không giỏ) */}
               {activeSampleBreakdown && (
-                <div className="px-3.5 py-2 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+                <div className="px-4 py-2 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-2xs font-semibold text-ink inline-flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -1381,7 +1381,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       <option value="50">50 bài mới</option>
                     </Select>
 
-                    <label className="inline-flex items-center gap-1.5 px-2 h-7 rounded-md border border-line bg-sunken text-2xs text-ink cursor-pointer select-none">
+                    <label className="inline-flex items-center gap-2 px-2 h-7 rounded-md border border-line bg-sunken text-2xs text-ink cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={excludePinned}
@@ -1515,7 +1515,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 const daysIdle = em.daysSinceLastPost;
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                    <div className="p-3 rounded-lg border border-line bg-surface space-y-0.5">
                       <span className="text-2xs text-ink-3 block">
                         View trung vị ({sampleCount} bài)
                       </span>
@@ -1527,7 +1527,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                    <div className="p-3 rounded-lg border border-line bg-surface space-y-0.5">
                       <span className="text-2xs text-ink-3 block">
                         15 bài mới nhất (trừ ghim cũ)
                       </span>
@@ -1540,7 +1540,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     </div>
 
                     <div
-                      className={`p-2.5 rounded-lg border space-y-0.5 ${
+                      className={`p-3 rounded-lg border space-y-0.5 ${
                         isAffDropWarning
                           ? 'border-critical/40 bg-critical-soft/20'
                           : 'border-line bg-surface'
@@ -1565,7 +1565,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                    <div className="p-3 rounded-lg border border-line bg-surface space-y-0.5">
                       <span className="text-2xs text-ink-3 block">
                         Không gắn giỏ ({orgCount}/{sampleCount} bài · {orgPct}%)
                       </span>
@@ -1577,7 +1577,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                    <div className="p-3 rounded-lg border border-line bg-surface space-y-0.5">
                       <span className="text-2xs text-ink-3 block">
                         Độ ổn định phong độ
                       </span>
@@ -1596,7 +1596,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     </div>
 
                     <div
-                      className={`p-2.5 rounded-lg border space-y-0.5 ${
+                      className={`p-3 rounded-lg border space-y-0.5 ${
                         daysIdle !== undefined && daysIdle > 21
                           ? 'border-warning/40 bg-warning-soft/20'
                           : 'border-line bg-surface'
@@ -1667,8 +1667,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 const hist = bi.historicalUpbaseSummary;
                 const isFocRange = bi.suggestedNetRateMin === 0 && bi.suggestedNetRateMax <= 500000;
                 return (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-                    <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <div className="px-4 py-3 rounded-xl border border-line bg-surface space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-semibold text-ink">
@@ -1692,7 +1692,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5">
-                        <div className="px-2.5 py-1.5 rounded-lg bg-sunken border border-line">
+                        <div className="px-3 py-2 rounded-lg bg-sunken border border-line">
                           <span className="text-2xs text-ink-3 block">Khung giá Net đề xuất</span>
                           <strong className="text-xs font-semibold text-accent font-code tabular-nums">
                             {isFocRange
@@ -1700,7 +1700,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                               : `${formatVnd(bi.suggestedNetRateMin)} – ${formatVnd(bi.suggestedNetRateMax)}`}
                           </strong>
                         </div>
-                        <div className="px-2.5 py-1.5 rounded-lg bg-sunken border border-line">
+                        <div className="px-3 py-2 rounded-lg bg-sunken border border-line">
                           <span className="text-2xs text-ink-3 block">CPV dự kiến (theo trung vị)</span>
                           <strong className="text-xs font-semibold text-ink font-code tabular-nums">
                             {bi.estimatedCpvVnd > 0
@@ -1708,13 +1708,13 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                               : 'FOC 0đ'}
                           </strong>
                         </div>
-                        <div className="px-2.5 py-1.5 rounded-lg bg-sunken border border-line col-span-2 sm:col-span-1">
+                        <div className="px-3 py-2 rounded-lg bg-sunken border border-line col-span-2 sm:col-span-1">
                           <span className="text-2xs text-ink-3 block">Nhãn hàng B2C phù hợp</span>
                           <div className="flex flex-wrap items-center gap-1 pt-0.5">
                             {bi.recommendedB2cBrands.map((b) => (
                               <span
                                 key={b}
-                                className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs font-medium text-ink"
+                                className="px-2 py-0.5 rounded bg-surface border border-line text-2xs font-medium text-ink"
                               >
                                 {b}
                               </span>
@@ -1724,7 +1724,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </div>
 
                       {bi.riskFlags.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
                           {bi.riskFlags.map((flag) => (
                             <span
                               key={flag.code}
@@ -1743,7 +1743,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       )}
                     </div>
 
-                    <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
+                    <div className="px-4 py-3 rounded-xl border border-line bg-surface space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs font-semibold text-ink">
                           Đối soát Lịch sử Lark 3.1 &amp; Danh bạ Upbase
@@ -1758,7 +1758,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </div>
 
                       {hist.isExistingMasterKoc ? (
-                        <div className="space-y-1.5 text-2xs">
+                        <div className="space-y-2 text-2xs">
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
                             {hist.historicalRateCard > 0 && (
                               <span>
@@ -1822,7 +1822,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         <span className="text-2xs text-ink-2 truncate max-w-md" title={bi.outreachMessageTemplate}>
                           Mẫu nhắn KOC: &ldquo;{bi.outreachMessageTemplate}&rdquo;
                         </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -1841,9 +1841,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                               href={bi.zaloDirectUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-sunken hover:bg-canvas text-2xs font-semibold text-accent"
+                              className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-line bg-sunken hover:bg-canvas text-2xs font-semibold text-accent"
                             >
-                              <MessageSquare className="w-3 h-3" />
+                              <MessageSquare className="w-3.5 h-3.5" />
                               <span>Mở Zalo</span>
                             </a>
                           )}
@@ -1856,9 +1856,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
               {/* Cảnh báo xung đột Sheet Listing nội bộ (nếu đang lưu tạm trong trình duyệt) */}
               {activeSheetListings.length > 0 && (
-                <div className="px-3.5 py-2.5 rounded-xl border border-warning/40 bg-warning-soft/30 space-y-1.5">
+                <div className="px-4 py-3 rounded-xl border border-warning/40 bg-warning-soft/30 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-2">
                       <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0" />
                       Đang có trong Sheet Listing cá nhân ({activeSheetListings.length} dòng) — Tránh liên hệ trùng
                     </span>
@@ -1867,9 +1867,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     {activeSheetListings.slice(0, 3).map((item) => (
                       <div
                         key={`${item.sheetKey}-${item.dot}`}
-                        className="px-2.5 py-1 rounded-lg bg-surface border border-line text-2xs flex flex-wrap items-center justify-between gap-2"
+                        className="px-3 py-1 rounded-lg bg-surface border border-line text-2xs flex flex-wrap items-center justify-between gap-2"
                       >
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-ink">{item.store}</span>
                           <span className="text-ink-3">({item.thang} · {item.dot})</span>
                           <span className="text-ink-2">· PIC: <strong>{item.nhanSuDien}</strong></span>
@@ -1901,8 +1901,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               {/* Danh sách sản phẩm / nhãn hàng đang gắn giỏ phát hiện trên kênh */}
               {activeResult.engagementMetrics.promotedProductsSummary &&
                 activeResult.engagementMetrics.promotedProductsSummary.length > 0 && (
-                  <div className="px-3.5 py-2 rounded-xl border border-line bg-surface flex flex-wrap items-center gap-2">
-                    <span className="text-2xs font-semibold text-ink inline-flex items-center gap-1.5 shrink-0">
+                  <div className="px-4 py-2 rounded-xl border border-line bg-surface flex flex-wrap items-center gap-2">
+                    <span className="text-2xs font-semibold text-ink inline-flex items-center gap-2 shrink-0">
                       <ShoppingBag className="w-3.5 h-3.5 text-accent" />
                       Sản phẩm / Giỏ hàng phát hiện trên kênh:
                     </span>
@@ -1912,7 +1912,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         href={prod.productUrl || prod.latestVideoUrl || activeResult.channelProfile.channelUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink hover:border-line-strong"
+                        className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink hover:border-line-strong"
                       >
                         <span className="truncate max-w-[220px] font-medium">{prod.label}</span>
                         {prod.productId && (
@@ -1930,7 +1930,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               {/* Khung hiển thị trực tiếp lịch sử đánh giá khi tìm kiếm đúng vào kênh đã có đánh giá */}
               {activeReviewSummary && (
                 <div
-                  className={`px-3.5 py-2.5 rounded-xl border space-y-2 ${
+                  className={`px-4 py-3 rounded-xl border space-y-2 ${
                     activeReviewSummary.latestReview.verdict === 'NOT_SUITABLE' ||
                     activeReviewSummary.notSuitableCount > 0
                       ? 'bg-critical-soft/40 border-critical/30'
@@ -1966,19 +1966,19 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       Xem đầy đủ &amp; Thêm đánh giá
                     </Button>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {activeReviewSummary.reviews.slice(0, 2).map((rev) => (
                       <div
                         key={rev.id}
-                        className="px-2.5 py-1.5 rounded-lg bg-surface border border-line text-xs flex flex-wrap items-center justify-between gap-2"
+                        className="px-3 py-2 rounded-lg bg-surface border border-line text-xs flex flex-wrap items-center justify-between gap-2"
                       >
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
                           <span className="font-semibold text-ink">{rev.reviewerName}</span>
                           <span className="text-2xs text-ink-3 inline-flex items-center gap-1 tabular-nums">
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-3.5 h-3.5" />
                             {rev.timeLabel} {rev.dateLabel}
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-sunken text-2xs font-medium text-ink-2">
+                          <span className="px-2 py-0.5 rounded bg-sunken text-2xs font-medium text-ink-2">
                             {rev.brandScope}
                           </span>
                           {rev.reasonTags.length > 0 && (

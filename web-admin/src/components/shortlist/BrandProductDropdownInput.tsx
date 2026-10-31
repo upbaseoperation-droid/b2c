@@ -892,7 +892,7 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
         placeholder={resolvedPlaceholder}
         className={
           isCompact
-            ? 'w-full h-8 pl-2.5 pr-7 rounded border border-line-strong bg-surface text-xs font-medium text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
+            ? 'w-full h-8 pl-3 pr-7 rounded border border-line-strong bg-surface text-xs font-medium text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
             : 'w-full h-9 pl-3 pr-8 rounded-md border border-line-strong bg-surface text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
         }
       />
@@ -930,8 +930,8 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
             className="fixed z-[1300] bg-surface border border-line-strong rounded-lg shadow-lg overflow-hidden animate-fade-in"
           >
             {/* Header danh mục Sản phẩm của Brand */}
-            <div className="px-2.5 py-1.5 bg-sunken border-b border-line flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
+            <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Package className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span className="text-2xs font-semibold text-ink truncate">
                   Sản phẩm &amp; Combo — {resolvedBrandName} ({flatOptions.length})
@@ -944,10 +944,10 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
                   void handleLoadFromProductCatalogApi(true);
                 }}
                 disabled={syncing}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:text-ink hover:bg-canvas shrink-0"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:text-ink hover:bg-canvas shrink-0"
                 title="Làm mới từ phân hệ Sản phẩm & Combo của Brand"
               >
-                <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin text-accent' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-accent' : ''}`} />
                 <span>Đồng bộ SP</span>
               </button>
             </div>
@@ -961,7 +961,7 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
               ) : (
                 filteredGroups.map((group) => (
                   <div key={group.groupId} className="py-1">
-                    <div className="px-2.5 py-1 text-2xs font-semibold text-ink-3 bg-sunken/40 flex items-center justify-between">
+                    <div className="px-3 py-1 text-2xs font-semibold text-ink-3 bg-sunken/40 flex items-center justify-between">
                       <span className="truncate">Nhóm: {group.groupName}</span>
                       <span className="tabular-nums shrink-0">{group.items.length} SP</span>
                     </div>
@@ -988,17 +988,17 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
                             onChange(item.name, item);
                             setOpen(false);
                           }}
-                          className={`w-full text-left px-2.5 py-1.5 text-xs flex items-start justify-between gap-2 transition-colors ${
+                          className={`w-full text-left px-3 py-2 text-xs flex items-start justify-between gap-2 transition-colors ${
                             isSelected
                               ? 'bg-sunken font-semibold text-ink'
                               : 'text-ink hover:bg-sunken/70'
                           }`}
                         >
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="truncate">{item.name}</span>
                               <span
-                                className={`px-1.5 py-0.2 rounded text-2xs font-medium border ${
+                                className={`px-2 py-0.2 rounded text-2xs font-medium border ${
                                   isCombo
                                     ? 'bg-accent-soft/40 text-accent border-accent/20'
                                     : 'bg-sunken text-ink-2 border-line'

@@ -32,6 +32,7 @@ import {
 import {
   resolveStoreStaffAssignment,
   type BookingDealItem,
+  type InputPlanBreakdownState,
   type KocItem,
   type KocListingItem,
   type ListingBatchCycle,
@@ -43,7 +44,7 @@ import {
 import { filterScopedStores } from '../../lib/rbacScope';
 import { isPersonInField } from '../../lib/staffIdentity';
 import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
-import { formatNumber, formatVnd, formatVndShort, maskSensitivePii } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort, maskSensitivePii, parseThousandNumberInput } from '../../lib/format';
 import {
   BRAND_CHON_OPTIONS,
   CONTENT_TAG_OPTIONS,
@@ -97,7 +98,7 @@ import {
   BrandProductDropdownInput,
   buildBrandProductCatalogGroups,
 } from './BrandProductDropdownInput';
-import { ActionMenu, Avatar, Button, Field, Input, Modal, PageActions, Person, Select, Status } from '../ui';
+import { ActionMenu, Avatar, BulkBar, Button, Field, Input, Modal, PageActions, Person, Segmented, Select, Status } from '../ui';
 import { PushSheetReconciliationView, type PushSheetReconciliationReport } from './PushSheetReconciliationView';
 
 const BRAND_REVIEW_PRIORITY_KEYS: StaffListingColumnKey[] = [
@@ -119,11 +120,6 @@ const BRAND_REVIEW_PRIORITY_KEYS: StaffListingColumnKey[] = [
   'nhanSuDien',
   'dot',
 ];
-
-const parseThousandNumberInput = (raw: string): number => {
-  const digits = String(raw || '').replace(/[^\d]/g, '');
-  return digits ? Number(digits) || 0 : 0;
-};
 
 interface BufferedSheetTextInputProps {
   value: string;
@@ -153,7 +149,9 @@ const BufferedSheetTextInput = React.memo<BufferedSheetTextInputProps>(function 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestCommittedRef = useRef(value);
   const onCommitRef = useRef(onCommit);
-  onCommitRef.current = onCommit;
+  useEffect(() => {
+    onCommitRef.current = onCommit;
+  }, [onCommit]);
 
   useEffect(() => {
     latestCommittedRef.current = value;
@@ -234,20 +232,22 @@ const BufferedSheetNumberInput = React.memo<BufferedSheetNumberInputProps>(funct
   mode = 'thousand',
   className,
 }) {
-  const formatVal = (v: number) =>
-    mode === 'thousand' ? formatNumber(Number(v) || 0) : String(Number(v) || 0);
-  const [draft, setDraft] = useState(() => formatVal(value));
+  const [draft, setDraft] = useState(() =>
+    mode === 'thousand' ? formatNumber(Number(value) || 0) : String(Number(value) || 0)
+  );
   const focusedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestCommittedRef = useRef(Number(value) || 0);
   const onCommitRef = useRef(onCommit);
-  onCommitRef.current = onCommit;
+  useEffect(() => {
+    onCommitRef.current = onCommit;
+  }, [onCommit]);
 
   useEffect(() => {
     const num = Number(value) || 0;
     latestCommittedRef.current = num;
     if (!focusedRef.current) {
-      setDraft(formatVal(num));
+      setDraft(mode === 'thousand' ? formatNumber(num) : String(num));
     }
   }, [value, mode]);
 
@@ -270,7 +270,7 @@ const BufferedSheetNumberInput = React.memo<BufferedSheetNumberInputProps>(funct
       latestCommittedRef.current = parsed;
       onCommitRef.current(parsed);
     }
-    setDraft(formatVal(parsed));
+    setDraft(mode === 'thousand' ? formatNumber(parsed) : String(parsed));
   };
 
   return (
@@ -349,6 +349,7 @@ export interface StaffBrandListingSheetWorkspaceProps {
   kocs: KocItem[];
   stores: StorePortfolioItem[];
   deals: BookingDealItem[];
+  activePlan?: InputPlanBreakdownState | null;
   currentUser?: UserProfile | null;
   currentUserName: string;
   currentRole?: UserRole;
@@ -497,6 +498,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   kocs: rawKocs,
   stores: rawStores,
   deals: rawDeals,
+  activePlan,
   currentUser,
   currentUserName,
   currentRole,
@@ -555,10 +557,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       });
     if (currentUser) {
       const scoped = filterScopedStores(mergedAll, currentUser);
-      if (scoped.length > 0) return scoped;
+      if (scoped.length > 0 || (currentRole && currentRole !== 'ADMIN' && currentRole !== 'MANAGER')) {
+        return scoped;
+      }
     }
     return mergedAll;
-  }, [stores, storeOverrides, currentUser]);
+  }, [stores, storeOverrides, currentUser, currentRole]);
 
   const activeMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
   const isStoreValid = b2cStores.some((s) => s.storeName === selectedStore);
@@ -1051,28 +1055,34 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     () => getStaffSheetFieldEditPolicy(collection),
     [collection?.fieldEditPolicy]
   );
+  const isBrandReviewerRole =
+    currentRole === 'BRAND_PARTNER' || currentRole === 'BRAND_MEMBER';
+
   const currentRoleTier: StaffSheetRoleTier = useMemo(() => {
     if (isAdminOrManager) return 'ADMIN';
     if (isStoreLeader) return 'LEADER';
-    if (isPrimaryPic || !storeAssignment.primaryPic) return 'PRIMARY_PIC';
+    if (isPrimaryPic || (!isBrandReviewerRole && !storeAssignment.primaryPic)) return 'PRIMARY_PIC';
     return 'SUPPORT';
-  }, [isAdminOrManager, isStoreLeader, isPrimaryPic, storeAssignment.primaryPic]);
+  }, [isAdminOrManager, isStoreLeader, isPrimaryPic, isBrandReviewerRole, storeAssignment.primaryPic]);
 
   const canManageAllRows =
-    isAdminOrManager ||
-    isStoreLeader ||
-    isPrimaryPic ||
-    !storeAssignment.primaryPic ||
-    (isSupportStaff && fieldEditPolicy.supportRowScope === 'ALL_STORE_ROWS');
+    !isBrandReviewerRole &&
+    (isAdminOrManager ||
+      isStoreLeader ||
+      isPrimaryPic ||
+      !storeAssignment.primaryPic ||
+      (isSupportStaff && fieldEditPolicy.supportRowScope === 'ALL_STORE_ROWS'));
 
   const canPushToGoogleSheet =
-    isAdminOrManager ||
-    isStoreLeader ||
-    isPrimaryPic ||
-    !storeAssignment.primaryPic ||
-    (isSupportStaff && fieldEditPolicy.allowSupportPushToSheet);
+    !isBrandReviewerRole &&
+    (isAdminOrManager ||
+      isStoreLeader ||
+      isPrimaryPic ||
+      !storeAssignment.primaryPic ||
+      (isSupportStaff && fieldEditPolicy.allowSupportPushToSheet));
 
   const canEditRow = (row: StaffListingSheetRow): boolean => {
+    if (isBrandReviewerRole) return false;
     if (canManageAllRows) return true;
     const owner = (row.nhanSuDien || '').trim().toLowerCase();
     return !owner || owner === currentUserName.trim().toLowerCase();
@@ -1082,6 +1092,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     row: StaffListingSheetRow,
     colKey: StaffListingColumnKey
   ): { allowed: boolean; reason?: string } => {
+    if (isBrandReviewerRole) {
+      if (colKey === 'brandChon' || colKey === 'lyDoTuChoi' || colKey === 'contentNote') {
+        return { allowed: true };
+      }
+      return {
+        allowed: false,
+        reason: 'Đại diện Nhãn hàng chỉ chỉnh sửa kết quả duyệt (Brand chọn, Lý do từ chối, Ghi chú)',
+      };
+    }
     const owner = (row.nhanSuDien || '').trim().toLowerCase();
     const isOwnRow = !owner || owner === currentUserName.trim().toLowerCase();
     return canStaffEditSheetField({
@@ -1095,6 +1114,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
   const isColumnAllowedForCurrentUser = (colKey: StaffListingColumnKey): boolean => {
     if (STAFF_SHEET_READONLY_SYSTEM_COLUMNS.includes(colKey)) return false;
+    if (isBrandReviewerRole) {
+      return colKey === 'brandChon' || colKey === 'lyDoTuChoi' || colKey === 'contentNote';
+    }
     if (currentRoleTier === 'ADMIN') return true;
     return (fieldEditPolicy.editableFieldsByRole[currentRoleTier] || []).includes(colKey);
   };
@@ -1418,7 +1440,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       if (!check.allowed) {
         onNotify?.(
           check.reason ||
-            `Bạn chưa được cấp quyền sửa trường này. Liên hệ Quản trị viên để mở quyền trên màn Thiết lập Google Sheet & Phân quyền Sửa Trường.`,
+            `Bạn chưa được cấp quyền sửa trường này. Liên hệ Quản trị viên để mở quyền ở Tích hợp & Kết nối API → Google Sheet → Quyền sửa trường.`,
           'warning'
         );
         return;
@@ -1956,20 +1978,34 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       'success'
     );
 
-    if (openScreenAfter && typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('upbase-navigate-tab', {
-          detail: {
-            tab: 'approved-booking-list',
-            storeName: activeStoreName,
-            monthKey: activeMonth,
-          },
-        })
-      );
+    if (openScreenAfter) {
+      if (onOpenDealBoard) {
+        onOpenDealBoard({
+          storeName: activeStoreName,
+          monthKey: activeMonth,
+        });
+      } else if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('upbase-navigate-tab', {
+            detail: {
+              tab: 'approved-booking-list',
+              storeName: activeStoreName,
+              monthKey: activeMonth,
+            },
+          })
+        );
+      }
     }
   };
 
   const handleOpenApprovedBookingListScreen = () => {
+    if (onOpenDealBoard) {
+      onOpenDealBoard({
+        storeName: activeStoreName,
+        monthKey: activeMonth,
+      });
+      return;
+    }
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('upbase-navigate-tab', {
@@ -3184,10 +3220,33 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     setSheetCollapsedMonthsDraft(MONTH_OPTIONS.filter((m) => m < activeMonth));
   };
 
+  const planQuotaSummary = useMemo(() => {
+    if (!activePlan) return null;
+    const itemsList = Array.isArray(activePlan.items) ? activePlan.items : [];
+    const targetVideos =
+      Number(activePlan.totalTargetContents) ||
+      itemsList.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+    const targetBudget =
+      Number(activePlan.totalTargetBudget) ||
+      itemsList.reduce((s, it) => s + (Number(it.totalBudget) || 0), 0);
+    const approvedNet = rows
+      .filter((r) => r.brandChon === 'Yes')
+      .reduce((s, r) => s + (Number(r.giaNetVideo) || 0), 0);
+    const isOverbudget = targetBudget > 0 && approvedNet > targetBudget;
+    const isUnbudgetedSpend = targetBudget === 0 && approvedNet > 0;
+    return {
+      targetVideos,
+      targetBudget,
+      approvedNet,
+      isOverbudget,
+      isUnbudgetedSpend,
+    };
+  }, [activePlan, rows]);
+
   return (
     <div className="space-y-2">
       <PageActions>
-        <div className="hidden xl:flex items-center gap-2 px-2.5 h-8 rounded-md bg-sunken/70 border border-line text-2xs">
+        <div className="hidden xl:flex items-center gap-2 px-3 h-8 rounded-md bg-sunken/70 border border-line text-2xs">
           <div className="flex items-center gap-1">
             <span className="text-ink-3">KOC:</span>
             <strong className="text-ink tabular-nums">
@@ -3200,13 +3259,18 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <strong className="text-positive tabular-nums">
               {formatNumber(sheetStats.brandApprovedCount)}/{formatNumber(sheetStats.totalCount)}
             </strong>
+            {planQuotaSummary && planQuotaSummary.targetVideos > 0 && (
+              <span className="text-ink-3 tabular-nums" title="Chỉ tiêu số lượng nội dung theo Plan 4.1.1">
+                (Plan: {formatNumber(planQuotaSummary.targetVideos)})
+              </span>
+            )}
           </div>
           <span className="h-3 w-px bg-line" />
           <div
             className="flex items-center gap-1"
             title="Đo lường SLA từ thời điểm Listing KOC mới lên đến khi Brand phản hồi (Cam kết chuẩn: ≤ 48h)"
           >
-            <Clock className="w-3 h-3 text-accent shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
             <span className="text-ink-3">SLA:</span>
             {sheetStats.reviewedCount > 0 ? (
               <strong
@@ -3222,7 +3286,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               <strong className="text-ink-2 tabular-nums">Chờ</strong>
             )}
             {sheetStats.overdueWaitCount > 0 && (
-              <span className="px-1 rounded bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-2xs">
+              <span className="px-1 rounded bg-critical-soft border border-critical/30 text-critical font-semibold text-2xs">
                 {sheetStats.overdueWaitCount} trễ
               </span>
             )}
@@ -3230,9 +3294,25 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           <span className="h-3 w-px bg-line" />
           <div className="flex items-center gap-1">
             <span className="text-ink-3">Net:</span>
-            <strong className="text-ink tabular-nums">
+            <strong
+              className={`tabular-nums ${
+                planQuotaSummary?.isOverbudget || planQuotaSummary?.isUnbudgetedSpend
+                  ? 'text-critical'
+                  : 'text-ink'
+              }`}
+            >
               {formatVndShort(sheetStats.totalNet)}
             </strong>
+            {planQuotaSummary && planQuotaSummary.targetBudget > 0 && (
+              <span className="text-ink-3 tabular-nums" title="Trần ngân sách Net theo Plan 4.1.1">
+                /{formatVndShort(planQuotaSummary.targetBudget)}
+              </span>
+            )}
+            {(planQuotaSummary?.isOverbudget || planQuotaSummary?.isUnbudgetedSpend) && (
+              <span className="px-1 rounded bg-critical-soft border border-critical/30 text-critical font-semibold text-2xs">
+                {planQuotaSummary.isUnbudgetedSpend ? 'Chưa cấp HM' : 'Vượt trần'}
+              </span>
+            )}
           </div>
           <span className="h-3 w-px bg-line" />
           <div className="flex items-center gap-1">
@@ -3252,24 +3332,26 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           Kéo từ Sheet
         </Button>
 
-        <Button
-          variant="primary"
-          size="sm"
-          icon={Upload}
-          onClick={handleOpenPushSheetModal}
-        >
-          {selectedRowIds.length > 0
-            ? `Đẩy ${selectedRowIds.length} dòng`
-            : `Đẩy lên Sheet (${displayedRows.length})`}
-        </Button>
+        {!isBrandReviewerRole && (
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Upload}
+            onClick={handleOpenPushSheetModal}
+          >
+            {selectedRowIds.length > 0
+              ? `Đẩy ${selectedRowIds.length} dòng`
+              : `Đẩy lên Sheet (${displayedRows.length})`}
+          </Button>
+        )}
       </PageActions>
 
       {/* Khung làm việc tích hợp: 2 thanh điều khiển 1 dòng sát mép + Bảng dữ liệu chuẩn Google Sheet */}
       <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
         {/* Thanh 1 (1 dòng duy nhất): Ngữ cảnh Tháng / Gian hàng / PIC / Link Sheet (Trái) + Chế độ cột / Chọn KOC / Thêm dòng / Tạo Deal (Phải) */}
-        <div className="px-3 py-1.5 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <select
+        <div className="px-3 py-2 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <Select
               value={activeMonth}
               onChange={(e) => {
                 const nextMonth = e.target.value;
@@ -3285,7 +3367,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 }
               }}
               aria-label="Chọn tháng"
-              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
+              className="w-auto shrink-0 font-semibold"
             >
               {MONTH_OPTIONS.map((m) => {
                 const st = monthSummaryStats[m];
@@ -3299,13 +3381,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   </option>
                 );
               })}
-            </select>
+            </Select>
 
-            <select
+            <Select
               value={activeStoreName}
               onChange={(e) => onChangeStore(e.target.value)}
               aria-label="Chọn Brand / Gian hàng"
-              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[260px] truncate shrink-0 focus:outline-none focus:border-ink"
+              className="w-auto max-w-[260px] shrink-0 font-semibold"
             >
               {sortedB2cStoresForActiveMonth.map((st) => {
                 const c = getStoreMonthCount(activeMonth, st.storeName);
@@ -3315,23 +3397,23 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   </option>
                 );
               })}
-            </select>
+            </Select>
 
             {/* Cụm hiển thị gọn: Nút bấm xem danh sách PIC gian hàng & Quyền + Link Google Sheet */}
-            <div className="flex flex-wrap items-center gap-1.5 text-2xs">
+            <div className="flex flex-wrap items-center gap-2 text-2xs">
               <div ref={picPopoverRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setIsPicPopoverOpen((v) => !v)}
                   aria-expanded={isPicPopoverOpen}
-                  className="h-7 inline-flex items-center gap-1.5 px-2 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
+                  className="h-7 inline-flex items-center gap-2 px-2 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
                 >
                   <Users className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>PIC ({storePicTotalCount})</span>
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
                       isPrimaryPic || isAdminOrManager || isStoreLeader
-                        ? 'bg-emerald-500'
+                        ? 'bg-positive'
                         : isSupportStaff
                           ? 'bg-accent'
                           : 'bg-ink-3'
@@ -3356,7 +3438,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 </button>
 
                 {isPicPopoverOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 z-40 w-80 rounded-lg border border-line-strong bg-surface shadow-lg p-3 space-y-3 text-xs">
+                  <div className="absolute left-0 top-full mt-2 z-40 w-80 rounded-lg border border-line-strong bg-surface shadow-lg p-3 space-y-3 text-xs">
                     <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
                       <span className="font-semibold text-ink truncate">
                         Nhân sự &amp; Quyền gian hàng
@@ -3382,10 +3464,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       </Status>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="text-2xs font-medium text-ink-3">PIC Chính</div>
                       {storeAssignment.primaryPic ? (
-                        <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-sunken/60 border border-line">
+                        <div className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-sunken/60 border border-line">
                           <Person
                             name={storeAssignment.primaryPic}
                             sub={`${
@@ -3393,7 +3475,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             } dòng trong bảng`}
                             size={24}
                           />
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <Status tone="positive">PIC Chính</Status>
                             <button
                               type="button"
@@ -3401,20 +3483,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 setFilterNhanSu(storeAssignment.primaryPic);
                                 setIsPicPopoverOpen(false);
                               }}
-                              className="px-1.5 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:bg-sunken hover:text-ink"
+                              className="px-2 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:bg-sunken hover:text-ink"
                             >
                               Lọc
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="px-2 py-1.5 rounded-md bg-sunken/40 border border-line text-2xs text-ink-3">
+                        <div className="px-2 py-2 rounded-md bg-sunken/40 border border-line text-2xs text-ink-3">
                           Chưa phân công
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="text-2xs font-medium text-ink-3">
                         Nhân viên hỗ trợ ({storeAssignment.supportStaff.length})
                       </div>
@@ -3423,7 +3505,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           {storeAssignment.supportStaff.map((staffName) => (
                             <div
                               key={staffName}
-                              className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-surface border border-line"
+                              className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-surface border border-line"
                             >
                               <Person
                                 name={staffName}
@@ -3432,7 +3514,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 } dòng trong bảng`}
                                 size={22}
                               />
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-2 shrink-0">
                                 <Status tone="info">Hỗ trợ</Status>
                                 <button
                                   type="button"
@@ -3440,7 +3522,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     setFilterNhanSu(staffName);
                                     setIsPicPopoverOpen(false);
                                   }}
-                                  className="px-1.5 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:bg-sunken hover:text-ink"
+                                  className="px-2 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:bg-sunken hover:text-ink"
                                 >
                                   Lọc
                                 </button>
@@ -3449,16 +3531,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           ))}
                         </div>
                       ) : (
-                        <div className="px-2 py-1.5 rounded-md bg-sunken/40 border border-line text-2xs text-ink-3">
+                        <div className="px-2 py-2 rounded-md bg-sunken/40 border border-line text-2xs text-ink-3">
                           Không có nhân sự hỗ trợ
                         </div>
                       )}
                     </div>
 
                     {storeLeaderName && (
-                      <div className="space-y-1.5 pt-1 border-t border-line">
+                      <div className="space-y-2 pt-1 border-t border-line">
                         <div className="text-2xs font-medium text-ink-3">Trưởng nhóm phụ trách</div>
-                        <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-surface border border-line">
+                        <div className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-surface border border-line">
                           <Person name={storeLeaderName} size={22} />
                           <Status tone="brand">Leader</Status>
                         </div>
@@ -3473,7 +3555,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             setIsPicPopoverOpen(false);
                             onOpenSheetSetupScreen('FIELD_PERMISSIONS');
                           }}
-                          className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md bg-sunken border border-line text-ink font-medium hover:bg-line/50"
+                          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-sunken border border-line text-ink font-medium hover:bg-line/50"
                         >
                           <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-accent" />
                           <span>Cấu hình phân quyền sửa trường</span>
@@ -3513,7 +3595,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
                     <span>Mở Sheet</span>
-                    <ExternalLink className="w-3 h-3 shrink-0" />
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                   </a>
                   <button
                     type="button"
@@ -3546,42 +3628,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           </div>
 
           {/* Cụm phải Thanh 1: Chế độ cột + Nút Cột + Chọn KOC + Thêm dòng + Tạo Deal + Khác */}
-          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-            <div className="inline-flex items-center p-0.5 rounded-md bg-surface border border-line text-2xs">
-              <button
-                type="button"
-                onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeColumnPreset === 'BRAND_WORKING_FILE'
-                    ? 'bg-ink text-surface font-semibold shadow-2xs'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                1. Trình Brand (17)
-              </button>
-              <button
-                type="button"
-                onClick={() => applyColumnPreset('ACCEPTANCE_FILE_32')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeColumnPreset === 'ACCEPTANCE_FILE_32'
-                    ? 'bg-ink text-surface font-semibold shadow-2xs'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                2. Đi Air &amp; Nghiệm thu
-              </button>
-              <button
-                type="button"
-                onClick={() => applyColumnPreset('ALL_48')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeColumnPreset === 'ALL_48'
-                    ? 'bg-ink text-surface font-semibold shadow-2xs'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                Đầy đủ (57)
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Segmented
+              value={activeColumnPreset}
+              onChange={(val) => applyColumnPreset(val as 'BRAND_WORKING_FILE' | 'ACCEPTANCE_FILE_32' | 'ALL_48')}
+              items={[
+                { key: 'BRAND_WORKING_FILE', label: 'Trình Brand (17)' },
+                { key: 'ACCEPTANCE_FILE_32', label: 'Đi Air & Nghiệm thu' },
+                { key: 'ALL_48', label: 'Đầy đủ (57)' },
+              ]}
+            />
 
             <button
               type="button"
@@ -3599,45 +3655,62 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </span>
             </button>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={UserPlus}
-              onClick={handleOpenDirectoryPickerModal}
-            >
-              Chọn KOC
-            </Button>
+            {!isBrandReviewerRole && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={UserPlus}
+                  onClick={handleOpenDirectoryPickerModal}
+                >
+                  Chọn KOC
+                </Button>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Plus}
-              onClick={handleAddBlankRow}
-            >
-              Thêm dòng
-            </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={handleAddBlankRow}
+                >
+                  Thêm dòng
+                </Button>
 
-            {sheetStats.brandApprovedCount > 0 && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={ArrowRight}
-                onClick={() => handleOpenCreateDealsModal()}
-              >
-                {sheetStats.readyToCreateDealsCount > 0
-                  ? `Tạo Deal (${sheetStats.readyToCreateDealsCount})`
-                  : `Deal (${sheetStats.brandApprovedCount})`}
-              </Button>
+                {sheetStats.brandApprovedCount > 0 && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={ArrowRight}
+                    onClick={() => handleOpenCreateDealsModal()}
+                  >
+                    {sheetStats.readyToCreateDealsCount > 0
+                      ? `Tạo Deal (${sheetStats.readyToCreateDealsCount})`
+                      : `Deal (${sheetStats.brandApprovedCount})`}
+                  </Button>
+                )}
+              </>
             )}
 
             <ActionMenu
               label="Khác"
               items={[
-                {
-                  label: `Tạo các Deal từ KOC Brand đã duyệt (${sheetStats.brandApprovedCount} KOC)`,
-                  icon: ArrowRight,
-                  onSelect: () => handleOpenCreateDealsModal(),
-                },
+                ...(onOpenShortlistFilterModal && !isBrandReviewerRole
+                  ? [
+                      {
+                        label: 'Lọc & Gợi ý KOC theo Khung lương Plan 4.1.1',
+                        icon: UserPlus,
+                        onSelect: () => onOpenShortlistFilterModal(),
+                      },
+                    ]
+                  : []),
+                ...(!isBrandReviewerRole
+                  ? [
+                      {
+                        label: `Tạo các Deal từ KOC Brand đã duyệt (${sheetStats.brandApprovedCount} KOC)`,
+                        icon: ArrowRight,
+                        onSelect: () => handleOpenCreateDealsModal(),
+                      },
+                    ]
+                  : []),
                 ...(onOpenDealBoard
                   ? [
                       {
@@ -3651,13 +3724,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       },
                     ]
                   : []),
-                {
-                  label: `Gửi mail mời KOC (${
-                    selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length
-                  })`,
-                  icon: Mail,
-                  onSelect: () => handleOpenOutreachForSelection('COMPOSE'),
-                },
+                ...(!isBrandReviewerRole
+                  ? [
+                      {
+                        label: `Gửi mail mời KOC (${
+                          selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length
+                        })`,
+                        icon: Mail,
+                        onSelect: () => handleOpenOutreachForSelection('COMPOSE'),
+                      },
+                    ]
+                  : []),
                 {
                   label: 'Copy bảng gửi Brand (Google Sheet)',
                   icon: Copy,
@@ -3697,9 +3774,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         </div>
 
         {/* Thanh 2 (1 dòng duy nhất): Tìm kiếm + Bộ lọc + Sort (Trái) & Chú giải nguồn cột / Chỉ số thu gọn (Phải) */}
-        <div className="px-3 py-1.5 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+        <div className="px-3 py-2 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
           {/* Bên trái: Tìm kiếm, Lọc, Sắp xếp */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-44 sm:w-56">
               <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -3794,15 +3871,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
           {/* Bên phải Thanh 2: Chú giải màu cột (Tự động / Công thức / NV điền) lấp đầy cân đối khoảng trống phải */}
           <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-2 shrink-0">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-positive-soft text-positive border border-positive/30 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-positive" />
               Tự động: Danh bạ KOC
             </span>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning-soft text-warning border border-warning/30 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning" />
               Công thức: Tự tính
             </span>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 border border-line font-medium">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sunken text-ink-2 border border-line font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-ink-3" />
               NV điền: Nhập / chọn
             </span>
@@ -3810,21 +3887,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         </div>
 
         {/* Thanh thao tác hàng loạt theo ngữ cảnh (Contextual Bulk Action Bar) khi tích chọn dòng */}
-        {selectedRowIds.length > 0 && (
-          <div className="px-3 py-1.5 bg-accent-soft/60 border-b border-accent/25 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <BulkBar flush count={selectedRowIds.length} unit="KOC" onClear={() => setSelectedRowIds([])}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                <span>Đã chọn {selectedRowIds.length} KOC</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedRowIds([])}
-                className="text-2xs font-medium text-ink-2 hover:text-ink underline"
-              >
-                Bỏ chọn
-              </button>
-              <span className="h-3.5 w-px bg-line-strong mx-0.5" />
               <span className="text-2xs font-medium text-ink-2">Đổi hàng loạt:</span>
 
               <select
@@ -3882,79 +3946,80 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </select>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              {rows.some(
-                (r) => selectedRowIds.includes(r.id) && r.brandChon === 'Yes'
-              ) && (
+            {!isBrandReviewerRole && (
+              <div className="flex flex-wrap items-center gap-2">
+                {rows.some(
+                  (r) => selectedRowIds.includes(r.id) && r.brandChon === 'Yes'
+                ) && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={ArrowRight}
+                    onClick={() => handleOpenCreateDealsModal(rows, selectedRowIds)}
+                  >
+                    Tạo deal (
+                    {
+                      rows.filter(
+                        (r) => selectedRowIds.includes(r.id) && r.brandChon === 'Yes'
+                      ).length
+                    }
+                    )
+                  </Button>
+                )}
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
-                  icon={ArrowRight}
-                  onClick={() => handleOpenCreateDealsModal(rows, selectedRowIds)}
+                  icon={Mail}
+                  onClick={() => handleOpenOutreachForSelection('COMPOSE')}
                 >
-                  Tạo deal (
-                  {
-                    rows.filter(
-                      (r) => selectedRowIds.includes(r.id) && r.brandChon === 'Yes'
-                    ).length
-                  }
-                  )
+                  Gửi mail ({selectedRowIds.length})
                 </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Mail}
-                onClick={() => handleOpenOutreachForSelection('COMPOSE')}
-              >
-                Gửi mail ({selectedRowIds.length})
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Upload}
-                onClick={handleOpenPushSheetModal}
-              >
-                Đẩy Sheet ({selectedRowIds.length})
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                icon={Trash2}
-                onClick={handleDeleteSelectedRows}
-              >
-                Xóa ({selectedRowIds.length})
-              </Button>
-            </div>
-          </div>
-        )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Upload}
+                  onClick={handleOpenPushSheetModal}
+                >
+                  Đẩy Sheet ({selectedRowIds.length})
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={Trash2}
+                  onClick={handleDeleteSelectedRows}
+                >
+                  Xóa ({selectedRowIds.length})
+                </Button>
+              </div>
+            )}
+        </BulkBar>
 
         {/* Khung bật/tắt cột tùy ý (chỉ hiện khi bấm nút Cột) */}
         {isColumnPickerOpen && (
-          <div className="p-3 bg-sunken border-b border-line space-y-2.5">
+          <div className="p-3 bg-sunken border-b border-line space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink">
                 <span>Cấu hình cột hiển thị:</span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs border bg-emerald-50 text-emerald-700 border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs border bg-positive-soft text-positive border-positive/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-positive" />
                   Tự động: Lấy từ Danh bạ
                 </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs border bg-accent-soft text-accent border-accent/25">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs border bg-accent-soft text-accent border-accent/25">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                   Công thức: Tự tính
                 </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs border bg-amber-50 text-amber-800 border-amber-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs border bg-warning-soft text-warning border-warning/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-warning" />
                   NV điền: Nhập/chọn
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
                 >
-                  1. Trình Brand (15 cột trọng tâm)
+                  Trình Brand (15 cột trọng tâm)
                 </Button>
                 <Button
                   variant="secondary"
@@ -3980,20 +4045,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 max-h-56 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-56 overflow-y-auto pr-1">
               {STAFF_LISTING_COLUMNS.map((col) => {
                 const checked = visibleColumnKeys.includes(col.key);
                 const badge = FILL_MODE_BADGE[col.fillMode];
                 return (
                   <label
                     key={col.key}
-                    className={`flex items-center justify-between gap-1.5 px-2 py-1.5 rounded border text-2xs cursor-pointer select-none transition-colors ${
+                    className={`flex items-center justify-between gap-2 px-2 py-2 rounded border text-2xs cursor-pointer select-none transition-colors ${
                       checked
                         ? 'bg-surface border-ink/40 text-ink font-medium'
                         : 'bg-surface/50 border-line text-ink-3'
                     }`}
                   >
-                    <span className="flex items-center gap-1.5 min-w-0 truncate">
+                    <span className="flex items-center gap-2 min-w-0 truncate">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -4024,7 +4089,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-20 bg-sunken border-b border-line">
               <tr>
-                <th className="sticky left-0 z-30 bg-sunken px-1.5 py-2 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center">
+                <th className="sticky left-0 z-30 bg-sunken px-2 py-2 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center">
                   <input
                     type="checkbox"
                     checked={
@@ -4046,10 +4111,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   const colEditableByRole = isColumnAllowedForCurrentUser(col.key);
                   const dotColorClass =
                     col.fillMode === 'AUTO_SYSTEM'
-                      ? 'bg-emerald-500'
+                      ? 'bg-positive'
                       : col.fillMode === 'FORMULA'
                         ? 'bg-accent'
-                        : 'bg-amber-500';
+                        : 'bg-warning';
                   return (
                     <th
                       key={col.key}
@@ -4071,7 +4136,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           : ''
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1 min-w-0 truncate">
                           <span className="font-mono text-2xs text-ink-3 shrink-0">
                             {col.excelCol}
@@ -4082,7 +4147,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         </div>
                         <span className="inline-flex items-center gap-1 shrink-0">
                           {!isSystemReadOnly && !colEditableByRole && (
-                            <Lock className="w-3 h-3 text-ink-3 shrink-0" />
+                            <Lock className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                           )}
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${dotColorClass}`}
@@ -4107,12 +4172,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           colSpan={visibleColumns.length + 2}
                           className="p-0 border-b border-line bg-sunken/80"
                         >
-                          <div className="sticky left-0 max-w-[calc(100vw-360px)] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="sticky left-0 max-w-[calc(100vw-360px)] px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => toggleExpandOldMonthInTable(group.month)}
-                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-line-strong bg-surface font-semibold text-ink hover:bg-accent-soft hover:text-accent transition-colors"
+                                className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-line-strong bg-surface font-semibold text-ink hover:bg-accent-soft hover:text-accent transition-colors"
                               >
                                 <span className="font-mono text-xs">
                                   {isExpanded ? '[-]' : '[+]'}
@@ -4130,11 +4195,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 </strong>
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => toggleExpandOldMonthInTable(group.month)}
-                                className="text-2xs font-medium text-accent hover:underline px-1.5 py-0.5"
+                                className="text-2xs font-medium text-accent hover:underline px-2 py-0.5"
                               >
                                 {isExpanded
                                   ? 'Thu gọn lại tháng này'
@@ -4144,7 +4209,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                               <button
                                 type="button"
                                 onClick={() => onChangeMonth(group.month)}
-                                className="text-2xs font-medium text-ink-2 hover:text-ink hover:underline px-1.5 py-0.5"
+                                className="text-2xs font-medium text-ink-2 hover:text-ink hover:underline px-2 py-0.5"
                               >
                                 Chuyển hẳn sang Tháng {group.month}
                               </button>
@@ -4161,7 +4226,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             <td className="sticky left-0 z-10 bg-sunken px-2 py-1 border-r border-line text-center font-mono text-2xs text-ink-3">
                               —
                             </td>
-                            <td className="sticky left-[38px] z-10 bg-sunken px-1.5 py-1 border-r border-line text-center font-mono text-2xs text-ink-3 tabular-nums">
+                            <td className="sticky left-[38px] z-10 bg-sunken px-2 py-1 border-r border-line text-center font-mono text-2xs text-ink-3 tabular-nums">
                               {oldIdx + 1}
                             </td>
                             {visibleColumns.map((col) => {
@@ -4177,7 +4242,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   }`}
                                 >
                                   {col.key === 'thang' ? (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface border border-line font-mono font-semibold text-ink-2">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface border border-line font-mono font-semibold text-ink-2">
                                       {oldRow.thang || group.month}
                                     </span>
                                   ) : col.key === 'brandChon' ? (
@@ -4215,7 +4280,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     colSpan={visibleColumns.length + 2}
                     className="p-0 border-b border-line bg-accent-soft/25"
                   >
-                    <div className="sticky left-0 max-w-[calc(100vw-360px)] px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
+                    <div className="sticky left-0 max-w-[calc(100vw-360px)] px-3 py-2 flex items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent text-white font-semibold">
                           <span>[-] Cột Tháng (B): {activeMonth}</span>
@@ -4279,9 +4344,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     ? 'bg-accent-soft'
                     : 'bg-surface group-hover:bg-sunken';
                   const flatInputClass =
-                    'w-full h-7 px-1.5 rounded border border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-xs text-ink focus:outline-none disabled:hover:border-transparent disabled:hover:bg-transparent disabled:text-ink-3 transition-colors';
+                    'w-full h-7 px-2 rounded border border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-xs text-ink focus:outline-none disabled:hover:border-transparent disabled:hover:bg-transparent disabled:text-ink-3 transition-colors';
                   const flatSelectClass =
-                    'w-full h-7 px-1.5 rounded border border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-xs text-ink focus:outline-none disabled:hover:border-transparent disabled:hover:bg-transparent disabled:text-ink-3 transition-colors cursor-pointer';
+                    'w-full h-7 px-2 rounded border border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-xs text-ink focus:outline-none disabled:hover:border-transparent disabled:hover:bg-transparent disabled:text-ink-3 transition-colors cursor-pointer';
                   return (
                     <tr
                       key={row.id}
@@ -4290,7 +4355,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       } transition-colors`}
                     >
                       <td
-                        className={`sticky left-0 z-10 ${stickyCellBg} px-1.5 py-1 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center`}
+                        className={`sticky left-0 z-10 ${stickyCellBg} px-2 py-1 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center`}
                       >
                         <input
                           type="checkbox"
@@ -4307,7 +4372,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
                       {visibleColumns.map((col) => {
                         const isStickyId = col.key === 'idKenh';
-                        const cellBaseClass = `px-1.5 py-1 border-r border-line align-middle ${
+                        const cellBaseClass = `px-2 py-1 border-r border-line align-middle ${
                           isStickyId
                             ? `sticky left-[72px] z-10 ${stickyCellBg} shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]`
                             : ''
@@ -4460,9 +4525,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 onChange={(e) =>
                                   handleCellChange(row.id, 'deXuatUpBase', e.target.value)
                                 }
-                                className={`w-full h-7 px-1.5 rounded border text-xs font-medium disabled:opacity-60 cursor-pointer ${
+                                className={`w-full h-7 px-2 rounded border text-xs font-medium disabled:opacity-60 cursor-pointer ${
                                   row.deXuatUpBase === 'Must Have'
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    ? 'bg-positive-soft text-positive border-positive/30'
                                     : row.deXuatUpBase === 'Recommend'
                                       ? 'bg-accent-soft text-accent border-accent/25'
                                       : 'bg-surface text-ink border-line'
@@ -4502,13 +4567,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   onChange={(e) =>
                                     handleCellChange(row.id, 'brandChon', e.target.value)
                                   }
-                                  className={`w-full h-7 px-1.5 rounded border text-xs font-semibold disabled:opacity-60 cursor-pointer ${
+                                  className={`w-full h-7 px-2 rounded border text-xs font-semibold disabled:opacity-60 cursor-pointer ${
                                     row.brandChon === 'Yes'
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      ? 'bg-positive-soft text-positive border-positive/30'
                                       : row.brandChon === 'No'
-                                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                        ? 'bg-critical-soft text-critical border-critical/30'
                                         : row.brandChon === 'Cân nhắc'
-                                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                          ? 'bg-warning-soft text-warning border-warning/30'
                                           : 'bg-surface text-ink-2 border-line'
                                   }`}
                                 >
@@ -4520,7 +4585,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 </select>
                                 {row.chuyenListDuyetBook && (
                                   <span
-                                    className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-2xs font-semibold text-emerald-700 shrink-0"
+                                    className="px-2 py-0.5 rounded bg-positive-soft border border-positive/30 font-mono text-2xs font-semibold text-positive shrink-0"
                                     title={
                                       row.maBooking
                                         ? `Đã tạo Deal: ${row.maBooking}`
@@ -4575,13 +4640,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                               } (Chuẩn SLA: ≤ 48h)`}
                             >
                               <span
-                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border whitespace-nowrap tabular-nums ${
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold border whitespace-nowrap tabular-nums ${
                                   slaInfo.status === 'ON_TIME'
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    ? 'bg-positive-soft text-positive border-positive/30'
                                     : slaInfo.status === 'OVERDUE' || slaInfo.status === 'WAITING_OVERDUE'
-                                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                      ? 'bg-critical-soft text-critical border-critical/30'
                                       : slaInfo.status === 'WAITING'
-                                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                        ? 'bg-warning-soft text-warning border-warning/30'
                                         : 'bg-surface text-ink-3 border-line'
                                 }`}
                               >
@@ -4595,7 +4660,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               {row.maBooking ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-semibold text-emerald-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-positive-soft border border-positive/30 font-mono text-xs font-semibold text-positive">
                                   {row.maBooking}
                                 </span>
                               ) : (
@@ -4627,7 +4692,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     className="h-6 w-6 rounded border border-line bg-surface text-accent hover:bg-sunken inline-flex items-center justify-center shrink-0"
                                     title="Mở video nghiệm thu"
                                   >
-                                    <ExternalLink className="w-3 h-3" />
+                                    <ExternalLink className="w-3.5 h-3.5" />
                                   </a>
                                 )}
                               </div>
@@ -4640,11 +4705,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               <span
-                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border ${
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold border ${
                                   slaVal.startsWith('Trễ')
-                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                    ? 'bg-critical-soft text-critical border-critical/30'
                                     : slaVal === 'Đúng hạn' || slaVal.startsWith('Sớm')
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    ? 'bg-positive-soft text-positive border-positive/30'
                                     : 'bg-surface text-ink-3 border-line'
                                 }`}
                               >
@@ -4659,9 +4724,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               <span
-                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border ${
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold border ${
                                   payVal === 'Đã thanh toán'
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    ? 'bg-positive-soft text-positive border-positive/30'
                                     : payVal === 'Đủ điều kiện ĐNTT' ||
                                       payVal === 'Đã lập ĐNTT'
                                     ? 'bg-accent-soft text-accent border-accent/25'
@@ -4707,7 +4772,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         if (col.key === 'linkKenh') {
                           return (
                             <td key={col.key} className={cellBaseClass}>
-                              <div className="flex items-center gap-1.5 px-1">
+                              <div className="flex items-center gap-2 px-1">
                                 <a
                                   href={row.linkKenh}
                                   target="_blank"
@@ -4869,13 +4934,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   }
                                   className={`relative h-6 w-6 rounded inline-flex items-center justify-center shrink-0 transition-colors ${
                                     isSent
-                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      ? 'bg-positive-soft text-positive border border-positive/30'
                                       : 'text-ink-3 hover:text-ink hover:bg-surface'
                                   }`}
                                 >
                                   <Mail className="w-3.5 h-3.5" />
                                   {isSent && (
-                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500" />
+                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-positive" />
                                   )}
                                 </button>
                               </div>
@@ -4946,12 +5011,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           );
                         }
 
-                        // Bảo vệ dữ liệu nhạy cảm (GEMINI.md §3): Che mờ Số CCCD, Số tài khoản, SĐT nếu không phải Kế toán / Quản lý
+                        // Bảo vệ dữ liệu nhạy cảm (GEMINI.md §3): Che mờ Số CCCD, Số tài khoản, SĐT nếu không phải Kế toán / Pháp chế / Quản lý
                         const isPiiCol =
                           col.key === 'sdtNhanHang' ||
                           col.key === 'soTaiKhoan' ||
                           col.key === 'soCccd';
-                        const canViewFullPii = isAdminOrManager || currentRole === 'FINANCE';
+                        const canViewFullPii =
+                          isAdminOrManager ||
+                          currentRole === 'FINANCE' ||
+                          currentRole === 'LEGAL' ||
+                          Boolean(currentUser?.permissions?.includes('canApprovePayment'));
                         if (isPiiCol && !canViewFullPii) {
                           return (
                             <td key={col.key} className={cellBaseClass} title="Dữ liệu nhạy cảm đã che mờ (Chỉ Kế toán / Quản lý xem đầy đủ)">
@@ -5009,7 +5078,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       >
         <div className="space-y-3">
           {/* Hàng 1: Chọn Plan Tháng, Gian hàng (Sheet Brand) và Đợt Listing */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-lg bg-sunken border border-line">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 rounded-lg bg-sunken border border-line">
             <Field label="Plan Tháng" className="sm:col-span-3" labelClassName="whitespace-nowrap">
               <Select
                 value={pickerTargetMonth}
@@ -5113,7 +5182,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           </div>
 
           {/* Bộ lọc tìm kiếm Danh bạ KOC */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
               value={kocSearchText}
               onChange={(e) => setKocSearchText(e.target.value)}
@@ -5168,7 +5237,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 return (
                   <label
                     key={k.id}
-                    className={`px-3 py-2.5 flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
+                    className={`px-3 py-3 flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
                       alreadyInSheet
                         ? 'bg-sunken/60 opacity-65'
                         : isChecked
@@ -5176,7 +5245,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           : 'bg-surface hover:bg-sunken/40'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <input
                         type="checkbox"
                         disabled={alreadyInSheet}
@@ -5192,7 +5261,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       />
                       <Avatar name={k.stageName} src={k.avatarUrl} size={30} />
                       <div className="min-w-0">
-                        <div className="font-semibold text-ink truncate flex items-center gap-1.5">
+                        <div className="font-semibold text-ink truncate flex items-center gap-2">
                           <span>{k.stageName}</span>
                           <span className="font-normal text-ink-3">@{cleanHandle}</span>
                           {alreadyInSheet && (
@@ -5302,7 +5371,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             />
           </Field>
           {currentGoogleSheetUrl && (
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-sunken border border-line text-xs">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-sunken border border-line text-xs">
               <span className="truncate text-ink-2">{currentGoogleSheetUrl}</span>
               <a
                 href={currentGoogleSheetUrl}
@@ -5355,7 +5424,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       >
         <div className="space-y-3 text-xs">
           {!canPushToGoogleSheet && (
-            <div className="p-2.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800">
+            <div className="p-3 rounded-md bg-warning-soft border border-warning/30 text-warning">
               Bạn đang ở vai trò <strong>Booking Support</strong>. Bạn có thể chạy bước{' '}
               <strong>1. So sánh dữ liệu 2 bên</strong> để kiểm tra trước, nhưng bước{' '}
               <strong>2. Xác nhận Đẩy lên Google Sheet</strong> cần do{' '}
@@ -5364,7 +5433,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           )}
 
           {/* Chọn phạm vi đẩy: Đẩy dòng đang tích chọn vs Đẩy cả bảng */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 p-3 rounded-lg bg-sunken border border-line">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-lg bg-sunken border border-line">
             <Field label="Phạm vi dòng đẩy lên Google Sheet">
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -5460,10 +5529,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           </div>
 
           {/* Link Google Sheet & Tên Tab đích */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
             <div className="md:col-span-8">
               <Field label="Link Google Sheet của gian hàng">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <Input
                     value={pushSheetUrl}
                     onChange={(e) => {
@@ -5540,8 +5609,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
 
             {!isServiceAccountConfigured ? (
-              <div className="p-3.5 bg-warning-soft/40 border-b border-line space-y-3">
-                <div className="flex items-start gap-2.5">
+              <div className="p-4 bg-warning-soft/40 border-b border-line space-y-3">
+                <div className="flex items-start gap-3">
                   <div className="p-1 rounded-md bg-warning text-white shrink-0 mt-0.5">
                     <Key className="w-4 h-4" />
                   </div>
@@ -5631,7 +5700,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </div>
             ) : (
               <div className="space-y-2 p-3">
-                <div className="rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2 text-2xs text-emerald-900">
+                <div className="rounded-md bg-positive-soft border border-positive/30 px-3 py-2 text-2xs text-positive">
                   <strong>Cơ chế an toàn bảo vệ file Google Sheet:</strong> Hệ thống tuyệt đối{' '}
                   <strong>không xóa dòng</strong> đang có trên Sheet và{' '}
                   <strong>không ghi đè các cột của Brand</strong> (<em>Brand chọn</em>,{' '}
@@ -5700,10 +5769,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         }
       >
         <div className="space-y-3 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
             <div className="md:col-span-8">
               <Field label="Link Google Sheet của gian hàng">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <Input
                     value={pullSheetUrl}
                     onChange={(e) => {
@@ -5787,12 +5856,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             ) : (
               <div className="p-3 space-y-3">
                 {/* 4 Khối Báo cáo Tổng hợp Kết quả Brand Duyệt & SLA */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <div className="rounded-lg border border-line bg-surface p-2.5 space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="rounded-lg border border-line bg-surface p-3 space-y-1">
                     <div className="text-2xs text-ink-3 font-medium">
                       1. KOC Brand mới duyệt (Yes)
                     </div>
-                    <div className="text-base font-bold text-positive tabular-nums">
+                    <div className="text-base font-semibold text-positive tabular-nums">
                       +{pullDiffReport.brandSummary.newlyApprovedCount} KOC mới duyệt
                     </div>
                     <div className="text-2xs text-ink-2 tabular-nums">
@@ -5805,11 +5874,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-line bg-surface p-2.5 space-y-1">
+                  <div className="rounded-lg border border-line bg-surface p-3 space-y-1">
                     <div className="text-2xs text-ink-3 font-medium">
                       2. Từ chối (No) / Cân nhắc / Chờ duyệt
                     </div>
-                    <div className="text-base font-bold text-ink tabular-nums">
+                    <div className="text-base font-semibold text-ink tabular-nums">
                       +{pullDiffReport.brandSummary.newlyRejectedCount} Từ chối · +
                       {pullDiffReport.brandSummary.newlyConsideringCount} Cân nhắc
                     </div>
@@ -5821,11 +5890,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-line bg-surface p-2.5 space-y-1">
+                  <div className="rounded-lg border border-line bg-surface p-3 space-y-1">
                     <div className="text-2xs text-ink-3 font-medium">
                       3. Thời gian Brand duyệt &amp; SLA (48h)
                     </div>
-                    <div className="text-base font-bold text-accent tabular-nums">
+                    <div className="text-base font-semibold text-accent tabular-nums">
                       {pullDiffReport.brandSummary.reviewedWithSlaCount > 0
                         ? `${pullDiffReport.brandSummary.onTimeSlaCount}/${pullDiffReport.brandSummary.reviewedWithSlaCount} đúng hạn (TB ${pullDiffReport.brandSummary.avgReviewHours}h)`
                         : 'Chưa có mốc duyệt'}
@@ -5844,11 +5913,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-line bg-surface p-2.5 space-y-1">
+                  <div className="rounded-lg border border-line bg-surface p-3 space-y-1">
                     <div className="text-2xs text-ink-3 font-medium">
                       4. Chuyển tạo Deal sang Bảng Deal
                     </div>
-                    <div className="text-base font-bold text-ink tabular-nums">
+                    <div className="text-base font-semibold text-ink tabular-nums">
                       {pullDiffReport.brandSummary.readyForDealCreationCount} KOC sẵn sàng tạo Deal
                     </div>
                     <div className="text-2xs text-ink-2">
@@ -5858,7 +5927,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 </div>
 
                 {pullDiffReport.notOnSheetHandles.length > 0 && (
-                  <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-2xs text-amber-900">
+                  <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 text-2xs text-warning">
                     <strong>Lưu ý đối soát:</strong> Có{' '}
                     <strong>{pullDiffReport.notOnSheetHandles.length} KOC</strong> đang có trên bảng App nhưng chưa xuất hiện trên tab Google Sheet này:{' '}
                     <span className="font-mono">
@@ -5963,10 +6032,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     <thead className="sticky top-0 bg-sunken border-b border-line text-2xs font-semibold text-ink-2">
                       <tr>
                         <th className="py-2 px-2 w-9 text-center">Chọn</th>
-                        <th className="py-2 px-2.5 w-[22%]">KOC &amp; Sản phẩm</th>
-                        <th className="py-2 px-2.5 w-[20%]">Kết quả Brand duyệt</th>
-                        <th className="py-2 px-2.5 w-[24%]">Thời gian &amp; SLA Brand duyệt</th>
-                        <th className="py-2 px-2.5 w-[28%]">Chi tiết thay đổi (Trên App → Từ Sheet)</th>
+                        <th className="py-2 px-3 w-[22%]">KOC &amp; Sản phẩm</th>
+                        <th className="py-2 px-3 w-[20%]">Kết quả Brand duyệt</th>
+                        <th className="py-2 px-3 w-[24%]">Thời gian &amp; SLA Brand duyệt</th>
+                        <th className="py-2 px-3 w-[28%]">Chi tiết thay đổi (Trên App → Từ Sheet)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
@@ -6003,7 +6072,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   className="rounded border-line"
                                 />
                               </td>
-                              <td className="py-2 px-2.5 font-medium text-ink">
+                              <td className="py-2 px-3 font-medium text-ink">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -6023,7 +6092,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   title="Xem nhanh hồ sơ, hiệu suất & lịch sử KOC"
                                 >
                                   <span>@{d.handle}</span>
-                                  <Eye className="w-3 h-3 shrink-0" />
+                                  <Eye className="w-3.5 h-3.5 shrink-0" />
                                 </button>
                                 {d.kocName && d.kocName !== d.handle && (
                                   <div className="text-2xs text-ink-3">{d.kocName}</div>
@@ -6033,7 +6102,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   <strong className="tabular-nums">{formatVnd(d.netFee)}</strong>
                                 </div>
                               </td>
-                              <td className="py-2 px-2.5 text-2xs">
+                              <td className="py-2 px-3 text-2xs">
                                 <div className="space-y-1">
                                   {d.isNewlyApprovedYes ? (
                                     <Status tone="positive">
@@ -6068,7 +6137,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   )}
                                 </div>
                               </td>
-                              <td className="py-2 px-2.5 text-2xs">
+                              <td className="py-2 px-3 text-2xs">
                                 <div className="space-y-0.5 tabular-nums">
                                   <div className="text-ink-3">
                                     Listing: <span className="text-ink">{d.listingTime || '—'}</span>
@@ -6095,7 +6164,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   </div>
                                 </div>
                               </td>
-                              <td className="py-2 px-2.5 text-2xs">
+                              <td className="py-2 px-3 text-2xs">
                                 {d.fieldChanges.length === 0 ? (
                                   <span className="text-ink-3">
                                     Dữ liệu trên Sheet và trên App giống hệt nhau
@@ -6109,7 +6178,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                           {fc.appValue}
                                         </span>{' '}
                                         →{' '}
-                                        <span className="font-semibold text-emerald-700">
+                                        <span className="font-semibold text-positive">
                                           {fc.sheetValue}
                                         </span>
                                       </div>
@@ -6179,8 +6248,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         <div className="space-y-3 text-xs">
           {/* Thanh tóm tắt gọn trên 1 hàng */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              <div className="inline-flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="inline-flex items-center gap-2">
                 <span className="text-ink-3">Đã chọn:</span>
                 <span className="font-semibold text-ink tabular-nums">
                   {dealDrafts.filter((d) => d.selected).length}/{dealDrafts.length} KOC
@@ -6233,7 +6302,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 tabular-nums">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 tabular-nums">
               <div>
                 <span className="text-ink-3">Tổng Net: </span>
                 <span className="font-semibold text-positive">
@@ -6259,7 +6328,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </div>
 
               {dealDrafts.length > 1 && (
-                <div className="inline-flex items-center gap-1.5 pl-2 border-l border-line">
+                <div className="inline-flex items-center gap-2 pl-2 border-l border-line">
                   <span className="text-2xs text-ink-3">Gán ngày air:</span>
                   <input
                     type="date"
@@ -6288,7 +6357,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <table className="w-full table-fixed min-w-[920px] text-left text-xs border-collapse">
               <thead className="sticky top-0 z-10 bg-sunken/70 border-b border-line text-2xs font-semibold text-ink-3">
                 <tr>
-                  <th className="py-2.5 px-2.5 w-10 text-center">
+                  <th className="py-3 px-3 w-10 text-center">
                     <input
                       type="checkbox"
                       aria-label="Chọn tất cả KOC"
@@ -6304,12 +6373,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       className="rounded border-line-strong"
                     />
                   </th>
-                  <th className="py-2.5 px-3 w-[23%]">KOC</th>
-                  <th className="py-2.5 px-2.5 w-[14%]">Mã deal</th>
-                  <th className="py-2.5 px-2.5 w-[25%]">Sản phẩm chốt</th>
-                  <th className="py-2.5 px-2.5 w-[13%] text-right">Giá Net (đ)</th>
-                  <th className="py-2.5 px-2.5 w-[12%] text-right">Phí Gross (10%)</th>
-                  <th className="py-2.5 px-2.5 w-[13%]">Ngày air dự kiến</th>
+                  <th className="py-3 px-3 w-[23%]">KOC</th>
+                  <th className="py-3 px-3 w-[14%]">Mã deal</th>
+                  <th className="py-3 px-3 w-[25%]">Sản phẩm chốt</th>
+                  <th className="py-3 px-3 w-[13%] text-right">Giá Net (đ)</th>
+                  <th className="py-3 px-3 w-[12%] text-right">Phí Gross (10%)</th>
+                  <th className="py-3 px-3 w-[13%]">Ngày air dự kiến</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line bg-surface">
@@ -6322,7 +6391,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         : 'bg-sunken/30 hover:bg-sunken/50 transition-colors opacity-65'
                     }
                   >
-                    <td className="py-2.5 px-2.5 align-middle text-center">
+                    <td className="py-3 px-3 align-middle text-center">
                       <input
                         type="checkbox"
                         aria-label={`Chọn ${draft.idKenh}`}
@@ -6338,8 +6407,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         className="rounded border-line-strong"
                       />
                     </td>
-                    <td className="py-2.5 px-3 align-middle min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
+                    <td className="py-3 px-3 align-middle min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <button
                           type="button"
                           onClick={() => {
@@ -6367,7 +6436,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         {draft.tenKenh} · {draft.dot} · {draft.nhanSuDien}
                       </div>
                     </td>
-                    <td className="py-2.5 px-2.5 align-middle">
+                    <td className="py-3 px-3 align-middle">
                       <input
                         type="text"
                         value={draft.maBooking}
@@ -6379,10 +6448,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             )
                           );
                         }}
-                        className="w-full h-8 px-2.5 text-xs font-code font-semibold rounded-md border border-line-strong bg-surface text-accent focus:outline-none focus:border-ink"
+                        className="w-full h-8 px-3 text-xs font-code font-semibold rounded-md border border-line-strong bg-surface text-accent focus:outline-none focus:border-ink"
                       />
                     </td>
-                    <td className="py-2.5 px-2.5 align-middle">
+                    <td className="py-3 px-3 align-middle">
                       <BrandProductDropdownInput
                         size="sm"
                         value={draft.sanPham}
@@ -6400,7 +6469,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         placeholder="Chọn sản phẩm..."
                       />
                     </td>
-                    <td className="py-2.5 px-2.5 align-middle">
+                    <td className="py-3 px-3 align-middle">
                       <input
                         type="text"
                         inputMode="numeric"
@@ -6413,13 +6482,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             )
                           );
                         }}
-                        className="w-full h-8 px-2.5 text-xs text-right font-semibold tabular-nums rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
+                        className="w-full h-8 px-3 text-xs text-right font-semibold tabular-nums rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
                       />
                     </td>
-                    <td className="py-2.5 px-2.5 align-middle text-right tabular-nums font-medium text-ink-2">
+                    <td className="py-3 px-3 align-middle text-right tabular-nums font-medium text-ink-2">
                       {formatVnd(computeGrossFeeWithTax(draft.giaChotCuoi))}
                     </td>
-                    <td className="py-2.5 px-2.5 align-middle">
+                    <td className="py-3 px-3 align-middle">
                       <input
                         type="date"
                         value={draft.ngayAirChot}
@@ -6496,21 +6565,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   href={currentGoogleSheetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface border border-line text-ink font-semibold hover:bg-sunken shrink-0 text-xs"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-surface border border-line text-ink font-semibold hover:bg-sunken shrink-0 text-xs"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 text-positive" />
                   <span>Mở Sheet</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3" />
+                  <ExternalLink className="w-3.5 h-3.5 text-ink-3" />
                 </a>
               )}
             </div>
           </div>
 
           {/* MỤC 1: THU GỌN THÁNG CŨ */}
-          <div className="border border-line rounded-lg p-3 space-y-2.5">
+          <div className="border border-line rounded-lg p-3 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-ink">1. Thu gọn tháng cũ</span>
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
                   variant="secondary"
@@ -6572,7 +6641,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   return (
                     <label
                       key={m}
-                      className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border cursor-pointer select-none transition-colors ${
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md border cursor-pointer select-none transition-colors ${
                         isCollapsed
                           ? 'bg-sunken border-line text-ink-3'
                           : 'bg-surface border-line-strong text-ink font-semibold'
@@ -6600,7 +6669,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           </div>
 
           {/* MỤC 2: CHẾ ĐỘ HIỂN THỊ CỘT */}
-          <div className="border border-line rounded-lg p-3 space-y-2.5">
+          <div className="border border-line rounded-lg p-3 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-ink">2. Chế độ hiển thị cột</span>
               <Button
@@ -6622,7 +6691,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <label
-                className={`p-2.5 rounded-md border cursor-pointer flex items-center gap-2.5 select-none transition-colors ${
+                className={`p-3 rounded-md border cursor-pointer flex items-center gap-3 select-none transition-colors ${
                   sheetColumnPresetMode === 'BRAND_REVIEW'
                     ? 'border-ink bg-sunken font-semibold text-ink'
                     : 'border-line bg-surface text-ink-2 hover:bg-sunken/50'
@@ -6638,7 +6707,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </label>
 
               <label
-                className={`p-2.5 rounded-md border cursor-pointer flex items-center gap-2.5 select-none transition-colors ${
+                className={`p-3 rounded-md border cursor-pointer flex items-center gap-3 select-none transition-colors ${
                   sheetColumnPresetMode === 'AIR_ACCEPTANCE'
                     ? 'border-ink bg-sunken font-semibold text-ink'
                     : 'border-line bg-surface text-ink-2 hover:bg-sunken/50'
@@ -6654,7 +6723,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </label>
 
               <label
-                className={`p-2.5 rounded-md border cursor-pointer flex items-center gap-2.5 select-none transition-colors ${
+                className={`p-3 rounded-md border cursor-pointer flex items-center gap-3 select-none transition-colors ${
                   sheetColumnPresetMode === 'FULL_TEMPLATE'
                     ? 'border-ink bg-sunken font-semibold text-ink'
                     : 'border-line bg-surface text-ink-2 hover:bg-sunken/50'
@@ -6672,7 +6741,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           </div>
 
           {/* MỤC 3: SẮP XẾP, BỘ LỌC VÀ CHUẨN HÓA FONT */}
-          <div className="border border-line rounded-lg p-3 space-y-2.5">
+          <div className="border border-line rounded-lg p-3 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-ink">3. Sắp xếp &amp; Định dạng</span>
               <Button
@@ -6757,7 +6826,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   )
                 }
               >
-                Đưa 'Yes' lên đầu
+                Đưa (Yes) lên đầu
               </Button>
             </div>
           </div>

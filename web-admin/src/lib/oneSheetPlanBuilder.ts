@@ -82,21 +82,7 @@ export interface Brand411Summary {
 }
 
 function getEffectiveWeekRowsForPlan(plan: InputPlanBreakdownState): PlanWeekRow[] {
-  const rows = resolveWeekRows(plan);
-  if (hasBreakdownData(rows)) {
-    return rows;
-  }
-  const hasItems = (plan.items || []).some((it) => (it.qty || 0) > 0 || (it.totalBudget || 0) > 0);
-  if (plan.reference41 && !hasItems) {
-    return distributeReference41ToWeeks(plan, 'EVEN').weeklyBreakdown;
-  }
-  if (hasItems) {
-    return distributeItemsToWeeks(plan, 'EVEN');
-  }
-  if (plan.reference41) {
-    return distributeReference41ToWeeks(plan, 'EVEN').weeklyBreakdown;
-  }
-  return rows;
+  return resolveWeekRows(plan);
 }
 
 function splitTo4Weeks(total: number): number[] {

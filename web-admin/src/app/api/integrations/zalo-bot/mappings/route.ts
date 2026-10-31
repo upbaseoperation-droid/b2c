@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requestActor } from '@/lib/server/requestActor';
 import {
   getAllMappings,
   setGroupMapping,
@@ -30,7 +31,14 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const actor = await requestActor(req);
+  if (actor && (actor.partnerType || actor.role.endsWith('_PARTNER'))) {
+    return NextResponse.json(
+      { ok: false, error: 'Tài khoản đối tác không có quyền truy cập cấu hình Zalo Bot nội bộ.' },
+      { status: 403 }
+    );
+  }
   await hydrateZaloBotStateFromDb({ forceFresh: true });
   return NextResponse.json({
     ok: true,
@@ -41,8 +49,35 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const actor = await requestActor(req);
+    if (actor && (actor.partnerType || actor.role.endsWith('_PARTNER'))) {
+      return NextResponse.json(
+        { ok: false, error: 'Tài khoản đối tác không có quyền thao tác cấu hình Zalo Bot nội bộ.' },
+        { status: 403 }
+      );
+    }
     const body = await req.json().catch(() => null);
     const action = String(body?.action || 'LINK').toUpperCase();
+
+    const ADMIN_ONLY_ZALO_ACTIONS = new Set([
+      'UPDATE_SECURITY_POLICY',
+      'UPDATE_REPLY_CONFIG',
+      'RESET_REPLY_CONFIG',
+      'SAVE_USER_PERMISSION',
+      'REMOVE_USER_PERMISSION',
+      'BULK_APPROVE_DISCOVERED',
+    ]);
+    if (
+      ADMIN_ONLY_ZALO_ACTIONS.has(action) &&
+      actor &&
+      !['ADMIN', 'MANAGER', 'LEADER'].includes(actor.role) &&
+      !actor.permissions?.includes('ALL_PERMISSIONS')
+    ) {
+      return NextResponse.json(
+        { ok: false, error: 'Chỉ Quản trị viên, Giám đốc B2C hoặc Trưởng nhóm mới được thay đổi cấu hình bảo mật và phân quyền Zalo Bot.' },
+        { status: 403 }
+      );
+    }
 
     // 1. Quản lý Chính sách Bảo mật Toàn cục (Global Security Policy)
     if (action === 'UPDATE_SECURITY_POLICY') {

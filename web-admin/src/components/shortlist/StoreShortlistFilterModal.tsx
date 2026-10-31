@@ -582,7 +582,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 Đóng
               </Button>
 
-              <div className="flex items-center gap-1.5 bg-sunken px-2.5 py-1 rounded-md border border-line">
+              <div className="flex items-center gap-2 bg-sunken px-3 py-1 rounded-md border border-line">
                 <span className="text-2xs font-medium text-ink-2">Plan Tháng:</span>
                 <select
                   value={selectedPlanMonth}
@@ -596,7 +596,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 </select>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-sunken px-2.5 py-1 rounded-md border border-line">
+              <div className="flex items-center gap-2 bg-sunken px-3 py-1 rounded-md border border-line">
                 <span className="text-2xs font-medium text-ink-2">Đợt:</span>
                 <select
                   value={targetBatchCycle}
@@ -625,7 +625,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       >
         <div className="-m-4 sm:-m-5 flex flex-col">
           {/* Thanh chọn gian hàng & Định mức thiếu của Kế hoạch tháng */}
-          <div className="p-3.5 sm:p-4 border-b border-line bg-sunken space-y-3">
+          <div className="p-4 sm:p-4 border-b border-line bg-sunken space-y-3">
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 w-full lg:w-auto lg:min-w-[300px]">
                 <label className="text-xs font-semibold text-ink-2 whitespace-nowrap">
@@ -634,7 +634,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 <select
                   value={selectedPlanMonth}
                   onChange={(e) => setSelectedPlanMonth(e.target.value)}
-                  className="bg-surface border border-line-strong rounded-md px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:border-primary shrink-0"
+                  className="bg-surface border border-line-strong rounded-md px-3 py-2 text-xs font-semibold text-ink focus:outline-none focus:border-primary shrink-0"
                 >
                   <option value="2026/11">Plan 2026/11</option>
                   <option value="2026/10">Plan 2026/10</option>
@@ -647,7 +647,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 <select
                   value={selectedStoreId}
                   onChange={(e) => handleSelectStore(e.target.value)}
-                  className="w-full bg-surface border border-line-strong rounded-md px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line-strong rounded-md px-3 py-2 text-xs font-semibold text-ink focus:outline-none focus:border-primary"
                 >
                   {stores.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -659,23 +659,23 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
               {selectedStore && (
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
-                  <div className="bg-surface px-2.5 py-1 rounded-md border border-line">
+                  <div className="bg-surface px-3 py-1 rounded-md border border-line">
                     <span className="text-2xs text-ink-3 block">Ngân sách tháng</span>
                     <span className="font-semibold text-primary tabular-nums">
                       {formatVndShort(selectedStore.monthlyBudget)}
                     </span>
                   </div>
-                  <div className="bg-surface px-2.5 py-1 rounded-md border border-line">
+                  <div className="bg-surface px-3 py-1 rounded-md border border-line">
                     <span className="text-2xs text-ink-3 block">Mục tiêu GMV</span>
                     <span className="font-semibold text-positive tabular-nums">
                       {formatVndShort(selectedStore.monthlyTargetGmv)}
                     </span>
                   </div>
-                  <div className="bg-surface px-2.5 py-1 rounded-md border border-line">
+                  <div className="bg-surface px-3 py-1 rounded-md border border-line">
                     <span className="text-2xs text-ink-3 block">Ngành hàng</span>
                     <span className="font-semibold text-ink">{selectedStore.category}</span>
                   </div>
-                  <div className="bg-surface px-2.5 py-1 rounded-md border border-line">
+                  <div className="bg-surface px-3 py-1 rounded-md border border-line">
                     <span className="text-2xs text-ink-3 block">Phụ trách B2C</span>
                     <span className="font-semibold text-ink">{selectedStore.b2cOwnerName}</span>
                   </div>
@@ -685,7 +685,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
             {/* Định mức thiếu theo KL từ Kế hoạch tháng */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
-              <div className="flex items-center gap-1.5 flex-wrap text-2xs">
+              <div className="flex items-center gap-2 flex-wrap text-2xs">
                 <span className="font-semibold text-ink-2">
                   Định mức cần bổ sung ({activePlan?.month || '2026/10'}):
                 </span>
@@ -735,7 +735,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
           </div>
 
           {/* Thanh chọn 4 Rổ Chiến Thuật (Buckets) */}
-          <div className="px-4 py-2.5 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+          <div className="px-4 py-3 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
             <Chips
               value={bucketFilter}
               onChange={setBucketFilter}
@@ -773,9 +773,9 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
           {/* Nội dung chính 2 cột */}
           <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[460px] max-h-[62dvh] overflow-y-auto lg:overflow-hidden">
             {/* Cột trái: Bộ tiêu chí lọc & Quy tắc chặn cứng */}
-            <div className="lg:col-span-4 p-4 border-b lg:border-b-0 lg:border-r border-line lg:overflow-y-auto space-y-3.5 bg-surface text-xs">
+            <div className="lg:col-span-4 p-4 border-b lg:border-b-0 lg:border-r border-line lg:overflow-y-auto space-y-4 bg-surface text-xs">
               <div className="flex items-center justify-between pb-2 border-b border-line">
-                <span className="font-semibold text-ink flex items-center gap-1.5">
+                <span className="font-semibold text-ink flex items-center gap-2">
                   <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
                   Bộ lọc &amp; Quy tắc chặn
                 </span>
@@ -783,7 +783,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                   <button
                     type="button"
                     onClick={() => setSelectedGrades([])}
-                    className="text-2xs text-primary hover:underline font-medium"
+                    className="text-2xs text-accent hover:underline font-medium"
                   >
                     Bỏ lọc bậc KL ({selectedGrades.length})
                   </button>
@@ -802,23 +802,23 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                     value={searchKocText}
                     onChange={(e) => setSearchKocText(e.target.value)}
                     placeholder="VD: megauriviu, chanhbeauty..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-sunken border border-line rounded-md text-xs text-ink focus:bg-surface focus:outline-none focus:border-primary"
+                    className="w-full pl-8 pr-3 py-2 bg-sunken border border-line rounded-md text-xs text-ink focus:bg-surface focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
 
               {/* Khung lương (Salary Grade) */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <label className="text-2xs font-semibold text-ink-2 block">
                   Khung lương (KL) mục tiêu:
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   {KL_FILTER_OPTIONS.map((g) => {
                     const active = selectedGrades.includes(g.id);
                     return (
                       <label
                         key={g.id}
-                        className={`flex items-center gap-1.5 p-1.5 rounded-md border text-2xs cursor-pointer transition ${
+                        className={`flex items-center gap-2 p-2 rounded-md border text-2xs cursor-pointer transition ${
                           active
                             ? 'bg-accent-soft border-primary text-primary font-semibold'
                             : 'bg-sunken border-line text-ink-2 hover:bg-canvas'
@@ -845,7 +845,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 <select
                   value={selectedTepKenh}
                   onChange={(e) => setSelectedTepKenh(e.target.value)}
-                  className="w-full bg-sunken border border-line rounded-md p-1.5 text-xs font-medium text-ink focus:bg-surface focus:outline-none focus:border-primary"
+                  className="w-full bg-sunken border border-line rounded-md p-2 text-xs font-medium text-ink focus:bg-surface focus:outline-none focus:border-primary"
                 >
                   <option value="ALL">Tất cả tệp kênh (Chấm điểm tự động theo ngành)</option>
                   <option value="Review Nữ">Review Nữ</option>
@@ -860,8 +860,8 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
               </div>
 
               {/* Quy tắc chặn cứng & Lịch sử hợp tác */}
-              <div className="p-2.5 bg-sunken rounded-lg border border-line space-y-2">
-                <div className="flex items-center gap-1.5 text-ink font-semibold text-2xs">
+              <div className="p-3 bg-sunken rounded-lg border border-line space-y-2">
+                <div className="flex items-center gap-2 text-ink font-semibold text-2xs">
                   <History className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span>Quy tắc loại trừ &amp; Lịch sử (HF-01..06)</span>
                 </div>
@@ -878,7 +878,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           | 'NEW_KOC'
                       )
                     }
-                    className="w-full bg-surface border border-line rounded-md p-1.5 text-2xs font-medium text-ink focus:outline-none focus:border-primary"
+                    className="w-full bg-surface border border-line rounded-md p-2 text-2xs font-medium text-ink focus:outline-none focus:border-primary"
                   >
                     <option value="ALL">Mọi lịch sử hợp tác</option>
                     <option value="BRAND_EXPERIENCED">
@@ -921,7 +921,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                     className="rounded text-primary mt-0.5"
                   />
                   <span className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-warning" />
+                    <Star className="w-3.5 h-3.5 text-warning" />
                     <strong>Chỉ hiển thị Top 20% KOC Doanh số cao</strong>
                   </span>
                 </label>
@@ -936,7 +936,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                   <select
                     value={minOnTimeRate}
                     onChange={(e) => setMinOnTimeRate(Number(e.target.value))}
-                    className="w-full bg-surface border border-line rounded-md p-1.5 text-2xs font-medium text-ink"
+                    className="w-full bg-surface border border-line rounded-md p-2 text-2xs font-medium text-ink"
                   >
                     <option value={0}>Tất cả (Chấm điểm tự động theo SLA)</option>
                     <option value={85}>≥ 85% đúng hạn</option>
@@ -1007,7 +1007,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
               </div>
 
               {/* Pháp lý & Phân công */}
-              <div className="pt-2 border-t border-line space-y-1.5">
+              <div className="pt-2 border-t border-line space-y-2">
                 <label className="flex items-start gap-2 text-2xs text-ink-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1042,7 +1042,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
             {/* Cột phải: Bảng kết quả xếp hạng KOC */}
             <div className="lg:col-span-8 flex flex-col bg-sunken lg:overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="px-4 py-3 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
                   <Button variant="secondary" size="sm" onClick={handleSelectAll}>
                     {selectedKocIds.length === rankedKocs.length && rankedKocs.length > 0
@@ -1080,7 +1080,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 </Button>
               </div>
 
-              <div className="flex-1 lg:overflow-y-auto p-3.5 space-y-2.5">
+              <div className="flex-1 lg:overflow-y-auto p-4 space-y-3">
                 {rankedKocs.length === 0 ? (
                   <div className="py-16 text-center space-y-2">
                     <AlertCircle className="w-7 h-7 text-ink-3 mx-auto" />
@@ -1125,7 +1125,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                     return (
                       <div
                         key={koc.id}
-                        className={`p-3 rounded-xl border transition flex flex-col gap-2.5 ${
+                        className={`p-3 rounded-xl border transition flex flex-col gap-3 ${
                           isSelected
                             ? 'bg-accent-soft/40 border-primary ring-1 ring-primary'
                             : 'bg-surface border-line hover:border-line-strong'
@@ -1135,7 +1135,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                           <div
                             onClick={() => toggleSelectKoc(koc.id)}
-                            className="flex items-center gap-2.5 min-w-0 w-full md:w-auto md:min-w-[250px] cursor-pointer"
+                            className="flex items-center gap-3 min-w-0 w-full md:w-auto md:min-w-[250px] cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -1153,14 +1153,14 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-semibold text-ink text-xs">
                                   {koc.stageName}
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-semibold text-ink-2">
+                                <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs font-semibold text-ink-2">
                                   {koc.salaryGrade}
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
+                                <span className="px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
                                   {primaryBucketLabel}
                                 </span>
                                 {hasLegalDoc && (
@@ -1170,7 +1170,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                                 )}
                                 {history.isWinnerTop20 && (
                                   <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-warning">
-                                    <Star className="w-3 h-3" /> Top 20%
+                                    <Star className="w-3.5 h-3.5" /> Top 20%
                                   </span>
                                 )}
                                 <KocChannelReviewBadge
@@ -1197,7 +1197,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           </div>
 
                           {/* Cụm chỉ số thương mại */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center w-full md:w-auto bg-sunken px-2.5 py-1.5 rounded-lg border border-line">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center w-full md:w-auto bg-sunken px-3 py-2 rounded-lg border border-line">
                             <div>
                               <span className="text-2xs text-ink-3 block">Follower</span>
                               <span className="text-2xs font-semibold text-ink tabular-nums">
@@ -1231,10 +1231,10 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           </div>
 
                           {/* Huy hiệu Tổng điểm /100 */}
-                          <div className="flex items-center gap-2.5 justify-between md:justify-end w-full md:w-auto shrink-0">
+                          <div className="flex items-center gap-3 justify-between md:justify-end w-full md:w-auto shrink-0">
                             <div className="text-left md:text-right">
                               <span
-                                className={`inline-block px-1.5 py-0.5 rounded text-2xs font-semibold ${
+                                className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold ${
                                   matchTier === 'TOP_MATCH'
                                     ? 'bg-positive-soft text-positive'
                                     : matchTier === 'GOOD_MATCH'
@@ -1267,7 +1267,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                         </div>
 
                         {/* Hàng 2: Thanh Bóc Tách Điểm 4 Trụ Cột */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-2 border-t border-line text-2xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-line text-2xs">
                           <div className="bg-sunken/70 px-2 py-1 rounded border border-line flex items-center justify-between">
                             <span className="text-ink-3">1. Hiệu quả:</span>
                             <strong className="text-ink tabular-nums">
@@ -1312,7 +1312,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
                         {/* Hàng 3: Dẫn chứng lý do đề xuất & Nút xem chi tiết */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-2xs">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {evidenceTags.map((tag, i) => (
                               <span
                                 key={i}
@@ -1332,7 +1332,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                             ))}
                           </div>
 
-                          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                          <div className="flex items-center gap-3 flex-wrap shrink-0">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1351,7 +1351,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               }}
                               className="text-2xs font-semibold text-positive hover:underline inline-flex items-center gap-1"
                             >
-                              <CheckCircle2 className="w-3 h-3" />
+                              <CheckCircle2 className="w-3.5 h-3.5" />
                               <span>ĐG Phù hợp</span>
                             </button>
 
@@ -1373,7 +1373,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               }}
                               className="text-2xs font-semibold text-critical hover:underline inline-flex items-center gap-1"
                             >
-                              <XCircle className="w-3 h-3" />
+                              <XCircle className="w-3.5 h-3.5" />
                               <span>Không phù hợp</span>
                             </button>
 
@@ -1395,7 +1395,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                                 }}
                                 className="text-2xs font-semibold text-ink-2 hover:underline inline-flex items-center gap-1"
                               >
-                                <History className="w-3 h-3" />
+                                <History className="w-3.5 h-3.5" />
                                 <span>
                                   Lịch sử ĐG ({getChannelSummary(koc.channelId)!.totalReviews})
                                 </span>
@@ -1410,7 +1410,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               }}
                               className="text-2xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
                             >
-                              <Eye className="w-3 h-3" />
+                              <Eye className="w-3.5 h-3.5" />
                               <span>
                                 Chi tiết điểm &amp; {history.allPastDeals.length} deal lịch sử
                               </span>
@@ -1459,7 +1459,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
           <div className="space-y-4 text-xs">
             {/* Bảng bóc tách 4 trụ cột điểm */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5">
+              <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
                 <div className="flex items-center justify-between font-semibold text-ink">
                   <span>1. Hiệu quả thương mại &amp; Tương tác</span>
                   <span className="text-primary tabular-nums">
@@ -1488,7 +1488,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5">
+              <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
                 <div className="flex items-center justify-between font-semibold text-ink">
                   <span>2. Độ khớp Ngành hàng &amp; Khán giả</span>
                   <span className="text-primary tabular-nums">
@@ -1519,7 +1519,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5">
+              <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
                 <div className="flex items-center justify-between font-semibold text-ink">
                   <span>3. Độ khớp Ngân sách &amp; Khung giá</span>
                   <span className="text-primary tabular-nums">
@@ -1550,7 +1550,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5">
+              <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
                 <div className="flex items-center justify-between font-semibold text-ink">
                   <span>4. Uy tín vận hành, SLA &amp; Pháp lý</span>
                   <span className="text-primary tabular-nums">
@@ -1621,7 +1621,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
               ) : (
                 <div className="divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface max-h-60 overflow-y-auto">
                   {inspectingKocDetail.history.allPastDeals.map((deal) => (
-                    <div key={deal.id} className="p-2.5 text-xs flex flex-col gap-1">
+                    <div key={deal.id} className="p-3 text-xs flex flex-col gap-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-ink">{deal.brandName}</span>

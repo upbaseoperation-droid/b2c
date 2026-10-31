@@ -1,82 +1,76 @@
-# SỔ ĐĂNG KÝ TÀI LIỆU — B2C OPS HUB
+# SỔ ĐĂNG KÝ TÀI LIỆU HỆ THỐNG — B2C OPS HUB
 
 | Thuộc tính | Giá trị |
 | --- | --- |
 | Mã tài liệu | HUB-REG |
-| Dự án | B2C Ops Hub — Quản trị & Điều hành phòng Marketing B2C |
-| Giai đoạn hiện tại | **2 — Phân tích & Thiết kế kỹ thuật (Sẵn sàng duyệt G2 → G4)** |
+| Dự án | B2C Ops Hub — Hệ thống Quản trị & Điều hành Phòng Marketing B2C |
+| Giai đoạn hiện tại | **Vận hành Thực tế & Chuẩn hóa Bàn giao Bảo trì (v1.0)** |
 | Cập nhật | 31/10/2026 |
 
-Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự án. Cập nhật bảng này mỗi khi tạo tài liệu hoặc đổi trạng thái.
+---
 
-## Trạng thái cổng
+## Lộ Trình Đọc Tài Liệu Nhanh (Dành Cho Người Mới & Kỹ Sư Bảo Trì)
 
-| Cổng | Trạng thái | Điều kiện & Tiến độ |
-| --- | --- | --- |
-| G1 (Yêu cầu) | **Đã hoàn thành sơ bộ** | Đã xác lập phạm vi 69 gian hàng B2C, phân cấp quản trị Brand → Gian hàng, bóc tách chỉ tiêu Paid/FOC, Gross/Net. |
-| G2 (Thiết kế kỹ thuật) | **Đã hoàn thành bộ đặc tả** | Đã hoàn thành toàn bộ đặc tả thiết kế kỹ thuật cốt lõi: HUB-2.1 (SRS), HUB-2.2 (24 User Stories & State Machines), HUB-2.4 (ERD & Data Dictionary), HUB-2.5 (Tích hợp API), HUB-2.6 (RBAC) và HUB-2.8 (137/137 test pass) đồng bộ trực tiếp với mã nguồn `web-admin`. |
-| G3–G5 | Đang triển khai & Nghiệm thu | Triển khai mã nguồn sản phẩm thực tế và sẵn sàng kịch bản nghiệm thu UAT cổng G4 (`HUB-4.1`). |
+Nếu bạn mới tiếp cận dự án **B2C Ops Hub** (với vai trò Quản lý, BA, QA hoặc Developer tiếp nhận maintain), hãy đọc theo đúng thứ tự **4 tài liệu trụ cột** dưới đây:
 
-## Dùng chung
+1. **[1.7_BRD_OPS_HUB.md](1-requirements/1.7_BRD_OPS_HUB.md) (`HUB-1.7` — Tài liệu Nghiệp vụ & Quy trình Nền tảng 6 Chặng):**
+   - **Ai nên đọc:** Tất cả mọi người (Lãnh đạo, Quản lý B2C, BA, QA, Developer).
+   - **Nội dung:** Giải thích thuần ngôn ngữ nghiệp vụ về bài toán của phòng B2C (kiểm soát tiến độ tiêu ngân sách Under-spend, cơ cấu 69 gian hàng / 42 Brand), sơ đồ luồng vận hành End-to-End 6 chặng từ lập Plan `4.1/4.1.1/1-Sheet` $\rightarrow$ Sản phẩm & Content $\rightarrow$ Listing Google Sheet 57 cột $\rightarrow$ Deal & Hợp đồng 3 bước (`HĐNT → SOW → BBNT` + Google Docs Redline) $\rightarrow$ Nghiệm thu 6 sàn / Zalo Bot $\rightarrow$ Tạm ứng, Khóa sổ ngày làm việc thứ 3 & Tất toán ĐNTT Lark, cùng ranh giới hệ thống với **Data Warehouse** và **UPS**.
+2. **[2.3_ARCHITECTURE.md](2-design/2.3_ARCHITECTURE.md) (`HUB-2.3` — Kiến trúc Tổng thể & Bản đồ Bảo trì Mã nguồn):**
+   - **Ai nên đọc:** Developer tiếp nhận bảo trì, Tech Lead.
+   - **Nội dung:** Sơ đồ kiến trúc kỹ thuật, phân định dữ liệu giữa **Data Warehouse công ty** (KOC Master, Kênh MXH, Hồ sơ pháp lý `1–N`) và **PostgreSQL của B2C Ops Hub**, bảng ánh xạ 1–1 từ **5 nhóm Menu UI $\leftrightarrow$ File View (`.tsx`) $\leftrightarrow$ File Logic (`.ts`) $\leftrightarrow$ API Route $\leftrightarrow$ Database**, cùng danh sách 12 màn hình cũ đã đóng để không sửa nhầm.
+3. **[2.1_SRS_B2C_OPS_HUB.md](2-design/2.1_SRS_B2C_OPS_HUB.md) (`HUB-2.1` — Đặc tả Yêu cầu Phần mềm Chi tiết):**
+   - **Ai nên đọc:** BA, QA/Tester, Developer.
+   - **Nội dung:** Đặc tả chi tiết từng phân hệ chức năng, công thức tính toán, điều kiện chặn lỗi (Server-side Blockers) và danh mục yêu cầu `FR-001` $\rightarrow$ `FR-085`.
+4. **[KNOWN_BUGS_AND_LESSONS.md](governance/KNOWN_BUGS_AND_LESSONS.md) (`HUB-GOV-04` — Sổ Đăng ký Lỗi & Quy tắc Phòng ngừa Tái phát):**
+   - **Ai nên đọc:** Developer, QA trước khi sửa code hoặc nghiệm thu.
+   - **Nội dung:** Các quy tắc bắt buộc (`RULE-DATA-01`, `RULE-SYNC-01`, `RULE-PERF-01`, `RULE-API-01/02`) và 65 bài học thực tế đã xử lý.
 
-| Tài liệu | Trạng thái |
-| --- | --- |
-| [SDLC-00 Quy trình](../../sdlc/00_SDLC_PROTOCOL.md) | Áp dụng nguyên tắc "Code đổi - Doc cập nhật trong cùng một lượt" |
-| [SDLC-01 Glossary & số liệu chuẩn](../../sdlc/01_GLOSSARY.md) | Đang dùng |
-| [SDLC-02 Ranh giới hệ thống](../../sdlc/02_SYSTEM_BOUNDARY.md) | Đã chuẩn hóa ranh giới với UpAffiliate và Larkbase |
-| [SDLC-03 Mẫu tài liệu](../../sdlc/03_DOCUMENT_TEMPLATES.md) | Đang dùng |
+---
 
-## Governance
+## Danh Mục Đầy Đủ Toàn Bộ Tài Liệu Dự Án
 
-| Mã | Tài liệu | Trạng thái |
-| --- | --- | --- |
-| HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
-| HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
-| **HUB-GOV-03** | [**Ma trận truy vết (RTM)**](governance/TRACEABILITY.md) | **Đã hoàn thiện (`BR` → `FR` → `US` → `TC`)** |
-| **HUB-GOV-04** | [**Sổ đăng ký lỗi & Quy tắc phòng ngừa tái phát**](governance/KNOWN_BUGS_AND_LESSONS.md) | **Đang dùng (Bắt buộc đối chiếu chéo toàn hệ thống — đã cập nhật tới `BUG-065` & `FR-065`)** |
-| HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành toàn diện (Gộp nhóm điều hướng NAV_GROUPS, khử trùng lặp tab chéo, chuẩn hóa Modal & loại bỏ phụ đề giải thích thừa) |
+### 1. Tài liệu Quản trị & Kiểm soát chất lượng (Governance)
 
-## Giai đoạn 1 — Yêu cầu
-
-| Mã | Tài liệu | Trạng thái | Owner | Ghi chú |
-| --- | --- | --- | --- | --- |
-| HUB-1.1 | [Project Charter](1-requirements/1.1_PROJECT_CHARTER.md) | Hoàn thiện | Ban Điều Hành | Định hướng quản trị số liệu phòng Marketing B2C |
-| HUB-1.2 | [Stakeholder & RACI](1-requirements/1.2_STAKEHOLDERS_AND_RACI.md) | Đã chuẩn hóa | Khối Marketing B2C | Cơ cấu CEO, Giám Đốc MKT, Leader, Specialist, Legal, Finance |
-| HUB-1.3 | [Hiện trạng (As-is)](1-requirements/1.3_AS_IS_CURRENT_STATE.md) | Đang dùng | Team DX & MKT | Khảo sát quy trình hiện tại |
-| HUB-1.4 | [Bộ câu hỏi discovery — Giám đốc khối](1-requirements/1.4_DISCOVERY_GUIDE_GIAM_DOC_KHOI.md) | Hoàn tất | Khối MKT | Công cụ khảo sát |
-| HUB-1.5 | [Bảng câu hỏi — nhân viên kỳ cựu](1-requirements/1.5_DISCOVERY_GUIDE_NHAN_VIEN_KY_CUU.md) | Hoàn tất | Khối MKT | Công cụ khảo sát |
-| HUB-1.6 | [Mục tiêu vận hành](1-requirements/1.6_OPERATING_GOALS.md) | Đã chốt | Khối MKT | Tối ưu SLA, kiểm soát trần PnL, chuẩn hóa đánh giá nhân sự |
-| HUB-1.7 | [BRD Ops Hub](1-requirements/1.7_BRD_OPS_HUB.md) | Đã chuẩn hóa | Khối MKT | 9 Nhu cầu nghiệp vụ cốt lõi |
-| HUB-1.9 | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | Đã áp dụng | Khối MKT & DX | Quy tắc DEC-006: đồng bộ thực tế 64 gian B2C kỳ `2026/10` (49 gian có 4.1.1) & 67 gian B2C kỳ `2026/11` (32 gian có 4.1.1), tách Gross/Net, Paid/FOC & phân vai PIC chính/phụ |
-| HUB-1.10 | [Tổng quan hệ thống Lark Base B2C_Quản lý Booking](1-requirements/1.10_LARK_BASE_SYSTEM_OVERVIEW.md) | Đã chuẩn hóa | Khối MKT & DX | 34 bảng, luồng đối soát xuyên suốt `4.1` → `4.1.1` → `3.1` → `3.2` → `6.1` kỳ `2026/10` (2.877 booking, 2.214 listing, 946 phiếu thanh toán) |
-
-## Giai đoạn 2 — Phân tích & thiết kế kỹ thuật
-
-| Mã | Tài liệu | Trạng thái | Ghi chú |
+| Mã | Tài liệu | Trạng thái | Nội dung chính |
 | --- | --- | --- | --- |
-| **HUB-2.1** | [**SRS (Đặc tả yêu cầu phần mềm)**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Đã hoàn thành** | Quy chuẩn Cockpit, 5 Dashboard điều hành tinh gọn, Kế hoạch tháng 3 tab, Nhóm điều hướng `NAV_GROUPS`, Chiều Sản phẩm & Combo xuyên tháng (`ProductCatalogView.tsx` + `productCatalog.ts`: 3 loại SKU/Combo, 4 vai trò, kiểm soát tồn mẫu khả dụng `resolveEffectiveSampleQuota`, kế thừa link `resolveEffectiveProductLinks`, gộp USP/Claim `resolveEffectiveProductGuidelines`), Báo cáo Hiệu quả Đầu tư theo Chiều Sản phẩm & Combo trong Dashboard Video (`ExecutiveDashboardReportsView.tsx`), Video Kênh Brand & Điều phối CTV/VJ (`self-channel-hub`) kèm Luồng Quy trình Sản xuất, Nghiệm thu & Thanh toán Video Self-channel theo Kế hoạch tháng (`PlanSelfChannelBoard`, `selfChannelBoardRules.ts`), Kho lịch sử Tuần KOC & Video Ads theo `videoId` hệ thống (`KocVideoWeeklyHistoryPanel`), Nghiên cứu Brand & Đối thủ (kèm đối chiếu `Brand Says vs Consumer Says & Communication Gap` và phân tầng đối thủ 3 cấp `Tier A / Tier B / Tier C`), Hồ sơ Brand & Xuất Bản Brief Chuẩn 5 Phần (`StandardBriefPreviewModal.tsx` theo Wiki Lark `Tiêu chuẩn xây dựng Brief Team Marketing B2C`), Bảng kế hoạch Content gắn Giai đoạn Phễu (`ContentFunnelStage`: `AWARENESS` · `CONSIDERATION` · `CONVERSION` · `LOYALTY`), Kiểm định Kịch bản 7 Chặng chuẩn B2C & Phân tích Hook 3–5s theo mô hình `STAR-T` (`aiScriptAnalyzer.ts`, `ScriptReviewModal.tsx`, `ContentCopilotModal.tsx`), Động cơ Đề xuất & Chấm điểm KOC 100 điểm (`kocRecommendationEngine`), Sheet Listing Cá nhân 48 cột theo Brand (`StaffBrandListingSheetWorkspace`), Gửi Mail Mời Hợp Tác KOC & Quản Lý Mẫu Thư Chuẩn (`KocOutreachEmailModal`), Báo cáo đánh giá lịch sử & rủi ro KOC, Báo cáo Kế hoạch & Air Video theo Gian hàng & Khung lương KL (`AirBookingReportHubView`), Chụp ảnh khung hình sản phẩm từ video đính kèm Biên bản nghiệm thu (`VideoProductScreenshotModal`), Thiết lập Prompt đa phân hệ, Booking, Hợp đồng & Cổng đối tác |
-| **HUB-2.2** | [**User stories, luồng trạng thái & tiêu chí nghiệm thu**](2-design/2.2_USER_STORIES.md) | **Đã hoàn thành** | 24 User Stories (`US-001` → `US-024`) với Gherkin AC, lưu đồ Swimlane, State Machines (`MonthlyPlan`, `BookingDeal`) và Bảng quyết định thuế/pháp lý phủ 100% `FR-001` → `FR-083` |
-| HUB-2.3 | [Kiến trúc tổng thể](2-design/2.3_ARCHITECTURE.md) | Đang hoàn thiện | Next.js App Router, Cơ chế đồng bộ 2 chiều PostgreSQL <-> localStorage qua `/api/shared-state` & `sharedStateClient.ts` cho 16 bộ dữ liệu vận hành B2C |
-| **HUB-2.4** | [**Mô hình dữ liệu & Từ điển dữ liệu**](2-design/2.4_DATA_MODEL.md) | **Đã hoàn thành** | Sơ đồ `erDiagram` Logic, Từ điển dữ liệu chuẩn (Data Dictionary & UI-API-DB Mapping), cấu trúc Brand, Store, Monthly Plan, Danh mục Sản phẩm & Combo xuyên tháng (`BrandProductCatalog`, `ProductGroup`, `CatalogProduct`, `BundleComponentItem` qua khóa `product-catalog-<brand>`), Video Self-channel & Đợt quyết toán CTV (`SelfChannelBoardData`, `SelfChannelJob`, `SelfSettlementBatch` qua khóa `self-channel-board-<planId>`), KOC Master 2 bảng (`COOPERATED` vs `NEW`), `1 KOC chính — N Tài khoản nền tảng & nhiều kênh TikTok` (`tiktokChannels`, `connectedChannels`), lịch sử hợp tác `Riêng 1 kênh` vs `Đa kênh` (`targetChannels`), `1 KOC — N Hồ sơ pháp lý` (`KocLegalProfile`, bắt buộc chọn hồ sơ pháp lý khi ký hợp đồng) & Deal — Job, 16 bộ dữ liệu vận hành B2C trong `AppSharedRecord` & `StorePortfolio` |
-| **HUB-2.5** | [**Đặc tả tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Đã hoàn thành** | Lark SSO, Larkbase Plans, Đồng bộ Google Sheets API v4 2 chiều cho Listing độc lập (`push-sheet`, `pull-sheet`, tự động đọc danh sách Tab `listSpreadsheetTabs`, cấu hình Service Account trực tiếp `google-sheets-config-v1` & nhập mới KOC từ Sheet), Engine Nghiệm thu Đa Sàn Đa Tầng (`/api/integrations/link-air-check`, `verifyAffiliateTargetUrl` giải mã link rút gọn Shopee/Lazada/TikTok, bóc tách bọc link Meta `l.threads.net`/`l.facebook.com`, nhúng `/embed` & `/plugins/` và cầu nối DOM trình duyệt `MULTI_PLATFORM_AIR_CACHE_KEY`), Bảng Quản trị Sản xuất Video Kênh Brand, Nghiệm thu & Quyết toán CTV (`/api/self-channel-board`, `/api/self-channel-board/content-check`, `/api/self-channel-board/air-report` lấy số từ Data Warehouse, phiếu ĐNTT từng video qua `/api/integrations/larkbase/payment-requests` (`source: SELF_CHANNEL`, dùng chung luồng Lark với Booking video), Cổng CTV `/api/self-channel-portal` & mở rộng `/api/plan-actual-report` đọc dữ liệu Self-channel), Luồng đẩy Phiếu ĐNTT / Tạm ứng Bảng 3.2 sang Lark Approval & Larkbase kèm Màn hình Đối chiếu Hồ sơ Thanh toán hợp nhất trên Portal Kế toán (`FinanceAdvancePaymentReportView.tsx`: đối chiếu trực tiếp Phiếu thanh toán ↔ Deal ↔ HĐNT ↔ Phụ lục SOW ↔ BBNT nếu có ↔ Hóa đơn/CCCD ↔ Khấu trừ tạm ứng & duyệt/lưu Bill UNC), TikTok Seller, Kho lịch sử Tuần KOC & Video Ads và API phát sinh KOC/Video mới (`/api/koc-video-history`), Kalodata, Nghiên cứu Brand & Đối thủ, Crawler KOC & Đối thủ (TikTok Open-Source Engines), Trích xuất luồng phát & chụp khung hình sản phẩm từ video TikTok cho BBNT (`/api/integrations/tiktok-koc/video-frame`), Lịch sử đánh giá kênh KOC (`/api/integrations/tiktok-koc/channel-reviews`), Gửi Mail Mời Hợp Tác KOC (`/api/integrations/koc-outreach-email`), LLM Gateway & Prompt Setup 8 phân hệ, WeSign & Liên thông 13 bước `contract-system` (`generateContract`, `requestSign`, Webhook Bước 13 `/api/contracts/integrations/contract-system/webhook`), OCR, Đồng bộ Shared State 16 bộ dữ liệu vận hành B2C (`/api/shared-state` & `sharedStateClient.ts`) |
-| **HUB-2.6** | [**Xác thực & Phân quyền (RBAC)**](2-design/2.6_AUTH_AND_RBAC_SPEC.md) | **Đã hoàn thành** | Phân quyền vai trò toàn diện (CEO, Giám Đốc MKT, Leader, Specialist, Legal, Finance, Sign Admin, Đối tác ngoài), Ma trận CRUD 26 tính năng, Quyền phê duyệt đặc thù (Special Staff Permissions), Động cơ phân quyền phạm vi (Data Scoping Engine) & Bảo mật API route 2 lớp |
-| HUB-2.7 | [Đặc tả hệ thống thiết kế (Design System)](../web-admin/DESIGN_SYSTEM.md) | Đã hoàn thành | Token màu, chuyển động, `NAV_GROUPS` & `TAB_LABELS`, nguyên tắc Single Source of Truth, Mobile Responsive (`360px–1023px`) và component UI |
-| **HUB-2.8** | [**Chiến lược kiểm thử & Danh mục Test Cases**](2-design/2.8_TEST_STRATEGY.md) | **Đã hoàn thành** | 24 nhóm kịch bản kiểm thử tự động (`TC-001` → `TC-024`, 137/137 pass) phủ 100% yêu cầu chức năng mức Must |
-| **HUB-2.9** | [**Dự toán chi phí API & Định hướng Báo cáo, Phân tích dữ liệu và Hỗ trợ nhập liệu**](2-design/2.9_API_COST_AND_WORKFLOW_ACCELERATION_BACKLOG.md) | **Đã lưu trữ** | Tập trung 2 trụ cột: (1) Hỗ trợ nhập liệu nhanh & chuẩn hóa (`ENTRY-01`..`ENTRY-04`), (2) Báo cáo điều hành & phân tích đối soát dữ liệu (`REPORT-01`..`REPORT-04`) kèm dự toán chi phí cho 69 gian hàng B2C |
-| **HUB-2.18** | [**Bản đồ Kiến trúc Quy trình Phân cấp (Process → Sub-process Swimlanes) & 7 Thực thể Dữ liệu Cốt lõi B2C**](2-design/2.18_BPMN_SWIMLANE_AND_ENTITY_MAP.md) | **Đã hoàn thành** | Chuẩn hóa ITBA theo cấu trúc Cha – Con: Sơ đồ Cấp 0 (Master Process & 5 Sub-processes), 5 Sơ đồ Cấp 1 (`SP-01` → `SP-05` chia làn Swimlane & 3 nhánh song hành trên `DealJob`) và Phân tầng 7 Thực thể dữ liệu (`E1` → `E7`) |
-| **HUB-2.19** | [**Tài liệu Giải pháp Tích hợp Kết nối Dữ liệu B2C Ops Hub & UpAffiliate**](2-design/2.19_UPAFFILIATE_INTEGRATION_SOLUTION.md) | **Đã hoàn thành** | Chuẩn hóa toàn diện 5 nhóm đầu mục tích hợp (`DEC-001`/`DEC-005`/`HUB-2.5`), 4 sơ đồ Mermaid Sequence Diagrams (Master KOC 1-N Pháp nhân, Staging Queue KOC Mới, Vòng đời Deal/Nghiệm thu, Đo lường Daily D14/D30/D60), Data Contracts, Idempotency & Error Handling |
-| **HUB-2.20** | [**Đặc tả kết nối dữ liệu: Hệ thống quản lý hợp đồng (contract-system) & Kiến trúc dữ liệu KOC / Data Warehouse**](2-design/2.20_CONTRACT_SYSTEM_AND_DATA_FLOW_SPEC.md) | **Đã hoàn thành** | Chuẩn hóa toàn diện kiến trúc liên thông Hợp đồng (`Admin Portal`, `contract-system`, `Google Docs`, `WeSign`, `webhook-system`, `Portal B2C`) qua 3 giai đoạn & 13 bước, 6 quyết định kỹ thuật & phương án xử lý rủi ro (HMAC, Monotonic State, Idempotency, Token Lifecycle, Template Snapshots), và Luồng dữ liệu KOC từ nguồn qua `KoC Hub` vào `Data Warehouse` phục vụ 3 năng lực nghiệp vụ của `Portal B2C` |
+| **HUB-GOV-01** | [Decision Log](governance/DECISION_LOG.md) | **Chính thức (`DEC-001` → `DEC-011`)** | Nhật ký các quyết định kiến trúc và phạm vi nghiệp vụ (`DEC-001` $\rightarrow$ `DEC-011`). |
+| **HUB-GOV-02** | [Open Issues](governance/OPEN_ISSUES.md) | **Đã đóng 100% (`DEC-011`)** | Danh sách 19 câu hỏi khảo sát ban đầu đã được chốt và giải quyết. |
+| **HUB-GOV-03** | [Ma trận truy vết (RTM)](governance/TRACEABILITY.md) | **Chính thức v1.1** | Truy vết xuyên suốt 14 yêu cầu nền tảng (`BR-01` $\rightarrow$ `BR-14`) sang `FR`, `US` và `TC` (`137/137 pass`). |
+| **HUB-GOV-04** | [Sổ đăng ký lỗi & Quy tắc phòng ngừa](governance/KNOWN_BUGS_AND_LESSONS.md) | **Bắt buộc đọc khi maintain** | Hệ thống quy tắc chống lỗi tái phát (`BUG-001` $\rightarrow$ `BUG-065`). |
 
-## Giai đoạn 4 — Kiểm thử & Nghiệm thu (UAT — Cổng G4)
+### 2. Giai đoạn 1 — Yêu cầu Nghiệp vụ & Nguồn Dữ liệu Thực tế
 
-| Mã | Tài liệu | Trạng thái | Ghi chú |
+| Mã | Tài liệu | Trạng thái | Nội dung chính |
 | --- | --- | --- | --- |
-| **HUB-4.1** | [**Kịch bản nghiệm thu UAT & Đánh giá tác động thay đổi**](4-test/4.1_UAT_TEST_CASES.md) | **Sẵn sàng ký duyệt G4** | 8 kịch bản nghiệm thu đầu-cuối (`UAT-01` → `UAT-08`), quy trình phân tích tác động 5 tầng (5-Layer Impact Analysis) và Biên bản nghiệm thu UAT |
+| **HUB-1.7** | [**BRD — Tài liệu Yêu cầu Nghiệp vụ & Quy trình Nền tảng 6 Chặng**](1-requirements/1.7_BRD_OPS_HUB.md) | **Chính thức v1.0** | **Tài liệu nghiệp vụ gốc:** Luồng vận hành 6 chặng của phòng Marketing B2C, quy tắc kiểm soát giải ngân ngân sách (Under-spend), ranh giới với Data Warehouse & UPS, và 14 yêu cầu nghiệp vụ cốt lõi (`BR-01` $\rightarrow$ `BR-14`). |
+| **HUB-1.2** | [Stakeholder & RACI](1-requirements/1.2_STAKEHOLDERS_AND_RACI.md) | **Chính thức v1.2** | Ma trận RACI chuẩn hóa theo 6 chặng quy trình nền tảng (CEO, GĐ MKT B2C, Leader 8 gian hàng, 3 vị trí Brand, PIC, Pháp chế, Kế toán, Brand). |
+| **HUB-1.9** | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | **Chính thức** | Quy tắc đọc và đối soát Bảng 4.1 & 4.1.1 từ Lark Base (tách Gross/Net, Paid/FOC, phân công PIC). |
+| **HUB-1.10** | [Tổng quan hệ thống Lark Base B2C_Quản lý Booking](1-requirements/1.10_LARK_BASE_SYSTEM_OVERVIEW.md) | **Chính thức** | Khảo sát 34 bảng Lark Base và luồng đối soát `4.1` $\rightarrow$ `4.1.1` $\rightarrow$ `3.1` $\rightarrow$ `3.2` $\rightarrow$ `6.1`. |
+| HUB-1.1 | [Project Charter](1-requirements/1.1_PROJECT_CHARTER.md) | Lưu trữ tham khảo | Tuyên bố khởi tạo dự án ban đầu. |
+| HUB-1.3 | [Hiện trạng ban đầu (As-is)](1-requirements/1.3_AS_IS_CURRENT_STATE.md) | Lưu trữ tham khảo | Tài liệu khảo sát hiện trạng trước khi xây hệ thống. |
+| HUB-1.6 | [Mục tiêu vận hành thảo luận ban đầu](1-requirements/1.6_OPERATING_GOALS.md) | Lưu trữ tham khảo | Bản thảo luận mục tiêu giai đoạn khảo sát (đã được chuẩn hóa chính thức vào `HUB-1.7`). |
 
-## Mã nguồn & Sản phẩm thực thi
+### 3. Giai đoạn 2 — Thiết kế Kỹ thuật, Đặc tả Phần mềm & Bản đồ Bảo trì
 
-| Mục | Vị trí | Trạng thái |
-| --- | --- | --- |
-| **Hệ thống web-admin** | [`B2C/web-admin`](../web-admin/README.md) | Đang vận hành và phát triển các phân hệ theo đặc tả Giai đoạn 2 |
-| **Tiện ích trình duyệt (Chrome Extension)** | [`B2C/chrome-extension`](../chrome-extension/README.md) | Thu thập chỉ số TikTok/Instagram, đối soát lịch sử giá KOC & đồng bộ nghiệm thu Air Link qua `/api/extension/koc-sync` |
-| Tài liệu lưu trữ prototype v0 | [`blueprint/archive/prototype-v0`](archive/prototype-v0/README.md) | Lưu trữ tư liệu lịch sử khảo sát |
+| Mã | Tài liệu | Trạng thái | Nội dung chính |
+| --- | --- | --- | --- |
+| **HUB-2.1** | [**SRS — Đặc tả Yêu cầu Phần mềm**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Chính thức v2.6** | Đặc tả chi tiết 17 phân hệ đang vận hành, danh mục `FR-001` $\rightarrow$ `FR-085` và danh sách màn hình cũ đã đóng. |
+| **HUB-2.2** | [**User Stories, Luồng Trạng thái & Tiêu chí Nghiệm thu**](2-design/2.2_USER_STORIES.md) | **Chính thức v1.2** | Lưu đồ liên phòng ban 6 chặng, State Machines (`MonthlyPlan`, `BookingDeal`), bảng quyết định thuế và 24 User Stories (`US-001` $\rightarrow$ `US-024`). |
+| **HUB-2.3** | [**Kiến trúc Tổng thể & Bản đồ Bảo trì Mã nguồn**](2-design/2.3_ARCHITECTURE.md) | **Chính thức v1.0** | **Tài liệu kỹ thuật gốc cho Developer:** Sơ đồ kiến trúc, phân vùng dữ liệu Data Warehouse vs. PostgreSQL, bảng tra cứu `Menu UI ↔ File View ↔ File Rule ↔ API Route ↔ DB`, và danh sách 12 màn hình cũ đã đóng. |
+| **HUB-2.4** | [**Mô hình Dữ liệu & Từ điển Dữ liệu**](2-design/2.4_DATA_MODEL.md) | **Chính thức v1.0** | Sơ đồ ERD, cấu trúc Prisma Schema, 18 bộ dữ liệu `AppSharedRecord`, liên thông Data Warehouse KOC Master & `1 KOC — N Hồ sơ pháp lý`. |
+| **HUB-2.5** | [**Đặc tả Tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Chính thức v1.2** | Đặc tả kết nối Lark SSO, Lark Base/Approval, Google Sheets 57 cột, Google Docs 3 chặng, Engine Nghiệm thu 6 nền tảng, Zalo Bot, WeSign và Data Warehouse. |
+| **HUB-2.6** | [**Xác thực & Phân quyền (RBAC)**](2-design/2.6_AUTH_AND_RBAC_SPEC.md) | **Chính thức v1.5** | Phân quyền 13 vai trò, Data Scoping Engine và quy tắc che mờ dữ liệu nhạy cảm (`****5678`). |
+| **HUB-2.7** | [**Hệ thống Thiết kế Giao diện (Design System)**](../web-admin/DESIGN_SYSTEM.md) | **Chính thức** | Quy chuẩn UI/UX bắt buộc (`@/components/ui`, token màu ngữ nghĩa, typography, cấm dòng giải thích xám thừa). |
+| **HUB-2.8** | [**Chiến lược Kiểm thử & Danh mục Test Cases**](2-design/2.8_TEST_STRATEGY.md) | **Chính thức v1.0** | Bộ kịch bản kiểm thử tự động (`TC-001` $\rightarrow$ `TC-024`, `137/137 pass`). |
+| **HUB-2.18** | [**Bản đồ Quy trình Phân cấp BPMN Swimlane & 7 Thực thể Cốt lõi**](2-design/2.18_BPMN_SWIMLANE_AND_ENTITY_MAP.md) | **Chính thức v1.1** | Sơ đồ quy trình 6 làn Swimlane BPMN 2.0 và chuỗi 7 thực thể dữ liệu cốt lõi. |
+| **HUB-2.19** | [**Giải pháp Tích hợp B2C Ops Hub, Data Warehouse & UpAffiliate**](2-design/2.19_UPAFFILIATE_INTEGRATION_SOLUTION.md) | **Chính thức v1.1** | Đặc tả đồng bộ KOC Master, Hồ sơ pháp lý 1–N và số liệu hiệu quả D14/D30/D60 qua Data Warehouse công ty. |
+| **HUB-2.20** | [**Đặc tả Liên thông Hệ thống Hợp đồng (`contract-system`) & Luồng Dữ liệu KOC / Data Warehouse**](2-design/2.20_CONTRACT_SYSTEM_AND_DATA_FLOW_SPEC.md) | **Chính thức v1.0** | Kiến trúc 13 bước liên thông Hợp đồng (`Google Docs` $\rightarrow$ `WeSign` $\rightarrow$ `Webhook`) và luồng dữ liệu KOC với Data Warehouse. |
+
+### 4. Giai đoạn 4 — Nghiệm thu UAT & Hướng dẫn Mã nguồn
+
+| Mã | Tài liệu | Vị trí | Nội dung chính |
+| --- | --- | --- | --- |
+| **HUB-4.1** | **Kịch bản Nghiệm thu UAT (`G4` — Chính thức v1.1)** | [`4-test/4.1_UAT_TEST_CASES.md`](4-test/4.1_UAT_TEST_CASES.md) | 8 kịch bản nghiệm thu đầu-cuối (`UAT-01` $\rightarrow$ `UAT-08`) theo quy trình 6 chặng và đánh giá tác động 5 tầng. |
+| **WEB-README** | **Hướng dẫn Vận hành Mã nguồn `web-admin`** | [`../web-admin/README.md`](../web-admin/README.md) | Tổ chức 5 nhóm menu nghiệp vụ (18 màn hình, gồm Sổ Nghiệm thu & ĐNTT Lark tập trung) trên `web-admin` và cấu hình môi trường. |
+| **EXT-README** | **Tiện ích Trình duyệt Chrome Extension** | [`../chrome-extension/README.md`](../chrome-extension/README.md) | Thu thập chỉ số kênh KOC và đồng bộ nghiệm thu đa sàn về `/api/extension/koc-sync`. |

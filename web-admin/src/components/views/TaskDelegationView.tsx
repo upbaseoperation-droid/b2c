@@ -130,6 +130,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN'>('LIST');
   const [isSetupViewOpen, setIsSetupViewOpen] = useState<boolean>(false);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab === 'task-delegation' && detail.subView) {
+        if (detail.subView === 'POLICY') {
+          setIsSetupViewOpen(true);
+        } else {
+          setIsSetupViewOpen(false);
+        }
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', handler);
+    return () => window.removeEventListener('upbase-sidebar-subview', handler);
+  }, []);
+
   // Saved Policies & Configs
   const [difficultyConfigs, setDifficultyConfigs] = useState<TaskCategoryDifficultyConfig[]>(() =>
     loadSavedDifficultyConfigs()
@@ -712,7 +727,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <div className="font-medium text-ink text-sm line-clamp-1">
               {t.title}
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap text-xs text-ink-3 mt-0.5">
+            <div className="flex items-center gap-2 flex-wrap text-xs text-ink-3 mt-0.5">
               <span className="font-medium text-ink-2">{t.brand}</span>
               {t.storeName && (
                 <span className="truncate max-w-[150px]">· {t.storeName}</span>
@@ -731,7 +746,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         const roleKey: TaskAssignmentRoleKey = t.assignmentRole || 'PIC_OWNER';
         const weight = t.contributionWeightPct ?? 100;
         return (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <Avatar name={t.pic} size={26} />
             <div className="min-w-0">
               <div className="text-sm font-medium text-ink truncate">{t.pic}</div>
@@ -801,7 +816,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       width: 180,
       render: t => (
         <div
-          className="flex items-center justify-end gap-1.5"
+          className="flex items-center justify-end gap-2"
           onClick={e => e.stopPropagation()}
         >
           <Button
@@ -846,7 +861,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'staff',
       header: 'Nhân sự',
       render: row => (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <Avatar name={row.name} size={28} />
           <div>
             <div className="font-medium text-ink text-sm">{row.name}</div>
@@ -924,7 +939,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         <div className="text-right">
           <div className="text-sm font-semibold font-mono tabular-nums text-ink">
             {row.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} <span className="text-xs font-normal text-ink-3">đ</span>
-            <span className="text-xs font-mono text-ink-3 ml-1.5">({row.loadPct}%)</span>
+            <span className="text-xs font-mono text-ink-3 ml-2">({row.loadPct}%)</span>
           </div>
           <div className="mt-0.5 flex items-center justify-end gap-1">
             {row.meetsHardRatio ? (
@@ -945,7 +960,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       width: 175,
       render: row => (
         <div
-          className="flex items-center justify-end gap-1.5"
+          className="flex items-center justify-end gap-2"
           onClick={e => e.stopPropagation()}
         >
           {canManageSetup && !row.meetsHardRatio && (
@@ -998,7 +1013,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       </StatRow>
 
       {/* 2. TOP NAVIGATION & ACTION BAR */}
-      <div className="bg-surface border border-line rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-surface border border-line rounded-lg px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <Tabs
           value={activeSubTab}
           onChange={setActiveSubTab}
@@ -1153,7 +1168,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   key={col.key}
                   className="bg-sunken/50 border border-line rounded-lg flex flex-col max-h-[680px]"
                 >
-                  <div className="px-3.5 py-2.5 border-b border-line flex items-center justify-between bg-surface rounded-t-lg">
+                  <div className="px-4 py-3 border-b border-line flex items-center justify-between bg-surface rounded-t-lg">
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
@@ -1171,7 +1186,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     </span>
                   </div>
 
-                  <div className="p-3 space-y-2.5 overflow-y-auto flex-1">
+                  <div className="p-3 space-y-3 overflow-y-auto flex-1">
                     {col.items.length === 0 ? (
                       <div className="py-10 text-center text-xs text-ink-3">
                         Không có công việc trong cột này
@@ -1209,7 +1224,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               </div>
 
                               <div
-                                className="flex items-center gap-1.5 shrink-0"
+                                className="flex items-center gap-2 shrink-0"
                                 onClick={e => e.stopPropagation()}
                               >
                                 <span className="text-xs font-mono text-ink-3">
@@ -1361,7 +1376,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       >
         {selectedTaskDetail && (
           <div className="space-y-4">
-            <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-2">
+            <div className="p-4 rounded-lg bg-sunken border border-line space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-ink-2">
                 <span>
                   Thương hiệu: <strong className="text-ink">{selectedTaskDetail.brand}</strong>
@@ -1391,7 +1406,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     href={selectedTaskDetail.deliverableUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-positive hover:underline"
+                    className="inline-flex items-center gap-2 text-xs font-medium text-positive hover:underline"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Mở tài liệu nghiệm thu: {selectedTaskDetail.deliverableUrl}
@@ -1402,30 +1417,30 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
             {/* Formula Breakdown Grid */}
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">
+              <h4 className="text-xs font-semibold text-ink-3 mb-2">
                 Chi tiết cấu thành điểm công việc
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <div className="p-2.5 rounded-lg border border-line bg-surface">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Số lượng × Điểm chuẩn</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     {selectedTaskDetail.acceptedQuantity ?? 1} ×{' '}
                     {(selectedTaskDetail.standardPoint ?? 2.0).toFixed(1).replace('.', ',')} đ
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface">
+                <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Hệ số phạm vi</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     ×{(selectedTaskDetail.scopeCoef ?? selectedTaskDetail.difficultyMultiplier ?? 1.0).toFixed(2).replace('.', ',')}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface">
+                <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Hệ số độ khó</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     ×{(selectedTaskDetail.taskDifficultyCoef ?? 1.0).toFixed(2).replace('.', ',')}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface">
+                <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Hệ số tiến độ (SLA)</div>
                   <div className="mt-0.5">
                     {canManageSetup && onUpdateTask ? (
@@ -1456,7 +1471,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             'info'
                           );
                         }}
-                        className="w-full text-xs font-mono font-semibold text-ink bg-sunken border border-line rounded px-1.5 py-1 focus:outline-none focus:border-accent"
+                        className="w-full text-xs font-mono font-semibold text-ink bg-sunken border border-line rounded px-2 py-1 focus:outline-none focus:border-accent"
                       >
                         {TIMELINE_TABLE_5.map(item => (
                           <option key={item.status} value={item.status}>
@@ -1471,7 +1486,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface">
+                <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Người phụ trách (PIC)</div>
                   <div className="mt-0.5">
                     {canManageSetup && onUpdateTask ? (
@@ -1490,7 +1505,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             'success'
                           );
                         }}
-                        className="w-full text-xs font-semibold text-ink bg-sunken border border-line rounded px-1.5 py-1 focus:outline-none focus:border-accent"
+                        className="w-full text-xs font-semibold text-ink bg-sunken border border-line rounded px-2 py-1 focus:outline-none focus:border-accent"
                       >
                         {allAssignableStaff.map(s => {
                           const w = staffWorkloadByName.get(s.name);
@@ -1509,13 +1524,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-line bg-surface">
+                <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Vai trò & Tỷ trọng</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     {ROLE_LABEL_MAP[selectedTaskDetail.assignmentRole || 'PIC_OWNER']} ({selectedTaskDetail.contributionWeightPct ?? 100}%)
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-accent/30 bg-accent-soft sm:col-span-3 flex items-center justify-between">
+                <div className="p-3 rounded-lg border border-accent/30 bg-accent-soft sm:col-span-3 flex items-center justify-between">
                   <div className="text-xs text-accent font-medium">Điểm cá nhân ghi nhận</div>
                   <div className="text-base font-mono tabular-nums font-semibold text-accent">
                     {(selectedTaskDetail.calculatedWorkloadPoints ?? 2.0).toFixed(2).replace('.', ',')} điểm
@@ -1528,7 +1543,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             {(selectedTaskDetail.platformScope ||
               selectedTaskDetail.originalAssetRef ||
               selectedTaskDetail.difficultyOverrideReason) && (
-              <div className="p-3 rounded-lg border border-line bg-surface space-y-1.5 text-xs">
+              <div className="p-3 rounded-lg border border-line bg-surface space-y-2 text-xs">
                 <div className="font-semibold text-ink">Thông tin bổ sung</div>
                 {selectedTaskDetail.platformScope && (
                   <div className="text-ink-2">
@@ -1665,7 +1680,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       >
         {inspectedStaffRow && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-lg border border-line bg-sunken">
                 <div className="text-xs text-ink-3">Điểm Quy trình</div>
                 <div className="text-base font-mono tabular-nums font-semibold text-ink mt-0.5">
@@ -1698,7 +1713,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             </div>
 
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">
+              <h4 className="text-xs font-semibold text-ink-3 mb-2">
                 Danh sách công việc đang ghi nhận ({inspectedStaffRow.staffTasks.length})
               </h4>
               {inspectedStaffRow.staffTasks.length === 0 ? (
@@ -2071,7 +2086,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           )}
 
           {/* MULTI-PIC ASSIGNMENT & WEIGHT SPLIT */}
-          <div className="p-3.5 rounded-lg border border-line bg-sunken/40 space-y-3">
+          <div className="p-4 rounded-lg border border-line bg-sunken/40 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-ink">

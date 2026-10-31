@@ -760,7 +760,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
           const isOverdueCell = w.state === 'overdue' && cell.planQty > 0 && cell.aired < cell.planQty;
           return (
             <div className="space-y-1 tabular-nums">
-              <div className="flex items-center justify-end gap-1.5">
+              <div className="flex items-center justify-end gap-2">
                 <span
                   className={
                     cell.planQty > 0 && cell.aired >= cell.planQty
@@ -871,7 +871,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
       render: r => (
         <div>
           <div className="font-medium text-ink">{r.storeName}</div>
-          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
+          <div className="flex flex-wrap items-center gap-2 mt-0.5 text-2xs text-ink-3">
             <span>{r.brandName}</span>
             <span>·</span>
             <span>{r.platform}</span>
@@ -941,7 +941,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
               return (
                 <div
                   key={w.weekCode}
-                  className={`px-1.5 py-1 rounded border text-center tabular-nums ${toneClass} ${
+                  className={`px-2 py-1 rounded border text-center tabular-nums ${toneClass} ${
                     activeWk ? 'ring-1 ring-ink' : ''
                   }`}
                   title={`${w.week}: Đã air ${w.aired} / Kế hoạch ${w.planQty} (Hẹn ${w.scheduled})`}
@@ -1301,7 +1301,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
               onClick={e => e.stopPropagation()}
               className="text-accent hover:underline inline-flex items-center gap-1 text-2xs"
             >
-              Video <ExternalLink className="w-3 h-3" />
+              Video <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}
         </div>
@@ -1499,7 +1499,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
             {funnelSteps.map(st => (
               <div
                 key={st.step}
-                className="p-2.5 rounded-lg border border-line bg-canvas/50 space-y-1.5"
+                className="p-3 rounded-lg border border-line bg-canvas/50 space-y-2"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="font-medium text-ink">{st.step}</span>
@@ -1520,25 +1520,25 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
 
             {/* Điểm nghẽn tồn đọng hiện tại */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              <div className="p-2.5 rounded-lg bg-surface border border-line">
+              <div className="p-3 rounded-lg bg-surface border border-line">
                 <div className="text-2xs text-ink-3">Chờ Brand duyệt (3.1)</div>
                 <div className="text-sm font-semibold tabular-nums text-warning mt-0.5">
                   {formatNumber(totals.waitBrand)} KOC
                 </div>
               </div>
-              <div className="p-2.5 rounded-lg bg-surface border border-line">
+              <div className="p-3 rounded-lg bg-surface border border-line">
                 <div className="text-2xs text-ink-3">Đã chốt chờ lên BO</div>
                 <div className="text-sm font-semibold tabular-nums text-accent mt-0.5">
                   {formatNumber(Math.max(0, totals.confirmed - totals.jobs))} KOC
                 </div>
               </div>
-              <div className="p-2.5 rounded-lg bg-surface border border-line">
+              <div className="p-3 rounded-lg bg-surface border border-line">
                 <div className="text-2xs text-ink-3">Đã book chờ KOC đăng</div>
                 <div className="text-sm font-semibold tabular-nums text-warning mt-0.5">
                   {formatNumber(Math.max(0, totals.jobs - totals.aired))} job
                 </div>
               </div>
-              <div className="p-2.5 rounded-lg bg-surface border border-line">
+              <div className="p-3 rounded-lg bg-surface border border-line">
                 <div className="text-2xs text-ink-3">Đã air chờ nghiệm thu</div>
                 <div className="text-sm font-semibold tabular-nums text-positive mt-0.5">
                   {formatNumber(Math.max(0, totals.aired - totals.accepted))} video
@@ -1555,9 +1555,9 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
           meta="Định mức 60% (Ngày 10) · 30% (Ngày 20) · 10% (Ngày 30)"
         >
           <div className="space-y-3">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {aggregatedBatches.map(b => (
-                <div key={b.key} className="p-2.5 rounded-lg border border-line bg-canvas/50 space-y-1.5">
+                <div key={b.key} className="p-3 rounded-lg border border-line bg-canvas/50 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <span className="text-xs font-medium text-ink">{b.label}</span>
@@ -1594,25 +1594,25 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
                 Kỷ luật bám lịch Air theo tuần (File 3.2)
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 tabular-nums">
-                <div className="p-2.5 rounded-lg bg-positive-soft/60 border border-line">
+                <div className="p-3 rounded-lg bg-positive-soft/60 border border-line">
                   <div className="text-2xs text-ink-2">Đúng hạn tuần</div>
                   <div className="text-sm font-semibold text-positive mt-0.5">
                     {formatNumber(totals.onTime)}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg bg-accent-soft/60 border border-line">
+                <div className="p-3 rounded-lg bg-accent-soft/60 border border-line">
                   <div className="text-2xs text-ink-2">Lên sóng sớm</div>
                   <div className="text-sm font-semibold text-accent mt-0.5">
                     {formatNumber(totals.early)}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg bg-critical-soft/60 border border-line">
+                <div className="p-3 rounded-lg bg-critical-soft/60 border border-line">
                   <div className="text-2xs text-ink-2">Trễ lịch tuần</div>
                   <div className="text-sm font-semibold text-critical mt-0.5">
                     {formatNumber(totals.late)}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg bg-warning-soft/60 border border-line">
+                <div className="p-3 rounded-lg bg-warning-soft/60 border border-line">
                   <div className="text-2xs text-ink-2">Hẹn chờ đăng</div>
                   <div className="text-sm font-semibold text-warning mt-0.5">
                     {formatNumber(totals.pending)}
@@ -1659,8 +1659,8 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
       >
         {/* Dải thẻ nhịp độ từng tuần (Bấm vào tuần để lọc/nhấn mạnh tuần đó) */}
         {aggregatedWeeks.length > 0 && (
-          <div className="px-3.5 sm:px-4 pt-3 pb-3.5 border-b border-line bg-canvas/40">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <div className="px-4 sm:px-4 pt-3 pb-4 border-b border-line bg-canvas/40">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {aggregatedWeeks.map(w => {
                 const isSelected = selectedWeekCode === w.weekCode;
                 const pct = safePct(w.aired, w.planQty);
@@ -1671,13 +1671,13 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
                     onClick={() =>
                       setSelectedWeekCode(prev => (prev === w.weekCode ? 'ALL' : w.weekCode))
                     }
-                    className={`text-left p-2.5 rounded-lg border transition-colors cursor-pointer ${
+                    className={`text-left p-3 rounded-lg border transition-colors cursor-pointer ${
                       isSelected
                         ? 'bg-surface border-ink ring-1 ring-ink'
                         : 'bg-surface border-line hover:border-line-strong'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-semibold text-ink">{w.weekCode}</span>
                       <StateTag state={w.state} />
                     </div>
@@ -1701,9 +1701,9 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
                       target={1}
                       invert={matrixMetric === 'BUDGET'}
                       label={`Tuần ${w.weekCode}`}
-                      className="mt-1.5"
+                      className="mt-2"
                     />
-                    <div className="mt-1.5 flex items-center justify-between text-2xs text-ink-3 tabular-nums">
+                    <div className="mt-2 flex items-center justify-between text-2xs text-ink-3 tabular-nums">
                       <span>Hẹn: {formatNumber(w.scheduled)}</span>
                       <span>{formatVndShort(w.planBudget)}</span>
                     </div>
@@ -1737,7 +1737,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
           ) : undefined
         }
       >
-        <div className="px-3.5 sm:px-4 py-3 border-b border-line bg-surface">
+        <div className="px-4 sm:px-4 py-3 border-b border-line bg-surface">
           <FilterBar
             search={{
               value: searchQuery,
@@ -1780,7 +1780,7 @@ export const PlanActualReportView: React.FC<PlanActualReportViewProps> = ({
           }
         />
         {data?.today && (
-          <p className="px-3.5 sm:px-4 py-2.5 border-t border-line text-2xs text-ink-3">
+          <p className="px-4 sm:px-4 py-3 border-t border-line text-2xs text-ink-3">
             Tính đến {formatDate(data.today)} · Nguồn: Bảng 4.1 Plan tổng, 4.1.1 Phân rã tuần, 3.1 Listing KOC và 3.2 List duyệt book.
           </p>
         )}

@@ -149,11 +149,11 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
               placeholder="Tìm kiếm KOC trong bảng tạm (Handle, tên, SĐT, đối thủ...)"
             />
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setSelectedSource('ALL')}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+              className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
                 selectedSource === 'ALL'
                   ? 'bg-accent text-white'
                   : 'bg-surface text-ink-2 hover:bg-surface-hover border border-line'
@@ -164,7 +164,7 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
             <button
               type="button"
               onClick={() => setSelectedSource('COMPETITOR_DISCOVERY')}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+              className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
                 selectedSource === 'COMPETITOR_DISCOVERY'
                   ? 'bg-accent text-white'
                   : 'bg-surface text-ink-2 hover:bg-surface-hover border border-line'
@@ -175,7 +175,7 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
             <button
               type="button"
               onClick={() => setSelectedSource('HASHTAG_DISCOVERY')}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+              className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
                 selectedSource === 'HASHTAG_DISCOVERY'
                   ? 'bg-accent text-white'
                   : 'bg-surface text-ink-2 hover:bg-surface-hover border border-line'
@@ -196,21 +196,21 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
             <table className="w-full text-xs text-left">
               <thead className="bg-sunken text-ink-2 font-semibold border-b border-line sticky top-0 z-10">
                 <tr>
-                  <th className="py-2.5 px-3">KOC / Kênh</th>
-                  <th className="py-2.5 px-3">Nguồn phát hiện</th>
-                  <th className="py-2.5 px-3 text-right">Followers</th>
-                  <th className="py-2.5 px-3 text-right">Views TB</th>
-                  <th className="py-2.5 px-3">Liên hệ</th>
-                  <th className="py-2.5 px-3">Chuyên viên quét</th>
-                  <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                  <th className="py-2.5 px-3 text-center w-12">Xóa</th>
+                  <th className="py-3 px-3">KOC / Kênh</th>
+                  <th className="py-3 px-3">Nguồn phát hiện</th>
+                  <th className="py-3 px-3 text-right">Followers</th>
+                  <th className="py-3 px-3 text-right">Views TB</th>
+                  <th className="py-3 px-3">Liên hệ</th>
+                  <th className="py-3 px-3">Chuyên viên quét</th>
+                  <th className="py-3 px-3 text-center">Trạng thái</th>
+                  <th className="py-3 px-3 text-center w-12">Xóa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {filteredItems.map((item) => (
                   <tr key={item.id} className="hover:bg-surface-hover transition-colors">
-                    <td className="py-2.5 px-3 min-w-[180px]">
-                      <div className="flex items-center gap-1.5 font-medium text-ink">
+                    <td className="py-3 px-3 min-w-[180px]">
+                      <div className="flex items-center gap-2 font-medium text-ink">
                         <a
                           href={item.channelUrl}
                           target="_blank"
@@ -218,28 +218,28 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
                           className="hover:text-accent inline-flex items-center gap-1"
                         >
                           <span>@{item.channelId}</span>
-                          <ExternalLink className="w-3 h-3 text-ink-3" />
+                          <ExternalLink className="w-3.5 h-3.5 text-ink-3" />
                         </a>
                       </div>
                       <div className="text-2xs text-ink-3 truncate max-w-[200px]">
                         {item.stageName}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sunken text-ink text-2xs font-medium border border-line">
                         {item.sourceContext}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 text-right font-code tabular-nums text-ink">
+                    <td className="py-3 px-3 text-right font-code tabular-nums text-ink">
                       {formatNumber(item.followersCount)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-code tabular-nums text-ink">
+                    <td className="py-3 px-3 text-right font-code tabular-nums text-ink">
                       {formatNumber(item.avgViews)}
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3">
                       {item.phone || item.zalo ? (
                         <span className="inline-flex items-center gap-1 text-ink font-code text-2xs">
-                          <Phone className="w-3 h-3 text-accent" />
+                          <Phone className="w-3.5 h-3.5 text-accent" />
                           <span>{(() => { const v = (item.phone || item.zalo || '').trim(); return v.length > 4 ? `****${v.slice(-4)}` : v; })()}</span>
                         </span>
                       ) : item.email ? (
@@ -250,19 +250,19 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
                         <span className="text-ink-3 text-2xs">—</span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-ink-2 text-2xs">
+                    <td className="py-3 px-3 text-ink-2 text-2xs">
                       <div>{item.discoveredByStaffName || 'Chuyên viên B2C'}</div>
                       <div className="text-ink-3 font-code">
                         {new Date(item.discoveredAt).toLocaleDateString('vi-VN')}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
+                    <td className="py-3 px-3 text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-soft text-accent text-2xs font-medium border border-accent/25">
                         <Clock className="w-2.5 h-2.5" />
                         <span>Chờ đẩy Upaffiliate</span>
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
+                    <td className="py-3 px-3 text-center">
                       <button
                         type="button"
                         onClick={async () => {

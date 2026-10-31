@@ -48,6 +48,7 @@ import { contractApi, type ContractBootstrap } from './api';
 import { FinanceAdvancePaymentReportView } from './FinanceAdvancePaymentReportView';
 import { FinanceReminderInboxView } from './FinanceReminderInboxView';
 import { GoogleDocsFinanceApproveDialog } from './GoogleDocsFinanceApproveDialog';
+import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { isAcceptance, resolveActiveLegalProfile } from './contractUi';
 
 export type ApprovalPortalMode = 'LEGAL_PORTAL' | 'FINANCE_PORTAL';
@@ -227,7 +228,9 @@ export function extractContractFinancials(
     '';
 
   const isOverDealBudget = dealBudget > 0 && grossAmount > dealBudget;
-  const isUnbudgetedSpend = deal !== undefined && dealBudget === 0 && grossAmount > 0;
+  const isUnbudgetedSpend =
+    (Boolean(record.dealId || record.dealCode) && !deal && grossAmount > 0) ||
+    (deal !== undefined && dealBudget === 0 && grossAmount > 0);
   const missingBankInfo = !bankAccount.trim();
 
   return {
@@ -251,6 +254,7 @@ export function extractContractFinancials(
 export function ContractApprovalPortalView({
   mode,
   initialFinanceSection = 'CONTRACT_REVIEW',
+  initialDealLookupQuery = '',
   data,
   deals = [],
   kocs = [],
@@ -263,6 +267,7 @@ export function ContractApprovalPortalView({
 }: {
   mode: ApprovalPortalMode;
   initialFinanceSection?: 'CONTRACT_REVIEW' | 'ADVANCE_PAYMENT_REPORT' | 'FINANCE_REMINDERS';
+  initialDealLookupQuery?: string;
   data: ContractBootstrap;
   deals?: BookingDealItem[];
   kocs?: KocItem[];
@@ -274,7 +279,6 @@ export function ContractApprovalPortalView({
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }) {
   const me = data.actor;
-  const isLegalActor = me.roles.includes('LEGAL');
   const isFinanceActor = me.roles.includes('FINANCE');
 
   const [search, setSearch] = useState('');
@@ -291,14 +295,20 @@ export function ContractApprovalPortalView({
   }
   const [page, setPage] = useState(1);
   const [revealSensitive, setRevealSensitive] = useState(false);
-  const [dealLookupQuery, setDealLookupQuery] = useState('');
+  const [dealLookupQuery, setDealLookupQuery] = useState(initialDealLookupQuery);
+  const [prevInitialDealLookupQuery, setPrevInitialDealLookupQuery] =
+    useState(initialDealLookupQuery);
+  if (initialDealLookupQuery !== prevInitialDealLookupQuery) {
+    setPrevInitialDealLookupQuery(initialDealLookupQuery);
+    setDealLookupQuery(initialDealLookupQuery);
+  }
   const [dealLookupSubTab, setDealLookupSubTab] = useState<'DEAL_LEDGER' | 'LARK_SLIPS'>(
     'DEAL_LEDGER',
   );
 
   // Hộp thoại đối soát & phê duyệt 2 cột
   const [inspectRecord, setInspectRecord] = useState<ContractRecord | null>(null);
-  const [leftPaneTab, setLeftPaneTab] = useState<'DOCS' | 'CLAUSES'>('DOCS');
+  const [leftPaneTab, setLeftPaneTab] = useState<'DOCS' | 'CLAUSES' | 'PREVIEW'>('DOCS');
   const [rejectOrChangeModal, setRejectOrChangeModal] = useState<{
     record: ContractRecord;
     decision: 'CHANGES' | 'REJECTED';
@@ -358,8 +368,16 @@ export function ContractApprovalPortalView({
     return map;
   }, [data.records, dealMap, kocMap]);
 
+  const docsByRecordId = useMemo(() => {
+    const map = new Map<string, LegalDocAttachment[]>();
+    for (const r of data.records) {
+      map.set(r.id, resolveContractLegalAttachments(r, dealMap, kocMap, data.records));
+    }
+    return map;
+  }, [data.records, dealMap, kocMap]);
+
   const resolveRecordLegalAttachments = (r: ContractRecord): LegalDocAttachment[] => {
-    return resolveContractLegalAttachments(r, dealMap, kocMap, data.records);
+    return docsByRecordId.get(r.id) || [];
   };
 
   const openUnifiedInspectModal = (record: ContractRecord) => {
@@ -461,12 +479,10 @@ export function ContractApprovalPortalView({
     ALL: () => true,
   };
 
-  const filteredRows = useMemo(() => {
-    if (mode === 'LEGAL_PORTAL') {
-      return searchedRecords.filter(legalMatches[legalFilter]);
-    }
-    return searchedRecords.filter(financeMatches[financeFilter]);
-  }, [mode, searchedRecords, legalFilter, financeFilter]);
+  const filteredRows =
+    mode === 'LEGAL_PORTAL'
+      ? searchedRecords.filter(legalMatches[legalFilter])
+      : searchedRecords.filter(financeMatches[financeFilter]);
 
   const pageSize = 15;
   const pagedRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
@@ -613,7 +629,7 @@ export function ContractApprovalPortalView({
           return (
             <div className="leading-snug space-y-0.5">
               <span className="block text-ink-2">Mẫu chuẩn</span>
-              <span className="block text-2xs text-ink-3">Miễn duyệt Pháp chế</span>
+              <span className="block text-2xs text-ink-3">Đã thông báo · Theo dõi</span>
             </div>
           );
         }
@@ -690,23 +706,20 @@ export function ContractApprovalPortalView({
       header: '',
       width: 110,
       align: 'right',
-      render: r => {
-        const pending = isPendingLegal(r);
-        return (
-          <div
-            className="inline-flex items-center justify-end"
-            onClick={e => e.stopPropagation()}
+      render: r => (
+        <div
+          className="inline-flex items-center justify-end"
+          onClick={e => e.stopPropagation()}
+        >
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => openUnifiedInspectModal(r)}
           >
-            <Button
-              size="sm"
-              variant={pending && isLegalActor ? 'primary' : 'secondary'}
-              onClick={() => openUnifiedInspectModal(r)}
-            >
-              {pending && isLegalActor ? 'Duyệt' : 'Xem'}
-            </Button>
-          </div>
-        );
-      },
+            Xem
+          </Button>
+        </div>
+      ),
     },
   ];
 
@@ -964,13 +977,9 @@ export function ContractApprovalPortalView({
 
   const canApproveInInspectModal = Boolean(
     inspectRecord &&
-      ((mode === 'LEGAL_PORTAL' &&
-        isLegalActor &&
-        isPendingLegal(inspectRecord) &&
-        inspectRecord.ownerId !== me.id) ||
-        (mode === 'FINANCE_PORTAL' &&
-          isFinanceActor &&
-          (isPendingFinance(inspectRecord) || isGDocsPendingFinal(inspectRecord)))),
+      mode === 'FINANCE_PORTAL' &&
+      isFinanceActor &&
+      (isPendingFinance(inspectRecord) || isGDocsPendingFinal(inspectRecord)),
   );
 
   if (mode === 'FINANCE_PORTAL' && financeSection === 'ADVANCE_PAYMENT_REPORT') {
@@ -1233,6 +1242,10 @@ export function ContractApprovalPortalView({
                         label: `Giấy tờ (${inspectDocs.length})`,
                       },
                       {
+                        key: 'PREVIEW',
+                        label: 'Văn bản A4',
+                      },
+                      {
                         key: 'CLAUSES',
                         label: 'Điều khoản & tiến độ',
                       },
@@ -1260,8 +1273,8 @@ export function ContractApprovalPortalView({
                       inspectRecord.templateId.startsWith('COM-')
                         ? 'COMPANY'
                         : inspectRecord.templateId.startsWith('HKD-')
-                          ? 'HOUSEHOLD'
-                          : 'INDIVIDUAL'
+                           ? 'HOUSEHOLD'
+                           : 'INDIVIDUAL'
                     }
                     editable
                     defaultExpandPreview={true}
@@ -1284,6 +1297,36 @@ export function ContractApprovalPortalView({
                     }}
                     title="Ảnh CCCD & Giấy phép ĐKKD"
                   />
+                ) : leftPaneTab === 'PREVIEW' ? (
+                  (() => {
+                    const tpl =
+                      data.templates.find(t => t.id === inspectRecord.templateId) ||
+                      OFFICIAL_TEMPLATES_SNAPSHOT[inspectRecord.templateId];
+                    const signAttempt = inspectRecord.signing.at(-1);
+                    return (
+                      <ContractDocumentViewer
+                        title={inspectRecord.title}
+                        templateName={`${tpl?.name || inspectRecord.templateId} · v${inspectRecord.version}`}
+                        blocks={inspectRecord.customFile?.blocks || tpl?.blocks || []}
+                        paragraphs={inspectRecord.customFile?.paragraphs || tpl?.paragraphs || []}
+                        fields={inspectRecord.isKocOwnForm ? [] : tpl?.fields || []}
+                        values={inspectRecord.values}
+                        clauseDiffs={
+                          inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length
+                            ? inspectRecord.googleDocsAuditTrail.initialToFinalDiffs
+                            : inspectRecord.googleDocsReviewRouting?.clauseDiffs
+                        }
+                        downloadHref={`/api/contracts/${inspectRecord.id}/document?version=${inspectRecord.version}`}
+                        signingPeople={signAttempt?.people}
+                        signingDocumentId={signAttempt?.documentId}
+                        partnerName={inspectRecord.partner}
+                        acceptanceScreenshots={inspectRecord.acceptanceScreenshots}
+                        isTemplatePreview={inspectRecord.isKocOwnForm}
+                        maxHeight="540px"
+                        compactToolbar
+                      />
+                    );
+                  })()
                 ) : (
                   <div className="rounded-xl border border-line bg-surface divide-y divide-line">
                     {inspectRecord.customTermsSummary && (
@@ -1336,27 +1379,7 @@ export function ContractApprovalPortalView({
                     </div>
 
                     <div className="p-4 space-y-2">
-                      <span className="font-semibold text-ink block">Tiến độ phê duyệt</span>
-                      <div className="flex items-center justify-between py-1">
-                        <span className="text-ink-2">
-                          Pháp chế ({inspectLegalStep?.reviewerName || 'Miễn duyệt'})
-                        </span>
-                        <span
-                          className={`text-2xs font-medium ${
-                            !inspectLegalStep || inspectLegalStep.status === 'APPROVED'
-                              ? 'text-positive'
-                              : inspectLegalStep.status === 'REJECTED'
-                                ? 'text-critical'
-                                : 'text-warning'
-                          }`}
-                        >
-                          {!inspectLegalStep
-                            ? 'Miễn duyệt'
-                            : inspectLegalStep.status === 'APPROVED'
-                              ? 'Đã duyệt'
-                              : 'Chờ duyệt'}
-                        </span>
-                      </div>
+                      <span className="font-semibold text-ink block">Tiến độ phê duyệt &amp; theo dõi</span>
                       <div className="flex items-center justify-between py-1">
                         <span className="text-ink-2">
                           Kế toán ({inspectFinanceStep?.reviewerName || 'Lê Thị Thu Hà'})
@@ -1377,6 +1400,36 @@ export function ContractApprovalPortalView({
                             : 'Chờ duyệt'}
                         </span>
                       </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-ink-2">
+                          Pháp chế ({inspectLegalStep?.reviewerName || 'Bộ phận Pháp chế'})
+                        </span>
+                        <span
+                          className={`text-2xs font-medium ${
+                            !inspectLegalStep || inspectLegalStep.status === 'APPROVED'
+                              ? 'text-positive'
+                              : inspectLegalStep.status === 'REJECTED'
+                                ? 'text-critical'
+                                : 'text-warning'
+                          }`}
+                        >
+                          {!inspectLegalStep
+                            ? 'Đã thông báo · Theo dõi'
+                            : inspectLegalStep.status === 'APPROVED'
+                              ? 'Đã duyệt'
+                              : 'Chờ duyệt'}
+                        </span>
+                      </div>
+                      {(inspectRecord.templateId.endsWith('-HDNT') || inspectRecord.brand === 'UPBASE') && (
+                        <div className="flex items-center justify-between py-1">
+                          <span className="text-ink-2">
+                            Giám đốc Marketing B2C (Đặng Thị Yến Nhi)
+                          </span>
+                          <span className="text-2xs font-medium text-positive">
+                            Đã thông báo · Quản lý
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

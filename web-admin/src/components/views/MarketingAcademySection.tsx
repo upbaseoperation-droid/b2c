@@ -320,7 +320,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
             <Button
               variant="primary"
               onClick={() => setIsGeneratorOpen(true)}
-              className="gap-1.5 whitespace-nowrap"
+              className="gap-2 whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               Khởi tạo khóa học & Bộ đề mới
@@ -330,7 +330,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
 
         {/* BỘ LỌC THEO VAI TRÒ VÀ NHÃN HÀNG */}
         <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center gap-2">
-          <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wider mr-1">Lọc vai trò:</span>
+          <span className="text-2xs font-semibold text-ink-3 mr-1">Lọc vai trò:</span>
           {[
             { id: 'ALL', label: 'Tất cả vai trò' },
             { id: 'Chuyên viên Booking', label: 'Booking' },
@@ -341,7 +341,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
             <button
               key={r.id}
               onClick={() => setRoleFilter(r.id)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+              className={`text-xs px-3 py-1 rounded-full border transition-all ${
                 roleFilter === r.id
                   ? 'bg-ink text-surface border-ink font-semibold'
                   : 'bg-surface text-ink-2 border-line hover:border-line-strong'
@@ -351,11 +351,11 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
             </button>
           ))}
 
-          <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wider ml-2 mr-1">Nhãn hàng:</span>
+          <span className="text-2xs font-semibold text-ink-3 ml-2 mr-1">Nhãn hàng:</span>
           <select
             value={brandFilter}
             onChange={(e) => setBrandFilter(e.target.value)}
-            className="text-xs px-2.5 py-1 rounded-lg border border-line bg-surface text-ink font-medium focus:outline-none focus:border-accent"
+            className="text-xs px-3 py-1 rounded-lg border border-line bg-surface text-ink font-medium focus:outline-none focus:border-accent"
           >
             <option value="ALL">Tất cả nhãn hàng</option>
             <option value="GENERAL">Quy trình chung B2C</option>
@@ -375,7 +375,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
               }}
               className="text-2xs text-accent hover:underline flex items-center gap-1 ml-auto"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
               Đặt lại bộ lọc
             </button>
           )}
@@ -405,12 +405,12 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                 const linkedQuiz = quizzes.find((q) => q.id === c.quizId);
                 return (
                   <Panel key={c.id} className="flex flex-col justify-between hover:border-accent/40 transition-all">
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-sunken text-ink">
                           {c.code}
                         </span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           {c.brandName && (
                             <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-accent-soft text-accent">
                               {c.brandName}
@@ -440,11 +440,11 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
 
                       <div className="pt-2 border-t border-line flex items-center justify-between text-2xs text-ink-3">
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
+                          <Clock className="w-3.5 h-3.5" />
                           {c.durationMinutes} phút ({c.modules.length} bài)
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
+                          <Users className="w-3.5 h-3.5" />
                           {c.completedCount || 0} nhân sự hoàn thành
                         </span>
                       </div>
@@ -501,7 +501,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
 
                 return (
                   <Panel key={q.id} className="flex flex-col justify-between hover:border-accent/40 transition-all">
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-sunken text-ink">
                           {q.code}
@@ -593,13 +593,13 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-sunken text-ink-3 border-b border-line text-left">
-                    <th className="py-2.5 px-4 font-semibold">Thời điểm</th>
-                    <th className="py-2.5 px-4 font-semibold">Nhân sự</th>
-                    <th className="py-2.5 px-4 font-semibold">Bộ đề thi</th>
-                    <th className="py-2.5 px-4 font-semibold text-center">Điểm số</th>
-                    <th className="py-2.5 px-4 font-semibold text-center">Tỷ lệ</th>
-                    <th className="py-2.5 px-4 font-semibold text-center">Xếp loại</th>
-                    <th className="py-2.5 px-4 font-semibold text-right">Thao tác</th>
+                    <th className="py-3 px-4 font-semibold">Thời điểm</th>
+                    <th className="py-3 px-4 font-semibold">Nhân sự</th>
+                    <th className="py-3 px-4 font-semibold">Bộ đề thi</th>
+                    <th className="py-3 px-4 font-semibold text-center">Điểm số</th>
+                    <th className="py-3 px-4 font-semibold text-center">Tỷ lệ</th>
+                    <th className="py-3 px-4 font-semibold text-center">Xếp loại</th>
+                    <th className="py-3 px-4 font-semibold text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -607,22 +607,22 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                     const matchedQuiz = quizzes.find((q) => q.id === att.quizId);
                     return (
                       <tr key={att.id} className="hover:bg-canvas transition-colors">
-                        <td className="py-2.5 px-4 text-ink-3 whitespace-nowrap">
+                        <td className="py-3 px-4 text-ink-3 whitespace-nowrap">
                           {new Date(att.startedAt).toLocaleString('vi-VN')}
                         </td>
-                        <td className="py-2.5 px-4 font-medium text-ink whitespace-nowrap">
+                        <td className="py-3 px-4 font-medium text-ink whitespace-nowrap">
                           {att.userName}
                         </td>
-                        <td className="py-2.5 px-4 font-medium text-ink">
+                        <td className="py-3 px-4 font-medium text-ink">
                           {matchedQuiz ? matchedQuiz.title : att.quizId}
                         </td>
-                        <td className="py-2.5 px-4 font-mono font-semibold text-ink text-center">
+                        <td className="py-3 px-4 font-mono font-semibold text-ink text-center">
                           {att.score} / {att.totalQuestions}
                         </td>
-                        <td className="py-2.5 px-4 font-mono font-semibold text-center">
+                        <td className="py-3 px-4 font-mono font-semibold text-center">
                           {att.percentage}%
                         </td>
-                        <td className="py-2.5 px-4 text-center">
+                        <td className="py-3 px-4 text-center">
                           <span
                             className={`inline-block px-2 py-0.5 rounded-full font-semibold text-2xs ${
                               att.passed
@@ -633,7 +633,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                             {att.passed ? 'ĐẠT CHUẨN' : 'CHƯA ĐẠT'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-4 text-right">
+                        <td className="py-3 px-4 text-right">
                           {matchedQuiz && (
                             <button
                               onClick={() => handleStartQuiz(matchedQuiz)}
@@ -701,7 +701,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                         }}
                         className="text-2xs font-semibold text-accent hover:underline flex items-center gap-1"
                       >
-                        <FileText className="w-3 h-3" />
+                        <FileText className="w-3.5 h-3.5" />
                         Xem chi tiết quy trình chuẩn trong Kho tài liệu
                       </button>
                     </div>
@@ -718,7 +718,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
               {quizzes.find((q) => q.id === readingCourse.quizId) && (
                 <Button
                   variant="primary"
-                  className="gap-1.5"
+                  className="gap-2"
                   onClick={() => {
                     const targetQuiz = quizzes.find((q) => q.id === readingCourse.quizId);
                     setReadingCourse(null);
@@ -762,7 +762,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                     examResult.passed
                       ? 'bg-positive/10 border-positive/30 text-positive'
                       : 'bg-critical/10 border-critical/30 text-critical'
-                  } space-y-1.5`}
+                  } space-y-2`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold">
@@ -788,7 +788,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                 <div className="p-4 rounded-xl border border-line bg-surface space-y-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
-                      <span className="text-2xs font-semibold text-accent uppercase tracking-wider">
+                      <span className="text-2xs font-semibold text-accent">
                         {activeQuiz.questions[currentQuestionIndex].type === 'SCENARIO_CASE'
                           ? 'Tình huống thực tế'
                           : 'Câu hỏi trắc nghiệm'}
@@ -840,7 +840,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                       Câu trước
                     </Button>
 
-                    <div className="flex gap-1.5 overflow-x-auto">
+                    <div className="flex gap-2 overflow-x-auto">
                       {activeQuiz.questions.map((q, idx) => {
                         const hasAns = !!userAnswers[q.id];
                         return (
@@ -882,7 +882,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
             ) : (
               // Chế độ sau khi nộp bài: hiển thị đáp án và giải thích chi tiết toàn bộ các câu
               <div className="space-y-4">
-                <h4 className="text-xs font-semibold text-ink-3 uppercase tracking-wider">
+                <h4 className="text-xs font-semibold text-ink-3">
                   Chi tiết bài làm & Giải thích đáp án:
                 </h4>
 
@@ -910,7 +910,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                         </span>
                       </div>
 
-                      <div className="space-y-1.5 text-xs">
+                      <div className="space-y-2 text-xs">
                         {q.options.map((opt) => {
                           const isOptionCorrect = opt.key === q.correctKey;
                           const isOptionUser = opt.key === userChoice;
@@ -925,13 +925,13 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                           return (
                             <div
                               key={opt.key}
-                              className={`p-2 rounded border flex items-start gap-2.5 ${badgeClass}`}
+                              className={`p-2 rounded border flex items-start gap-3 ${badgeClass}`}
                             >
                               <span className="font-semibold font-mono">{opt.key}.</span>
                               <span className="leading-relaxed">{opt.label}</span>
                               {isOptionCorrect && (
                                 <span className="ml-auto text-2xs font-semibold text-positive flex items-center gap-0.5">
-                                  <Check className="w-3 h-3" /> Đáp án chuẩn
+                                  <Check className="w-3.5 h-3.5" /> Đáp án chuẩn
                                 </span>
                               )}
                               {isOptionUser && !isOptionCorrect && (
@@ -944,8 +944,8 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                         })}
                       </div>
 
-                      <div className="p-3 bg-canvas rounded-lg border border-line text-xs space-y-1.5">
-                        <div className="font-semibold text-ink flex items-center gap-1.5">
+                      <div className="p-3 bg-canvas rounded-lg border border-line text-xs space-y-2">
+                        <div className="font-semibold text-ink flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
                           Giải thích căn cứ nghiệp vụ:
                         </div>
@@ -970,7 +970,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
               {examSubmitted && (
                 <Button
                   variant="primary"
-                  className="gap-1.5"
+                  className="gap-2"
                   onClick={() => {
                     setUserAnswers({});
                     setCurrentQuestionIndex(0);
@@ -1020,7 +1020,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
               />
             </Field>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {[
                 'Quy trình Lập Kế hoạch & Quản trị Hạn mức',
                 'Kiểm duyệt Kịch bản & 110 Từ khóa cấm sàn',
@@ -1032,7 +1032,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                   key={sug}
                   type="button"
                   onClick={() => setGenTopic(sug)}
-                  className="text-2xs px-2.5 py-1 rounded bg-sunken hover:bg-line text-ink-2 transition-colors"
+                  className="text-2xs px-3 py-1 rounded bg-sunken hover:bg-line text-ink-2 transition-colors"
                 >
                   + {sug}
                 </button>
@@ -1078,7 +1078,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                 variant="primary"
                 disabled={isGenerating || !genTopic.trim()}
                 onClick={handleGenerateCourseAndQuiz}
-                className="gap-1.5"
+                className="gap-2"
               >
                 {isGenerating ? (
                   <>

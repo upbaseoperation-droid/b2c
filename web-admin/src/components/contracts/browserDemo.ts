@@ -159,7 +159,7 @@ function resolveLoginActor(): ContractActor | undefined {
     ) {
       return actors.find(a => a.id === 'demo-lead');
     }
-    return actors[0];
+    return undefined;
   } catch {
     return undefined;
   }
@@ -385,17 +385,13 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     const record = state.records.find(r => r.id === contractId);
     requireCondition(record && canRead(record, actor), 'Không có quyền truy cập hồ sơ này.', 403);
     requireCondition(
-      actor.roles.includes('FINANCE') || actor.roles.includes('LEAD'),
-      'Chỉ Kế toán (FINANCE) hoặc Trưởng bộ phận (LEAD) mới có thẩm quyền phê duyệt hồ sơ và đẩy sang WeSign.',
+      actor.roles.includes('FINANCE'),
+      'Chỉ Kế toán (FINANCE) mới có thẩm quyền phê duyệt hồ sơ và đẩy sang WeSign.',
       403,
     );
     requireCondition(
       record.approval === 'IN_REVIEW' && record.googleDocsStage === 'FINAL',
       'Hồ sơ chưa được trình final. B2C cần trình final trước khi Kế toán duyệt.',
-    );
-    requireCondition(
-      !record.steps.some(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED'),
-      'Pháp chế chưa duyệt hồ sơ này.',
     );
     const now = new Date().toISOString();
     const approvalNote =
@@ -660,12 +656,11 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     }
     requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.');
     const normalizedReviewerIds = (body.reviewers as string[]).map(id => normalizeActorId(id) || id);
-    const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || record.googleDocsUrl || template?.exemptLegalReview === false);
     next = submitContract(
       record,
       actor,
       actors.filter(a => normalizedReviewerIds.includes(a.id)),
-      { requireLegal: mandatoryLegal ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
+      { requireLegal: typeof body.requireLegal === 'boolean' ? body.requireLegal : false },
     );
     if (record.googleDocsUrl) {
       demoGoogleDocsFinal(next, actor.name);

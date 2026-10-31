@@ -203,7 +203,7 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
         <button
           type="button"
           onClick={() => setSelectedFilter(selectedFilter === 'DIFF_ONLY' ? 'ALL' : 'DIFF_ONLY')}
-          className={`p-2.5 rounded-lg border text-left transition-all ${
+          className={`p-3 rounded-lg border text-left transition-all ${
             selectedFilter === 'DIFF_ONLY'
               ? 'bg-warning-soft/70 border-warning shadow-sm'
               : 'bg-surface border-line hover:bg-sunken'
@@ -213,15 +213,15 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
             <span className="font-medium text-warning-strong flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5 text-warning" /> Lệch dữ liệu ô
             </span>
-            <span className="font-mono text-3xs px-1 rounded bg-warning-soft text-warning-strong">
+            <span className="font-mono text-2xs px-1 rounded bg-warning-soft text-warning-strong">
               {totalDiffCells} ô lệch
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
+          <div className="mt-1 flex items-baseline gap-2">
             <span className="text-lg font-bold text-ink">{report.updated}</span>
             <span className="text-2xs text-ink-3">dòng KOC</span>
           </div>
-          <div className="text-3xs text-ink-3 truncate mt-0.5">
+          <div className="text-2xs text-ink-3 truncate mt-0.5">
             Cả 2 bên cùng có, lệch giá/ngày/SP
           </div>
         </button>
@@ -230,7 +230,7 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
         <button
           type="button"
           onClick={() => setSelectedFilter(selectedFilter === 'ADD_ONLY' ? 'ALL' : 'ADD_ONLY')}
-          className={`p-2.5 rounded-lg border text-left transition-all ${
+          className={`p-3 rounded-lg border text-left transition-all ${
             selectedFilter === 'ADD_ONLY'
               ? 'bg-positive-soft/70 border-positive shadow-sm'
               : 'bg-surface border-line hover:bg-sunken'
@@ -240,15 +240,15 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
             <span className="font-medium text-positive-strong flex items-center gap-1">
               <PlusCircle className="w-3.5 h-3.5 text-positive" /> Chỉ có trên App
             </span>
-            <span className="font-mono text-3xs px-1 rounded bg-positive-soft text-positive-strong">
+            <span className="font-mono text-2xs px-1 rounded bg-positive-soft text-positive-strong">
               +{report.added}
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
+          <div className="mt-1 flex items-baseline gap-2">
             <span className="text-lg font-bold text-ink">+{report.added}</span>
             <span className="text-2xs text-ink-3">dòng mới</span>
           </div>
-          <div className="text-3xs text-ink-3 truncate mt-0.5">
+          <div className="text-2xs text-ink-3 truncate mt-0.5">
             Sẽ thêm mới vào cuối Sheet
           </div>
         </button>
@@ -257,25 +257,25 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
         <button
           type="button"
           onClick={() => setSelectedFilter(selectedFilter === 'SHEET_ONLY' ? 'ALL' : 'SHEET_ONLY')}
-          className={`p-2.5 rounded-lg border text-left transition-all ${
+          className={`p-3 rounded-lg border text-left transition-all ${
             selectedFilter === 'SHEET_ONLY'
-              ? 'bg-amber-100/70 border-amber-400 shadow-sm'
+              ? 'bg-warning-soft/70 border-warning shadow-sm'
               : 'bg-surface border-line hover:bg-sunken'
           }`}
         >
           <div className="flex items-center justify-between text-2xs text-ink-3">
-            <span className="font-medium text-amber-800 flex items-center gap-1">
-              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-600" /> Chỉ có trên Sheet
+            <span className="font-medium text-warning flex items-center gap-1">
+              <FileSpreadsheet className="w-3.5 h-3.5 text-warning" /> Chỉ có trên Sheet
             </span>
-            <span className="font-mono text-3xs px-1 rounded bg-amber-100 text-amber-900">
+            <span className="font-mono text-2xs px-1 rounded bg-warning-soft text-warning">
               {sheetOnlyCount}
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
+          <div className="mt-1 flex items-baseline gap-2">
             <span className="text-lg font-bold text-ink">{sheetOnlyCount}</span>
             <span className="text-2xs text-ink-3">dòng Sheet</span>
           </div>
-          <div className="text-3xs text-ink-3 truncate mt-0.5">
+          <div className="text-2xs text-ink-3 truncate mt-0.5">
             Brand tự thêm / Chưa đồng bộ
           </div>
         </button>
@@ -284,7 +284,7 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
         <button
           type="button"
           onClick={() => setSelectedFilter(selectedFilter === 'SAME_ONLY' ? 'ALL' : 'SAME_ONLY')}
-          className={`p-2.5 rounded-lg border text-left transition-all ${
+          className={`p-3 rounded-lg border text-left transition-all ${
             selectedFilter === 'SAME_ONLY'
               ? 'bg-sunken border-line-strong shadow-sm'
               : 'bg-surface border-line hover:bg-sunken'
@@ -294,15 +294,15 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
             <span className="font-medium text-ink flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-positive" /> Khớp 100% dữ liệu
             </span>
-            <span className="font-mono text-3xs px-1 rounded bg-sunken text-ink-2">
+            <span className="font-mono text-2xs px-1 rounded bg-sunken text-ink-2">
               {report.skipped}
             </span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
+          <div className="mt-1 flex items-baseline gap-2">
             <span className="text-lg font-bold text-ink">{report.skipped}</span>
             <span className="text-2xs text-ink-3">dòng</span>
           </div>
-          <div className="text-3xs text-ink-3 truncate mt-0.5">
+          <div className="text-2xs text-ink-3 truncate mt-0.5">
             Dữ liệu 2 bên giống hệt nhau
           </div>
         </button>
@@ -353,8 +353,8 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
               onClick={() => setSelectedFilter('SHEET_ONLY')}
               className={`px-2 py-1 rounded text-2xs font-medium transition flex items-center gap-1 ${
                 selectedFilter === 'SHEET_ONLY'
-                  ? 'bg-amber-600 text-white font-semibold'
-                  : 'text-amber-800 hover:bg-amber-100'
+                  ? 'bg-warning text-white font-semibold'
+                  : 'text-warning hover:bg-warning-soft'
               }`}
             >
               <span>📋 Chỉ có trên Sheet</span>
@@ -400,7 +400,7 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
       </div>
 
       {/* 3. KHU VỰC HIỂN THỊ DANH SÁCH ĐỐI SOÁT TRỰC QUAN */}
-      <div className="max-h-[380px] overflow-y-auto space-y-2.5 pr-1">
+      <div className="max-h-[380px] overflow-y-auto space-y-3 pr-1">
         {filteredDiffs.length === 0 ? (
           <div className="p-8 text-center text-ink-3 border border-dashed border-line rounded-lg space-y-1">
             <div className="font-medium text-xs text-ink-2">Không tìm thấy dòng KOC nào</div>
@@ -424,14 +424,14 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
                   isUpdate
                     ? 'bg-surface border-warning/70 shadow-sm'
                     : isAdd
-                      ? 'bg-emerald-50/20 border-emerald-300'
+                      ? 'bg-positive-soft/20 border-positive/30'
                       : isSheetOnly
-                        ? 'bg-amber-50/25 border-amber-300'
+                        ? 'bg-warning-soft/25 border-warning/30'
                         : 'bg-sunken/40 border-line opacity-80'
                 }`}
               >
                 {/* Header thẻ KOC */}
-                <div className="p-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-line/60">
+                <div className="p-3 flex flex-wrap items-center justify-between gap-2 border-b border-line/60">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="font-bold text-ink">@{d.handle || d.kocName}</span>
                     {d.kocName && d.kocName !== (d.handle || '') && (
@@ -440,21 +440,21 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
                     {/* Vị trí trên Google Sheet */}
                     {d.sheetRowNum ? (
-                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 font-mono text-3xs border border-line">
+                      <span className="px-2 py-0.5 rounded bg-sunken text-ink-2 font-mono text-2xs border border-line">
                         Sheet Dòng #{d.sheetRowNum}
                       </span>
                     ) : null}
 
                     {/* Khớp theo mã */}
                     {d.matchedBy === 'ROW_ID' && (
-                      <span className="text-3xs font-mono text-positive bg-positive-soft px-1 rounded">
+                      <span className="text-2xs font-mono text-positive bg-positive-soft px-1 rounded">
                         RowID ✓
                       </span>
                     )}
                   </div>
 
                   {/* Badge phân loại trạng thái đối soát */}
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {isUpdate && (
                       <Status tone="warning">
                         ⚠️ Lệch {d.fieldChanges.length} ô dữ liệu
@@ -479,11 +479,11 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
                     {/* Kết quả Brand chọn nếu có trên Sheet */}
                     {d.brandDecisionOnSheet && (
                       <span
-                        className={`text-3xs px-1.5 py-0.5 rounded font-semibold border ${
+                        className={`text-2xs px-2 py-0.5 rounded font-semibold border ${
                           d.brandDecisionOnSheet.toLowerCase() === 'yes'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            ? 'bg-positive-soft text-positive border-positive/30'
                             : d.brandDecisionOnSheet.toLowerCase() === 'no'
-                              ? 'bg-rose-50 text-rose-800 border-rose-200'
+                              ? 'bg-critical-soft text-critical border-critical/30'
                               : 'bg-sunken text-ink-2 border-line'
                         }`}
                       >
@@ -495,7 +495,7 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
                 {/* TH 1: CÙNG CÓ NHƯNG LỆCH DỮ LIỆU TỪNG Ô (action === 'UPDATE') */}
                 {isUpdate && (
-                  <div className="p-2.5 space-y-2">
+                  <div className="p-3 space-y-2">
                     <div className="text-2xs font-semibold text-warning-strong flex items-center gap-1">
                       <Sliders className="w-3.5 h-3.5 text-warning" />
                       Chi tiết các ô bị lệch giữa Google Sheet và Web Admin:
@@ -503,42 +503,42 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
                     <div className="border border-line rounded-md overflow-hidden bg-surface">
                       <table className="w-full text-left text-xs border-collapse">
-                        <thead className="bg-sunken text-3xs font-semibold text-ink-2 border-b border-line">
+                        <thead className="bg-sunken text-2xs font-semibold text-ink-2 border-b border-line">
                           <tr>
-                            <th className="py-1.5 px-2.5 w-[28%]">Trường thông tin / Cột</th>
-                            <th className="py-1.5 px-2.5 w-[30%]">Trên Google Sheet hiện tại</th>
-                            <th className="py-1.5 px-2.5 w-[4%] text-center"></th>
-                            <th className="py-1.5 px-2.5 w-[38%]">Trên Web Admin dự kiến ghi</th>
+                            <th className="py-2 px-3 w-[28%]">Trường thông tin / Cột</th>
+                            <th className="py-2 px-3 w-[30%]">Trên Google Sheet hiện tại</th>
+                            <th className="py-2 px-3 w-[4%] text-center"></th>
+                            <th className="py-2 px-3 w-[38%]">Trên Web Admin dự kiến ghi</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-line text-2xs">
                           {d.fieldChanges.map((fc, fIdx) => (
                             <tr key={fIdx} className="hover:bg-sunken/30">
-                              <td className="py-1.5 px-2.5 font-medium text-ink">
+                              <td className="py-2 px-3 font-medium text-ink">
                                 <div>{fc.column}</div>
                                 {fc.columnLetter && (
-                                  <span className="text-3xs font-mono text-ink-3">
+                                  <span className="text-2xs font-mono text-ink-3">
                                     Cột {fc.columnLetter}
                                   </span>
                                 )}
                               </td>
-                              <td className="py-1.5 px-2.5">
-                                <span className="inline-block px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-800 line-through font-mono text-3xs">
+                              <td className="py-2 px-3">
+                                <span className="inline-block px-2 py-0.5 rounded bg-critical-soft border border-critical/30 text-critical line-through font-mono text-2xs">
                                   {fc.sheetValue || '(Trống)'}
                                 </span>
                               </td>
-                              <td className="py-1.5 px-1 text-center text-ink-3">
-                                <ArrowRight className="w-3 h-3 inline text-ink-3" />
+                              <td className="py-2 px-1 text-center text-ink-3">
+                                <ArrowRight className="w-3.5 h-3.5 inline text-ink-3" />
                               </td>
-                              <td className="py-1.5 px-2.5">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold font-mono text-3xs">
+                              <td className="py-2 px-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-block px-2 py-0.5 rounded bg-positive-soft border border-positive/30 text-positive font-semibold font-mono text-2xs">
                                     {fc.diffKind === 'PRICE' && !isNaN(Number(fc.appValue)) && Number(fc.appValue) > 0
                                       ? `${new Intl.NumberFormat('vi-VN').format(Number(fc.appValue))}đ`
                                       : fc.appValue || '(Trống)'}
                                   </span>
                                   {fc.diffSummary && (
-                                    <span className="text-3xs font-semibold px-1 rounded bg-warning-soft text-warning-strong">
+                                    <span className="text-2xs font-semibold px-1 rounded bg-warning-soft text-warning-strong">
                                       {fc.diffSummary}
                                     </span>
                                   )}
@@ -554,17 +554,17 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
                 {/* TH 2: CHỈ CÓ TRÊN APP (SẼ THÊM MỚI VÀO SHEET) (action === 'ADD') */}
                 {isAdd && (
-                  <div className="p-2.5 bg-emerald-50/30 text-2xs space-y-1.5">
-                    <div className="text-emerald-800 font-medium">
+                  <div className="p-3 bg-positive-soft/30 text-2xs space-y-2">
+                    <div className="text-positive font-medium">
                       KOC này chưa có trên file Google Sheet của Brand. Khi bạn bấm{' '}
                       <strong>Xác nhận Đẩy</strong>, hệ thống sẽ thêm một dòng mới vào cuối bảng tính:
                     </div>
                     {d.fieldChanges.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1 border-t border-emerald-200/60">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1 border-t border-positive/60">
                         {d.fieldChanges.map((fc, fIdx) => (
-                          <div key={fIdx} className="bg-surface p-1.5 rounded border border-emerald-200">
-                            <span className="text-3xs text-ink-3 block">{fc.column}:</span>
-                            <span className="font-semibold text-ink font-mono text-3xs">
+                          <div key={fIdx} className="bg-surface p-2 rounded border border-positive/30">
+                            <span className="text-2xs text-ink-3 block">{fc.column}:</span>
+                            <span className="font-semibold text-ink font-mono text-2xs">
                               {fc.appValue}
                             </span>
                           </div>
@@ -576,34 +576,34 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
                 {/* TH 3: CHỈ CÓ TRÊN GOOGLE SHEET (APP CHƯA CÓ) (action === 'SHEET_ONLY') */}
                 {isSheetOnly && (
-                  <div className="p-2.5 bg-amber-50/40 text-2xs space-y-1.5">
-                    <div className="text-amber-900 font-medium flex items-center gap-1.5">
-                      <HelpCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <div className="p-3 bg-warning-soft/40 text-2xs space-y-2">
+                    <div className="text-warning font-medium flex items-center gap-2">
+                      <HelpCircle className="w-3.5 h-3.5 text-warning shrink-0" />
                       <span>
                         Dòng này đang tồn tại trên Google Sheet của Brand (có thể do Brand tự thêm hoặc đợt trước) nhưng không có trong danh sách đẩy từ Web Admin.
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 border-t border-amber-200/60">
-                      <div className="bg-surface p-1.5 rounded border border-amber-200">
-                        <span className="text-3xs text-ink-3 block">Sản phẩm trên Sheet:</span>
-                        <span className="font-medium text-ink text-3xs">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 border-t border-warning/60">
+                      <div className="bg-surface p-2 rounded border border-warning/30">
+                        <span className="text-2xs text-ink-3 block">Sản phẩm trên Sheet:</span>
+                        <span className="font-medium text-ink text-2xs">
                           {d.productName || '(Trống)'}
                         </span>
                       </div>
-                      <div className="bg-surface p-1.5 rounded border border-amber-200">
-                        <span className="text-3xs text-ink-3 block">Giá trên Sheet:</span>
-                        <span className="font-medium text-ink font-mono text-3xs">
+                      <div className="bg-surface p-2 rounded border border-warning/30">
+                        <span className="text-2xs text-ink-3 block">Giá trên Sheet:</span>
+                        <span className="font-medium text-ink font-mono text-2xs">
                           {d.price || '(Trống)'}
                         </span>
                       </div>
-                      <div className="bg-surface p-1.5 rounded border border-amber-200">
-                        <span className="text-3xs text-ink-3 block">Kết quả Brand trên Sheet:</span>
-                        <span className="font-semibold text-ink text-3xs">
+                      <div className="bg-surface p-2 rounded border border-warning/30">
+                        <span className="text-2xs text-ink-3 block">Kết quả Brand trên Sheet:</span>
+                        <span className="font-semibold text-ink text-2xs">
                           {d.brandDecisionOnSheet || 'Chưa phản hồi'}
                         </span>
                       </div>
                     </div>
-                    <div className="text-3xs text-amber-800 italic">
+                    <div className="text-2xs text-warning italic">
                       🛡️ Cơ chế an toàn: Hệ thống bảo lưu dòng này, tuyệt đối không xóa dữ liệu của Brand.
                     </div>
                   </div>
@@ -611,12 +611,12 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
                 {/* TH 4: KHỚP NHAU 100% (action === 'SKIP') */}
                 {isSkip && (
-                  <div className="px-2.5 py-1.5 text-3xs text-ink-3 flex items-center justify-between">
+                  <div className="px-3 py-2 text-2xs text-ink-3 flex items-center justify-between">
                     <span>
                       Dữ liệu trên Web Admin và Google Sheet giống nhau 100%, không cần cập nhật.
                     </span>
                     <span className="text-positive font-medium flex items-center gap-1">
-                      <Check className="w-3 h-3" /> An toàn
+                      <Check className="w-3.5 h-3.5" /> An toàn
                     </span>
                   </div>
                 )}

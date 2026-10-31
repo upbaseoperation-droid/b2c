@@ -162,11 +162,6 @@ export function GoogleDocsReviewPanel({
               {generatingReport ? 'Đang tổng hợp…' : 'Cập nhật báo cáo'}
             </Button>
           )}
-          {canLegalApprove && onLegalApprove && legalStep?.status === 'PENDING' && (
-            <Button size="sm" variant="primary" icon={Scale} onClick={onLegalApprove}>
-              Pháp chế duyệt
-            </Button>
-          )}
           {canApproveWeSign && onApproveAndPushWeSign && (
             <Button
               size="sm"
@@ -339,7 +334,7 @@ export function GoogleDocsReviewPanel({
                     <span className="text-2xs text-ink-3">{formatDate(c.createdAt)}</span>
                   </div>
                   {c.removedFromSourceAt ? (
-                    <span className="text-2xs text-warning-strong font-medium">
+                    <span className="text-2xs text-warning font-medium">
                       Đã xóa trên file · đã lưu vết
                     </span>
                   ) : c.resolved ? (
@@ -512,7 +507,7 @@ export function ClauseDiffList({
                     </span>
                   )}
                   {isLegal && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning-soft text-warning-strong text-2xs font-medium">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning-soft text-warning text-2xs font-medium">
                       <Scale className="w-3 h-3" />
                       Pháp chế duyệt
                     </span>

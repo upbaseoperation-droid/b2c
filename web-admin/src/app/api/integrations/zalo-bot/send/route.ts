@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requestActor } from '@/lib/server/requestActor';
 import {
   sendZaloMessage,
   processZaloWebhookEvent,
@@ -10,6 +11,13 @@ export const preferredRegion = ['sin1', 'hkg1'];
 
 export async function POST(req: NextRequest) {
   try {
+    const actor = await requestActor(req);
+    if (actor && (actor.partnerType || actor.role.endsWith('_PARTNER'))) {
+      return NextResponse.json(
+        { ok: false, error: 'Tài khoản đối tác không có quyền gửi tin nhắn từ Zalo Bot nội bộ.' },
+        { status: 403 }
+      );
+    }
     const body = await req.json().catch(() => null);
     const action = String(body?.action || 'SEND_MESSAGE').toUpperCase();
 

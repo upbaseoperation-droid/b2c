@@ -5,57 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting Upbase B2C Database Seed...');
 
-  // 1. Seed Users
-  const userManager = await prisma.user.upsert({
-    where: { email: 'vanngoc@upbase.vn' },
-    update: {},
-    create: {
-      email: 'vanngoc@upbase.vn',
-      name: 'Vân Ngọc',
-      role: 'MANAGER',
-    },
-  });
-
-  const userBooking = await prisma.user.upsert({
-    where: { email: 'khanhvy@upbase.vn' },
-    update: {},
-    create: {
-      email: 'khanhvy@upbase.vn',
-      name: 'Khánh Vy',
-      role: 'BOOKING_MEMBER',
-    },
-  });
-
-  const userContent = await prisma.user.upsert({
-    where: { email: 'quynhnhu@upbase.vn' },
-    update: {},
-    create: {
-      email: 'quynhnhu@upbase.vn',
-      name: 'Quỳnh Như',
-      role: 'CONTENT_MEMBER',
-    },
-  });
-
-  console.log('✅ Users seeded: Vân Ngọc, Khánh Vy, Quỳnh Như');
-
-  // 2. Seed Campaign
-  const campaign = await prisma.campaign.upsert({
-    where: { code: 'CAMP-1010' },
-    update: {},
-    create: {
-      code: 'CAMP-1010',
-      name: 'Chiến Dịch Mega Sale 10.10 — Kháng Nắng Đa Tầng',
-      brandName: 'UpBeauty E2E-T',
-      bigIdea: 'Lá Chắn Đa Tầng — Bảo Vệ Toàn Diện Cả Ngày Dài',
-      budgetTotal: 250000000,
-      startDate: new Date('2026-10-01'),
-      endDate: new Date('2026-10-15'),
-    },
-  });
-
-  console.log('✅ Campaign seeded: Mega Sale 10.10');
-
-  // 3. Seed Sample KOCs
+  // Seed Sample KOCs
   const sampleKocs = [
     {
       channelId: '@megauriviu',

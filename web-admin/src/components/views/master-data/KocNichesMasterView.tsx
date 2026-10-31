@@ -144,7 +144,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
       </PageActions>
 
       <Panel flush>
-        <div className="p-4 border-b border-line grid gap-2.5">
+        <div className="p-4 border-b border-line grid gap-3">
           <FilterBar
             search={{
               value: search,
@@ -201,7 +201,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
               key: 'properties',
               header: 'Thuộc tính KOC',
               render: (n: MasterKocNiche) => (
-                <span className="inline-block px-1.5 py-0.5 rounded text-2xs bg-surface-subtle border border-line text-ink-2 font-medium">
+                <span className="inline-block px-2 py-0.5 rounded text-2xs bg-surface-subtle border border-line text-ink-2 font-medium">
                   {n.properties || 'Lifestyle'}
                 </span>
               )
@@ -278,7 +278,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
           </>
         }
       >
-        <form id="koc-niche-form" onSubmit={handleSave} className="space-y-3.5 text-xs">
+        <form id="koc-niche-form" onSubmit={handleSave} className="space-y-4 text-xs">
           <div>
             <label className="block text-ink-2 font-medium mb-1">Tên tệp kênh *</label>
             <input
@@ -287,7 +287,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
               placeholder="VD: Review Mẹ & Bé, Bác sỹ, Chăm sóc da..."
               value={form.nicheName}
               onChange={(e) => setForm(prev => ({ ...prev, nicheName: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
 
@@ -299,7 +299,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
                 placeholder="VD: Beauty, Mom & Baby..."
                 value={form.category}
                 onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -309,7 +309,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
                 placeholder="VD: Expert, Lifestyle, Reviewer..."
                 value={form.properties}
                 onChange={(e) => setForm(prev => ({ ...prev, properties: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -321,7 +321,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
               placeholder="VD: Review trực tiếp, Educate, Nỗi đau - Giải pháp..."
               value={form.pillarMatch}
               onChange={(e) => setForm(prev => ({ ...prev, pillarMatch: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
 
@@ -332,7 +332,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
               placeholder="Mô tả tiêu chuẩn KOC thuộc tệp này..."
               value={form.definition}
               onChange={(e) => setForm(prev => ({ ...prev, definition: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
         </form>

@@ -13,9 +13,12 @@ export const TAB_LABELS: Record<TabKey, string> = {
   'dashboard-staff': 'Hiệu suất nhân sự',
   'dashboard-finance': 'Đối soát & xuất file',
   'input-plan': 'Kế hoạch tháng',
-  'koc-listing': 'Quản lý Deal & Booking',
+  'koc-listing': 'Booking TikTok',
+  'multi-platform-booking': 'Booking đa sàn',
+  'livestream-booking': 'Livestream Affiliate',
   'approved-booking-list': 'List duyệt book',
-  'self-channel-hub': 'Video kênh Brand & CTV',
+  'self-channel-hub': 'Video Self-channel',
+  'lark-settlement': 'Nghiệm thu & ĐNTT Lark',
   'master-data': 'Dữ liệu gốc',
   'push-products': 'Sản phẩm trọng tâm',
   stores: 'Hồ sơ gian hàng',
@@ -58,32 +61,7 @@ export interface NavGroupDefinition {
   tabs: NavGroupTabItem[];
 }
 
-export const NAV_GROUPS: NavGroupDefinition[] = [
-  {
-    id: 'dashboard',
-    label: 'Báo cáo & Dashboard',
-    tabs: [
-      { key: 'dashboard-bi', label: TAB_LABELS['dashboard-bi'] },
-      { key: 'ads-report', label: TAB_LABELS['ads-report'] },
-    ],
-  },
-  {
-    id: 'delegation',
-    label: 'Điều phối & Giao việc',
-    tabs: [
-      { key: 'manager', label: TAB_LABELS.manager },
-      { key: 'task-delegation', label: TAB_LABELS['task-delegation'] },
-    ],
-  },
-  {
-    id: 'research',
-    label: 'Nghiên cứu & Đối thủ',
-    tabs: [
-      { key: 'market-research', label: TAB_LABELS['market-research'] },
-      { key: 'tiktok-crawler', label: TAB_LABELS['tiktok-crawler'] },
-    ],
-  },
-];
+export const NAV_GROUPS: NavGroupDefinition[] = [];
 
 export const DASHBOARD_EXEC_TAB_KEYS: TabKey[] = [
   'overview',
@@ -116,6 +94,7 @@ export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   'audit-trail': 'partner-access',
   'cloudflare-admin': 'api-settings',
   'zalo-bot': 'api-settings',
+  'brand-hub': 'koc-listing',
 };
 
 export function resolveNavGroupTabKey(tab: TabKey): TabKey {

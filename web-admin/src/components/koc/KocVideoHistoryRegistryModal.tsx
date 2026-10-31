@@ -398,7 +398,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
         )}
 
         {activeTab === 'NEW_VIDEO' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <Field label="Link video TikTok hoặc Mã Video ID hệ thống">
                 <Input
@@ -508,7 +508,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
         )}
 
         {activeTab === 'NEW_KOC' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="ID kênh TikTok (@handle)">
               <Input
                 value={newKocHandle}
@@ -591,7 +591,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
                 <span className="font-mono font-semibold text-ink">POST /api/koc-video-history</span>
                 <Status tone="info">JSON REST API</Status>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant={apiMode === 'INGEST_WEEKLY_DATA' ? 'primary' : 'secondary'}
@@ -616,7 +616,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-ink">Payload JSON gửi lên Endpoint</span>
                 <Button
@@ -637,7 +637,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
             </div>
 
             {apiResponseText && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <span className="text-xs font-medium text-positive">Kết quả phản hồi từ máy chủ</span>
                 <pre className="p-3 rounded-lg bg-sunken border border-line font-mono text-2xs text-ink overflow-x-auto max-h-44">
                   {apiResponseText}

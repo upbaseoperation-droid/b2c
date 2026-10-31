@@ -204,7 +204,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
             return (
               <code
                 key={tIdx}
-                className="px-1.5 py-0.5 rounded bg-sunken border border-line font-code text-2xs text-accent"
+                className="px-2 py-0.5 rounded bg-sunken border border-line font-code text-2xs text-accent"
               >
                 {tok.slice(1, -1)}
               </code>
@@ -257,7 +257,7 @@ function renderProfessionalResearchReport(markdown: string): React.ReactNode {
         const rows = tableLines.slice(bodyStartIdx).filter((r) => !isSeparator(r)).map(parseRow);
 
         blocks.push(
-          <div key={`tbl-${i}`} className="my-2.5 overflow-x-auto rounded-lg border border-line bg-surface">
+          <div key={`tbl-${i}`} className="my-3 overflow-x-auto rounded-lg border border-line bg-surface">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-sunken border-b border-line text-ink">
@@ -287,7 +287,7 @@ function renderProfessionalResearchReport(markdown: string): React.ReactNode {
     }
 
     if (/^[═─-]{4,}$/.test(trimmed)) {
-      blocks.push(<hr key={`hr-${i}`} className="border-line my-2.5" />);
+      blocks.push(<hr key={`hr-${i}`} className="border-line my-3" />);
       i++;
       continue;
     }
@@ -306,7 +306,7 @@ function renderProfessionalResearchReport(markdown: string): React.ReactNode {
       blocks.push(
         <h4
           key={`h2-${i}`}
-          className="text-xs font-semibold uppercase tracking-wider text-accent pt-3 pb-1 border-b border-line/60"
+          className="text-xs font-semibold text-accent pt-3 pb-1 border-b border-line/60"
         >
           {renderInlineMarkdown(trimmed.slice(3))}
         </h4>
@@ -1413,7 +1413,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         render: (row) => (
           <div>
             <div className="font-semibold text-ink">
-              <span className="font-code text-accent mr-1.5">{row.tierCode}</span>
+              <span className="font-code text-accent mr-2">{row.tierCode}</span>
               {row.tierLabel}
             </div>
             <div className="text-2xs text-ink-3 mt-0.5">
@@ -1538,7 +1538,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         header: 'Nhóm nội dung',
         width: 190,
         render: (row) => (
-          <div className="flex items-start gap-1.5 font-semibold text-critical">
+          <div className="flex items-start gap-2 font-semibold text-critical">
             <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{row.riskCategory}</span>
           </div>
@@ -1580,7 +1580,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         header: 'Đối thủ & Phân khúc',
         width: 205,
         render: (row) => (
-          <div className="flex items-start gap-2.5 min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             <BrandAvatar name={row.competitorName} size={28} />
             <div className="min-w-0">
               <div className="font-semibold text-ink">{row.competitorName}</div>
@@ -1689,7 +1689,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         render: (row) => {
           const isScanning = scanningCompetitorHandle === row.tiktokHandle;
           return (
-            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            <div className="flex items-center justify-end gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="primary"
@@ -1750,7 +1750,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         header: 'Kênh KOC & Quy mô',
         width: 220,
         render: (item) => (
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             <Avatar
               name={item.channelProfile.nickname}
               src={item.channelProfile.avatarUrl}
@@ -1811,7 +1811,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 rel="noreferrer"
                 className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
               >
-                Mở video <ArrowUpRight className="w-3 h-3" />
+                Mở video <ArrowUpRight className="w-3.5 h-3.5" />
               </a>
             )}
           </div>
@@ -1827,7 +1827,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           const alreadySaved = existingByHandle.has(clean);
           const isDissecting = dissectingKocHandle === item.handle;
           return (
-            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            <div className="flex items-center justify-end gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="secondary"
@@ -1974,7 +1974,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     className="inline-flex items-center gap-1 text-2xs font-code text-accent hover:underline"
                   >
                     {dossier.liveAutoWebIntel.officialWebsiteDomain}{' '}
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
               </div>
@@ -2134,7 +2134,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                           : '',
                     });
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${
+                  className={`px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer border ${
                     isSelected
                       ? 'bg-ink text-surface border-ink font-semibold'
                       : 'bg-canvas text-ink hover:bg-sunken border-line'
@@ -2146,7 +2146,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
             })}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
             <div className="lg:col-span-3">
               <select
                 value={focusCompetitorForModel}
@@ -2202,9 +2202,9 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
           {/* Hiển thị dữ liệu đã tìm kiếm từ trên mạng trước khi đưa vào câu lệnh */}
           {(webSearchSnippets.length > 0 || webScrapedProducts.length > 0 || dossier.liveAutoWebIntel?.officialWebsiteUrl) && (
-            <div className="rounded-lg border border-line bg-surface px-3.5 py-2.5 space-y-1.5">
+            <div className="rounded-lg border border-line bg-surface px-4 py-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2 text-2xs">
-                <span className="font-semibold text-ink flex items-center gap-1.5">
+                <span className="font-semibold text-ink flex items-center gap-2">
                   <Globe className="w-3.5 h-3.5 text-accent" />
                   Dữ liệu tìm kiếm từ trên mạng đưa vào câu lệnh ({webScrapedProducts.length} sản phẩm · {webSearchSnippets.length} kết quả web)
                 </span>
@@ -2216,11 +2216,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     className="font-code text-accent hover:underline inline-flex items-center gap-1"
                   >
                     {dossier.liveAutoWebIntel.officialWebsiteUrl}
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {webSearchSnippets.slice(0, 4).map((sn, idx) => (
                   <a
                     key={idx}
@@ -2246,7 +2246,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           )}
 
           <div className="rounded-xl border border-line bg-canvas overflow-hidden">
-            <div className="px-4 py-2.5 bg-surface border-b border-line flex flex-wrap items-center justify-between gap-2">
+            <div className="px-4 py-3 bg-surface border-b border-line flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2 text-2xs">
                 <Status tone={modelResearchResult?.usedFallback ? 'warning' : 'info'}>
                   {modelResearchResult
@@ -2294,7 +2294,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
             <div className="p-4 max-h-[540px] overflow-y-auto">
               {runningModelResearch ? (
-                <div className="py-8 flex items-center justify-center gap-2.5 text-xs text-ink-2">
+                <div className="py-8 flex items-center justify-center gap-3 text-xs text-ink-2">
                   <RefreshCw className="w-4 h-4 animate-spin text-accent" />
                   <span>
                     {searchingWebBeforeModel ? (
@@ -2380,7 +2380,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           >
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                   <div className="text-2xs font-semibold text-ink-3">
                     Thông tin chung
                   </div>
@@ -2388,7 +2388,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     {dossier.positioning.story}
                   </p>
                 </div>
-                <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                   <div className="text-2xs font-semibold text-ink-3">
                     Khách hàng mục tiêu
                   </div>
@@ -2396,7 +2396,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     {dossier.positioning.targetAudience}
                   </p>
                 </div>
-                <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                   <div className="text-2xs font-semibold text-ink-3">
                     Giọng điệu nội dung
                   </div>
@@ -2411,11 +2411,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   <div className="text-xs font-semibold text-critical">
                     Vấn đề của khách
                   </div>
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {(dossier.positioning.painPoints || []).map((item, idx) => (
                       <li
                         key={idx}
-                        className="text-xs text-ink-2 pl-2.5 border-l-2 border-critical leading-relaxed"
+                        className="text-xs text-ink-2 pl-3 border-l-2 border-critical leading-relaxed"
                       >
                         {item}
                       </li>
@@ -2427,11 +2427,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   <div className="text-xs font-semibold text-warning">
                     Lý do phân vân
                   </div>
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {(dossier.positioning.barriersToTrial || []).map((item, idx) => (
                       <li
                         key={idx}
-                        className="text-xs text-ink-2 pl-2.5 border-l-2 border-warning leading-relaxed"
+                        className="text-xs text-ink-2 pl-3 border-l-2 border-warning leading-relaxed"
                       >
                         {item}
                       </li>
@@ -2443,11 +2443,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   <div className="text-xs font-semibold text-positive">
                     Điểm thuyết phục
                   </div>
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {(dossier.positioning.rtbs || []).map((item, idx) => (
                       <li
                         key={idx}
-                        className="text-xs text-ink-2 pl-2.5 border-l-2 border-positive leading-relaxed"
+                        className="text-xs text-ink-2 pl-3 border-l-2 border-positive leading-relaxed"
                       >
                         {item}
                       </li>
@@ -2470,19 +2470,19 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   `Chuyển dịch nhận thức từ so sánh giá đơn thuần sang tin tưởng bằng chứng kiểm nghiệm và trải nghiệm thực tế qua hệ thống KOC/KOL.`;
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                    <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                       <div className="text-2xs font-semibold text-accent">
                         Brand Says (Định vị theo Brand Guideline)
                       </div>
                       <p className="text-xs text-ink leading-relaxed">{brandSays}</p>
                     </div>
-                    <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                    <div className="p-4 rounded-lg bg-canvas border border-line space-y-1">
                       <div className="text-2xs font-semibold text-ink-2">
                         Consumer Says (Nhận thức hiện tại của người mua)
                       </div>
                       <p className="text-xs text-ink leading-relaxed">{consumerSays}</p>
                     </div>
-                    <div className="p-3.5 rounded-lg bg-warning-soft/20 border border-warning/30 space-y-1">
+                    <div className="p-4 rounded-lg bg-warning-soft/20 border border-warning/30 space-y-1">
                       <div className="text-2xs font-semibold text-warning">
                         Khoảng lệch nhận thức &amp; Mục tiêu truyền thông
                       </div>
@@ -2500,7 +2500,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 <div className="text-xs font-semibold text-ink">
                   Thành phần & Đặc điểm chính
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {dossier.fourP.keyIngredientsOrSpecs.map((spec, i) => (
                     <span
                       key={i}
@@ -2517,13 +2517,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   Khoảng giá, Chiết khấu & Hoa hồng
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="px-2.5 py-1 rounded bg-surface border border-line font-semibold text-ink">
+                  <span className="px-3 py-1 rounded bg-surface border border-line font-semibold text-ink">
                     Giá: {dossier.fourP.priceRangeText}
                   </span>
-                  <span className="px-2.5 py-1 rounded bg-surface border border-line font-semibold text-positive">
+                  <span className="px-3 py-1 rounded bg-surface border border-line font-semibold text-positive">
                     Giảm TB: -{dossier.fourP.avgDealDiscountPct}%
                   </span>
-                  <span className="px-2.5 py-1 rounded bg-surface border border-line font-semibold text-accent">
+                  <span className="px-3 py-1 rounded bg-surface border border-line font-semibold text-accent">
                     Hoa hồng: {dossier.fourP.affiliateCommissionRange}
                   </span>
                 </div>
@@ -2555,11 +2555,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 <div className="text-xs font-semibold text-ink">
                   Combo & Quà tặng kèm
                 </div>
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {dossier.fourP.winningBundleMechanics.map((item, idx) => (
                     <li
                       key={idx}
-                      className="text-xs text-ink-2 pl-2.5 border-l-2 border-accent leading-relaxed"
+                      className="text-xs text-ink-2 pl-3 border-l-2 border-accent leading-relaxed"
                     >
                       {item}
                     </li>
@@ -2586,8 +2586,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               {/* S · Điểm mạnh */}
               <div className="rounded-xl border border-positive/30 bg-positive-soft/20 p-3 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-positive/20">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b border-positive/20">
+                    <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded flex items-center justify-center bg-positive text-white text-2xs font-semibold shrink-0">
                         S
                       </span>
@@ -2595,7 +2595,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                         Điểm mạnh (Strengths)
                       </span>
                     </div>
-                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-positive-soft text-positive border border-positive/30 tabular-nums">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-positive-soft text-positive border border-positive/30 tabular-nums">
                       {dossier.swotAndCompliance.strengths.length}
                     </span>
                   </div>
@@ -2606,13 +2606,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       dossier.swotAndCompliance.strengths.map((s, i) => (
                         <div
                           key={i}
-                          className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          className="p-3 rounded-lg bg-surface border border-line shadow-2xs space-y-2"
                         >
                           <div className="text-xs font-medium text-ink leading-relaxed">
                             {s.point}
                           </div>
                           {s.strategicImpact && (
-                            <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                            <div className="flex items-start gap-2 px-2 py-2 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
                               <ArrowRight className="w-3.5 h-3.5 text-positive shrink-0 mt-0.5" />
                               <span>
                                 <strong className="text-ink font-semibold">Khai thác: </strong>
@@ -2630,8 +2630,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               {/* W · Điểm yếu */}
               <div className="rounded-xl border border-warning/30 bg-warning-soft/20 p-3 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-warning/20">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b border-warning/20">
+                    <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded flex items-center justify-center bg-warning text-white text-2xs font-semibold shrink-0">
                         W
                       </span>
@@ -2639,7 +2639,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                         Điểm yếu (Weaknesses)
                       </span>
                     </div>
-                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-warning-soft text-warning border border-warning/30 tabular-nums">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-warning-soft text-warning border border-warning/30 tabular-nums">
                       {dossier.swotAndCompliance.weaknesses.length}
                     </span>
                   </div>
@@ -2650,13 +2650,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       dossier.swotAndCompliance.weaknesses.map((w, i) => (
                         <div
                           key={i}
-                          className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          className="p-3 rounded-lg bg-surface border border-line shadow-2xs space-y-2"
                         >
                           <div className="text-xs font-medium text-ink leading-relaxed">
                             {w.point}
                           </div>
                           {w.strategicImpact && (
-                            <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                            <div className="flex items-start gap-2 px-2 py-2 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
                               <ArrowRight className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
                               <span>
                                 <strong className="text-ink font-semibold">Khắc phục: </strong>
@@ -2674,8 +2674,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               {/* O · Cơ hội */}
               <div className="rounded-xl border border-accent/30 bg-accent-soft/20 p-3 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-accent/20">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b border-accent/20">
+                    <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded flex items-center justify-center bg-accent text-white text-2xs font-semibold shrink-0">
                         O
                       </span>
@@ -2683,7 +2683,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                         Cơ hội (Opportunities)
                       </span>
                     </div>
-                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-accent-soft text-accent border border-accent/30 tabular-nums">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-accent-soft text-accent border border-accent/30 tabular-nums">
                       {dossier.swotAndCompliance.opportunities.length}
                     </span>
                   </div>
@@ -2694,13 +2694,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       dossier.swotAndCompliance.opportunities.map((o, i) => (
                         <div
                           key={i}
-                          className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          className="p-3 rounded-lg bg-surface border border-line shadow-2xs space-y-2"
                         >
                           <div className="text-xs font-medium text-ink leading-relaxed">
                             {o.point}
                           </div>
                           {o.strategicImpact && (
-                            <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                            <div className="flex items-start gap-2 px-2 py-2 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
                               <ArrowRight className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
                               <span>
                                 <strong className="text-ink font-semibold">Tận dụng: </strong>
@@ -2718,8 +2718,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               {/* T · Thách thức & Rủi ro */}
               <div className="rounded-xl border border-critical/30 bg-critical-soft/20 p-3 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-critical/20">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b border-critical/20">
+                    <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded flex items-center justify-center bg-critical text-white text-2xs font-semibold shrink-0">
                         T
                       </span>
@@ -2727,7 +2727,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                         Thách thức (Threats)
                       </span>
                     </div>
-                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-critical-soft text-critical border border-critical/30 tabular-nums">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-critical-soft text-critical border border-critical/30 tabular-nums">
                       {dossier.swotAndCompliance.threats.length}
                     </span>
                   </div>
@@ -2738,13 +2738,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       dossier.swotAndCompliance.threats.map((t, i) => (
                         <div
                           key={i}
-                          className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          className="p-3 rounded-lg bg-surface border border-line shadow-2xs space-y-2"
                         >
                           <div className="text-xs font-medium text-ink leading-relaxed">
                             {t.point}
                           </div>
                           {t.strategicImpact && (
-                            <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                            <div className="flex items-start gap-2 px-2 py-2 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
                               <ArrowRight className="w-3.5 h-3.5 text-critical shrink-0 mt-0.5" />
                               <span>
                                 <strong className="text-ink font-semibold">Phòng ngừa: </strong>
@@ -2835,11 +2835,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
             return (
               <Panel title="Phân tầng Đối thủ 3 Cấp chuẩn B2C (Tier A · Tier B · Tier C)">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="p-3.5 rounded-lg border border-critical/30 bg-critical-soft/15 space-y-1.5">
+                  <div className="p-4 rounded-lg border border-critical/30 bg-critical-soft/15 space-y-2">
                     <div className="font-semibold text-critical">
                       Tier A · Đối thủ Trực tiếp (Cùng phân khúc giá &amp; tệp khách)
                     </div>
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <div className="flex flex-wrap gap-2 pt-0.5">
                       {tierA.map((c) => (
                         <span
                           key={c}
@@ -2850,11 +2850,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       ))}
                     </div>
                   </div>
-                  <div className="p-3.5 rounded-lg border border-warning/30 bg-warning-soft/15 space-y-1.5">
+                  <div className="p-4 rounded-lg border border-warning/30 bg-warning-soft/15 space-y-2">
                     <div className="font-semibold text-warning">
                       Tier B · Đối thủ Thứ cấp / Thay thế gián tiếp
                     </div>
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <div className="flex flex-wrap gap-2 pt-0.5">
                       {tierB.map((c) => (
                         <span
                           key={c}
@@ -2865,11 +2865,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       ))}
                     </div>
                   </div>
-                  <div className="p-3.5 rounded-lg border border-accent/30 bg-accent-soft/15 space-y-1.5">
+                  <div className="p-4 rounded-lg border border-accent/30 bg-accent-soft/15 space-y-2">
                     <div className="font-semibold text-accent">
                       Tier C · Thương hiệu Dẫn đầu tham chiếu (Aspirational Benchmark)
                     </div>
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <div className="flex flex-wrap gap-2 pt-0.5">
                       {tierC.map((c) => (
                         <span
                           key={c}
@@ -2899,7 +2899,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               </Button>
             }
           >
-            <div className="px-4 py-3 border-b border-line bg-canvas/50 flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
+            <div className="px-4 py-3 border-b border-line bg-canvas/50 flex flex-col md:flex-row items-stretch md:items-center gap-3">
               <div className="flex-1">
                 <Input
                   type="text"
@@ -2999,7 +2999,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               title="Bình luận & Đánh giá khách hàng"
               className="lg:col-span-4"
             >
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 <Field label="Link video TikTok">
                   <Input
                     type="text"
@@ -3073,7 +3073,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 {minedClusters.map((cluster) => (
                   <div
                     key={cluster.id}
-                    className="p-4 space-y-2.5 hover:bg-canvas/40 transition-colors"
+                    className="p-4 space-y-3 hover:bg-canvas/40 transition-colors"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -3103,7 +3103,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       {cluster.sampleQuotes.map((q, i) => (
                         <div
                           key={i}
-                          className="text-xs text-ink-2 italic pl-2.5 border-l-2 border-line-strong"
+                          className="text-xs text-ink-2 italic pl-3 border-l-2 border-line-strong"
                         >
                           &ldquo;{q}&rdquo;
                         </div>
@@ -3111,7 +3111,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs">
-                      <div className="p-2.5 rounded-md bg-canvas border border-line">
+                      <div className="p-3 rounded-md bg-canvas border border-line">
                         <span className="font-semibold text-accent block mb-0.5">
                           Mở đầu video trả lời
                         </span>
@@ -3119,7 +3119,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                           {cluster.recommendedScriptHook}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-md bg-canvas border border-line">
+                      <div className="p-3 rounded-md bg-canvas border border-line">
                         <span className="font-semibold text-ink block mb-0.5">
                           Câu hỏi: {cluster.suggestedFaqQuestion}
                         </span>
@@ -3213,7 +3213,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
               {webInspection && (
                 <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-line border border-line rounded-lg bg-surface">
-                  <div className="p-4 space-y-2.5">
+                  <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-code text-xs font-semibold text-accent">
                         {webInspection.domain}
@@ -3234,10 +3234,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     </p>
                     {webInspection.detectedPricesVnd.length > 0 && (
                       <div className="pt-1">
-                        <div className="text-2xs font-medium text-ink-3 mb-1.5">
+                        <div className="text-2xs font-medium text-ink-3 mb-2">
                           Mốc giá phát hiện trên trang:
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                           {webInspection.detectedPricesVnd.map((p) => (
                             <span
                               key={p}
@@ -3253,7 +3253,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
                   <div className="p-4 space-y-3">
                     <div>
-                      <div className="text-2xs font-semibold text-ink-3 mb-1.5">
+                      <div className="text-2xs font-semibold text-ink-3 mb-2">
                         Tiêu đề H1 / H2 & Danh mục phát hiện trên trang
                       </div>
                       <ul className="space-y-1 text-xs text-ink">
@@ -3269,7 +3269,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
                     {webInspection.extractedUsps.length > 0 && (
                       <div className="pt-2 border-t border-line">
-                        <div className="text-2xs font-semibold text-ink-3 mb-1.5">
+                        <div className="text-2xs font-semibold text-ink-3 mb-2">
                           Điểm nổi bật trên trang
                         </div>
                         <ul className="space-y-1 text-xs text-ink-2">
@@ -3326,9 +3326,9 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       href={sn.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 shrink-0 rounded-md border border-line-strong bg-surface px-2.5 h-7 text-2xs font-medium text-accent hover:bg-sunken"
+                      className="inline-flex items-center gap-1 shrink-0 rounded-md border border-line-strong bg-surface px-3 h-7 text-2xs font-medium text-accent hover:bg-sunken"
                     >
-                      Mở trang <ExternalLink className="w-3 h-3" />
+                      Mở trang <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
                 ))}
@@ -3349,7 +3349,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 {webScrapedProducts.map((prod, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-canvas/40"
+                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-canvas/40"
                   >
                     <div className="min-w-0">
                       <div className="text-xs font-semibold text-ink truncate">
@@ -3375,9 +3375,9 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                           href={prod.sourceUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded border border-line bg-surface px-2.5 h-7 text-2xs font-medium text-accent hover:bg-sunken"
+                          className="inline-flex items-center gap-1 rounded border border-line bg-surface px-3 h-7 text-2xs font-medium text-accent hover:bg-sunken"
                         >
-                          Xem SP <ExternalLink className="w-3 h-3" />
+                          Xem SP <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       )}
                     </div>

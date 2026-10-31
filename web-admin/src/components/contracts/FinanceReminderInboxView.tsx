@@ -360,6 +360,7 @@ export function FinanceReminderInboxView({
   onOpenContractReview: (record: ContractRecord) => void;
   onOpenDealLookup: (dealCode: string, subTab?: 'DEAL_LEDGER' | 'LARK_SLIPS') => void;
 }) {
+  const isFinanceActor = data.actor.roles.includes('FINANCE');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<FinanceReminderCategory>('ALL');
   const [page, setPage] = useState(1);
@@ -543,11 +544,16 @@ export function FinanceReminderInboxView({
         >
           <Button
             size="sm"
-            variant={item.urgency === 'critical' || item.category === 'CONTRACT_REVIEW' ? 'primary' : 'secondary'}
+            variant={
+              isFinanceActor &&
+              (item.urgency === 'critical' || item.category === 'CONTRACT_REVIEW')
+                ? 'primary'
+                : 'secondary'
+            }
             disabled={busy}
             onClick={() => handleTriggerAction(item)}
           >
-            {item.actionLabel}
+            {isFinanceActor ? item.actionLabel : 'Xem'}
           </Button>
         </div>
       ),

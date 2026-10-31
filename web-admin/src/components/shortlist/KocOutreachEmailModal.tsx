@@ -970,13 +970,13 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 <Button
                   variant="secondary"
                   onClick={() => setIsMoreActionsOpen((v) => !v)}
-                  className="inline-flex items-center gap-1.5"
+                  className="inline-flex items-center gap-2"
                 >
                   <span>Kênh gửi khác</span>
                   <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
                 </Button>
                 {isMoreActionsOpen && (
-                  <div className="absolute right-0 bottom-full mb-1.5 z-30 min-w-[210px] py-1 bg-surface border border-line rounded-lg shadow-lg origin-bottom-right">
+                  <div className="absolute right-0 bottom-full mb-2 z-30 min-w-[210px] py-1 bg-surface border border-line rounded-lg shadow-lg origin-bottom-right">
                     <button
                       type="button"
                       onClick={() => {
@@ -1096,7 +1096,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         )
       }
     >
-      <div className="space-y-3.5">
+      <div className="space-y-4">
         {/* Thanh chuyển Tab ghim cố định đầu hộp thoại */}
         <div className="sticky -top-3.5 sm:-top-4 z-10 bg-surface pt-1 -mx-4 sm:-mx-5 px-4 sm:px-5">
           <Tabs
@@ -1120,11 +1120,11 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               },
             ]}
             actions={
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setActiveTab('SETTINGS_LOGS')}
-                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-2xs font-medium bg-sunken text-ink-2 border border-line hover:text-ink transition-colors"
+                  className="inline-flex items-center gap-2 h-7 px-3 rounded-md text-2xs font-medium bg-sunken text-ink-2 border border-line hover:text-ink transition-colors"
                   title="Cấu hình gửi mail & nhật ký"
                 >
                   <Settings className="w-3.5 h-3.5 text-ink-3 shrink-0" />
@@ -1134,7 +1134,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setManagerModeEnabled((v) => !v)}
-                    className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-2xs font-medium border transition-colors ${
+                    className={`inline-flex items-center gap-1 h-7 px-3 rounded-md text-2xs font-medium border transition-colors ${
                       managerModeEnabled
                         ? 'bg-positive-soft text-positive border-positive/30'
                         : 'text-ink-3 border-line hover:text-ink hover:bg-sunken'
@@ -1157,7 +1157,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
             {/* Cột trái (4/12 cột): Danh sách KOC người nhận */}
             <div className="lg:col-span-4 min-w-0 flex flex-col border border-line rounded-xl overflow-hidden bg-surface">
-              <div className="p-2.5 bg-sunken/70 border-b border-line space-y-2">
+              <div className="p-3 bg-sunken/70 border-b border-line space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-ink">
                     Người nhận ({filteredCandidateRows.length})
@@ -1232,7 +1232,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       <div
                         key={row.id}
                         onClick={() => setActivePreviewRowId(row.id)}
-                        className={`p-2.5 transition-colors cursor-pointer ${
+                        className={`p-3 transition-colors cursor-pointer ${
                           isPreviewing
                             ? 'bg-accent-soft/45 border-l-2 border-l-accent'
                             : 'hover:bg-canvas'
@@ -1254,7 +1254,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                               className="mt-0.5 rounded border-line shrink-0"
                             />
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-baseline gap-1.5 min-w-0">
+                              <div className="flex items-baseline gap-2 min-w-0">
                                 <span
                                   className="text-xs font-semibold text-ink truncate"
                                   title={row.tenKenh || row.idKenh}
@@ -1274,7 +1274,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                               </div>
                               <div className="flex flex-wrap items-center gap-2 mt-1 text-2xs font-code">
                                 <div className="flex items-center gap-1 min-w-0">
-                                  <Mail className="w-3 h-3 text-ink-3 shrink-0" />
+                                  <Mail className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                                   {hasValidEmail ? (
                                     <span className="text-ink-2 truncate max-w-[120px]">{emailVal}</span>
                                   ) : (
@@ -1285,7 +1285,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                                 </div>
                                 {getEffectiveRowZalo(row) ? (
                                   <div className="flex items-center gap-0.5 text-accent shrink-0 font-medium">
-                                    <MessageCircle className="w-3 h-3 shrink-0" />
+                                    <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                                     <span>{maskSensitivePii(getEffectiveRowZalo(row))}</span>
                                   </div>
                                 ) : null}
@@ -1313,7 +1313,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
             {/* Cột phải (8/12 cột): Chọn mẫu, Người gửi & Trình soạn / Xem trước */}
             <div className="lg:col-span-8 min-w-0 space-y-3">
               {/* Thanh chọn Mẫu & Tùy chọn ẩn giá */}
-              <div className="p-2.5 rounded-xl bg-sunken/70 border border-line space-y-2">
+              <div className="p-3 rounded-xl bg-sunken/70 border border-line space-y-2">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                   <div className="flex-1 min-w-0 flex items-center gap-2">
                     <span className="text-xs font-medium text-ink-2 shrink-0">Mẫu thư:</span>
@@ -1338,7 +1338,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     >
                       Khớp mẫu KOC
                     </Button>
-                    <label className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-surface text-2xs text-ink cursor-pointer select-none">
+                    <label className="flex items-center gap-2 h-7 px-3 rounded-md border border-line bg-surface text-2xs text-ink cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={hideExactFeeInEmail}
@@ -1352,7 +1352,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
                 {/* Sender Summary Bar - Thu gọn thông tin PIC */}
                 <div className="rounded-lg border border-line bg-surface text-xs overflow-hidden">
-                  <div className="px-3 py-1.5 flex items-center justify-between gap-2">
+                  <div className="px-3 py-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <User className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                       <span className="text-ink-3 shrink-0">Người gửi:</span>
@@ -1370,7 +1370,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       onClick={() => setIsEditingSender((v) => !v)}
                       className="inline-flex items-center gap-1 text-2xs text-accent font-medium hover:underline shrink-0"
                     >
-                      <Edit2 className="w-3 h-3" />
+                      <Edit2 className="w-3.5 h-3.5" />
                       <span>{isEditingSender ? 'Thu gọn' : 'Chỉnh sửa'}</span>
                     </button>
                   </div>
@@ -1422,7 +1422,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
               {/* Khối Xem trước thư / Sửa mẫu gốc */}
               <div className="border border-line rounded-xl overflow-hidden bg-surface">
-                <div className="px-3 py-1.5 bg-sunken/70 border-b border-line flex flex-wrap items-center justify-between gap-2">
+                <div className="px-3 py-2 bg-sunken/70 border-b border-line flex flex-wrap items-center justify-between gap-2">
                   <Segmented
                     value={composeMode}
                     onChange={setComposeMode}
@@ -1444,7 +1444,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     ]}
                   />
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {composeMode === 'ZALO_CHAT' ? (
                       <>
                         <Button
@@ -1490,7 +1490,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 {composeMode === 'PREVIEW_MERGED' ? (
                   <div className="divide-y divide-line">
                     {/* Người nhận (To) & Tiêu đề thư */}
-                    <div className="px-3.5 py-2.5 bg-canvas/60 space-y-2 text-xs">
+                    <div className="px-4 py-3 bg-canvas/60 space-y-2 text-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                         <div className="sm:col-span-8 flex items-center gap-2 min-w-0">
                           <label className="text-ink-3 font-medium shrink-0">
@@ -1517,7 +1517,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                                 )
                               }
                               placeholder={`Điền email của ${activePreviewRow.tenKenh || activePreviewRow.idKenh}...`}
-                              className={`flex-1 min-w-0 h-8 px-2.5 rounded-md border text-xs font-code focus:outline-none ${
+                              className={`flex-1 min-w-0 h-8 px-3 rounded-md border text-xs font-code focus:outline-none ${
                                 renderedPreview.recipientEmail.includes('@')
                                   ? 'border-line-strong bg-surface text-ink focus:border-focus'
                                   : 'border-warning bg-warning-soft/35 text-ink focus:border-warning'
@@ -1538,7 +1538,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-baseline gap-1.5 pt-1.5 border-t border-line/70">
+                      <div className="flex items-baseline gap-2 pt-2 border-t border-line/70">
                         <span className="text-ink-3 shrink-0">Tiêu đề:</span>
                         <strong className="text-ink font-semibold break-words">
                           {renderedPreview.subject}
@@ -1547,7 +1547,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     </div>
 
                     {/* Nội dung thư gửi KOC */}
-                    <div className="p-3.5">
+                    <div className="p-4">
                       <pre className="text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed max-h-[300px] overflow-y-auto">
                         {renderedPreview.body}
                       </pre>
@@ -1556,7 +1556,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 ) : composeMode === 'ZALO_CHAT' ? (
                   <div className="divide-y divide-line">
                     {/* SĐT / Zalo KOC */}
-                    <div className="px-3.5 py-2.5 bg-canvas/60 space-y-2 text-xs">
+                    <div className="px-4 py-3 bg-canvas/60 space-y-2 text-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                         <div className="sm:col-span-8 flex items-center gap-2 min-w-0">
                           <label className="text-ink-3 font-medium shrink-0 flex items-center gap-1">
@@ -1584,13 +1584,13 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                                 )
                               }
                               placeholder={`Điền số điện thoại hoặc Zalo của ${activePreviewRow.tenKenh || activePreviewRow.idKenh}...`}
-                              className="flex-1 min-w-0 h-8 px-2.5 rounded-md border border-line-strong bg-surface text-ink text-xs font-code focus:outline-none focus:border-focus"
+                              className="flex-1 min-w-0 h-8 px-3 rounded-md border border-line-strong bg-surface text-ink text-xs font-code focus:outline-none focus:border-focus"
                             />
                           ) : (
                             <span className="text-ink-3">—</span>
                           )}
                         </div>
-                        <div className="sm:col-span-4 min-w-0 flex items-center justify-end gap-1.5">
+                        <div className="sm:col-span-4 min-w-0 flex items-center justify-end gap-2">
                           <Button
                             variant="secondary"
                             size="sm"
@@ -1608,17 +1608,17 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     </div>
 
                     {/* Khung nội dung tin nhắn Zalo */}
-                    <div className="p-3.5">
+                    <div className="p-4">
                       <pre className="text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed max-h-[300px] overflow-y-auto bg-sunken/40 p-3 rounded-lg border border-line">
                         {renderedZaloPreview}
                       </pre>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 space-y-3">
+                  <div className="p-4 space-y-3">
                     {isComposeTemplateLockedForStaff && (
-                      <div className="p-2.5 rounded-lg bg-warning-soft border border-warning/30 flex items-center justify-between gap-2 text-xs text-warning">
-                        <div className="flex items-center gap-1.5">
+                      <div className="p-3 rounded-lg bg-warning-soft border border-warning/30 flex items-center justify-between gap-2 text-xs text-warning">
+                        <div className="flex items-center gap-2">
                           <Lock className="w-3.5 h-3.5 shrink-0" />
                           <span>
                             Mẫu chuẩn này đã được Trưởng phòng khóa cấu trúc. Bạn có thể nhập vào ô
@@ -1697,7 +1697,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-code text-2xs font-semibold text-ink-3">
                               [{tpl.code}]
                             </span>
@@ -1723,7 +1723,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       </div>
 
                       <div
-                        className="mt-2 flex items-center gap-1.5"
+                        className="mt-2 flex items-center gap-2"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
@@ -1751,7 +1751,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
             {/* Trình biên tập mẫu thư dành cho Trưởng phòng bên phải (8 cột) */}
             <div className="lg:col-span-8 min-w-0 space-y-3">
-              <div className="p-3.5 rounded-xl border border-line bg-surface space-y-3">
+              <div className="p-4 rounded-xl border border-line bg-surface space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="sm:col-span-3 min-w-0">
                     <Field label="Mã mẫu thư">
@@ -1831,7 +1831,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
 
                 {/* Cờ quản trị của Trưởng phòng */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 rounded-lg bg-sunken border border-line">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg bg-sunken border border-line">
                   <label className="flex items-center gap-2 text-xs text-ink font-medium cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -1844,7 +1844,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       }
                       className="rounded border-line"
                     />
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-positive shrink-0" />
                     <span>Đặt làm mẫu mặc định khi chọn nhóm kịch bản này</span>
                   </label>
 
@@ -1861,7 +1861,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       className="rounded border-line"
                     />
                     {tplForm.isLockedByManager ? (
-                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <Lock className="w-3.5 h-3.5 text-warning shrink-0" />
                     ) : (
                       <Unlock className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                     )}
@@ -1870,7 +1870,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
 
                 {/* Thanh chèn nhanh biến động vào mẫu */}
-                <div className="p-2.5 rounded-lg bg-sunken/70 border border-line space-y-1.5">
+                <div className="p-3 rounded-lg bg-sunken/70 border border-line space-y-2">
                   <div className="text-2xs font-semibold text-ink-2">
                     Chèn trường dữ liệu vào nội dung:
                   </div>
@@ -1925,7 +1925,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         {activeTab === 'SETTINGS_LOGS' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Cấu hình đầu mối gửi mail bên trái (5 cột) */}
-            <div className="lg:col-span-5 min-w-0 p-3.5 rounded-xl border border-line bg-surface space-y-3">
+            <div className="lg:col-span-5 min-w-0 p-4 rounded-xl border border-line bg-surface space-y-3">
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
                 <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                   <Settings className="w-4 h-4 text-ink-2" />
@@ -1942,7 +1942,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               </div>
 
               {testResultBanner && (
-                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+                <div className="p-3 rounded-lg bg-positive-soft border border-positive/30 text-xs text-positive">
                   {testResultBanner}
                 </div>
               )}
@@ -1978,7 +1978,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
               {/* Khối cấu hình chuyên biệt cho LARK MAIL SMTP */}
               {configDraft.deliveryMode === 'LARK_SMTP' && (
-                <div className="p-3 rounded-lg bg-sunken border border-line space-y-2.5">
+                <div className="p-3 rounded-lg bg-sunken border border-line space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-ink">
                       Thiết lập tài khoản Lark Mail SMTP (SSL/TLS)
@@ -1990,11 +1990,11 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       className="text-2xs font-semibold text-accent hover:underline inline-flex items-center gap-1"
                     >
                       <span>Mở Lark Mail Web</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Địa chỉ Email Lark (@upbase.vn)">
                       <Input
                         value={configDraft.larkMailboxEmail || ''}
@@ -2023,7 +2023,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     </Field>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Lark SMTP Server">
                       <Input
                         value={configDraft.larkSmtpHost || 'smtp.larksuite.com'}
@@ -2053,7 +2053,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
               {/* Khối cấu hình chuyên biệt cho LARK OPEN PLATFORM API / ANYCROSS */}
               {configDraft.deliveryMode === 'LARK_OPEN_API' && (
-                <div className="p-3 rounded-lg bg-sunken border border-line space-y-2.5">
+                <div className="p-3 rounded-lg bg-sunken border border-line space-y-3">
                   <div className="text-xs font-semibold text-ink">
                     Kết nối qua Lark Open Platform API / Lark AnyCross
                   </div>
@@ -2072,7 +2072,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     />
                   </Field>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Lark App ID (Mặc định UpBase)">
                       <Input
                         value={configDraft.larkAppId || 'cli_aa45bfd4edf85f05'}
@@ -2114,7 +2114,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Tên hiển thị người gửi">
                   <Input
                     value={configDraft.senderName}
@@ -2133,7 +2133,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </Field>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Email nhận phản hồi (Reply-To)">
                   <Input
                     value={configDraft.replyToEmail}
@@ -2181,7 +2181,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               )}
 
               {configDraft.deliveryMode === 'SMTP_RELAY' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="SMTP Host">
                     <Input
                       value={configDraft.smtpHost}
@@ -2231,7 +2231,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 />
               </Field>
 
-              <label className="flex items-center gap-2 p-2.5 rounded-lg bg-sunken border border-line text-xs text-ink font-medium cursor-pointer select-none">
+              <label className="flex items-center gap-2 p-3 rounded-lg bg-sunken border border-line text-xs text-ink font-medium cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={configDraft.autoUpdateSheetStatusOnSend}
@@ -2267,7 +2267,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                   emailState.logs.map((log) => (
                     <div
                       key={log.id}
-                      className="p-3 hover:bg-sunken/40 transition-colors space-y-1.5 text-xs"
+                      className="p-3 hover:bg-sunken/40 transition-colors space-y-2 text-xs"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -2282,7 +2282,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                             {log.recipientEmail}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <Status
                             tone={
                               log.deliveryStatus === 'FAILED' ? 'critical' : 'positive'
@@ -2332,7 +2332,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       </div>
 
                       {inspectingLog?.id === log.id && (
-                        <pre className="mt-2 p-2.5 rounded-lg bg-sunken border border-line text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed">
+                        <pre className="mt-2 p-3 rounded-lg bg-sunken border border-line text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed">
                           {log.body}
                         </pre>
                       )}

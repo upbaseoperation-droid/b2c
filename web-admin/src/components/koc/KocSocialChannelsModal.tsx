@@ -380,7 +380,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
     >
       <div className="space-y-5">
         {/* Thanh tóm tắt Tài khoản KOC chính & Công cụ dò tìm */}
-        <div className="rounded-lg border border-line bg-sunken/40 p-3.5">
+        <div className="rounded-lg border border-line bg-sunken/40 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-sm font-semibold text-ink">
@@ -441,14 +441,14 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
           )}
 
           {discovery?.queryInfo?.bioText && (
-            <div className="mt-2.5 rounded border border-line bg-surface px-2.5 py-1.5 text-2xs text-ink-2">
+            <div className="mt-3 rounded border border-line bg-surface px-3 py-2 text-2xs text-ink-2">
               <span className="font-medium text-ink">Tiểu sử TikTok: </span>
               {discovery.queryInfo.bioText}
             </div>
           )}
 
           {errorMsg && (
-            <div className="mt-2.5 rounded border border-critical/30 bg-critical-soft px-3 py-1.5 text-xs text-critical">
+            <div className="mt-3 rounded border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical">
               {errorMsg}
             </div>
           )}
@@ -479,13 +479,13 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
               return (
                 <div
                   key={`${ch.handle}-${idx}`}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2.5 transition-colors ${
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-3 transition-colors ${
                     ch.isPrimary
                       ? 'border-line-strong bg-sunken/30'
                       : 'border-line bg-surface'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface">
                       <TikTokLogo className="h-4 w-4" />
                     </span>
@@ -498,7 +498,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                           className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-accent hover:underline"
                         >
                           @{clean}
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                         <Status tone={ch.isPrimary ? 'positive' : 'info'}>
                           {ch.isPrimary
@@ -514,7 +514,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {!ch.isPrimary && (
                       <Button
                         variant="ghost"
@@ -583,7 +583,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
         </div>
 
         {/* PHẦN 2: Tài khoản các nền tảng khác (Lưới 2x2) */}
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-ink">
               2. Tài khoản các nền tảng khác (Shopee · Facebook · Instagram · Threads)
@@ -605,9 +605,9 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
               return (
                 <div
                   key={meta.key}
-                  className="flex flex-col justify-between rounded-lg border border-line bg-surface p-3.5 space-y-2.5"
+                  className="flex flex-col justify-between rounded-lg border border-line bg-surface p-4 space-y-3"
                 >
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-line bg-sunken">
@@ -617,7 +617,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                           {meta.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         {isConfirmed ? (
                           <Status tone="positive">Đã xác nhận</Status>
                         ) : currentVal.trim() ? (
@@ -628,7 +628,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <div className="flex-1">
                         <Input
                           value={currentVal}
@@ -669,11 +669,11 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                   </div>
 
                   {candidates.length > 0 && (
-                    <div className="border-t border-line pt-2 space-y-1.5">
+                    <div className="border-t border-line pt-2 space-y-2">
                       <div className="text-2xs font-medium text-ink-3">
                         Ứng viên tìm thấy ({candidates.length}):
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-2">
                         {candidates.map((cand, idx) => {
                           const isSelected =
                             cleanInputHandle(currentVal).toLowerCase() ===
@@ -689,7 +689,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                                   : 'border-line bg-sunken/50 text-ink-2 hover:border-line-strong hover:text-ink'
                               }`}
                             >
-                              {isSelected && <CheckCircle2 className="h-3 w-3 text-accent" />}
+                              {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-accent" />}
                               <span className="font-mono">@{cand.handle}</span>
                               <span className="text-ink-3">· {cand.confidence}</span>
                             </button>

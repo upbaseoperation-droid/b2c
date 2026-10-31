@@ -31,6 +31,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import {
+  DataScope,
   UserProfile,
   UserRole,
   SystemDepartmentScope,
@@ -47,6 +48,8 @@ import {
   ALL_SYSTEM_SCREENS,
   ROLE_ALLOWED_TABS,
   ROLE_DEFAULT_LANDING,
+  ROLE_DEFAULT_DATA_SCOPE,
+  DATA_SCOPE_OPTIONS,
   INITIAL_PERMISSION_MATRIX,
   INITIAL_DEPARTMENT_ACCESS_RULES,
   INITIAL_INTERNAL_STAFF_RBAC,
@@ -56,6 +59,7 @@ import {
   getSavedDeptAccessRules,
   getSavedRoleAllowedTabs,
   getSavedRoleDefaultLanding,
+  getSavedRoleDataScope,
   getSavedInternalStaffList,
   hydrateRbacPolicy,
   StaffAccessOverrideItem,
@@ -135,6 +139,7 @@ function serializePolicyDraft(p: {
   deptRules: unknown;
   roleAllowedTabs: unknown;
   roleDefaultLanding: unknown;
+  roleDataScope?: unknown;
   internalStaff: unknown;
   matrix: unknown;
 }): string {
@@ -143,6 +148,7 @@ function serializePolicyDraft(p: {
     deptRules: p.deptRules,
     roleAllowedTabs: p.roleAllowedTabs,
     roleDefaultLanding: p.roleDefaultLanding,
+    roleDataScope: p.roleDataScope || ROLE_DEFAULT_DATA_SCOPE,
     internalStaff: p.internalStaff,
     matrix: p.matrix,
   });
@@ -157,6 +163,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('roles');
   const logCounterRef = useRef(100);
 
+  useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab !== 'partner-access') return;
+      if (detail.subView === 'roles' || detail.subView === 'internal' || detail.subView === 'matrix') {
+        setActiveMainTab(detail.subView);
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
+  }, []);
+
   const isAdmin = currentUser?.role === 'ADMIN';
   const isB2cManager = currentUser?.role === 'MANAGER';
 
@@ -166,6 +184,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   );
   const [roleDefaultLandingMap, setRoleDefaultLandingMap] = useState<Record<UserRole, TabKey>>(() =>
     getSavedRoleDefaultLanding()
+  );
+  const [roleDataScopeMap, setRoleDataScopeMap] = useState<Record<UserRole, DataScope>>(() =>
+    getSavedRoleDataScope()
   );
   const [selectedRoleKey, setSelectedRoleKey] = useState<UserRole>('MANAGER');
   const [roleListSearch, setRoleListSearch] = useState<string>('');
@@ -250,6 +271,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       deptRules,
       roleAllowedTabs: roleAllowedTabsMap,
       roleDefaultLanding: roleDefaultLandingMap,
+      roleDataScope: roleDataScopeMap,
       internalStaff,
       matrix: matrixItems,
       audit: auditLogs,
@@ -259,6 +281,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       deptRules,
       roleAllowedTabsMap,
       roleDefaultLandingMap,
+      roleDataScopeMap,
       internalStaff,
       matrixItems,
       auditLogs,
@@ -271,10 +294,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         deptRules,
         roleAllowedTabs: roleAllowedTabsMap,
         roleDefaultLanding: roleDefaultLandingMap,
+        roleDataScope: roleDataScopeMap,
         internalStaff,
         matrix: matrixItems,
       }),
-    [staffOverrides, deptRules, roleAllowedTabsMap, roleDefaultLandingMap, internalStaff, matrixItems]
+    [staffOverrides, deptRules, roleAllowedTabsMap, roleDefaultLandingMap, roleDataScopeMap, internalStaff, matrixItems]
   );
   const policyDirty = savedDraft !== '' && draftText !== savedDraft;
 
@@ -282,10 +306,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     const p = record.data;
     const nextDeptRules = p.deptRules?.length ? p.deptRules : INITIAL_DEPARTMENT_ACCESS_RULES;
     const nextInternalStaff = p.internalStaff?.length ? p.internalStaff : INITIAL_INTERNAL_STAFF_RBAC;
+    const nextRoleDataScope = { ...ROLE_DEFAULT_DATA_SCOPE, ...(p.roleDataScope || {}) };
     setStaffOverrides(p.staffOverrides);
     setDeptRules(nextDeptRules);
     setRoleAllowedTabsMap(p.roleAllowedTabs);
     setRoleDefaultLandingMap(p.roleDefaultLanding);
+    setRoleDataScopeMap(nextRoleDataScope);
     setInternalStaff(nextInternalStaff);
     setMatrixItems(p.matrix);
     setAuditLogs(p.audit);
@@ -294,6 +320,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       serializePolicyDraft({
         ...p,
         deptRules: nextDeptRules,
+        roleDataScope: nextRoleDataScope,
         internalStaff: nextInternalStaff,
       })
     );
@@ -633,11 +660,22 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     onNotify?.(`Đã đặt màn hình mặc định của ${ROLE_DISPLAY_NAME[role]} là "${screenLabel}"`, 'info');
   };
 
+  const handleChangeRoleDataScope = (role: UserRole, nextScope: DataScope) => {
+    if (!isAdmin) {
+      onNotify?.('Chỉ Quản trị hệ thống (Admin) mới được phép đổi phạm vi dữ liệu của Role.', 'warning');
+      return;
+    }
+    setRoleDataScopeMap({ ...roleDataScopeMap, [role]: nextScope });
+    const scopeLabel = DATA_SCOPE_OPTIONS.find((o) => o.key === nextScope)?.label || nextScope;
+    onNotify?.(`Đã đặt phạm vi dữ liệu mặc định của ${ROLE_DISPLAY_NAME[role]} là "${scopeLabel}"`, 'info');
+  };
+
   const handleResetSingleRoleScreens = (role: UserRole) => {
     if (!isAdmin) return;
     setRoleAllowedTabsMap({ ...roleAllowedTabsMap, [role]: [...ROLE_ALLOWED_TABS[role]] });
     setRoleDefaultLandingMap({ ...roleDefaultLandingMap, [role]: ROLE_DEFAULT_LANDING[role] });
-    onNotify?.(`Đã đặt lại danh sách màn hình mặc định cho ${ROLE_DISPLAY_NAME[role]}`, 'info');
+    setRoleDataScopeMap({ ...roleDataScopeMap, [role]: ROLE_DEFAULT_DATA_SCOPE[role] });
+    onNotify?.(`Đã đặt lại danh sách màn hình và phạm vi mặc định cho ${ROLE_DISPLAY_NAME[role]}`, 'info');
   };
 
   const syncStaffRoleToDirectoryOverride = (staffEmail: string, nextRole: UserRole) => {
@@ -712,6 +750,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           'BOOKING_MEMBER',
           'CONTENT_MEMBER',
           'BRAND_MEMBER',
+          'MEMBER',
           'LEGAL',
           'FINANCE',
           'SIGN_ADMIN',
@@ -865,9 +904,23 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   const matrixRoleGroupChips: ChipOption<MatrixRoleGroupFilter>[] = [
     { key: 'ALL', label: 'Tất cả vai trò', count: ALL_ROLE_DEFINITIONS.length },
-    { key: 'MANAGERS', label: 'Quản trị & Trưởng phòng', count: 5 },
-    { key: 'INTERNAL_OPS', label: 'Chuyên viên & Nội bộ', count: 8 },
-    { key: 'EXTERNAL', label: 'Đối tác ngoài', count: 3 },
+    {
+      key: 'MANAGERS',
+      label: 'Quản trị & Trưởng phòng',
+      count: ALL_ROLE_DEFINITIONS.filter((r) => ['ADMIN', 'MANAGER', 'LEADER'].includes(r.id)).length,
+    },
+    {
+      key: 'INTERNAL_OPS',
+      label: 'Chuyên viên & Nội bộ',
+      count: ALL_ROLE_DEFINITIONS.filter((r) =>
+        ['BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER', 'LEGAL', 'FINANCE', 'SIGN_ADMIN'].includes(r.id)
+      ).length,
+    },
+    {
+      key: 'EXTERNAL',
+      label: 'Đối tác ngoài',
+      count: ALL_ROLE_DEFINITIONS.filter((r) => r.scopeType === 'EXTERNAL').length,
+    },
   ];
 
   const internalStaffGroupChips: ChipOption<InternalRoleGroupFilter>[] = [
@@ -917,7 +970,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       {policyError && (
         <div
           role="alert"
-          className="rounded-lg border border-critical/30 bg-critical-soft px-3.5 py-2.5 text-xs text-critical flex items-center justify-between gap-3"
+          className="rounded-lg border border-critical/30 bg-critical-soft px-4 py-3 text-xs text-critical flex items-center justify-between gap-3"
         >
           <span>{policyError}</span>
           <Button variant="secondary" size="sm" onClick={() => setPolicyError('')}>
@@ -993,7 +1046,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     value={roleListSearch}
                     onChange={(e) => setRoleListSearch(e.target.value)}
                     placeholder="Tìm vai trò..."
-                    className="w-full pl-8 pr-2.5 h-8 text-xs rounded-md border border-line bg-canvas text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent focus:bg-surface"
+                    className="w-full pl-8 pr-3 h-8 text-xs rounded-md border border-line bg-canvas text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent focus:bg-surface"
                   />
                 </div>
               </div>
@@ -1010,6 +1063,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       'BOOKING_MEMBER',
                       'CONTENT_MEMBER',
                       'BRAND_MEMBER',
+                      'MEMBER',
                     ] as UserRole[],
                   },
                   {
@@ -1055,15 +1109,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               key={rDef.id}
                               type="button"
                               onClick={() => setSelectedRoleKey(rDef.id)}
-                              className={`w-full text-left px-2.5 py-2 rounded-lg transition flex items-center justify-between gap-2 ${
+                              className={`w-full text-left px-3 py-2 rounded-lg transition flex items-center justify-between gap-2 ${
                                 isSelected
                                   ? 'bg-accent-soft text-accent font-semibold ring-1 ring-accent/30'
                                   : 'text-ink-2 hover:bg-canvas hover:text-ink'
                               }`}
                             >
-                              <div className="min-w-0">
+                              <div className="min-w-0" title={`${rDef.name} (${rDef.id})`}>
                                 <div className="text-xs truncate">{rDef.name}</div>
-                                <div className="text-3xs font-mono text-ink-3 truncate mt-0.5">
+                                <div className="text-2xs font-mono text-ink-3 truncate mt-0.5">
                                   {rDef.id}
                                   {rDef.scopeType === 'INTERNAL' && staffCount > 0
                                     ? ` · ${staffCount} nhân sự`
@@ -1071,7 +1125,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                 </div>
                               </div>
                               <span
-                                className={`px-1.5 py-0.5 rounded text-2xs font-semibold tabular-nums shrink-0 ${
+                                className={`px-2 py-0.5 rounded text-2xs font-semibold tabular-nums shrink-0 ${
                                   isSelected
                                     ? 'bg-surface text-accent border border-accent/20'
                                     : 'bg-sunken text-ink-2'
@@ -1095,7 +1149,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             <Panel flush>
               {/* Header cấu hình Role đang chọn */}
               <div className="p-4 border-b border-line bg-canvas/50 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-sm font-semibold text-ink">{selectedRoleDef.name}</span>
                   <span className="px-2 py-0.5 rounded bg-sunken text-ink-2 font-mono text-2xs">
                     {selectedRoleDef.id}
@@ -1110,7 +1164,24 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-1.5 text-xs">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-ink-3">Phạm vi dữ liệu:</span>
+                    <Select
+                      value={roleDataScopeMap[selectedRoleKey] || ROLE_DEFAULT_DATA_SCOPE[selectedRoleKey] || 'OWN'}
+                      onChange={(e) =>
+                        handleChangeRoleDataScope(selectedRoleKey, e.target.value as DataScope)
+                      }
+                      className="w-auto font-medium"
+                    >
+                      {DATA_SCOPE_OPTIONS.map((opt) => (
+                        <option key={opt.key} value={opt.key}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs">
                     <span className="text-ink-3">Màn hình mặc định:</span>
                     <Select
                       value={selectedRoleDefaultLanding}
@@ -1141,7 +1212,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </div>
 
               {/* Thanh lọc màn hình */}
-              <div className="p-3.5 border-b border-line">
+              <div className="p-4 border-b border-line">
                 <FilterBar
                   search={{
                     value: roleSearchScreen,
@@ -1192,11 +1263,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                     return (
                       <div key={catName} className="rounded-xl border border-line overflow-hidden">
-                        <div className="bg-canvas px-3.5 py-2 border-b border-line flex items-center justify-between gap-2">
+                        <div className="bg-canvas px-4 py-2 border-b border-line flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <Layers className="w-3.5 h-3.5 text-accent" />
                             <span className="text-xs font-semibold text-ink">{catName}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2 font-semibold tabular-nums">
+                            <span className="px-2 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2 font-semibold tabular-nums">
                               {enabledInCatCount}/{catKeys.length}
                             </span>
                           </div>
@@ -1215,7 +1286,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           </button>
                         </div>
 
-                        <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 bg-surface">
+                        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 bg-surface">
                           {screensInCat.map((scr) => {
                             const isAllowed = selectedRoleAllowedTabs.includes(scr.key);
                             const isDefaultLanding = selectedRoleDefaultLanding === scr.key;
@@ -1223,7 +1294,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             return (
                               <label
                                 key={scr.key}
-                                className={`px-3 py-2 rounded-lg border cursor-pointer transition flex items-center gap-2.5 ${
+                                className={`px-3 py-2 rounded-lg border cursor-pointer transition flex items-center gap-3 ${
                                   isAllowed
                                     ? 'bg-accent-soft/60 border-accent/30 text-ink'
                                     : 'bg-surface border-line text-ink-3 hover:bg-canvas hover:text-ink-2'
@@ -1235,7 +1306,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   onChange={() => handleToggleRoleScreen(selectedRoleKey, scr.key)}
                                   className="w-4 h-4 rounded text-accent focus:ring-0 shrink-0"
                                 />
-                                <div className="min-w-0 flex-1 flex items-center justify-between gap-1.5">
+                                <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
                                   <span
                                     className={`text-xs truncate ${
                                       isAllowed ? 'font-semibold text-ink' : 'font-medium'
@@ -1245,7 +1316,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                     {scr.label}
                                   </span>
                                   {isDefaultLanding && isAllowed && (
-                                    <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-3xs font-semibold shrink-0">
+                                    <span className="px-2 py-0.5 rounded bg-positive-soft text-positive text-2xs font-semibold shrink-0">
                                       Mặc định
                                     </span>
                                   )}
@@ -1263,7 +1334,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             {/* Khu vực nhân sự giữ vai trò này (chỉ hiện với vai trò nội bộ) */}
             {selectedRoleDef.scopeType === 'INTERNAL' && (
               <Panel flush>
-                <div className="p-3.5 border-b border-line flex flex-wrap items-center justify-between gap-3">
+                <div className="p-4 border-b border-line flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-accent" />
                     <span className="text-xs font-semibold text-ink">
@@ -1305,13 +1376,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     <strong className="text-ink-2">{selectedRoleDef.name}</strong>.
                   </div>
                 ) : (
-                  <div className="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                  <div className="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {roleAssignedStaff.map((staff) => (
                       <div
                         key={staff.id}
-                        className="p-2.5 rounded-lg border border-line bg-canvas/40 flex items-center justify-between gap-2"
+                        className="p-3 rounded-lg border border-line bg-canvas/40 flex items-center justify-between gap-2"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Avatar name={staff.name} size={28} />
                           <div className="min-w-0">
                             <div className="font-semibold text-xs text-ink truncate">
@@ -1422,7 +1493,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             colSpan={matrixRolesToRender.length + 1}
                             className="py-1 px-3 text-xs font-semibold text-ink"
                           >
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <Layers className="w-3.5 h-3.5 text-accent shrink-0" />
                               <span>{item.categoryTitle}</span>
                             </div>
@@ -1432,13 +1503,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <tr className="group hover:bg-canvas transition-colors">
                         <td className="py-1 px-3 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas border-r border-line max-w-[280px]">
                           <div
-                            className="font-medium text-xs text-ink truncate flex items-center justify-between gap-1.5"
+                            className="font-medium text-xs text-ink truncate flex items-center justify-between gap-2"
                             title={`${item.featureName}${item.description ? `\n• ${item.description}` : ''}${item.securityNote ? `\nLưu ý bảo mật: ${item.securityNote}` : ''}`}
                           >
                             <span className="truncate">{item.featureName.replace(/\s*\([^)]*\)$/, '')}</span>
                             {item.securityNote && (
                               <span title={item.securityNote} className="inline-flex shrink-0">
-                                <Lock className="w-3 h-3 text-warning" />
+                                <Lock className="w-3.5 h-3.5 text-warning" />
                               </span>
                             )}
                           </div>
@@ -1481,7 +1552,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   }
                                   title={`${ROLE_DISPLAY_NAME[role.id]}: ${badge.description}`}
                                   aria-label={`${item.featureName} - ${role.name}`}
-                                  className={`w-full h-6 px-1 rounded border text-3xs text-center font-semibold cursor-pointer transition focus:outline-none focus:ring-1 focus:ring-accent ${toneClasses}`}
+                                  className={`w-full h-6 px-1 rounded border text-2xs text-center font-semibold cursor-pointer transition focus:outline-none focus:ring-1 focus:ring-accent ${toneClasses}`}
                                 >
                                   <option value="ALL">ALL</option>
                                   <option value="APPROVE">APPROVE</option>
@@ -1492,7 +1563,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               ) : (
                                 <span
                                   title={`${ROLE_DISPLAY_NAME[role.id]}: ${badge.description}`}
-                                  className={`inline-block w-full py-0.5 px-1 rounded border text-3xs text-center font-semibold ${toneClasses}`}
+                                  className={`inline-block w-full py-0.5 px-1 rounded border text-2xs text-center font-semibold ${toneClasses}`}
                                 >
                                   {level}
                                 </span>
@@ -1579,13 +1650,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-sunken/40 border-b border-line text-ink-3 text-2xs font-semibold">
-                  <th className="py-2.5 px-4 min-w-[220px]">Nhân sự &amp; Email Lark</th>
-                  <th className="py-2.5 px-3 min-w-[170px]">Phòng ban &amp; Vị trí</th>
-                  <th className="py-2.5 px-3 min-w-[210px]">Vai trò hệ thống (Đổi nhanh)</th>
-                  <th className="py-2.5 px-3 min-w-[300px]">
+                  <th className="py-3 px-4 min-w-[220px]">Nhân sự &amp; Email Lark</th>
+                  <th className="py-3 px-3 min-w-[170px]">Phòng ban &amp; Vị trí</th>
+                  <th className="py-3 px-3 min-w-[210px]">Vai trò hệ thống (Đổi nhanh)</th>
+                  <th className="py-3 px-3 min-w-[300px]">
                     Quyền phê duyệt đặc thù (Bấm để Bật / Tắt)
                   </th>
-                  <th className="py-2.5 px-4 text-right w-[100px]">Thao tác</th>
+                  <th className="py-3 px-4 text-right w-[100px]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -1620,34 +1691,34 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                     return (
                       <tr key={staff.id} className="hover:bg-canvas transition-colors">
-                        <td className="py-2.5 px-4">
-                          <div className="flex items-center gap-2.5">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
                             <Avatar name={staff.name} size={30} />
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-2">
                                 <span className="font-semibold text-ink truncate">
                                   {staff.name}
                                 </span>
                                 {staff.staffCode && (
-                                  <span className="px-1.5 py-0.2 rounded bg-sunken text-ink-3 font-mono text-3xs">
+                                  <span className="px-2 py-0.2 rounded bg-sunken text-ink-3 font-mono text-2xs">
                                     {staff.staffCode}
                                   </span>
                                 )}
                               </div>
                               <div className="text-2xs text-ink-3 font-mono flex items-center gap-1 mt-0.5 truncate">
-                                <Mail className="w-3 h-3 text-ink-3 shrink-0" />
+                                <Mail className="w-3.5 h-3.5 text-ink-3 shrink-0" />
                                 <span>{staff.email}</span>
                               </div>
                             </div>
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <div className="font-medium text-ink">{staff.department}</div>
                           <div className="text-2xs text-ink-3 mt-0.5">{staff.position}</div>
                         </td>
 
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3">
                           <select
                             value={staff.role}
                             disabled={!isAdmin}
@@ -1655,7 +1726,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               handleInlineRoleChange(staff.id, e.target.value as UserRole)
                             }
                             aria-label={`Vai trò của ${staff.name}`}
-                            className="h-8 px-2.5 rounded-lg border border-line bg-surface text-xs font-semibold text-ink focus:outline-none focus:border-accent disabled:opacity-70"
+                            className="h-8 px-3 rounded-lg border border-line bg-surface text-xs font-semibold text-ink focus:outline-none focus:border-accent disabled:opacity-70"
                           >
                             <option value="ADMIN">Quản trị hệ thống (Admin)</option>
                             <option value="MANAGER">Giám đốc Marketing B2C</option>
@@ -1669,8 +1740,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           </select>
                         </td>
 
-                        <td className="py-2.5 px-3">
-                          <div className="flex flex-wrap gap-1.5">
+                        <td className="py-3 px-3">
+                          <div className="flex flex-wrap gap-2">
                             {permButtons.map((pb) => {
                               const active = staff.permissions[pb.key];
                               return (
@@ -1685,7 +1756,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                       : 'bg-surface text-ink-3 border-line hover:text-ink-2 hover:bg-sunken/50'
                                   }`}
                                 >
-                                  {active && <Check className="w-3 h-3 shrink-0" />}
+                                  {active && <Check className="w-3.5 h-3.5 shrink-0" />}
                                   <span>{pb.label}</span>
                                 </button>
                               );
@@ -1693,12 +1764,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           </div>
                         </td>
 
-                        <td className="py-2.5 px-4 text-right">
+                        <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button
                               type="button"
                               onClick={() => handleOpenEditStaff(staff)}
-                              className="p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
+                              className="p-2 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
                               title="Mở hộp thoại cấu hình chi tiết"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -1728,9 +1799,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 return (
                   <div
                     key={rule.id}
-                    className="bg-surface rounded-xl border border-line p-3.5 flex flex-col justify-between gap-3"
+                    className="bg-surface rounded-xl border border-line p-4 flex flex-col justify-between gap-3"
                   >
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <span
                           className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${scopeMeta.badgeClass}`}
@@ -1749,7 +1820,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2.5 border-t border-line flex items-center justify-between gap-2">
+                    <div className="pt-3 border-t border-line flex items-center justify-between gap-2">
                       <span className="text-2xs text-ink-3 truncate">
                         {rule.autoAllowLogin
                           ? ROLE_DISPLAY_NAME[rule.defaultRole]
@@ -1758,7 +1829,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleToggleDeptRule(rule.id)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-2xs font-semibold border transition shrink-0 cursor-pointer ${
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-2xs font-semibold border transition shrink-0 cursor-pointer ${
                           rule.autoAllowLogin
                             ? 'bg-positive-soft text-positive border-positive/30'
                             : 'bg-critical-soft text-critical border-critical/30'
@@ -1766,12 +1837,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       >
                         {rule.autoAllowLogin ? (
                           <>
-                            <Unlock className="w-3 h-3" />
+                            <Unlock className="w-3.5 h-3.5" />
                             <span>Cho phép</span>
                           </>
                         ) : (
                           <>
-                            <Lock className="w-3 h-3" />
+                            <Lock className="w-3.5 h-3.5" />
                             <span>Đang chặn</span>
                           </>
                         )}
@@ -1863,13 +1934,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-sunken/40 border-b border-line text-2xs font-semibold text-ink-3">
-                    <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
-                    <th className="py-2.5 px-3 min-w-[200px]">Nhân viên &amp; Email</th>
-                    <th className="py-2.5 px-3">Phòng ban / Team</th>
-                    <th className="py-2.5 px-3">Khối hệ thống</th>
-                    <th className="py-2.5 px-3">Vai trò &amp; Quản lý</th>
-                    <th className="py-2.5 px-3 text-center">Cổng đăng nhập</th>
-                    <th className="py-2.5 px-3 text-right w-[80px]">Thao tác</th>
+                    <th className="py-3 px-3 w-[90px]">Mã NV</th>
+                    <th className="py-3 px-3 min-w-[200px]">Nhân viên &amp; Email</th>
+                    <th className="py-3 px-3">Phòng ban / Team</th>
+                    <th className="py-3 px-3">Khối hệ thống</th>
+                    <th className="py-3 px-3">Vai trò &amp; Quản lý</th>
+                    <th className="py-3 px-3 text-center">Cổng đăng nhập</th>
+                    <th className="py-3 px-3 text-right w-[80px]">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -1887,14 +1958,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       const scopeMeta = SCOPE_LABELS[staff.classifiedScope];
                       return (
                         <tr key={staff.id} className="hover:bg-canvas transition-colors">
-                          <td className="py-2.5 px-3 font-mono font-semibold text-ink text-xs">
+                          <td className="py-3 px-3 font-mono font-semibold text-ink text-xs">
                             {staff.staffCode || staff.id}
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-3 px-3">
                             <div className="font-semibold text-ink">{staff.name}</div>
                             <div className="text-2xs text-ink-3 font-mono">{staff.email}</div>
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-3 px-3">
                             <div className="font-medium text-ink">
                               {staff.department || staff.team || 'Chưa phân phòng'}
                             </div>
@@ -1902,19 +1973,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               {staff.position || staff.roleTitle} · {staff.location || 'HN'}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-3 px-3">
                             <span
                               className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${scopeMeta.badgeClass}`}
                             >
                               {scopeMeta.shortLabel}
                             </span>
                             {staff.accessSource === 'ADMIN_EXPLICIT' && (
-                              <span className="block text-3xs text-accent font-semibold mt-0.5">
+                              <span className="block text-2xs text-accent font-semibold mt-0.5">
                                 Cấp đích danh
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-3 px-3">
                             {staff.canLogin ? (
                               <>
                                 <span className="font-semibold text-ink block">
@@ -1928,12 +1999,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               <span className="text-2xs text-ink-3">Ngoài phạm vi B2C</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 text-center">
+                          <td className="py-3 px-3 text-center">
                             <button
                               type="button"
                               onClick={() => handleQuickToggleStaffLogin(staff)}
                               disabled={!isAdmin}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-semibold border transition ${
+                              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-2xs font-semibold border transition ${
                                 isAdmin ? 'cursor-pointer' : 'cursor-default'
                               } ${
                                 staff.canLogin
@@ -1943,23 +2014,23 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             >
                               {staff.canLogin ? (
                                 <>
-                                  <CheckCircle2 className="w-3 h-3 text-positive" />
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
                                   <span>Được vào</span>
                                 </>
                               ) : (
                                 <>
-                                  <Lock className="w-3 h-3 text-ink-3" />
+                                  <Lock className="w-3.5 h-3.5 text-ink-3" />
                                   <span>Đang chặn</span>
                                 </>
                               )}
                             </button>
                           </td>
-                          <td className="py-2.5 px-3 text-right">
+                          <td className="py-3 px-3 text-right">
                             {isAdmin && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenEditDirectoryStaff(staff)}
-                                className="p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
+                                className="p-2 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
                                 title="Phân khối & bổ nhiệm vai trò"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
@@ -2027,7 +2098,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       >
         {editingStaff && (
           <form id="edit-internal-staff-rbac-form" onSubmit={handleSaveStaff} className="space-y-4 text-xs">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="font-semibold text-ink-2 block">Vai trò hệ thống *</label>
               <select
                 value={staffFormRole}
@@ -2046,7 +2117,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </select>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="font-semibold text-ink-2 block">Quyền phê duyệt đặc thù:</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-canvas rounded-xl border border-line">
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-ink">
@@ -2155,7 +2226,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
             {dirEditCanLogin && (
               <>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <label className="font-semibold text-ink-2 block">
                     1. Khối chức năng trong hệ thống *
                   </label>
@@ -2175,7 +2246,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <label className="font-semibold text-ink-2 block">
                     2. Vai trò (Role) trong hệ thống *
                   </label>
@@ -2202,7 +2273,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <label className="font-semibold text-ink-2 block">
                     3. Trưởng phòng / Quản lý trực tiếp
                   </label>
@@ -2224,13 +2295,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         open={isConfirmingResetMatrix}
         onOpenChange={setIsConfirmingResetMatrix}
         title="Xác nhận khôi phục phân quyền Role & Ma trận"
-        description="Bạn có chắc chắn muốn khôi phục toàn bộ Phân quyền màn hình của 16 Role và Ma trận chức năng về cấu hình mặc định chuẩn UpBase B2C?"
+        description="Bạn có chắc chắn muốn khôi phục toàn bộ Phân quyền màn hình của 13 vai trò và Ma trận chức năng về cấu hình mặc định chuẩn UpBase B2C?"
         confirmLabel="Khôi phục mặc định"
         cancelLabel="Hủy"
         variant="danger"
         onConfirm={() => {
           setRoleAllowedTabsMap({ ...ROLE_ALLOWED_TABS });
           setRoleDefaultLandingMap({ ...ROLE_DEFAULT_LANDING });
+          setRoleDataScopeMap({ ...ROLE_DEFAULT_DATA_SCOPE });
           setMatrixItems(INITIAL_PERMISSION_MATRIX);
           onNotify?.('Đã khôi phục Phân quyền Role & Ma trận về mặc định.', 'info');
           setIsConfirmingResetMatrix(false);

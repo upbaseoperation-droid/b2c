@@ -492,7 +492,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
       width: 230,
       render: (r) => (
         <div className="space-y-0.5 min-w-0 max-w-[240px]">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <a
               href={r.linkAir}
               target="_blank"
@@ -501,7 +501,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
               className="font-code font-semibold text-xs text-ink hover:text-accent inline-flex items-center gap-1"
             >
               <span>{r.videoId}</span>
-              <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
+              <ExternalLink className="w-3.5 h-3.5 text-ink-3 shrink-0" />
             </a>
           </div>
           <div className="text-2xs text-ink truncate">
@@ -637,7 +637,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
       width: 210,
       render: (it) => (
         <div className="space-y-0.5 min-w-0 max-w-[220px]">
-          <div className="flex items-center gap-1.5 font-semibold text-xs text-ink">
+          <div className="flex items-center gap-2 font-semibold text-xs text-ink">
             <a
               href={it.channelUrl}
               target="_blank"
@@ -646,7 +646,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
               className="hover:text-accent inline-flex items-center gap-1"
             >
               <span>@{it.channelId}</span>
-              <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
+              <ExternalLink className="w-3.5 h-3.5 text-ink-3 shrink-0" />
             </a>
           </div>
           <div className="text-2xs text-ink-2 truncate">{it.stageName}</div>
@@ -751,7 +751,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
       align: 'right',
       width: 175,
       render: (it) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
           {it.exportStatus === 'PENDING_EXPORT' && (
             <Button
               size="sm"
@@ -843,7 +843,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
         const primary = profiles[0];
         return (
           <div className="space-y-0.5 min-w-0 max-w-[250px]">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-ink">
                 {profiles.length} pháp nhân
               </span>
@@ -902,7 +902,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
       render: (k) => {
         const st = getUpaffiliateSyncStatus(k);
         return (
-          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
             {(st === 'LOCAL_MODIFIED' || st === 'PENDING_PUSH') && (
               <Button
                 size="sm"
@@ -1267,7 +1267,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
           </>
         }
       >
-        <div className="grid gap-3.5">
+        <div className="grid gap-4">
           <Field label="Mã kênh (@handle) hoặc Link kênh TikTok">
             <Input
               value={quickChannelInput}

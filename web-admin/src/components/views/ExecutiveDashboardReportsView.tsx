@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useDeferredValue } from 'react';
+import React, { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import {
   ActionMenu,
   Button,
@@ -92,7 +92,7 @@ const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
   // Gian hàng & Sàn đã gộp vào báo cáo Ngân sách (Segmented Theo gian hàng)
   'dashboard-store': 'OVERVIEW_FINANCE',
   'dashboard-video': 'VIDEO_CREATIVE',
-  'dashboard-team-sla': 'TEAM_SLA',
+  'dashboard-team-sla': 'PLAN_ACTUAL',
   'dashboard-air-sync': 'TEAM_SLA',
   'dashboard-staff': 'STAFF_EFFICIENCY',
 };
@@ -160,6 +160,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       }
     }
   }
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.subView && ['SUMMARY', 'PLAN_ACTUAL', 'OVERVIEW_FINANCE', 'STORE_PIPELINE', 'VIDEO_CREATIVE', 'TEAM_SLA', 'STAFF_EFFICIENCY'].includes(detail.subView)) {
+        setActiveTab(detail.subView as DashboardMainTab);
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', handler);
+    return () => window.removeEventListener('upbase-sidebar-subview', handler);
+  }, []);
 
 
 
@@ -1427,7 +1438,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <Stat label="ROAS" value={`${inspectVideo.roas}x`} />
             </StatRow>
 
-            <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5">
+            <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
               <div className="flex justify-between">
                 <span className="text-ink-3">Gian hàng:</span>
                 <strong className="text-ink">{inspectVideo.storeName} ({inspectVideo.brandName})</strong>
@@ -1460,7 +1471,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   href={inspectVideo.linkAir}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-fg font-semibold hover:bg-primary-hover transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-fg font-semibold hover:bg-primary-hover transition"
                 >
                   Mở video trên TikTok <ExternalLink className="w-3.5 h-3.5" />
                 </a>

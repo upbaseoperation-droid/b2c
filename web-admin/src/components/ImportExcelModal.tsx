@@ -100,7 +100,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
             <button
               onClick={handleClose}
-              className="w-full bg-primary hover:bg-primary-hover text-primary-fg font-semibold py-2.5 rounded-lg transition text-xs flex items-center justify-center gap-2"
+              className="w-full bg-primary hover:bg-primary-hover text-primary-fg font-semibold py-3 rounded-lg transition text-xs flex items-center justify-center gap-2"
             >
               <span>Xem thay đổi trên bảng thi đua</span>
               <ArrowRight className="w-4 h-4" />

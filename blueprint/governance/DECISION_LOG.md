@@ -5,23 +5,22 @@
 | Mã tài liệu | HUB-GOV-01 |
 | Dự án | B2C Ops Hub |
 | Trạng thái | Đang dùng (sổ ghi liên tục) |
-| Cập nhật | 24/10/2026 |
+| Cập nhật | 31/10/2026 |
 
 Mẫu: [SDLC-03 mục 1.5](../../../sdlc/03_DOCUMENT_TEMPLATES.md#15-decision-log--một-mục). Không xóa mục; quyết định bị thay thế ghi *Thay thế bởi DEC-…*.
 
 ---
 
 ### DEC-001 — Tách B2C Ops Hub và UpAffiliate thành hai dự án
-- Ngày: 30/09/2026 · Người quyết: chủ dự án · Trạng thái: **Đã quyết**
+- Ngày: 30/09/2026 · Người quyết: chủ dự án · Trạng thái: **Đã quyết (Bổ sung bởi DEC-007 & DEC-011)**
 - Quyết định: **B2C Ops Hub** quản trị phòng Marketing B2C (store & phân công, workload/capacity, SLA, chỉ số hiệu suất, P2/P3, báo cáo điều hành). **UpAffiliate** làm booking đa sàn (master KOC, plan chi tiết, BO, duyệt brand, hợp đồng, nghiệm thu).
 - Phương án đã cân nhắc: một dự án đặt ở B2C; một dự án đặt ở UpAffiliate.
-- Hệ quả: BRD booking đa nền tảng chuyển sang `Upaffiliate/blueprint/1-requirements/1.3`. Ops Hub chỉ **đọc** dữ liệu booking (xem [SDLC-02](../../../sdlc/02_SYSTEM_BOUNDARY.md), `DEC-005`).
+- Hệ quả: Xem cập nhật phạm vi thực thi khép kín 6 chặng tại `DEC-007` và `DEC-011`.
 
 ### DEC-002 — `B2C/web-admin` là prototype v0, không phải sản phẩm
-- Ngày: 30/09/2026 · Trạng thái: **Đề xuất** — chờ chủ dự án xác nhận
-- Bối cảnh: rà soát 30/09/2026 cho thấy web-admin không lưu dữ liệu (toàn bộ state trong bộ nhớ trình duyệt, không gọi Prisma/Supabase), dùng dữ liệu giả, import Excel giả lập, không có đăng nhập, API AI không xác thực và dùng key của server, link portal brand dùng token cố định chung.
-- Quyết định đề xuất: coi là **prototype v0** dùng để khảo sát và thử UX. Không đưa dữ liệu thật, không triển khai cho người dùng, không dùng làm cơ sở mã sản phẩm trước khi qua G2 (SDLC-00 nguyên tắc 5). Màn hình thuộc phạm vi booking (booking, hợp đồng, brand hub, sample tracker) là tư liệu tham khảo cho UpAffiliate.
-- Việc ngay: tắt hoặc bắt xác thực API `/api/ai/employee-review` nếu prototype đang public trên Vercel.
+- Ngày: 30/09/2026 · Trạng thái: **Thay thế bởi DEC-007, DEC-008 & DEC-011**
+- Bối cảnh: rà soát 30/09/2026 cho thấy web-admin ban đầu chưa kết nối cơ sở dữ liệu thật.
+- Quyết định thay thế: Từ tháng 10/2026, `B2C/web-admin` đã được nâng cấp toàn diện lên kiến trúc Production (PostgreSQL trên Supabase + Cloudflare R2 + Lark SSO OAuth 2.0 + Google Sheets/Docs API + MISA WeSign + 137/137 kiểm thử tự động) và trở thành hệ thống điều hành chính thức của phòng Marketing B2C.
 
 ### DEC-003 — Lưu trữ đặc tả 01–07 của prototype
 - Ngày: 30/09/2026 · Người quyết: chủ dự án (yêu cầu chuẩn hóa tài liệu theo SDLC) · Trạng thái: **Đã thực hiện**
@@ -70,9 +69,18 @@ Mẫu: [SDLC-03 mục 1.5](../../../sdlc/03_DOCUMENT_TEMPLATES.md#15-decision-lo
 - Hệ quả: Cập nhật `SDLC-01 Glossary`, `HUB-2.1 §2.13, §2.16`, `HUB-2.4` và kiểm thử tự động `TC-022`, `TC-023`.
 
 ### DEC-010 — Chuẩn hóa SLA Vận hành (48h / T-7→T+7), Khóa Hệ số Độ khó Gian hàng Bảng 2 & Tính điểm Workload 33 Đầu việc SOW
-- Ngày: 24/10/2026 · Người quyết: Khối MKT B2C & Team DX · Trạng thái: **Đã triển khai kỹ thuật — chờ Giám đốc khối ký xác nhận chính sách G1**
+- Ngày: 24/10/2026 · Người quyết: Khối MKT B2C & Team DX · Trạng thái: **Đã triển khai kỹ thuật (Phần thang đo điểm Workload tạm hoãn kích hoạt theo DEC-011)**
 - Quyết định:
-  1. Áp dụng bộ quy tắc đo lường SLA tự động trên Cockpit (`computeBrandSlaMetrics`, cảnh báo sớm 50% SLA, cảnh báo quá hạn 48h Brand duyệt, lịch trình SLA `T-7 → T+7` và khóa sổ nghiệm thu ngày mùng 2).
-  2. Hệ số độ khó gian hàng (Bảng 2: `1.0` → `1.6`) được chốt đầu tháng và khóa tự nâng giữa kỳ khi đã có nghiệm thu (`FR-015`).
-  3. Động cơ tính điểm tải công việc (`computeUnifiedB2cStaffWorkloads`) tính tự động trên 33 đầu việc SOW và mô phỏng thưởng P3 (`FR-050`, `FR-083`).
-- Hệ quả: Giải quyết về mặt kỹ thuật cho `OI-002`, `OI-006`, `OI-008` (đạt `TC-017`, `TC-019`, `TC-023`).
+  1. Áp dụng bộ quy tắc đo lường SLA tự động trên Cockpit (`computeBrandSlaMetrics`, cảnh báo sớm 50% SLA, cảnh báo quá hạn 48h Brand duyệt, lịch trình SLA `T-7 → T+7` và khóa sổ nghiệm thu ngày làm việc thứ 3 đầu tháng `T+1`).
+  2. Hệ số độ khó gian hàng (Bảng 2) và động cơ tính điểm tải công việc đã có sẵn trong mã nguồn nhưng tạm hoãn kích hoạt vận hành cho tới khi toàn bộ luồng thực thi 6 chặng chạy ổn định (`DEC-011`).
+
+### DEC-011 — Chuẩn hóa Luồng Quy trình Nền tảng 6 Chặng, Cảnh báo Giải ngân chậm (`Under-spend`), Ranh giới Data Warehouse / UPS & Đóng 12 Màn hình Cũ
+- Ngày: 31/10/2026 · Người quyết: Chủ dự án & Khối MKT B2C (Xác nhận qua phỏng vấn kiểm chứng toàn trình `/grill-me`) · Trạng thái: **Đã quyết & Chính thức áp dụng**
+- Quyết định:
+  1. **Trọng tâm cảnh báo ngân sách (`BR-01`):** Vấn đề cốt lõi cần cảnh báo là **Giải ngân chậm / Chưa chi hết ngân sách (`Under-spend`)** (`< 50%` báo đỏ, `< 80%` cuối tháng bắt buộc giải trình; gian hàng có ngân sách nhưng chi `0đ` tuyệt đối không gắn nhãn *"Trong hạn mức"*) và **Chi ngoài kế hoạch (`Unbudgeted Spend`)** (gian hàng hạn mức `0đ` nhưng phát sinh chi phí). Vượt nhẹ trần Net (`Overbudget`) không khóa cứng vận hành nếu có giải trình/phê duyệt của Giám Đốc Marketing. Job treo từ tháng cũ kéo sang chỉ theo dõi nghiệm thu/thanh toán, **không** trừ vào ngân sách tháng mới.
+  2. **Giao tiếp Nhãn hàng qua Google Sheet 57 cột & Đóng Cổng Brand Hub độc lập (`BR-05`, `BR-06`):** 100% luồng trình duyệt Listing KOC (3 đợt 10–20–30, đối khớp `Row ID` ẩn 1-1) và Kịch bản/Video Demo Vòng 2 với Brand thực hiện qua **File Google Sheet 57 cột (`A → BE`)** đồng bộ 2 chiều với hệ thống. Đóng màn hình `brand-hub` độc lập.
+  3. **Ranh giới Gửi hàng mẫu trên hệ thống UPS (`BR-07`):** Nghiệp vụ tạo đơn và theo dõi gửi hàng mẫu thực hiện trên **hệ thống UPS của công ty**; B2C Ops Hub không quản lý kho/vận đơn hàng mẫu ở chặng Pre-Air (đóng màn hình `sample-tracker`).
+  4. **Hợp đồng 3 chặng (`HĐNT → SOW → BBNT`) & Đàm phán Google Docs Redline (`BR-08`):** `HĐNT` ký 1 lần theo Hồ sơ pháp lý KOC (hoàn toàn độc lập với Brand và Deal). Khi chốt Deal mới tạo `Phụ lục SOW` kế thừa mã `HĐNT`. Hợp đồng sửa đổi đi qua **Google Docs 3 chặng (`Draft → Edit → Final`)** kèm đối chiếu **Redline từng từ** và Báo cáo đàm phán, được Pháp chế & Kế toán duyệt độc lập trước khi đẩy **MISA WeSign**.
+  5. **Tích hợp Data Warehouse công ty cho Danh bạ KOC (`BR-13`):** **Data Warehouse công ty** là nguồn dữ liệu gốc (Source of Truth) để đọc và cập nhật **KOC Master**, **Đa kênh MXH** và **`1–N` Hồ sơ pháp lý (`KocLegalProfile`)**, cùng chỉ số hậu kiểm **D14/D30/D60**. CSDL của B2C Ops Hub chỉ lưu thông tin vận hành nội bộ phòng B2C (đánh giá/ghi chú KOC theo Brand, lịch sử đàm phán, trạng thái tiếp cận, Plan, Deal, Hợp đồng, Nghiệm thu, ĐNTT).
+  6. **Tạm hoãn Thang đo điểm tải công việc (`Workload Bảng 1–7` & `P3`) (`BR-14`):** Hiện tại chỉ bật chức năng **Phân công nhân sự phụ trách Gian hàng (1 PIC chính + Nhân sự hỗ trợ)** và **Phân công 3 vị trí cấp Brand (`Plan/Strategy`, `Content Main`, `KV/SIS`)**. Phần chấm điểm tải công việc (Workload/P3) tạm hoãn sang giai đoạn sau.
+- Hệ quả: Ban hành chính thức bộ 4 tài liệu trụ cột [HUB-1.7 BRD v1.0](../1-requirements/1.7_BRD_OPS_HUB.md), [HUB-2.3 Architecture v1.0](../2-design/2.3_ARCHITECTURE.md), [HUB-2.1 SRS v2.6](../2-design/2.1_SRS_B2C_OPS_HUB.md) và đồng bộ toàn bộ bộ tài liệu dự án.

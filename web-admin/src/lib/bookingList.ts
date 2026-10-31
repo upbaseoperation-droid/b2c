@@ -200,11 +200,13 @@ export const DEFAULT_TEMPLATE_GOOGLE_SHEET_URL =
  * Gian chưa có link trả rỗng để người dùng tự khai báo; không rơi về file Template dùng chung (tránh đẩy KOC của nhiều gian vào một file).
  */
 export function resolveBrandBookingSheetUrl(
-  planOrBrand: InputPlanBreakdownState | string,
+  planOrBrandInput: InputPlanBreakdownState | string | null | undefined,
   storeName?: string,
   storeObj?: StorePortfolioItem | null
 ): string {
   if (storeObj?.bookingSheetUrl?.trim()) return storeObj.bookingSheetUrl.trim();
+  // Chưa chọn gian hàng thì brandName chưa có: tra theo tên gian hàng (nếu có), không đọc thuộc tính của undefined
+  const planOrBrand = planOrBrandInput ?? '';
   const override = readStoreOverrideByPlan(planOrBrand, storeName);
   if (override?.bookingSheetUrl?.trim()) return override.bookingSheetUrl.trim();
 

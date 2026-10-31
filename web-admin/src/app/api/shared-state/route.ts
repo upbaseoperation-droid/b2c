@@ -3,6 +3,16 @@ import { requestActor } from '@/lib/server/requestActor';
 import { USERS } from '@/lib/mockData';
 import { readRecord, upsertRecord, RecordError } from '@/lib/server/sharedRecords';
 import { ensureLarkListingsSyncedToDb } from '@/lib/server/larkListingDbSync';
+import {
+  isSyntheticMultiPlatformSeedItem,
+  isSyntheticMultiPlatformSeedReup,
+} from '@/lib/multiPlatformListing';
+import {
+  isSyntheticApprovedBookingItem,
+  recalculateApprovedBookingItem,
+  type ApprovedBookingListItem,
+} from '@/lib/approvedBookingList';
+import { isSyntheticBrandMonthlyPlanItem } from '@/lib/monthlyPlanData';
 import prisma from '@/lib/prisma';
 
 export const runtime = 'nodejs';
@@ -15,6 +25,8 @@ const ALLOWED_SHARED_STATE_KEYS = new Set<string>([
   'store-air-plans-v1',
   'approved-booking-list-v2',
   'staff-brand-listing-sheets-v1',
+  'multi-platform-listings-v1',
+  'multi-platform-reups-v1',
   'video-acceptance-screenshots-v1',
   'store-overrides-v1',
   'sla-tasks-v1',
@@ -82,6 +94,25 @@ async function syncStoreOverridesToPrisma(data: unknown): Promise<void> {
   }
 }
 
+function sanitizeSharedStatePayload(key: string, data: unknown): unknown {
+  if (!Array.isArray(data)) return data;
+  if (key === 'multi-platform-listings-v1') {
+    return data.filter((item) => !isSyntheticMultiPlatformSeedItem(item));
+  }
+  if (key === 'multi-platform-reups-v1') {
+    return data.filter((item) => !isSyntheticMultiPlatformSeedReup(item));
+  }
+  if (key === 'approved-booking-list-v2') {
+    return data
+      .filter((item) => !isSyntheticApprovedBookingItem(item))
+      .map((item) => recalculateApprovedBookingItem(item as ApprovedBookingListItem));
+  }
+  if (key === 'brand-monthly-plans-v1') {
+    return data.filter((item) => !isSyntheticBrandMonthlyPlanItem(item));
+  }
+  return data;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const user = await resolveUser(req);
@@ -131,7 +162,7 @@ export async function GET(req: NextRequest) {
     await Promise.all(
       targetKeys.map(async (k) => {
         const rec = await readRecord<unknown>(k, null);
-        records[k] = { revision: rec.revision, data: rec.data };
+        records[k] = { revision: rec.revision, data: sanitizeSharedStatePayload(k, rec.data) };
       })
     );
 
@@ -217,12 +248,42 @@ export async function PUT(req: NextRequest) {
 
     const savedRecords: Record<string, { revision: number; data: unknown }> = {};
 
+    const isAdminOrManager =
+      ['ADMIN', 'MANAGER'].includes(user.role) ||
+      Boolean(user.permissions?.includes('ALL_PERMISSIONS'));
+    const canManageMasterData =
+      isAdminOrManager ||
+      ['LEADER'].includes(user.role) ||
+      Boolean(user.permissions?.includes('canManageMasterData'));
+
+    const ADMIN_ONLY_KEYS = new Set([
+      'third-party-accounts-v1',
+      'api-workspace-config-v2',
+      'cloudflare-r2-config-v1',
+    ]);
+    const MASTER_CONFIG_KEYS = new Set([
+      'task-difficulty-configs-v1',
+      'sow-point-policies-v1',
+      'staff-workload-exceptions-v1',
+      'store-overrides-v1',
+    ]);
+
     for (const key of keysToProcess) {
-      let dataToSave = updatesMap[key];
+      let dataToSave = sanitizeSharedStatePayload(key, updatesMap[key]);
 
       // Sheet nhân sự lưu theo từng dòng qua /api/staff-listing-sheets (có kiểm quyền theo gian).
       // Ở đây chỉ nhận lần nạp đầu khi máy chủ chưa có dữ liệu, không cho ghi đè cả kho.
       if (key === 'staff-brand-listing-sheets-v1') {
+        const existing = await readRecord<unknown>(key, null);
+        if (existing.revision > 0) continue;
+      }
+
+      if (ADMIN_ONLY_KEYS.has(key) && !isAdminOrManager) {
+        const existing = await readRecord<unknown>(key, null);
+        if (existing.revision > 0) continue;
+      }
+
+      if (MASTER_CONFIG_KEYS.has(key) && !canManageMasterData) {
         const existing = await readRecord<unknown>(key, null);
         if (existing.revision > 0) continue;
       }

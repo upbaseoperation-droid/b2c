@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-import prisma from '@/lib/prisma';
 import { USERS } from '@/lib/mockData';
 import type { KocItem } from '@/lib/types';
 import { getSalaryGradeFromRate, getSegmentFromSalaryGrade } from '@/lib/types';
@@ -16,7 +14,6 @@ import {
   registerNewSystemVideo,
   type KocVideoWeeklyHistoryStoreData,
   type SystemRegisteredVideo,
-  type VideoWeeklySnapshotItem,
   type WeeklyVideoInputRow,
 } from '@/lib/kocVideoWeeklyHistory';
 import type { KocDirectoryChangesData } from '@/app/api/kocs/route';
@@ -42,109 +39,6 @@ async function resolveUser(req: NextRequest) {
     return USERS[0];
   }
   return null;
-}
-
-async function syncSnapshotsToPrisma(
-  registeredVideos: SystemRegisteredVideo[],
-  snapshots: VideoWeeklySnapshotItem[]
-): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
-  try {
-    const now = new Date();
-    for (const snap of snapshots.slice(0, 100)) {
-      await prisma.tikTokVideoPerformanceSnapshot.upsert({
-        where: {
-          videoId_reportPeriod: {
-            videoId: snap.videoId,
-            reportPeriod: snap.weekKey,
-          },
-        },
-        create: {
-          videoId: snap.videoId,
-          bookingCode: snap.dealCode || null,
-          storeName: snap.storeName,
-          brandName: snap.brandName,
-          campaignName: snap.campaignName || null,
-          productName: snap.productName || null,
-          videoTitle: snap.videoTitle || null,
-          tiktokAccount: snap.kocChannelId || snap.kocStageName,
-          authorizationType: snap.authorizationType || null,
-          bookingCostNet: new Prisma.Decimal(snap.bookingCostNet || 0),
-          adsSpend: new Prisma.Decimal(snap.adsSpend || 0),
-          sellerGmv: new Prisma.Decimal(snap.gmv || 0),
-          sellerOrders: snap.orders || 0,
-          cpa: new Prisma.Decimal(snap.cpa || 0),
-          roas: snap.roas || 0,
-          viewsCount: snap.views || 0,
-          impressions: snap.impressions || 0,
-          clicks: snap.clicks || 0,
-          ctr: snap.ctr || 0,
-          cvr: snap.cvr || 0,
-          hookRate2s: snap.hookRate2s || 0,
-          viewRate6s: snap.viewRate6s || 0,
-          completionRate100: snap.completionRate100 || 0,
-          linkAir: snap.linkAir || null,
-          reportPeriod: snap.weekKey,
-          syncedAt: now,
-        },
-        update: {
-          bookingCode: snap.dealCode || null,
-          adsSpend: new Prisma.Decimal(snap.adsSpend || 0),
-          sellerGmv: new Prisma.Decimal(snap.gmv || 0),
-          sellerOrders: snap.orders || 0,
-          cpa: new Prisma.Decimal(snap.cpa || 0),
-          roas: snap.roas || 0,
-          viewsCount: snap.views || 0,
-          impressions: snap.impressions || 0,
-          clicks: snap.clicks || 0,
-          ctr: snap.ctr || 0,
-          cvr: snap.cvr || 0,
-          hookRate2s: snap.hookRate2s || 0,
-          viewRate6s: snap.viewRate6s || 0,
-          completionRate100: snap.completionRate100 || 0,
-          syncedAt: now,
-        },
-      });
-    }
-
-    for (const reg of registeredVideos.slice(0, 30)) {
-      await prisma.tikTokVideoPerformanceSnapshot.upsert({
-        where: {
-          videoId_reportPeriod: {
-            videoId: reg.videoId,
-            reportPeriod: '2026-10',
-          },
-        },
-        create: {
-          videoId: reg.videoId,
-          bookingCode: reg.dealCode || null,
-          storeName: reg.storeName,
-          brandName: reg.brandName,
-          campaignName: reg.campaignName || null,
-          productName: reg.productName || null,
-          videoTitle: reg.videoTitle || null,
-          tiktokAccount: reg.kocChannelId || reg.kocStageName,
-          pic: reg.pic || null,
-          salaryGradeKl: reg.klGrade || null,
-          airDate: reg.airDate || null,
-          bookingCostNet: new Prisma.Decimal(reg.bookingCostNet || 0),
-          linkAir: reg.linkAir || null,
-          reportPeriod: '2026-10',
-          syncedAt: now,
-        },
-        update: {
-          bookingCode: reg.dealCode || null,
-          storeName: reg.storeName,
-          brandName: reg.brandName,
-          bookingCostNet: new Prisma.Decimal(reg.bookingCostNet || 0),
-          linkAir: reg.linkAir || null,
-          syncedAt: now,
-        },
-      });
-    }
-  } catch {
-    // Dự phòng an toàn khi môi trường local không mở kết nối DB trực tiếp
-  }
 }
 
 export async function GET(req: NextRequest) {
@@ -358,10 +252,6 @@ export async function POST(req: NextRequest) {
           () => regResult.nextStore
         );
         updatedStore = saved.data;
-        await syncSnapshotsToPrisma(
-          [regResult.registeredVideo],
-          regResult.initialSnapshot ? [regResult.initialSnapshot] : []
-        );
       }
 
       return NextResponse.json(
@@ -411,11 +301,6 @@ export async function POST(req: NextRequest) {
         () => regResult.nextStore
       );
 
-      await syncSnapshotsToPrisma(
-        [regResult.registeredVideo],
-        regResult.initialSnapshot ? [regResult.initialSnapshot] : []
-      );
-
       return NextResponse.json(
         {
           success: true,
@@ -462,11 +347,6 @@ export async function POST(req: NextRequest) {
       current.revision,
       () => ingestResult.nextStore
     );
-
-    const updatedSnapshotsForWeek = Object.values(saved.data.snapshotsByKey).filter(
-      (s) => s.weekKey === ingestResult.batchLog.weekKey
-    );
-    await syncSnapshotsToPrisma([], updatedSnapshotsForWeek);
 
     return NextResponse.json(
       {

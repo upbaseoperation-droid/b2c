@@ -30,7 +30,15 @@ import type {
   DealSowJobItem,
   KocItem,
   MediaChannelPlatform,
+  UserRole,
 } from '../../lib/types';
+
+type SystemUser = {
+  id?: string;
+  name?: string;
+  role?: UserRole;
+};
+import { getKocLegalProfiles } from '../koc/kocUtils';
 import type { ContractRecord } from '../../lib/contracts/types';
 import { extractSowPaymentScheduleAndAdvance } from '../../lib/contracts/contractRules';
 import {
@@ -39,19 +47,25 @@ import {
   formatVnd,
   formatVndShort,
   getVietnamDateYmd,
+  maskSensitivePii,
+  parseThousandNumberInput,
 } from '../../lib/format';
 import {
+  S40_STANDARD_UNLOCK_REASONS,
   buildBookingDealFromApprovedItem,
   buildDefaultAddonServicesForDeal,
   computeDataLockDate,
   computeDealSowJobSubtotal,
   ensureDealJobsForApprovedItem,
+  formatLivestreamConfirmationSheet,
   generateBookingOrderCode,
   generateDealAppendixCode,
   generateMasterContractCode,
+  isLivestreamBookingItem,
   normalizeBankHolderUpperNoAccent,
   recalculateApprovedBookingItem,
   type ApprovedBookingListItem,
+  type S40AuditLogEntry,
 } from '../../lib/approvedBookingList';
 import { computeGrossFeeWithTax, normalizeTikTokId } from '../../lib/staffBrandListingSheet';
 import { documentOfTemplate } from '../../lib/planDealLink';
@@ -76,11 +90,6 @@ import {
   Tabs,
 } from '../ui';
 
-const parseThousandNumberInput = (raw: string): number => {
-  const digits = String(raw || '').replace(/[^\d]/g, '');
-  return digits ? Number(digits) || 0 : 0;
-};
-
 export interface DealDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -104,16 +113,16 @@ export interface DealDetailDrawerProps {
   onPullContractLinks?: () => void;
   isPullingContractLinks?: boolean;
   canViewFullPii?: boolean;
+  currentUser?: SystemUser | null;
+  currentRole?: UserRole;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 type DrawerTab = 'OVERVIEW' | 'CONTRACT' | 'ACCEPTANCE';
 
 function maskSensitive(raw?: string, showFull?: boolean): string {
-  const clean = (raw || '').trim();
-  if (!clean) return 'Chưa cập nhật';
-  if (showFull || clean.length <= 4) return clean;
-  return `****${clean.slice(-4)}`;
+  const masked = maskSensitivePii(raw, Boolean(showFull));
+  return masked === '—' ? 'Chưa cập nhật' : masked;
 }
 
 export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
@@ -135,8 +144,19 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   onPullContractLinks,
   isPullingContractLinks,
   canViewFullPii = false,
+  currentUser,
+  currentRole,
   onNotify,
 }) => {
+  const effectiveRole: UserRole = currentRole || currentUser?.role || 'BOOKING_MEMBER';
+  const isReadOnlyPartnerRole =
+    effectiveRole === 'BRAND_PARTNER' || effectiveRole === 'BRAND_MEMBER';
+  const canApproveDataUnlock =
+    effectiveRole === 'ADMIN' ||
+    effectiveRole === 'MANAGER' ||
+    effectiveRole === 'FINANCE' ||
+    effectiveRole === 'LEADER';
+
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showSensitive, setShowSensitive] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<DrawerTab>(initialTab || 'OVERVIEW');
@@ -149,6 +169,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     useState<DealContractAppendixStatus>('CHỜ_KÝ');
   const [dealDraftPlannedAirDate, setDealDraftPlannedAirDate] = useState<string>('');
   const [dealDraftVideoNetCost, setDealDraftVideoNetCost] = useState<number>(0);
+  const [dealDraftPaymentSchedule, setDealDraftPaymentSchedule] = useState<
+    'ONE_TIME' | 'TWO_TIMES'
+  >('ONE_TIME');
   const [dealDraftAdvanceAmount, setDealDraftAdvanceAmount] = useState<number>(0);
   const [dealDraftAddons, setDealDraftAddons] = useState<DealRightsTermItem[]>([]);
   const [dealDraftJobs, setDealDraftJobs] = useState<DealSowJobItem[]>([]);
@@ -213,6 +236,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
         currentJob?.plannedAirDate || deal.plannedAirDate || `${deal.thangPlan.replace('/', '-')}-20`
       );
       setDealDraftVideoNetCost(currentJob?.videoAssetNetCost ?? deal.chiPhiBookingNetCuoi ?? 0);
+      setDealDraftPaymentSchedule(
+        deal.paymentScheduleOption ||
+          ((deal.soTienTamUngTruoc || 0) > 0 ? 'TWO_TIMES' : 'ONE_TIME')
+      );
       setDealDraftAdvanceAmount(deal.soTienTamUngTruoc || 0);
       setDealDraftAddons(currentJob?.addonServices || []);
     }
@@ -331,7 +358,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   const sowSigningCompleted =
     linkedContracts.sow?.signing.at(-1)?.status === 'COMPLETED' ||
     deal.contractAppendixStatus === 'ĐÃ_KÝ';
-  const isDealBuilderSowLocked = dealDraftAppendixStatus === 'ĐÃ_KÝ';
+  const isDataLocked =
+    Boolean(deal.chotData) && deal.unlockRequestBatch !== 'UNLOCKED' && !canApproveDataUnlock;
+  const isDealBuilderSowLocked =
+    dealDraftAppendixStatus === 'ĐÃ_KÝ' || isReadOnlyPartnerRole || isDataLocked;
 
   const stageStatus =
     deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
@@ -456,6 +486,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     setDealDraftAppendixCode(nextCode);
     setDealDraftAppendixStatus('CHỜ_KÝ');
     setActiveTab('OVERVIEW');
+    onUpdateDealFields?.(deal.id, {
+      contractAppendixCode: nextCode,
+      contractAppendixStatus: 'CHỜ_KÝ',
+    });
     onNotify?.(
       `Đã mở khóa cấu hình Deal để lập Phụ lục bổ sung ${nextCode}`,
       'info'
@@ -463,6 +497,17 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   };
 
   const handleSaveDealWorkspace = (openSowAfterSave?: boolean) => {
+    if (isReadOnlyPartnerRole) {
+      onNotify?.('Tài khoản đối tác chỉ có quyền xem, không thể chỉnh sửa cấu hình Deal.', 'warning');
+      return;
+    }
+    if (isDataLocked) {
+      onNotify?.(
+        'Deal đã chốt data nghiệm thu tháng. Vui lòng gửi đề nghị Kế toán mở khóa trên S40 trước khi sửa.',
+        'warning'
+      );
+      return;
+    }
     const normalizedJobs: DealSowJobItem[] =
       dealDraftJobs.length > 0
         ? dealDraftJobs
@@ -508,6 +553,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       dealDraftAppendixCode.trim() || generateDealAppendixCode(finalDealCode, 1);
     const finalMasterCode =
       dealDraftMasterContract.trim() || generateMasterContractCode(deal.idKenh, deal.kocId);
+    const resolvedAdvanceAmount =
+      dealDraftPaymentSchedule === 'ONE_TIME'
+        ? 0
+        : Math.max(0, dealDraftAdvanceAmount);
 
     const patch: Partial<ApprovedBookingListItem> = {
       maBooking: finalDealCode,
@@ -519,7 +568,8 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       chiPhiBookingNetCuoi: totalDealNet,
       videoAssetNetCost: totalVideoNet,
       addonServicesNetCost: addonsTotal,
-      soTienTamUngTruoc: Math.max(0, dealDraftAdvanceAmount),
+      paymentScheduleOption: dealDraftPaymentSchedule,
+      soTienTamUngTruoc: resolvedAdvanceAmount,
       addonServices: allAddons,
       dealJobs: normalizedJobs,
       masterContractCode: finalMasterCode,
@@ -546,6 +596,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     addonId: string,
     nextStatus: 'VERIFIED' | 'DROPPED' | 'PENDING_ACCEPTANCE'
   ) => {
+    if (isReadOnlyPartnerRole || isDataLocked) {
+      onNotify?.(
+        isDataLocked
+          ? 'Deal đã chốt data nghiệm thu tháng. Vui lòng gửi đề nghị Kế toán mở khóa trên S40 trước khi sửa.'
+          : 'Tài khoản không có quyền chỉnh sửa nghiệm thu.',
+        'warning'
+      );
+      return;
+    }
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -589,6 +648,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   };
 
   const handleSaveAddonEvidence = (jobIdx: number, addonId: string, evidence: string) => {
+    if (isReadOnlyPartnerRole || isDataLocked) {
+      onNotify?.(
+        isDataLocked
+          ? 'Deal đã chốt data nghiệm thu tháng. Vui lòng gửi đề nghị Kế toán mở khóa trên S40 trước khi sửa.'
+          : 'Tài khoản không có quyền chỉnh sửa nghiệm thu.',
+        'warning'
+      );
+      return;
+    }
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -635,6 +703,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   };
 
   const handleAddNewAddonToJob = (jobIdx: number) => {
+    if (isReadOnlyPartnerRole || isDataLocked) {
+      onNotify?.(
+        isDataLocked
+          ? 'Deal đã chốt data nghiệm thu tháng. Vui lòng gửi đề nghị Kế toán mở khóa trên S40 trước khi sửa.'
+          : 'Tài khoản không có quyền chỉnh sửa nghiệm thu.',
+        'warning'
+      );
+      return;
+    }
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -689,6 +766,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   };
 
   const handleRemoveAddonFromJob = (jobIdx: number, addonId: string) => {
+    if (isReadOnlyPartnerRole || isDataLocked) {
+      onNotify?.(
+        isDataLocked
+          ? 'Deal đã chốt data nghiệm thu tháng. Vui lòng gửi đề nghị Kế toán mở khóa trên S40 trước khi sửa.'
+          : 'Tài khoản không có quyền chỉnh sửa nghiệm thu.',
+        'warning'
+      );
+      return;
+    }
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -706,6 +792,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   };
 
   const handleSaveJobAirVideo = (jobIdx: number) => {
+    if (isReadOnlyPartnerRole || isDataLocked) {
+      onNotify?.(
+        isDataLocked
+          ? 'Deal đã chốt data nghiệm thu tháng. Vui lòng gửi đề nghị Kế toán mở khóa trên S40 trước khi sửa.'
+          : 'Tài khoản không có quyền chỉnh sửa nghiệm thu.',
+        'warning'
+      );
+      return;
+    }
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const trimmedLink = quickAirLink.trim();
     const trimmedDate = quickAirDate.trim() || getVietnamDateYmd();
@@ -762,7 +857,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
         </Button>
 
         {allDeals.length > 1 && (
-          <div className="inline-flex items-center gap-1.5">
+          <div className="inline-flex items-center gap-2">
             <Select
               value={deal.id}
               onChange={(e) => {
@@ -855,7 +950,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       {/* PHÂN VÙNG 1B: Khung Định danh Deal & Thanh hành trình 4 chặng */}
       <section className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
         <div className="p-4 flex flex-wrap items-center justify-between gap-4 border-b border-line">
-          <div className="flex items-center gap-3.5 min-w-0">
+          <div className="flex items-center gap-4 min-w-0">
             <Person
               name={deal.tenKenh || deal.idKenh}
               sub={`@${deal.idKenh.replace(/^@/, '')} · Bậc ${deal.klGrade || 'KL3'} · ${formatNumber(deal.follower || matchedKoc?.followers || 0)} người theo dõi`}
@@ -864,7 +959,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
             <div className="hidden sm:block h-8 w-px bg-line" />
             <div className="flex flex-wrap items-center gap-2">
               <Status tone={stageStatus.tone}>{stageStatus.label}</Status>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sunken border border-line font-code text-xs font-semibold text-ink">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-sunken border border-line font-code text-xs font-semibold text-ink">
                 <span>{dealDraftCode || deal.maBooking || 'Chưa cấp mã BO'}</span>
                 {(dealDraftCode || deal.maBooking) && (
                   <button
@@ -883,10 +978,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   </button>
                 )}
               </span>
-              <span className="px-2.5 py-1 rounded-md bg-sunken border border-line font-code text-xs text-ink-2">
+              <span className="px-3 py-1 rounded-md bg-sunken border border-line font-code text-xs text-ink-2">
                 {dealDraftAppendixCode || deal.contractAppendixCode || 'Chưa lập PL'}
               </span>
-              <span className="px-2.5 py-1 rounded-md bg-sunken border border-line text-xs text-ink-2">
+              <span className="px-3 py-1 rounded-md bg-sunken border border-line text-xs text-ink-2">
                 {deal.storeName} · <span className="font-code">{deal.thangPlan}</span>
               </span>
             </div>
@@ -908,7 +1003,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                 href={deal.linkKenh}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-surface hover:bg-sunken text-xs font-medium text-accent"
+                className="inline-flex items-center gap-2 h-7 px-3 rounded-md border border-line bg-surface hover:bg-sunken text-xs font-medium text-accent"
               >
                 <span>Mở kênh</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -918,11 +1013,11 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
         </div>
 
         {/* Thanh hành trình 4 chặng chuẩn StepMark */}
-        <div className="px-4 py-2.5 bg-sunken/50 grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="px-4 py-3 bg-sunken/50 grid grid-cols-2 lg:grid-cols-4 gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
-            className={`flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
+            className={`flex items-center gap-3 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
               activeTab === 'OVERVIEW'
                 ? 'bg-surface border-line-strong'
                 : 'border-transparent hover:bg-surface/70'
@@ -944,7 +1039,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('CONTRACT')}
-            className={`flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
+            className={`flex items-center gap-3 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
               activeTab === 'CONTRACT'
                 ? 'bg-surface border-line-strong'
                 : 'border-transparent hover:bg-surface/70'
@@ -966,7 +1061,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('ACCEPTANCE')}
-            className={`flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
+            className={`flex items-center gap-3 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
               activeTab === 'ACCEPTANCE'
                 ? 'bg-surface border-line-strong'
                 : 'border-transparent hover:bg-surface/70'
@@ -993,7 +1088,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
               setActiveTab('ACCEPTANCE');
               if (isAccepted) onOpenLarkPaymentModal?.(deal);
             }}
-            className="flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border border-transparent hover:bg-surface/70 transition-colors"
+            className="flex items-center gap-3 min-w-0 text-left px-3 py-2 rounded-lg border border-transparent hover:bg-surface/70 transition-colors"
           >
             <StepMark
               done={deal.trangThaiPhieuThanhToan === 'Đã thanh toán'}
@@ -1129,7 +1224,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                     </Button>
                   </div>
                 ) : (
-                  <div className="p-2.5 rounded-lg bg-positive-soft/60 border border-line flex items-center gap-2 text-positive font-medium">
+                  <div className="p-3 rounded-lg bg-positive-soft/60 border border-line flex items-center gap-2 text-positive font-medium">
                     <Unlock className="w-4 h-4 shrink-0" />
                     <span>
                       Phụ lục SOW đang ở trạng thái chờ ký — cho phép chỉnh sửa đơn giá, ngày air dự kiến và quyền lợi đi kèm trước khi phát hành.
@@ -1157,7 +1252,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                     />
                   </Field>
                   <Field label="Mã Phụ lục theo Deal (1 Phụ lục / Deal)">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <Input
                         value={dealDraftAppendixCode}
                         disabled={isDealBuilderSowLocked}
@@ -1200,14 +1295,14 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
             >
               <div className="space-y-4 text-xs">
                 {/* Thanh chuyển đổi giữa các Job trong Deal */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {dealDraftJobs.map((jobItem, jIdx) => {
                     const isSelected = jIdx === activeDealDraftJobIdx;
                     const jobSub = computeDealSowJobSubtotal(jobItem);
                     return (
                       <div
                         key={jobItem.id || jIdx}
-                        className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border transition-colors ${
+                        className={`flex items-center justify-between gap-2 p-3 rounded-lg border transition-colors ${
                           isSelected
                             ? 'border-accent bg-accent-soft/40 text-ink'
                             : 'border-line bg-sunken/40 text-ink-2 hover:bg-sunken'
@@ -1218,8 +1313,8 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           onClick={() => handleSelectDealDraftJob(jIdx)}
                           className="text-left min-w-0 flex-1 space-y-1"
                         >
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
                               Bảng CV #{jIdx + 1} · {jobItem.jobCode}
                             </span>
                             <span className="font-code font-semibold text-accent tabular-nums">
@@ -1253,15 +1348,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
                 {/* Chi tiết Bảng công việc đang chọn */}
                 <div className="p-4 rounded-xl border border-line bg-sunken/30 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-line">
-                    <div className="font-semibold text-ink inline-flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line">
+                    <div className="font-semibold text-ink inline-flex items-center gap-2">
                       <Video className="w-4 h-4 text-accent" />
                       <span>
                         Bảng công việc #{activeDealDraftJobIdx + 1} (
                         {activeDraftJob?.jobCode || `${dealDraftCode}-J01`}) — Hạng mục Video &amp; Quyền lợi đi kèm
                       </span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-md bg-surface border border-line font-code text-xs font-semibold text-accent tabular-nums">
+                    <span className="px-3 py-1 rounded-md bg-surface border border-line font-code text-xs font-semibold text-accent tabular-nums">
                       Cộng Bảng CV #{activeDealDraftJobIdx + 1}:{' '}
                       {formatVnd(activeDraftJobSub.plannedJobNet)}
                     </span>
@@ -1315,7 +1410,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                     </Field>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <Field label="Ngày air dự kiến (Job này)">
                       <Input
                         type="date"
@@ -1347,17 +1442,41 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                         }}
                       />
                     </Field>
+                    <Field label="Phương thức thanh toán SOW">
+                      <Select
+                        value={dealDraftPaymentSchedule}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextOpt = e.target.value as 'ONE_TIME' | 'TWO_TIMES';
+                          setDealDraftPaymentSchedule(nextOpt);
+                          if (nextOpt === 'ONE_TIME') {
+                            setDealDraftAdvanceAmount(0);
+                          }
+                        }}
+                      >
+                        <option value="ONE_TIME">1 lần (100% sau nghiệm thu)</option>
+                        <option value="TWO_TIMES">2 đợt (Có tạm ứng trước)</option>
+                      </Select>
+                    </Field>
                     <Field label="Tạm ứng trước toàn Deal (VNĐ)">
                       <Input
                         type="text"
                         inputMode="numeric"
-                        disabled={isDealBuilderSowLocked}
-                        value={formatNumber(Number(dealDraftAdvanceAmount) || 0)}
-                        onChange={(e) =>
-                          setDealDraftAdvanceAmount(
-                            parseThousandNumberInput(e.target.value)
-                          )
+                        disabled={
+                          isDealBuilderSowLocked || dealDraftPaymentSchedule === 'ONE_TIME'
                         }
+                        value={formatNumber(
+                          dealDraftPaymentSchedule === 'ONE_TIME'
+                            ? 0
+                            : Number(dealDraftAdvanceAmount) || 0
+                        )}
+                        onChange={(e) => {
+                          const nextAdv = parseThousandNumberInput(e.target.value);
+                          setDealDraftAdvanceAmount(nextAdv);
+                          if (nextAdv > 0 && dealDraftPaymentSchedule !== 'TWO_TIMES') {
+                            setDealDraftPaymentSchedule('TWO_TIMES');
+                          }
+                        }}
                       />
                     </Field>
                   </div>
@@ -1369,7 +1488,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                         Hạng mục quyền lợi đi kèm trong Bảng công việc #{activeDealDraftJobIdx + 1} (
                         {dealDraftAddons.length} hạng mục)
                       </span>
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
                         {[
                           {
                             type: 'ADS_CODE' as const,
@@ -1423,7 +1542,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                   preset.days
                                 )
                               }
-                              className={`px-2.5 py-1 rounded-md border text-2xs font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+                              className={`px-3 py-1 rounded-md border text-2xs font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none ${
                                 active
                                   ? 'bg-ink border-ink text-white'
                                   : 'bg-surface border-line text-ink-2 hover:bg-sunken'
@@ -1445,7 +1564,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                         {dealDraftAddons.map((addon, idx) => (
                           <div
                             key={addon.id || idx}
-                            className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center p-2.5 rounded-lg border border-line bg-surface"
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3 rounded-lg border border-line bg-surface"
                           >
                             <div className="sm:col-span-6">
                               <input
@@ -1463,10 +1582,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                     addonServices: nextAddons,
                                   }));
                                 }}
-                                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface font-medium text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                                className="w-full h-8 px-3 rounded-md border border-line bg-surface font-medium text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
                               />
                             </div>
-                            <div className="sm:col-span-2 flex items-center gap-1.5">
+                            <div className="sm:col-span-2 flex items-center gap-2">
                               <input
                                 type="number"
                                 disabled={isDealBuilderSowLocked}
@@ -1486,7 +1605,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                               />
                               <span className="text-2xs text-ink-3 shrink-0">ngày</span>
                             </div>
-                            <div className="sm:col-span-3 flex items-center gap-1.5">
+                            <div className="sm:col-span-3 flex items-center gap-2">
                               <span className="text-2xs text-ink-3 shrink-0">Phí Net:</span>
                               <input
                                 type="text"
@@ -1504,7 +1623,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                     addonServices: nextAddons,
                                   }));
                                 }}
-                                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface font-code text-xs text-right font-semibold text-ink tabular-nums disabled:bg-sunken disabled:text-ink-3"
+                                className="w-full h-8 px-3 rounded-md border border-line bg-surface font-code text-xs text-right font-semibold text-ink tabular-nums disabled:bg-sunken disabled:text-ink-3"
                               />
                             </div>
                             <div className="sm:col-span-1 text-right">
@@ -1535,20 +1654,353 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                 </div>
               </div>
             </Panel>
+
+            {isLivestreamBookingItem(deal) && (
+              <Panel
+                title="Phiếu xác nhận hợp tác Livestream Affiliate & Thông số Phiên Live"
+                actions={
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Copy}
+                    onClick={() => {
+                      const text = formatLivestreamConfirmationSheet(deal);
+                      void navigator.clipboard?.writeText(text);
+                      onNotify?.(
+                        `Đã sao chép Phiếu xác nhận Livestream (${deal.maBooking || deal.idKenh}) để gửi nhóm làm việc.`,
+                        'success'
+                      );
+                    }}
+                  >
+                    Sao chép Phiếu xác nhận Live
+                  </Button>
+                }
+              >
+                <div className="space-y-4 text-xs">
+                  {/* Khối 1: Lịch & Đầu ra phiên Live */}
+                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">
+                        1. Lịch phát sóng &amp; Thời lượng cam kết phiên Live
+                      </span>
+                      <Status
+                        tone={
+                          (deal.liveActualMinutes || 0) >= (deal.liveCommittedMinutes || 120)
+                            ? 'positive'
+                            : deal.actualAirDate
+                              ? 'warning'
+                              : 'neutral'
+                        }
+                      >
+                        {(deal.liveActualMinutes || 0) > 0
+                          ? `Thực tế: ${deal.liveActualMinutes}/${deal.liveCommittedMinutes || 120} phút`
+                          : `Cam kết: ${deal.liveCommittedMinutes || 120} phút (${deal.liveSessionsCount || 1} phiên)`}
+                      </Status>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      <Field label="Giờ bắt đầu">
+                        <Input
+                          value={deal.liveStartTime || '20:00'}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, { liveStartTime: e.target.value })
+                          }
+                          placeholder="20:00"
+                        />
+                      </Field>
+                      <Field label="Giờ kết thúc">
+                        <Input
+                          value={deal.liveEndTime || '22:00'}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, { liveEndTime: e.target.value })
+                          }
+                          placeholder="22:00"
+                        />
+                      </Field>
+                      <Field label="Cam kết (phút)">
+                        <Input
+                          type="number"
+                          value={deal.liveCommittedMinutes ?? 120}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveCommittedMinutes: Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Thực tế (phút)">
+                        <Input
+                          type="number"
+                          value={deal.liveActualMinutes ?? 0}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveActualMinutes: Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Số phiên">
+                        <Input
+                          type="number"
+                          value={deal.liveSessionsCount ?? 1}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveSessionsCount: Math.max(1, Number(e.target.value) || 1),
+                            })
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Lịch Teasing & Đầu ra bổ sung trước phiên Live">
+                        <Input
+                          value={deal.liveTeasingSchedule || ''}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveTeasingSchedule: e.target.value,
+                            })
+                          }
+                          placeholder="VD: 1 Video Teasing trước 24h + Story đếm ngược"
+                        />
+                      </Field>
+                      <Field label="Cam kết độc quyền trong phiên Live">
+                        <Input
+                          value={deal.liveExclusivityNote || ''}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveExclusivityNote: e.target.value,
+                            })
+                          }
+                          placeholder="VD: Không gắn sản phẩm đối thủ cùng ngành trong phiên"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
+                  {/* Khối 2: Hoa hồng Affiliate, Thưởng GMV & KPI mục tiêu */}
+                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-3">
+                    <span className="font-semibold text-ink block">
+                      2. Hoa hồng Affiliate, Thưởng GMV &amp; KPI mục tiêu phiên Live
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      <Field label="Hoa hồng Affiliate (%)">
+                        <Input
+                          type="number"
+                          value={deal.liveCommissionPct ?? 15}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveCommissionPct: Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Loại KPI">
+                        <Select
+                          value={deal.liveKpiType || 'Tham chiếu'}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveKpiType: e.target.value as 'Tham chiếu' | 'Cam kết',
+                            })
+                          }
+                        >
+                          <option value="Tham chiếu">Tham chiếu</option>
+                          <option value="Cam kết">Cam kết</option>
+                        </Select>
+                      </Field>
+                      <Field label="GMV mục tiêu (VNĐ)">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumber(deal.liveTargetGmv || 0)}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveTargetGmv: parseThousandNumberInput(e.target.value),
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Đơn mục tiêu">
+                        <Input
+                          type="number"
+                          value={deal.liveTargetOrders ?? 0}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveTargetOrders: Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Ngân sách Ads Live (VNĐ)">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumber(deal.liveAdsBudget || 0)}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveAdsBudget: parseThousandNumberInput(e.target.value),
+                            })
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Field label="Mốc thưởng GMV">
+                        <Input
+                          value={deal.liveGmvBonusTier || ''}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveGmvBonusTier: e.target.value,
+                            })
+                          }
+                          placeholder="VD: Đạt 150tr thưởng 3.000.000đ"
+                        />
+                      </Field>
+                      <Field label="Giá Live / Deal độc quyền">
+                        <Input
+                          value={deal.liveDealPriceInfo || ''}
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              liveDealPriceInfo: e.target.value,
+                            })
+                          }
+                          placeholder="VD: Mua 1 tặng 1 Refill (Giá Live 429k)"
+                        />
+                      </Field>
+                      <Field label="Voucher / Quà tặng & Tồn kho cam kết">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={deal.liveVoucherInfo || ''}
+                            disabled={isReadOnlyPartnerRole || isDataLocked}
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                liveVoucherInfo: e.target.value,
+                              })
+                            }
+                            placeholder="Voucher 20% + Freeship"
+                          />
+                          <Input
+                            type="number"
+                            value={deal.liveCommittedStock ?? 0}
+                            disabled={isReadOnlyPartnerRole || isDataLocked}
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                liveCommittedStock: Math.max(0, Number(e.target.value) || 0),
+                              })
+                            }
+                            placeholder="Tồn kho"
+                            className="w-24 shrink-0"
+                          />
+                        </div>
+                      </Field>
+                    </div>
+                  </div>
+
+                  {/* Khối 3: Cổng xác nhận 3 bên trước giờ G */}
+                  <div className="p-3.5 rounded-lg border border-line bg-surface flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <span className="font-semibold text-ink block">
+                        3. Xác nhận 3 bên trước phiên Live (Đủ điều kiện tạo HĐ LIVE-HD &amp; gửi mẫu)
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Status
+                          tone={
+                            deal.liveKocConfirmed &&
+                            deal.liveBrandConfirmed &&
+                            deal.liveLeaderConfirmed
+                              ? 'positive'
+                              : 'warning'
+                          }
+                        >
+                          {deal.liveKocConfirmed &&
+                          deal.liveBrandConfirmed &&
+                          deal.liveLeaderConfirmed
+                            ? 'Đủ điều kiện tạo HĐ Livestream'
+                            : 'Chờ đủ 3 bên xác nhận'}
+                        </Status>
+                        <Status
+                          tone={
+                            deal.liveKocConfirmed && deal.liveBrandConfirmed
+                              ? 'positive'
+                              : 'neutral'
+                          }
+                        >
+                          {deal.liveKocConfirmed && deal.liveBrandConfirmed
+                            ? 'Được phép gửi hàng mẫu'
+                            : 'Chưa gửi mẫu'}
+                        </Status>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant={deal.liveKocConfirmed ? 'primary' : 'secondary'}
+                        size="sm"
+                        icon={Check}
+                        disabled={isReadOnlyPartnerRole}
+                        onClick={() =>
+                          onUpdateDealFields?.(deal.id, {
+                            liveKocConfirmed: !deal.liveKocConfirmed,
+                          })
+                        }
+                      >
+                        {deal.liveKocConfirmed ? 'KOC đã xác nhận' : 'Xác nhận KOC'}
+                      </Button>
+                      <Button
+                        variant={deal.liveBrandConfirmed ? 'primary' : 'secondary'}
+                        size="sm"
+                        icon={Check}
+                        onClick={() =>
+                          onUpdateDealFields?.(deal.id, {
+                            liveBrandConfirmed: !deal.liveBrandConfirmed,
+                          })
+                        }
+                      >
+                        {deal.liveBrandConfirmed ? 'Brand đã xác nhận' : 'Xác nhận Brand'}
+                      </Button>
+                      <Button
+                        variant={deal.liveLeaderConfirmed ? 'primary' : 'secondary'}
+                        size="sm"
+                        icon={UserCheck}
+                        disabled={isReadOnlyPartnerRole}
+                        onClick={() =>
+                          onUpdateDealFields?.(deal.id, {
+                            liveLeaderConfirmed: !deal.liveLeaderConfirmed,
+                          })
+                        }
+                      >
+                        {deal.liveLeaderConfirmed ? 'Leader đã duyệt' : 'Leader xác nhận'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            )}
           </div>
 
           {/* CỘT PHẢI (4 CỘT): Tổng hợp Phụ lục SOW, Gian hàng & Hồ sơ KOC */}
           <div className="lg:col-span-4 space-y-5">
             {/* Panel 3: Tổng hợp Phụ lục SOW & Thao tác phát hành */}
             <Panel title="Tổng hợp Phụ lục SOW & Giải ngân">
-              <div className="space-y-3.5 text-xs">
+              <div className="space-y-4 text-xs">
                 <div className="divide-y divide-line border border-line rounded-lg bg-sunken/40 px-3">
                   {dealDraftJobs.map((jobItem, idx) => {
                     const sub = computeDealSowJobSubtotal(jobItem);
                     return (
                       <div
                         key={jobItem.id || idx}
-                        className="py-2.5 flex items-center justify-between gap-2"
+                        className="py-3 flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
                           <div className="font-medium text-ink truncate">
@@ -1771,7 +2223,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Chặng 1: HĐNT */}
               <div className="p-4 rounded-xl border border-line bg-sunken/30 flex flex-col justify-between gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-2xs font-medium text-ink-3">
                       1. Hợp đồng nguyên tắc
@@ -1805,7 +2257,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           Google Docs
                         </a>
                       )}
@@ -1820,7 +2272,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           Bản đã ký
                         </a>
                       )}
@@ -1841,7 +2293,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
               {/* Chặng 2: Phụ lục SOW */}
               <div className="p-4 rounded-xl border border-line bg-sunken/30 flex flex-col justify-between gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-2xs font-medium text-ink-3">
                       2. Phụ lục SOW theo Deal
@@ -1871,7 +2323,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           Google Docs
                         </a>
                       )}
@@ -1886,7 +2338,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           Bản đã ký
                         </a>
                       )}
@@ -1907,7 +2359,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
               {/* Chặng 3: Biên bản nghiệm thu BBNT */}
               <div className="p-4 rounded-xl border border-line bg-sunken/30 flex flex-col justify-between gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-2xs font-medium text-ink-3">
                       3. Biên bản nghiệm thu
@@ -1942,7 +2394,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           Google Docs
                         </a>
                       )}
@@ -1957,7 +2409,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           Bản đã ký
                         </a>
                       )}
@@ -1995,7 +2447,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
               <Panel title="Đường dẫn lưu trữ Hợp đồng (HĐNT) · Phụ lục (PL) · Biên bản (BBNT)">
                 <div className="space-y-4 text-xs">
                   {/* 1. HĐNT */}
-                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-2.5">
+                  <div className="p-4 rounded-lg border border-line bg-sunken/30 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-ink">
                         1. Hợp đồng nguyên tắc (HĐNT)
@@ -2007,7 +2459,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             : 'CHƯA_LẬP')}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Field label="Số / Mã HĐNT">
                         <Input
                           value={
@@ -2059,7 +2511,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   </div>
 
                   {/* 2. Phụ lục SOW */}
-                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-2.5">
+                  <div className="p-4 rounded-lg border border-line bg-sunken/30 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-ink">
                         2. Phụ lục Hợp đồng theo Deal (PL / SOW)
@@ -2068,7 +2520,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                         {deal.contractAppendixStatus || 'CHỜ_KÝ'}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Field label="Số / Mã Phụ lục SOW">
                         <Input
                           value={
@@ -2120,7 +2572,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   </div>
 
                   {/* 3. BBNT */}
-                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-2.5">
+                  <div className="p-4 rounded-lg border border-line bg-sunken/30 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-ink">
                         3. Biên bản nghiệm thu (BBNT)
@@ -2132,7 +2584,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             : 'CHƯA_LẬP')}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Field label="Số / Mã BBNT">
                         <Input
                           value={
@@ -2186,40 +2638,100 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
             <div className="lg:col-span-4">
               <Panel title="Chủ thể pháp lý & Tài khoản thuế KOC">
-                <dl className="space-y-3 text-xs">
-                  <div>
-                    <dt className="text-2xs text-ink-3">Loại chủ thể &amp; Khấu trừ thuế</dt>
-                    <dd className="font-medium text-ink mt-0.5">
-                      {activeLegalProfile
-                        ? `${activeLegalProfile.taxAccountType} · ${activeLegalProfile.holderName}`
-                        : deal.loaiTaiKhoanThanhToan}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-2xs text-ink-3">Số CCCD / Mã số thuế</dt>
-                    <dd className="font-code text-ink mt-0.5">
-                      {maskSensitive(
-                        activeLegalProfile?.taxCode ||
-                          activeLegalProfile?.cccd ||
-                          deal.soCccd ||
-                          matchedKoc?.cccd,
-                        showSensitive
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng</dt>
-                    <dd className="font-medium text-ink mt-0.5">
-                      {deal.tenTaiKhoanNganHang || 'Chưa cập nhật'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-2xs text-ink-3">Ngân hàng &amp; Số tài khoản</dt>
-                    <dd className="font-code text-ink mt-0.5">
-                      {maskSensitive(deal.soTaiKhoan, canViewFullPii && showSensitive)} · {deal.nganHang || '—'}
-                    </dd>
-                  </div>
-                </dl>
+                <div className="space-y-3 text-xs">
+                  {matchedKoc && getKocLegalProfiles(matchedKoc).length > 0 && (
+                    <Field label="Chọn Hồ sơ pháp lý KOC áp dụng cho Deal">
+                      <Select
+                        disabled={isReadOnlyPartnerRole || isDataLocked}
+                        value={deal.legalProfileId || activeLegalProfile?.id || ''}
+                        onChange={(e) => {
+                          const profiles = getKocLegalProfiles(matchedKoc);
+                          const picked = profiles.find((p) => p.id === e.target.value);
+                          if (!picked) return;
+                          onUpdateDealFields?.(deal.id, {
+                            legalProfileId: picked.id,
+                            loaiTaiKhoanThanhToan:
+                              picked.taxAccountType || deal.loaiTaiKhoanThanhToan,
+                            tenTaiKhoanNganHang: normalizeBankHolderUpperNoAccent(
+                              picked.bankHolderName || picked.holderName || deal.tenTaiKhoanNganHang
+                            ),
+                            soTaiKhoan:
+                              picked.bankAccount ||
+                              picked.bankAccountNumber ||
+                              deal.soTaiKhoan,
+                            nganHang: picked.bankName || deal.nganHang,
+                            soCccd:
+                              picked.taxCode ||
+                              picked.cccd ||
+                              deal.soCccd,
+                          });
+                          onNotify?.(
+                            `Đã đồng bộ Hồ sơ pháp lý (${picked.profileCode || picked.holderName}) vào Deal ${deal.maBooking || ''}.`,
+                            'success'
+                          );
+                        }}
+                      >
+                        {getKocLegalProfiles(matchedKoc).map((prof) => (
+                          <option key={prof.id} value={prof.id}>
+                            {prof.profileCode || prof.legalType} · {prof.holderName} ({prof.bankName || 'NH'})
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  )}
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-2xs text-ink-3">Loại chủ thể &amp; Khấu trừ thuế</dt>
+                      <dd className="font-medium text-ink mt-0.5">
+                        {activeLegalProfile
+                          ? `${activeLegalProfile.taxAccountType} · ${activeLegalProfile.holderName}`
+                          : deal.loaiTaiKhoanThanhToan}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-2xs text-ink-3">Số CCCD / Mã số thuế</dt>
+                      <dd className="font-code text-ink mt-0.5">
+                        {maskSensitive(
+                          activeLegalProfile?.taxCode ||
+                            activeLegalProfile?.cccd ||
+                            deal.soCccd ||
+                            matchedKoc?.cccd,
+                          showSensitive
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng</dt>
+                      <dd className="font-medium text-ink mt-0.5">
+                        {deal.tenTaiKhoanNganHang || 'Chưa cập nhật'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-2xs text-ink-3">Ngân hàng &amp; Số tài khoản</dt>
+                      <dd className="font-code text-ink mt-0.5">
+                        {maskSensitive(deal.soTaiKhoan, canViewFullPii && showSensitive)} · {deal.nganHang || '—'}
+                      </dd>
+                    </div>
+                  </dl>
+                  {(deal.loaiTaiKhoanThanhToan.includes('Công ty') ||
+                    deal.loaiTaiKhoanThanhToan.includes('Hộ kinh doanh')) && (
+                    <div className="pt-2 border-t border-line">
+                      <Field label="Số Hóa đơn VAT / Bán hàng (Quyết toán)">
+                        <Input
+                          className="font-code"
+                          disabled={isReadOnlyPartnerRole || isDataLocked}
+                          value={deal.soHoaDonVat || ''}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              soHoaDonVat: e.target.value,
+                            })
+                          }
+                          placeholder="VD: HD-001284..."
+                        />
+                      </Field>
+                    </div>
+                  )}
+                </div>
               </Panel>
             </div>
           </div>
@@ -2279,7 +2791,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                 >
                   <div className="space-y-4 text-xs">
                     {/* 3 ô tiến độ nghiệm thu */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div
                         className={`p-3 rounded-lg border ${
                           isStage1Complete
@@ -2374,7 +2886,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       return (
                         <div
                           key={jobItem.id || jIdx}
-                          className="p-3.5 rounded-xl border border-line bg-sunken/20 space-y-3"
+                          className="p-4 rounded-xl border border-line bg-sunken/20 space-y-3"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
                             <div className="flex flex-wrap items-center gap-2">
@@ -2398,7 +2910,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           {/* Tầng 1: Video chính lên sóng */}
                           <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1.5 font-medium text-ink">
+                              <div className="flex items-center gap-2 font-medium text-ink">
                                 <Video className="w-3.5 h-3.5 text-accent" />
                                 <span>Tầng 1: Video chính lên sóng</span>
                               </div>
@@ -2416,9 +2928,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                   value={quickAirLink}
                                   onChange={(e) => setQuickAirLink(e.target.value)}
                                   placeholder="Dán link video TikTok..."
-                                  className="sm:col-span-2 h-8 px-2.5 rounded-md border border-line bg-surface font-code text-xs text-ink"
+                                  className="sm:col-span-2 h-8 px-3 rounded-md border border-line bg-surface font-code text-xs text-ink"
                                 />
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2">
                                   <input
                                     type="date"
                                     value={quickAirDate}
@@ -2492,7 +3004,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                           {/* Tầng 2: Asset & Quyền lợi đi kèm */}
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1.5 font-medium text-ink">
+                              <div className="flex items-center gap-2 font-medium text-ink">
                                 <Sparkles className="w-3.5 h-3.5 text-accent" />
                                 <span>
                                   Tầng 2: Bàn giao Asset &amp; Quyền lợi đi kèm (
@@ -2525,20 +3037,20 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                               return (
                                 <div
                                   key={addon.id}
-                                  className="p-2.5 rounded-lg border border-line bg-surface space-y-2"
+                                  className="p-3 rounded-lg border border-line bg-surface space-y-2"
                                 >
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                       <span className="font-medium text-ink">
                                         {addon.termLabel}
                                       </span>
-                                      <span className="text-2xs px-1.5 py-0.5 rounded bg-sunken text-ink-2 font-code">
+                                      <span className="text-2xs px-2 py-0.5 rounded bg-sunken text-ink-2 font-code">
                                         {addon.durationDays
                                           ? `${addon.durationDays} ngày`
                                           : 'Theo thỏa thuận'}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-2">
                                       <Status
                                         tone={
                                           isDropped
@@ -2563,7 +3075,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                         onClick={() => handleRemoveAddonFromJob(jIdx, addon.id)}
                                         className="p-1 rounded text-ink-3 hover:text-critical"
                                       >
-                                        <Trash2 className="w-3 h-3" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
                                   </div>
@@ -2571,7 +3083,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                   <div className="flex flex-wrap items-center justify-between gap-2 text-2xs">
                                     <div className="flex-1 min-w-[200px]">
                                       {isEditingEvidence ? (
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-2">
                                           <input
                                             type="text"
                                             value={editingEvidenceText}
@@ -2675,7 +3187,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             })}
 
                             {addingAddonJobIdx === jIdx && (
-                              <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
+                              <div className="p-3 rounded-lg border border-line bg-surface space-y-3">
                                 <div className="font-semibold text-ink flex items-center justify-between">
                                   <span>Thêm quyền lợi / Asset đi kèm cho Job #{jIdx + 1}</span>
                                   <button
@@ -2686,7 +3198,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                     <X className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <Field label="Tên hạng mục hiển thị">
                                     <Input
                                       value={newAddonLabel}
@@ -2782,7 +3294,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       }
                     >
                       <div className="space-y-3 text-xs">
-                        <div className="p-2.5 rounded-lg bg-sunken border border-line space-y-1.5 text-2xs text-ink-2">
+                        <div className="p-3 rounded-lg bg-sunken border border-line space-y-2 text-2xs text-ink-2">
                           <div className="flex items-center justify-between gap-2">
                             <span>Phương thức TT trên SOW:</span>
                             <strong
@@ -2820,12 +3332,12 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                         </div>
 
                         {!isTwoTimesSow && (
-                          <div className="p-2.5 rounded-lg bg-warning-soft border border-line text-2xs text-ink-2">
+                          <div className="p-3 rounded-lg bg-warning-soft border border-line text-2xs text-ink-2">
                             Phụ lục SOW của Deal đang chọn <strong className="font-semibold text-ink">Thanh toán 1 lần (100% sau nghiệm thu)</strong>. Chỉ khi Phụ lục SOW cấu hình <strong className="font-semibold text-ink">Thanh toán 2 đợt (Có tạm ứng)</strong> mới được phép đẩy luồng Tạm ứng trên Lark.
                           </div>
                         )}
 
-                        <div className="grid grid-cols-1 gap-2.5">
+                        <div className="grid grid-cols-1 gap-3">
                           <Field label="Số tiền tạm ứng trước (Net VND)">
                             <Input
                               type="number"
@@ -2906,7 +3418,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   }
                 >
                   <div className="space-y-3 text-xs">
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-3">
                       <Field label="Kỳ nghiệm thu chốt (Cố định)">
                         <Input
                           className="font-code"
@@ -2938,16 +3450,52 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       </Field>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-sunken border border-line flex items-center justify-between gap-2">
+                    <div className="p-3 rounded-lg bg-sunken border border-line flex items-center justify-between gap-2">
                       <span className="text-2xs text-ink-2">
                         Cờ <strong>Chốt data</strong> trên Base 3.2 (trước 00:00 ngày khóa):
                       </span>
                       <Button
                         size="sm"
+                        disabled={
+                          isReadOnlyPartnerRole ||
+                          (Boolean(deal.chotData) && !canApproveDataUnlock)
+                        }
                         variant={deal.chotData ? 'secondary' : 'primary'}
                         onClick={() => {
+                          if (deal.chotData && !canApproveDataUnlock) {
+                            onNotify?.(
+                              'Chỉ Kế toán / Giám đốc MKT / Leader mới có quyền bỏ Chốt data sau khi đã khóa sổ. Vui lòng gửi đề nghị mở khóa trên S40.',
+                              'warning'
+                            );
+                            return;
+                          }
                           const nextChot = !deal.chotData;
-                          onUpdateDealFields?.(deal.id, { chotData: nextChot });
+                          const nowIso = new Date().toISOString();
+                          const actorName = currentUser?.name || deal.nguoiPhuTrach || 'Nhân sự';
+                          const logEntry: S40AuditLogEntry = {
+                            id: `s40-${Date.now()}`,
+                            action: nextChot ? 'LOCK_DATA' : 'APPROVE_UNLOCK',
+                            batch: nextChot ? 'NONE' : 'UNLOCKED',
+                            reason: nextChot
+                              ? 'Tích Chốt data khóa sổ nghiệm thu tháng'
+                              : 'Bỏ Chốt data mở khóa chỉnh sửa',
+                            actorName,
+                            actorRole: effectiveRole,
+                            createdAt: nowIso,
+                          };
+                          onUpdateDealFields?.(deal.id, {
+                            chotData: nextChot,
+                            ...(nextChot
+                              ? {
+                                  ngayKhoaData:
+                                    deal.ngayKhoaData || getVietnamDateYmd(),
+                                  unlockRequestBatch: 'NONE',
+                                }
+                              : {}),
+                            s40ReviewedBy: actorName,
+                            s40ReviewedAt: nowIso,
+                            s40History: [logEntry, ...(deal.s40History || [])].slice(0, 20),
+                          });
                           onNotify?.(
                             nextChot
                               ? `Đã tích "Chốt data" cho Deal ${deal.maBooking} vào kỳ ${deal.thangNghiemThuChot || deal.thangPlan}.`
@@ -2962,13 +3510,59 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
                     <Field label="Đề nghị Kế toán mở khóa sửa sau nghiệm thu (Sheet S40)">
                       <Select
+                        disabled={isReadOnlyPartnerRole || Boolean(deal.daDiTien)}
                         value={deal.unlockRequestBatch || 'NONE'}
                         onChange={(e) => {
+                          if (deal.daDiTien) {
+                            onNotify?.(
+                              'Deal đã giải ngân thanh toán (Đã đi tiền UNC), không thể mở khóa chỉnh sửa nghiệm thu.',
+                              'warning'
+                            );
+                            return;
+                          }
                           const nextBatch = e.target.value as NonNullable<
                             ApprovedBookingListItem['unlockRequestBatch']
                           >;
+                          if (nextBatch === 'UNLOCKED' && !canApproveDataUnlock) {
+                            onNotify?.(
+                              'Chỉ Kế toán / Giám đốc MKT / Leader mới có thẩm quyền duyệt mở khóa sửa nghiệm thu (UNLOCKED).',
+                              'warning'
+                            );
+                            return;
+                          }
+                          const nowIso = new Date().toISOString();
+                          const actorName = currentUser?.name || deal.nguoiPhuTrach || 'Nhân sự';
+                          const defaultReason =
+                            deal.unlockRequestReason || S40_STANDARD_UNLOCK_REASONS[0];
+                          const logEntry: S40AuditLogEntry = {
+                            id: `s40-${Date.now()}`,
+                            action:
+                              nextBatch === 'UNLOCKED'
+                                ? 'APPROVE_UNLOCK'
+                                : nextBatch === 'NONE'
+                                  ? 'LOCK_DATA'
+                                  : 'REQUEST_UNLOCK',
+                            batch: nextBatch,
+                            reason: nextBatch === 'NONE' ? undefined : defaultReason,
+                            actorName,
+                            actorRole: effectiveRole,
+                            createdAt: nowIso,
+                          };
                           onUpdateDealFields?.(deal.id, {
                             unlockRequestBatch: nextBatch,
+                            ...(nextBatch === 'DOT_1_LV4_LV5' || nextBatch === 'DOT_2_LV10_LV11'
+                              ? {
+                                  unlockRequestReason: defaultReason,
+                                  s40RequestedBy: actorName,
+                                  s40RequestedAt: nowIso,
+                                }
+                              : nextBatch === 'UNLOCKED'
+                                ? {
+                                    s40ReviewedBy: actorName,
+                                    s40ReviewedAt: nowIso,
+                                  }
+                                : {}),
+                            s40History: [logEntry, ...(deal.s40History || [])].slice(0, 20),
                           });
                           if (nextBatch !== 'NONE') {
                             onNotify?.(
@@ -2985,29 +3579,89 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                         <option value="DOT_2_LV10_LV11">
                           Đợt 2: Đối soát Brand LV10 · Kế toán mở sửa LV11
                         </option>
-                        <option value="UNLOCKED">Kế toán đã mở khóa cho phép sửa</option>
+                        <option value="UNLOCKED" disabled={!canApproveDataUnlock}>
+                          Kế toán đã mở khóa cho phép sửa
+                        </option>
                       </Select>
                     </Field>
 
                     {deal.unlockRequestBatch && deal.unlockRequestBatch !== 'NONE' && (
-                      <Field label="Lý do xin mở khóa sửa trên S40">
-                        <Input
-                          value={deal.unlockRequestReason || ''}
-                          onChange={(e) =>
-                            onUpdateDealFields?.(deal.id, {
-                              unlockRequestReason: e.target.value,
-                            })
-                          }
-                          placeholder="VD: Bổ sung mã Spark Ads / Sửa tên TK IN HOA không dấu..."
-                        />
-                      </Field>
+                      <div className="space-y-2">
+                        <Field label="Chọn nhanh nhóm lý do mở khóa chuẩn B2C (S40)">
+                          <Select
+                            disabled={isReadOnlyPartnerRole}
+                            value={
+                              S40_STANDARD_UNLOCK_REASONS.includes(
+                                (deal.unlockRequestReason || '') as (typeof S40_STANDARD_UNLOCK_REASONS)[number]
+                              )
+                                ? deal.unlockRequestReason || ''
+                                : '__CUSTOM__'
+                            }
+                            onChange={(e) => {
+                              const picked = e.target.value;
+                              if (picked === '__CUSTOM__') return;
+                              onUpdateDealFields?.(deal.id, {
+                                unlockRequestReason: picked,
+                              });
+                            }}
+                          >
+                            {S40_STANDARD_UNLOCK_REASONS.map((r) => (
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
+                            ))}
+                            <option value="__CUSTOM__">Lý do chi tiết khác (nhập bên dưới)</option>
+                          </Select>
+                        </Field>
+                        <Field label="Chi tiết lý do xin mở khóa sửa trên S40">
+                          <Input
+                            disabled={isReadOnlyPartnerRole}
+                            value={deal.unlockRequestReason || ''}
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                unlockRequestReason: e.target.value,
+                              })
+                            }
+                            placeholder="VD: Bổ sung mã Spark Ads / Sửa tên TK IN HOA không dấu..."
+                          />
+                        </Field>
+                      </div>
+                    )}
+
+                    {(deal.s40History || []).length > 0 && (
+                      <div className="pt-2 border-t border-line space-y-1.5">
+                        <div className="text-2xs font-semibold text-ink-3">
+                          Nhật ký khóa sổ &amp; mở khóa S40 ({(deal.s40History || []).length})
+                        </div>
+                        <div className="max-h-36 overflow-y-auto divide-y divide-line rounded-lg border border-line bg-surface">
+                          {(deal.s40History || []).slice(0, 6).map((h) => (
+                            <div key={h.id} className="px-2.5 py-1.5 text-2xs space-y-0.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-ink">
+                                  {h.action === 'LOCK_DATA'
+                                    ? 'Khóa sổ data'
+                                    : h.action === 'REQUEST_UNLOCK'
+                                      ? `Xin mở S40 (${h.batch === 'DOT_1_LV4_LV5' ? 'Đợt 1' : 'Đợt 2'})`
+                                      : h.action === 'APPROVE_UNLOCK'
+                                        ? 'Duyệt mở khóa S40'
+                                        : 'Từ chối mở khóa S40'}
+                                </span>
+                                <span className="font-code text-ink-3">
+                                  {h.actorName} · {h.createdAt.slice(0, 16).replace('T', ' ')}
+                                </span>
+                              </div>
+                              {h.reason && <div className="text-ink-2 truncate">{h.reason}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </Panel>
 
                 {/* LUỒNG 3: Đối chiếu Quyết toán ĐNTT (KN8A/Le27) & Khép kín KT Handle (Bill UNC) */}
                 <Panel title="3. Luồng Tất toán ĐNTT Lark (KN8A) &amp; KT Handle">
-                  <div className="space-y-3.5 text-xs">
+                  <div className="space-y-4 text-xs">
                     <dl className="space-y-2">
                       <div className="flex items-center justify-between text-ink-2">
                         <dt>Loại thanh toán Lark (§3.3.2)</dt>
@@ -3049,7 +3703,32 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       <Button
                         variant="primary"
                         icon={Send}
-                        onClick={() => onOpenLarkPaymentModal?.(deal, 'SETTLEMENT')}
+                        onClick={() => {
+                          if (
+                            deal.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+                            deal.unlockRequestBatch === 'DOT_2_LV10_LV11'
+                          ) {
+                            onNotify?.(
+                              'Deal đang gửi yêu cầu mở khóa sửa S40. Vui lòng chờ Kế toán mở sửa hoặc hủy yêu cầu mở khóa và chốt sổ trước khi lập phiếu ĐNTT quyết toán.',
+                              'warning'
+                            );
+                            return;
+                          }
+                          if (!deal.chotData || deal.unlockRequestBatch === 'UNLOCKED') {
+                            onUpdateDealFields?.(deal.id, {
+                              chotData: true,
+                              unlockRequestBatch: 'NONE',
+                            });
+                          }
+                          onOpenLarkPaymentModal?.(
+                            {
+                              ...deal,
+                              chotData: true,
+                              unlockRequestBatch: 'NONE',
+                            },
+                            'SETTLEMENT'
+                          );
+                        }}
                       >
                         Lập phiếu ĐNTT Tất toán trên Lark (KN8A)
                       </Button>

@@ -619,7 +619,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
             </div>
           )}
           {duplicateMatch && (
-            <div className="p-3 bg-warn-soft border border-warn-line rounded-xl text-xs space-y-1.5 animate-in fade-in">
+            <div className="p-3 bg-warn-soft border border-warn-line rounded-xl text-xs space-y-2 animate-in fade-in">
               <div className="flex items-center gap-2 text-warn font-semibold">
                 <AlertTriangle className="w-4 h-4 text-warn shrink-0" />
                 <span>Cảnh báo trùng hồ sơ KOC: {duplicateMatch.reason}</span>
@@ -638,9 +638,9 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           )}
 
           {/* Tự động điền thông tin từ link kênh TikTok */}
-          <div className="p-3.5 bg-surface rounded-xl border border-line space-y-2">
+          <div className="p-4 bg-surface rounded-xl border border-line space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-ink font-semibold flex items-center gap-1.5">
+              <span className="text-ink font-semibold flex items-center gap-2">
                 <CloudDownload className="w-3.5 h-3.5 text-accent" />
                 Lấy thông tin tự động từ kênh TikTok &amp; Creator Marketplace
               </span>
@@ -656,13 +656,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 placeholder="Dán link kênh (https://www.tiktok.com/@...) hoặc nhập @handle..."
                 value={tiktokLookupInput}
                 onChange={(e) => setTiktokLookupInput(e.target.value)}
-                className="flex-1 bg-canvas border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary"
+                className="flex-1 bg-canvas border border-line-strong rounded-lg px-4 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary"
               />
               <button
                 type="button"
                 disabled={isFetchingTikTok}
                 onClick={handleFetchFromTikTok}
-                className="px-3.5 py-2 rounded-lg bg-surface border border-line-strong hover:bg-sunken text-ink font-medium text-xs inline-flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-surface border border-line-strong hover:bg-sunken text-ink font-medium text-xs inline-flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
               >
                 {isFetchingTikTok ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -675,8 +675,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Section 1: Channel & Stage Name & Booking Format */}
-          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
-            <span className="text-ink font-semibold flex items-center gap-1.5">
+          <div className="p-4 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-2">
               <FileText className="w-3.5 h-3.5 text-primary" />
               Thông tin nhận diện kênh &amp; định dạng booking
             </span>
@@ -692,7 +692,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   placeholder="VD: Hải yến Beauty, Chanh Review..."
                   value={stageName}
                   onChange={(e) => setStageName(e.target.value)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-4 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
 
@@ -706,7 +706,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   placeholder="VD: @haiyen.beauty"
                   value={channelId}
                   onChange={(e) => setChannelId(e.target.value)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-4 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
                 />
               </div>
 
@@ -733,12 +733,12 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 placeholder="VD: @haiyen.daily, @haiyen.livestream"
                 value={extraTiktokChannels}
                 onChange={(e) => setExtraTiktokChannels(e.target.value)}
-                className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary"
               />
             </div>
 
             {/* Kênh mạng xã hội khác: Shopee, Facebook, Instagram, Threads */}
-            <div className="pt-3 border-t border-line space-y-2.5">
+            <div className="pt-3 border-t border-line space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-ink font-semibold text-xs">
                   Kênh mạng xã hội khác (Shopee, Facebook, Instagram, Threads)
@@ -747,7 +747,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   type="button"
                   disabled={isSearchingSocial}
                   onClick={handleSearchSocialChannels}
-                  className="px-3 py-1.5 rounded-lg bg-surface border border-line-strong hover:bg-canvas text-ink font-medium text-2xs inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3 py-2 rounded-lg bg-surface border border-line-strong hover:bg-canvas text-ink font-medium text-2xs inline-flex items-center gap-2 disabled:opacity-50"
                 >
                   {isSearchingSocial ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -780,7 +780,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                     placeholder="VD: megauriviu hoặc link shopee.vn/..."
                     value={shopeeChannel}
                     onChange={(e) => setShopeeChannel(e.target.value)}
-                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary"
                   />
                   {socialCandidates && socialCandidates.candidatesByPlatform.SHOPEE.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-0.5">
@@ -817,7 +817,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                     placeholder="VD: megauriviu hoặc link facebook.com/..."
                     value={facebookChannel}
                     onChange={(e) => setFacebookChannel(e.target.value)}
-                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary"
                   />
                   {socialCandidates && socialCandidates.candidatesByPlatform.FACEBOOK.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-0.5">
@@ -854,7 +854,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                     placeholder="VD: @megauriviu"
                     value={instagramChannel}
                     onChange={(e) => setInstagramChannel(e.target.value)}
-                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary"
                   />
                   {socialCandidates && socialCandidates.candidatesByPlatform.INSTAGRAM.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-0.5">
@@ -891,7 +891,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                     placeholder="VD: @megauriviu"
                     value={threadsChannel}
                     onChange={(e) => setThreadsChannel(e.target.value)}
-                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary"
                   />
                   {socialCandidates && socialCandidates.candidatesByPlatform.THREADS.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-0.5">
@@ -913,9 +913,9 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Section 2: Rate Card & Auto Salary Grade Calculation */}
-          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
+          <div className="p-4 bg-sunken rounded-xl border border-line space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-ink font-semibold flex items-center gap-1.5">
+              <span className="text-ink font-semibold flex items-center gap-2">
                 <DollarSign className="w-3.5 h-3.5 text-success" />
                 Báo giá video &amp; tự động gán khung lương (KL)
               </span>
@@ -941,7 +941,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <select
                   value={salaryGrade}
                   onChange={(e) => handleSalaryGradeChange(e.target.value as SalaryGrade)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="TAP UpAffiliate">TAP UpAffiliate (0đ)</option>
                   <option value="KL1">KL1 (&lt; 500k)</option>
@@ -960,7 +960,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <select
                   value={segment}
                   onChange={(e) => setSegment(e.target.value as CreatorSegment)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Massive Creator">Massive Creator (TAP, KL1-3)</option>
                   <option value="Mid Creator">Mid Creator (KL4-5)</option>
@@ -983,8 +983,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Section 3: Creator Niche & Follower Demographics */}
-          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
-            <span className="text-ink font-semibold flex items-center gap-1.5">
+          <div className="p-4 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-2">
               <Users className="w-3.5 h-3.5 text-primary" />
               Tệp kênh (25 tệp), ngành hàng (9 ngành) &amp; khán giả
             </span>
@@ -995,7 +995,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <select
                   value={tepKenh}
                   onChange={(e) => setTepKenh(e.target.value as TepKenh)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Review Nữ">Review Nữ</option>
                   <option value="Review Nam">Review Nam</option>
@@ -1033,7 +1033,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <select
                   value={kocCategory}
                   onChange={(e) => setKocCategory(e.target.value as KocCategory)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Personal care">Personal care (Mỹ phẩm/Skincare)</option>
                   <option value="Mom and baby">Mom and baby (mẹ &amp; bé)</option>
@@ -1074,7 +1074,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <select
                   value={ageGroup}
                   onChange={(e) => setAgeGroup(e.target.value as '18-24' | '25-34' | '35+')}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="18-24">18 - 24 Tuổi</option>
                   <option value="25-34">25 - 34 tuổi (dân VP, sức mua cao)</option>
@@ -1085,8 +1085,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Section 4: Sample Logistics & Operational PIC */}
-          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
-            <span className="text-ink font-semibold flex items-center gap-1.5">
+          <div className="p-4 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-2">
               <Truck className="w-3.5 h-3.5 text-success" />
               Hậu cần gửi mẫu &amp; nhân sự booking phụ trách
             </span>
@@ -1156,7 +1156,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   placeholder="VD: haiyen.beauty@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-4 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
@@ -1168,15 +1168,15 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   placeholder="VD: Nguyễn Hải Yến — 0987654321 — Tầng 5, tòa Charmvit, 117 Trần Duy Hưng, Hà Nội"
                   value={shippingAddress}
                   onChange={(e) => setShippingAddress(e.target.value)}
-                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-4 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
           </div>
 
           {/* Section 5: Legal & Payment Data */}
-          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
-            <span className="text-ink font-semibold flex items-center gap-1.5">
+          <div className="p-4 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-2">
               <CreditCard className="w-3.5 h-3.5 text-primary" />
               Pháp lý &amp; thanh toán (tự động sinh hợp đồng &amp; VietQR cọc 50%)
             </span>
@@ -1188,7 +1188,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setLegalType('INDIVIDUAL')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
+                  className={`px-3 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                     legalType === 'INDIVIDUAL'
                       ? 'bg-primary text-primary-fg'
                       : 'text-ink-2 hover:text-ink'
@@ -1199,7 +1199,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setLegalType('BUSINESS_HOUSEHOLD')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
+                  className={`px-3 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                     legalType === 'BUSINESS_HOUSEHOLD'
                       ? 'bg-primary text-primary-fg'
                       : 'text-ink-2 hover:text-ink'
@@ -1210,7 +1210,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setLegalType('BUSINESS_COMPANY')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
+                  className={`px-3 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                     legalType === 'BUSINESS_COMPANY'
                       ? 'bg-primary text-primary-fg'
                       : 'text-ink-2 hover:text-ink'

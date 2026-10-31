@@ -1,8 +1,11 @@
 import type {
+  BookingDealItem,
   InputPlanBreakdownState,
   KocItem,
   PlanMultiPlatformKey,
+  StorePortfolioItem,
 } from './types';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 export const MULTI_PLATFORM_STORAGE_KEY = 'upbase_b2c_multi_platform_listing_v2';
 export const MULTI_PLATFORM_CUSTOM_FIELDS_KEY = 'upbase_b2c_multi_platform_custom_fields_v1';
@@ -329,10 +332,32 @@ export interface MultiPlatformAutoCheckSummary {
   checkedAt: string;
 }
 
+export interface MultiPlatformDealJobItem {
+  id: string;
+  jobCode: string;                 // VD: BO2610-THR-001-J01, BO2610-THR-001-J02
+  jobTitle: string;                // VD: Bảng công việc #1 (BO2610-THR-001-J01)
+  productName: string;             // Sản phẩm / SKU của Job này
+  postFormat: string;              // Định dạng bài đăng của Job này
+  linkPlacement: string;           // Vị trí gắn link Affiliate / Giỏ cam
+  unitNetFee: number;              // Đơn giá Net của Job này (VND)
+  plannedPostDate?: string;        // Ngày dự kiến đăng (YYYY-MM-DD)
+  actualPostDate?: string;         // Ngày đăng thực tế (YYYY-MM-DD)
+  postUrl?: string;                // Link bài đăng nghiệm thu
+  affiliateTargetUrl?: string;     // Link Shopee Affiliate / Giỏ hàng
+  isAffiliateLinkVerified?: boolean;
+  acceptanceStatus?:
+    | 'CHỜ_ĐĂNG'
+    | 'ĐÃ_ĐĂNG'
+    | 'ĐẠT_CHUẨN'
+    | 'CHUA_NGHIEM_THU'
+    | 'DA_NGHIEM_THU';
+  autoCheckResult?: MultiPlatformAutoCheckSummary;
+}
+
 /**
- * Một dòng Listing & Nghiệm thu trên sàn ngoài TikTok.
+ * Một dòng Deal & Nghiệm thu trên sàn ngoài TikTok (Quản lý theo cấu trúc 1 Deal = N Job).
  * Lưu ý: KHÔNG gắn kèm các asset phụ của TikTok (không có Spark Ads code, không tách videoAsset/addonServices).
- * Mỗi dòng là 1 bài đăng trọn gói trên sàn đó + các trường mở rộng theo từng sàn (`platformMetrics`).
+ * Mỗi Deal (`boCode`) chứa danh sách `dealJobs` (1 hoặc N Job bài đăng) + các trường mở rộng theo từng sàn (`platformMetrics`).
  */
 export interface MultiPlatformListingItem {
   id: string;
@@ -344,26 +369,32 @@ export interface MultiPlatformListingItem {
   targetWeek: string;             // 'W45' | 'W46' | 'W47' | 'W48' | 'W49'
   staffName: string;              // Nhân sự phụ trách
 
-  // Thông tin KOC trên sàn đó
-  kocId?: string;
+  // Định danh KOC gốc sở hữu kênh (Liên kết 1-N với Danh bạ KOC TikTok để chống mồ côi kênh)
+  kocId?: string;                 // Mã KOC trong Danh bạ KOC Master (VD: KOC-0001)
+  kocStageName?: string;          // Tên KOC gốc trong Danh bạ (VD: Bác Sĩ Hiếu)
+  kocTiktokHandle?: string;       // ID kênh TikTok gốc của KOC (VD: @drhieu.official)
+  kocTiktokUrl?: string;          // Link kênh TikTok gốc (https://www.tiktok.com/@...)
+
+  // Thông tin kênh trên sàn đó (Threads / Facebook / Shopee Video / Instagram)
   channelHandle: string;          // @handle hoặc tên nick/page trên sàn đó
-  kocDisplayName: string;         // Tên hiển thị KOC
+  kocDisplayName: string;         // Tên hiển thị kênh trên sàn đó
   channelUrl: string;             // Link kênh đúng theo sàn
   followersCount: number;         // Follower trên sàn đó
   nicheTag: string;               // Tệp kênh (Beauty, Mom & Baby, Sức khỏe...)
 
-  // Đề xuất nội dung & Giá trọn gói (không kèm asset phụ)
+  // Đề xuất nội dung & Giá trọn gói (tổng hợp từ dealJobs)
   productName: string;            // Sản phẩm / SKU
   postFormat: string;             // Định dạng bài trên sàn đó
   linkPlacement: string;          // Cách gắn link Affiliate / giỏ hàng
-  unitNetFee: number;             // Giá Net trọn gói cho bài đăng trên sàn này
-  grossFeeWithTax: number;        // Phí kèm thuế TNCN 10% (= unitNetFee / 0.9)
+  unitNetFee: number;             // Tổng Giá Net Deal (cộng từ các Job trong Deal)
+  grossFeeWithTax: number;        // Phí kèm thuế chuẩn BR-09
   upbaseProposal: 'Must Have' | 'Recommend' | 'Optional';
   brandDecision: MultiPlatformBrandDecision;
   brandNote?: string;
 
-  // Thực thi & Nghiệm thu bài đăng (Khi Brand chọn Yes)
-  boCode?: string;                // Mã BO (VD: BO2611-THR-001)
+  // Thực thi & Nghiệm thu Deal - Job (Khi Brand chọn Yes)
+  boCode?: string;                // Mã Deal BO (VD: BO2611-THR-001)
+  dealJobs?: MultiPlatformDealJobItem[]; // Danh sách 1..N Job thuộc Deal (sẵn sàng ánh xạ sang Phụ lục SOW khi cần)
   plannedPostDate?: string;       // Ngày dự kiến đăng (YYYY-MM-DD)
   actualPostDate?: string;        // Ngày đăng thực tế (YYYY-MM-DD)
   postUrl?: string;               // Link bài đăng thực tế trên FB / Threads / IG / Shopee Video
@@ -385,6 +416,9 @@ export interface MultiPlatformReupRecord {
   storeName: string;
   platform: PlanMultiPlatformKey;
   weekCode: string;               // 'W45', 'W46'...
+  kocId?: string;                 // Mã KOC gốc sở hữu video (nếu Reup từ KOC)
+  kocStageName?: string;          // Tên KOC gốc trong Danh bạ
+  kocTiktokHandle?: string;       // ID kênh TikTok gốc (@handle)
   kocOrSourceName: string;        // Kênh hoặc nguồn video gốc
   sourceVideoUrl: string;         // Link video gốc (TikTok / Kênh Brand)
   reupPostUrl: string;            // Link đã đăng lại trên Shopee Video / FB Reels / IG / Threads
@@ -437,9 +471,141 @@ export function detectMultiPlatformFromUrl(url: string): PlanMultiPlatformKey | 
   return null;
 }
 
-export function computeGrossFromNet(netFee: number): number {
+export function computeGrossFromNet(
+  netFee: number,
+  loaiTaiKhoan: 'INDIVIDUAL' | 'HOUSEHOLD_BUSINESS' | 'COMPANY' = 'INDIVIDUAL'
+): number {
   if (!netFee || netFee <= 0) return 0;
+  if (loaiTaiKhoan === 'HOUSEHOLD_BUSINESS') return Math.round(netFee);
+  if (loaiTaiKhoan === 'COMPANY') return Math.round(netFee * 1.08);
+  // Cá nhân (TNCN 10%): Dưới 2.000.000đ không khấu trừ thuế tại nguồn (chuẩn BR-09)
+  if (netFee < 2_000_000) return Math.round(netFee);
   return Math.round(netFee / 0.9);
+}
+
+/**
+ * Chuẩn hóa danh sách Job thuộc 1 Deal ngoại sàn (1 Deal = N Job).
+ * Đảm bảo mỗi Deal luôn có ít nhất 1 Job (`J01`) để sẵn sàng mở rộng sang Phụ lục SOW khi cần.
+ */
+export function ensureMultiPlatformDealJobs(
+  item: MultiPlatformListingItem
+): MultiPlatformDealJobItem[] {
+  const cfg = MULTI_PLATFORM_CONFIGS[item.platform];
+  const baseBo = item.boCode || `MP-${item.id}`;
+  if (Array.isArray(item.dealJobs) && item.dealJobs.length > 0) {
+    return item.dealJobs.map((j, idx) => {
+      const fallbackCode = `${baseBo}-J${String(idx + 1).padStart(2, '0')}`;
+      const jobCode = j.jobCode?.trim() || fallbackCode;
+      const postUrl = j.postUrl !== undefined ? j.postUrl : idx === 0 ? item.postUrl : undefined;
+      return {
+        ...j,
+        id: j.id || `${jobCode}-${idx}`,
+        jobCode,
+        jobTitle: j.jobTitle?.trim() || `Bảng công việc #${idx + 1} (${jobCode})`,
+        productName: j.productName?.trim() || item.productName || `${item.brandName} Chủ lực`,
+        postFormat: j.postFormat || item.postFormat || cfg.formatOptions[0],
+        linkPlacement: j.linkPlacement || item.linkPlacement || cfg.linkPlacementOptions[0],
+        unitNetFee: Number.isFinite(Number(j.unitNetFee)) ? Number(j.unitNetFee) : item.unitNetFee || 0,
+        plannedPostDate: j.plannedPostDate || item.plannedPostDate,
+        actualPostDate: j.actualPostDate || (idx === 0 ? item.actualPostDate : undefined),
+        postUrl,
+        affiliateTargetUrl:
+          j.affiliateTargetUrl !== undefined
+            ? j.affiliateTargetUrl
+            : idx === 0
+            ? item.affiliateTargetUrl
+            : undefined,
+        isAffiliateLinkVerified:
+          j.isAffiliateLinkVerified !== undefined
+            ? j.isAffiliateLinkVerified
+            : idx === 0
+            ? item.isAffiliateLinkVerified
+            : false,
+        acceptanceStatus: postUrl?.trim() ? 'DA_NGHIEM_THU' : j.acceptanceStatus || 'CHUA_NGHIEM_THU',
+      };
+    });
+  }
+
+  const jobCode = `${baseBo}-J01`;
+  return [
+    {
+      id: `${jobCode}-0`,
+      jobCode,
+      jobTitle: `Bảng công việc #1 (${jobCode})`,
+      productName: item.productName || `${item.brandName} Chủ lực`,
+      postFormat: item.postFormat || cfg.formatOptions[0],
+      linkPlacement: item.linkPlacement || cfg.linkPlacementOptions[0],
+      unitNetFee: Number(item.unitNetFee) || 0,
+      plannedPostDate: item.plannedPostDate,
+      actualPostDate: item.actualPostDate,
+      postUrl: item.postUrl,
+      affiliateTargetUrl: item.affiliateTargetUrl,
+      isAffiliateLinkVerified: item.isAffiliateLinkVerified,
+      acceptanceStatus: item.postUrl?.trim() ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU',
+      autoCheckResult: item.autoCheckResult,
+    },
+  ];
+}
+
+/**
+ * Tính toán lại thông tin tổng hợp của Deal ngoại sàn từ danh sách `dealJobs`.
+ */
+export function recalculateMultiPlatformDealFromJobs(
+  item: MultiPlatformListingItem,
+  jobs: MultiPlatformDealJobItem[]
+): MultiPlatformListingItem {
+  const baseBo = item.boCode || `MP-${item.id}`;
+  const normalizedJobs = (jobs.length > 0 ? jobs : ensureMultiPlatformDealJobs(item)).map(
+    (j, idx) => {
+      const jobCode =
+        j.jobCode && !j.jobCode.startsWith('MP-')
+          ? j.jobCode
+          : `${baseBo}-J${String(idx + 1).padStart(2, '0')}`;
+      return {
+        ...j,
+        id: j.id || `${jobCode}-${idx}`,
+        jobCode,
+        jobTitle: `Bảng công việc #${idx + 1} (${jobCode})`,
+        unitNetFee: Math.max(0, Number(j.unitNetFee) || 0),
+        acceptanceStatus: j.postUrl?.trim()
+          ? ('DA_NGHIEM_THU' as const)
+          : ('CHUA_NGHIEM_THU' as const),
+      };
+    }
+  );
+
+  const totalNet = normalizedJobs.reduce((sum, j) => sum + (Number(j.unitNetFee) || 0), 0);
+  const firstJob = normalizedJobs[0];
+  const combinedProducts =
+    normalizedJobs.length > 1
+      ? Array.from(new Set(normalizedJobs.map((j) => j.productName?.trim()).filter(Boolean))).join(' + ')
+      : firstJob?.productName || item.productName;
+  const anyPostedJob = normalizedJobs.find((j) => Boolean(j.postUrl?.trim())) || firstJob;
+  const allJobsPosted = normalizedJobs.every((j) => Boolean(j.postUrl?.trim()));
+
+  return {
+    ...item,
+    productName: combinedProducts || item.productName,
+    postFormat: firstJob?.postFormat || item.postFormat,
+    linkPlacement: firstJob?.linkPlacement || item.linkPlacement,
+    unitNetFee: totalNet,
+    grossFeeWithTax: computeGrossFromNet(totalNet),
+    plannedPostDate: firstJob?.plannedPostDate || item.plannedPostDate,
+    actualPostDate: anyPostedJob?.actualPostDate || item.actualPostDate,
+    postUrl: anyPostedJob?.postUrl || item.postUrl,
+    affiliateTargetUrl: anyPostedJob?.affiliateTargetUrl || item.affiliateTargetUrl,
+    isAffiliateLinkVerified: Boolean(anyPostedJob?.isAffiliateLinkVerified ?? item.isAffiliateLinkVerified),
+    stage:
+      item.stage === 'PAID' || item.stage === 'PAYMENT_READY'
+        ? item.stage
+        : allJobsPosted
+        ? 'ACCEPTED'
+        : item.boCode
+        ? 'APPROVED_EXECUTION'
+        : item.stage,
+    dealJobs: normalizedJobs,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 /** Tính hạn ngạch 4 sàn (Shopee, Threads, Facebook, Instagram) của 1 kế hoạch gian hàng từ 4.1 & 4.1.1 */
@@ -477,17 +643,20 @@ export function computeStoreMultiPlatformQuotas(
     );
     const pReups = reupRecords.filter(r => r.platform === key);
 
+    const countJobs = (list: MultiPlatformListingItem[]) =>
+      list.reduce((sum, it) => sum + Math.max(1, it.dealJobs?.length || 1), 0);
+
     result[key] = {
       platform: key,
       label: cfg.label,
       targetAffQty,
       targetBudgetNet,
       targetReupQty,
-      listedQty: pItems.length,
+      listedQty: countJobs(pItems),
       listedBudgetNet: pItems.reduce((s, i) => s + (i.unitNetFee || 0), 0),
-      approvedYesQty: yesItems.length,
+      approvedYesQty: countJobs(yesItems),
       approvedYesBudgetNet: yesItems.reduce((s, i) => s + (i.unitNetFee || 0), 0),
-      acceptedQty: acceptedItems.length,
+      acceptedQty: countJobs(acceptedItems),
       acceptedBudgetNet: acceptedItems.reduce((s, i) => s + (i.unitNetFee || 0), 0),
       actualReupQty: pReups.length,
     };
@@ -496,144 +665,31 @@ export function computeStoreMultiPlatformQuotas(
   return result;
 }
 
-/** Tạo dữ liệu mẫu bám sát 100% các gian hàng có chỉ tiêu Đa sàn thực tế trên Lark Base 4.1 & 4.1.1 */
-export function buildInitialMultiPlatformSeed(plans: InputPlanBreakdownState[], kocs: KocItem[]): {
+export function isSyntheticMultiPlatformSeedItem(
+  item?: Partial<MultiPlatformListingItem> | null
+): boolean {
+  if (!item || typeof item !== 'object') return false;
+  const id = String(item.id || '');
+  return id.startsWith('MP-ITEM-') && item.updatedAt === '2026-10-30T10:00:00.000Z';
+}
+
+export function isSyntheticMultiPlatformSeedReup(
+  record?: Partial<MultiPlatformReupRecord> | null
+): boolean {
+  if (!record || typeof record !== 'object') return false;
+  const id = String(record.id || '');
+  return id.startsWith('MP-REUP-') && record.createdAt === '2026-10-30T10:00:00.000Z';
+}
+
+/** Khởi tạo danh sách Đa sàn rỗng (chỉ giữ hạn ngạch thực tế từ Lark Base 4.1 & 4.1.1, không tự sinh KOC mẫu) */
+export function buildInitialMultiPlatformSeed(
+  _plans: InputPlanBreakdownState[],
+  _kocs: KocItem[]
+): {
   items: MultiPlatformListingItem[];
   reups: MultiPlatformReupRecord[];
 } {
-  const sampleKocs = kocs.length > 0 ? kocs.slice(0, 40) : [];
-  const pickKoc = (idx: number) => {
-    const k = sampleKocs[idx % Math.max(1, sampleKocs.length)];
-    return {
-      kocId: k?.id || `KOC-MP-${idx}`,
-      handle: (k?.channelId || `creator.b2c.${idx + 1}`).replace(/^@/, ''),
-      name: k?.stageName || `Creator Đa Sàn #${idx + 1}`,
-      followers: k?.followers || 28500 + (idx % 9) * 6200,
-      niche: k?.tepKenh || 'Beauty & Personal Care',
-    };
-  };
-
-  const items: MultiPlatformListingItem[] = [];
-  const reups: MultiPlatformReupRecord[] = [];
-  let seq = 1;
-
-  for (const plan of plans) {
-    const storeName = plan.storeName || plan.brandName;
-    const brandName = (plan.parentBrand || plan.brandName || storeName).split('_')[0].trim();
-    const staffName = plan.primaryPic || plan.pic || 'Hà Thị Thủy';
-    const mpRef = plan.reference41?.multiPlatform;
-    if (!mpRef) continue;
-
-    const platforms: PlanMultiPlatformKey[] = ['threads', 'facebook', 'shopee', 'instagram'];
-    for (const pk of platforms) {
-      const pData = mpRef[pk];
-      if (!pData) continue;
-      const cfg = MULTI_PLATFORM_CONFIGS[pk];
-      const affQty = pData.affQty || 0;
-      const costNet = pData.costNet || 0;
-      const reupQty = pData.reupQty || 0;
-
-      if (affQty > 0 || costNet > 0) {
-        const countToSeed = Math.min(affQty > 0 ? affQty : 3, 6);
-        const unitNet =
-          affQty > 0 && costNet > 0
-            ? Math.round(costNet / affQty)
-            : costNet > 0
-            ? Math.round(costNet / countToSeed)
-            : cfg.defaultUnitNet;
-
-        for (let i = 0; i < countToSeed; i++) {
-          const koc = pickKoc(seq);
-          const isApproved = i < Math.ceil(countToSeed * 0.75);
-          const weekNum = 45 + (i % 4);
-          const weekCode = plan.month === '2026/10' ? `W${40 + (i % 4)}` : `W${weekNum}`;
-          const postDate =
-            plan.month === '2026/10'
-              ? `2026-10-${String(10 + i * 3).padStart(2, '0')}`
-              : `2026-11-${String(5 + i * 3).padStart(2, '0')}`;
-
-          // Chỉ lưu các chỉ số hồ sơ kênh ở bước Listing; tuyệt đối không tự điền giả chỉ số nghiệm thu hoặc trạng thái Đã nghiệm thu trước khi quét thực tế (RULE-DATA-01)
-          const metrics: Record<string, string | number> = {};
-          if (pk === 'threads') {
-            metrics.avgLikesReplies = 95 + (i * 27) % 180;
-            metrics.threadStyle = i % 2 === 0 ? 'Chia sẻ trải nghiệm thật' : 'So sánh sản phẩm';
-          } else if (pk === 'facebook') {
-            metrics.fbChannelType = i % 2 === 0 ? 'Trang cá nhân / Hot Mom' : 'Fanpage Creator';
-            metrics.avgPostEngagement = 380 + i * 120;
-          } else if (pk === 'shopee') {
-            metrics.avgShopeeViews = 2400 + i * 500;
-            metrics.shopeeCoopMode = unitNet > 0 ? 'Cast trả phí trọn gói' : 'FOC 0đ + Hoa hồng Affiliate';
-          } else if (pk === 'instagram') {
-            metrics.igEngagementRate = Number((3.2 + (i % 4) * 0.6).toFixed(1));
-            metrics.igAestheticTag = 'Beauty Hàn Quốc / Clean Girl';
-          }
-
-          const codePrefix = pk === 'threads' ? 'THR' : pk === 'facebook' ? 'FB' : pk === 'shopee' ? 'SHP' : 'IG';
-          const monthDigits = plan.month.replace('/', '').slice(-4);
-          const boCode = isApproved ? `BO${monthDigits}-${codePrefix}-${String(seq).padStart(3, '0')}` : undefined;
-
-          items.push({
-            id: `MP-ITEM-${plan.month.replace('/', '')}-${pk}-${seq}`,
-            monthKey: plan.month,
-            storeName,
-            brandName,
-            platform: pk,
-            batchLabel: i < 3 ? 'Đợt 1' : 'Đợt 2',
-            targetWeek: weekCode,
-            staffName,
-            kocId: koc.kocId,
-            channelHandle: `@${koc.handle}`,
-            kocDisplayName: koc.name,
-            channelUrl: buildPlatformChannelUrl(pk, koc.handle),
-            followersCount: koc.followers,
-            nicheTag: koc.niche,
-            productName: `${brandName} Chủ lực`,
-            postFormat: cfg.formatOptions[i % cfg.formatOptions.length],
-            linkPlacement: cfg.linkPlacementOptions[0],
-            unitNetFee: unitNet,
-            grossFeeWithTax: computeGrossFromNet(unitNet),
-            upbaseProposal: i === 0 ? 'Must Have' : 'Recommend',
-            brandDecision: isApproved ? 'Yes' : 'Chờ duyệt',
-            boCode,
-            plannedPostDate: postDate,
-            actualPostDate: undefined,
-            postUrl: undefined,
-            affiliateTargetUrl: undefined,
-            isAffiliateLinkVerified: false,
-            stage: isApproved ? 'APPROVED_EXECUTION' : 'LISTING',
-            paymentStatus: 'Chờ nghiệm thu',
-            platformMetrics: metrics,
-            updatedAt: '2026-10-30T10:00:00.000Z',
-          });
-          seq += 1;
-        }
-      }
-
-      if (reupQty > 0) {
-        const reupSeedCount = Math.min(reupQty, 4);
-        for (let rIdx = 0; rIdx < reupSeedCount; rIdx++) {
-          const koc = pickKoc(seq + rIdx);
-          const weekCode = plan.month === '2026/10' ? `W${40 + (rIdx % 4)}` : `W${45 + (rIdx % 4)}`;
-          reups.push({
-            id: `MP-REUP-${plan.month.replace('/', '')}-${pk}-${seq}-${rIdx}`,
-            monthKey: plan.month,
-            storeName,
-            platform: pk,
-            weekCode,
-            kocOrSourceName: koc.name,
-            sourceVideoUrl: '',
-            reupPostUrl: '',
-            productName: `${brandName} Chủ lực`,
-            staffName,
-            postedDate: plan.month === '2026/10' ? '2026-10-18' : '2026-11-12',
-            createdAt: '2026-10-30T10:00:00.000Z',
-          });
-        }
-      }
-    }
-  }
-
-  return { items, reups };
+  return { items: [], reups: [] };
 }
 
 export function loadMultiPlatformCustomFields(): Record<PlanMultiPlatformKey, MultiPlatformFieldDef[]> {
@@ -660,6 +716,402 @@ export function saveMultiPlatformCustomFields(
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(MULTI_PLATFORM_CUSTOM_FIELDS_KEY, JSON.stringify(fieldsByPlatform));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export interface ResolvedMultiPlatformParentKoc {
+  koc: KocItem | null;
+  isOrphaned: boolean;
+  kocId: string;
+  kocStageName: string;
+  kocTiktokHandle: string;
+  kocTiktokUrl: string;
+  salaryGrade?: string;
+}
+
+interface MultiPlatformKocIndex {
+  byId: Map<string, KocItem>;
+  byTiktokHandle: Map<string, KocItem>;
+  byPlatformHandle: Map<string, KocItem>;
+  byAnyHandle: Map<string, KocItem>;
+  byStageName: Map<string, KocItem>;
+}
+
+const kocIndexCache = new WeakMap<KocItem[], MultiPlatformKocIndex>();
+
+function cleanSocialHandle(raw?: string | null): string {
+  const s = (raw || '').trim();
+  if (!s) return '';
+  const m = s.match(
+    /(?:tiktok\.com\/@|facebook\.com\/|instagram\.com\/|threads\.net\/@|threads\.com\/@|shopee\.vn\/)([a-zA-Z0-9._-]+)/i
+  );
+  if (m && m[1]) return m[1].replace(/^@/, '').trim();
+  return s.replace(/^@/, '').trim();
+}
+
+function normPersonText(raw?: string | null): string {
+  return (raw || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+export function getMultiPlatformKocIndex(kocs: KocItem[]): MultiPlatformKocIndex {
+  const cached = kocIndexCache.get(kocs);
+  if (cached) return cached;
+
+  const byId = new Map<string, KocItem>();
+  const byTiktokHandle = new Map<string, KocItem>();
+  const byPlatformHandle = new Map<string, KocItem>();
+  const byAnyHandle = new Map<string, KocItem>();
+  const byStageName = new Map<string, KocItem>();
+
+  const registerHandle = (plat: PlanMultiPlatformKey | 'tiktok', rawHandle: string | undefined, k: KocItem) => {
+    const clean = cleanSocialHandle(rawHandle).toLowerCase();
+    if (!clean) return;
+    if (!byAnyHandle.has(clean)) byAnyHandle.set(clean, k);
+    if (plat === 'tiktok') {
+      if (!byTiktokHandle.has(clean)) byTiktokHandle.set(clean, k);
+    } else {
+      const key = `${plat}::${clean}`;
+      if (!byPlatformHandle.has(key)) byPlatformHandle.set(key, k);
+    }
+  };
+
+  for (const k of kocs) {
+    if (!k) continue;
+    if (k.id) byId.set(k.id, k);
+
+    registerHandle('tiktok', k.channelId, k);
+    registerHandle('tiktok', k.tiktokChannel, k);
+    for (const h of k.tiktokChannels || []) {
+      registerHandle('tiktok', h, k);
+    }
+
+    const splitHandles = (val?: string) =>
+      (val || '')
+        .split(/[,;]/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    for (const h of splitHandles(k.threadsChannel)) registerHandle('threads', h, k);
+    for (const h of splitHandles(k.facebookChannel)) registerHandle('facebook', h, k);
+    for (const h of splitHandles(k.shopeeChannel)) registerHandle('shopee', h, k);
+    for (const h of splitHandles(k.instagramChannel)) registerHandle('instagram', h, k);
+
+    for (const ch of k.connectedChannels || []) {
+      const p = ch.platform;
+      if (p === 'TIKTOK') registerHandle('tiktok', ch.handle, k);
+      else if (p === 'THREADS') registerHandle('threads', ch.handle, k);
+      else if (p === 'FACEBOOK') registerHandle('facebook', ch.handle, k);
+      else if (p === 'SHOPEE') registerHandle('shopee', ch.handle, k);
+      else if (p === 'INSTAGRAM') registerHandle('instagram', ch.handle, k);
+    }
+
+    const stageNorm = normPersonText(k.stageName);
+    if (stageNorm && !byStageName.has(stageNorm)) byStageName.set(stageNorm, k);
+    const realNorm = normPersonText(k.realName);
+    if (realNorm && !byStageName.has(realNorm)) byStageName.set(realNorm, k);
+  }
+
+  const index: MultiPlatformKocIndex = {
+    byId,
+    byTiktokHandle,
+    byPlatformHandle,
+    byAnyHandle,
+    byStageName,
+  };
+  kocIndexCache.set(kocs, index);
+  return index;
+}
+
+/**
+ * Xác định KOC gốc (có kênh TikTok trong Danh bạ KOC) sở hữu kênh ngoại sàn.
+ * Đảm bảo kênh trên Threads / Facebook / Shopee Video / Instagram không bị mồ côi.
+ */
+export function resolveMultiPlatformParentKoc(
+  item: Pick<
+    MultiPlatformListingItem,
+    'kocId' | 'kocStageName' | 'kocTiktokHandle' | 'kocTiktokUrl' | 'platform' | 'channelHandle' | 'kocDisplayName'
+  >,
+  kocs: KocItem[]
+): ResolvedMultiPlatformParentKoc {
+  const index = getMultiPlatformKocIndex(kocs);
+  const cleanPlatHandle = cleanSocialHandle(item.channelHandle).toLowerCase();
+  const cleanTtHandle = cleanSocialHandle(item.kocTiktokHandle).toLowerCase();
+
+  let matched: KocItem | undefined;
+  if (item.kocId && index.byId.has(item.kocId)) {
+    matched = index.byId.get(item.kocId);
+  }
+  if (!matched && cleanTtHandle) {
+    matched = index.byTiktokHandle.get(cleanTtHandle) || index.byAnyHandle.get(cleanTtHandle);
+  }
+  if (!matched && cleanPlatHandle) {
+    matched =
+      index.byPlatformHandle.get(`${item.platform}::${cleanPlatHandle}`) ||
+      index.byTiktokHandle.get(cleanPlatHandle) ||
+      index.byAnyHandle.get(cleanPlatHandle);
+  }
+  if (!matched && item.kocStageName) {
+    matched = index.byStageName.get(normPersonText(item.kocStageName));
+  }
+  if (!matched && item.kocDisplayName) {
+    matched = index.byStageName.get(normPersonText(item.kocDisplayName));
+  }
+
+  if (matched) {
+    const ttClean = cleanSocialHandle(matched.channelId || matched.tiktokChannel);
+    const ttHandle = ttClean ? `@${ttClean}` : item.kocTiktokHandle || '';
+    const ttUrl =
+      matched.channelLink ||
+      (ttClean ? `https://www.tiktok.com/@${ttClean}` : item.kocTiktokUrl || '');
+    return {
+      koc: matched,
+      isOrphaned: false,
+      kocId: matched.id,
+      kocStageName: matched.stageName || matched.realName || item.kocStageName || item.kocDisplayName,
+      kocTiktokHandle: ttHandle,
+      kocTiktokUrl: ttUrl,
+      salaryGrade: matched.salaryGrade,
+    };
+  }
+
+  const hasExplicitParent = Boolean(item.kocId?.trim() && item.kocTiktokHandle?.trim());
+  const fallbackTtClean = cleanSocialHandle(item.kocTiktokHandle);
+  return {
+    koc: null,
+    isOrphaned: !hasExplicitParent,
+    kocId: item.kocId || '',
+    kocStageName: item.kocStageName || '',
+    kocTiktokHandle: fallbackTtClean ? `@${fallbackTtClean}` : '',
+    kocTiktokUrl:
+      item.kocTiktokUrl || (fallbackTtClean ? `https://www.tiktok.com/@${fallbackTtClean}` : ''),
+  };
+}
+
+export function resolveMultiPlatformReupParentKoc(
+  record: Pick<
+    MultiPlatformReupRecord,
+    'kocId' | 'kocStageName' | 'kocTiktokHandle' | 'platform' | 'kocOrSourceName' | 'sourceVideoUrl'
+  >,
+  kocs: KocItem[]
+): ResolvedMultiPlatformParentKoc {
+  const urlHandle = cleanSocialHandle(record.sourceVideoUrl);
+  return resolveMultiPlatformParentKoc(
+    {
+      kocId: record.kocId,
+      kocStageName: record.kocStageName,
+      kocTiktokHandle: record.kocTiktokHandle || (urlHandle ? `@${urlHandle}` : undefined),
+      platform: record.platform,
+      channelHandle: urlHandle || record.kocOrSourceName,
+      kocDisplayName: record.kocOrSourceName,
+    },
+    kocs
+  );
+}
+
+/**
+ * Lấy thông tin kênh ngoại sàn đã liên kết sẵn của KOC (nếu có trong hồ sơ KOC),
+ * hoặc gợi ý từ kênh TikTok gốc khi người dùng chọn KOC trong Danh bạ.
+ */
+export function extractKocPlatformChannelDefaults(
+  koc: KocItem,
+  platform: PlanMultiPlatformKey
+): {
+  kocId: string;
+  kocStageName: string;
+  kocTiktokHandle: string;
+  kocTiktokUrl: string;
+  channelHandle: string;
+  kocDisplayName: string;
+  followersCount: number;
+  nicheTag: string;
+} {
+  const ttClean = cleanSocialHandle(koc.channelId || koc.tiktokChannel);
+  const kocTiktokHandle = ttClean ? `@${ttClean}` : '';
+  const kocTiktokUrl = koc.channelLink || (ttClean ? `https://www.tiktok.com/@${ttClean}` : '');
+
+  const targetConnectedPlatform =
+    platform === 'threads'
+      ? 'THREADS'
+      : platform === 'facebook'
+      ? 'FACEBOOK'
+      : platform === 'shopee'
+      ? 'SHOPEE'
+      : 'INSTAGRAM';
+
+  const connectedMatch = (koc.connectedChannels || []).find(
+    c => c.platform === targetConnectedPlatform && cleanSocialHandle(c.handle)
+  );
+
+  const rawField =
+    platform === 'threads'
+      ? koc.threadsChannel
+      : platform === 'facebook'
+      ? koc.facebookChannel
+      : platform === 'shopee'
+      ? koc.shopeeChannel
+      : koc.instagramChannel;
+
+  const firstFieldHandle = cleanSocialHandle((rawField || '').split(/[,;]/)[0]);
+  const resolvedPlatHandle =
+    cleanSocialHandle(connectedMatch?.handle) || firstFieldHandle || ttClean;
+
+  return {
+    kocId: koc.id,
+    kocStageName: koc.stageName || koc.realName || ttClean,
+    kocTiktokHandle,
+    kocTiktokUrl,
+    channelHandle: resolvedPlatHandle,
+    kocDisplayName: connectedMatch?.channelName || koc.stageName || resolvedPlatHandle,
+    followersCount: connectedMatch?.followers || koc.followers || 0,
+    nicheTag: koc.tepKenh || koc.niche || 'Beauty',
+  };
+}
+
+export function buildBookingDealFromMultiPlatformItem(
+  item: MultiPlatformListingItem,
+  stores: StorePortfolioItem[],
+  kocs: KocItem[]
+): BookingDealItem {
+  const matchedStore = stores.find(
+    s => s.storeName.trim().toLowerCase() === item.storeName.trim().toLowerCase()
+  );
+  const resolvedParent = resolveMultiPlatformParentKoc(item, kocs);
+  const matchedKoc = resolvedParent.koc;
+  const cleanHandle = item.channelHandle.replace(/^@/, '').toLowerCase();
+  const maBo = item.boCode || `MP-DEAL-${item.id}`;
+  const jobs = ensureMultiPlatformDealJobs(item);
+  const jobCodesLabel = jobs.map(j => j.jobCode).join(', ');
+  const isVerified =
+    item.stage === 'PAYMENT_READY' ||
+    item.stage === 'ACCEPTED' ||
+    Boolean(item.postUrl) ||
+    jobs.every(j => Boolean(j.postUrl?.trim()));
+  const netFee = Number(item.unitNetFee) || 0;
+  const salaryGrade: BookingDealItem['salaryGrade'] =
+    netFee <= 0
+      ? 'TAP UpAffiliate'
+      : netFee <= 500000
+      ? 'KL1'
+      : netFee <= 1500000
+      ? 'KL2'
+      : netFee <= 3000000
+      ? 'KL3'
+      : netFee <= 5000000
+      ? 'KL4'
+      : netFee <= 10000000
+      ? 'KL5'
+      : netFee <= 30000000
+      ? 'KL6'
+      : 'KL7';
+
+  return {
+    id: maBo,
+    dealCode: maBo,
+    jobId: jobCodesLabel || `${maBo}-J01`,
+    campaignCode: `CAMP-${item.monthKey.replace(/\D/g, '')}`,
+    campaignTitle: `${item.productName} (${MULTI_PLATFORM_CONFIGS[item.platform].shortLabel} · ${jobs.length} Job)`,
+    brandName: item.brandName || matchedStore?.brandName || item.storeName.split('_')[0] || 'Brand',
+    storeId: matchedStore?.id || 'STORE-MP',
+    storeName: item.storeName,
+    productName: item.productName,
+    bookingBatch: item.batchLabel || 'Đợt 1',
+    bookingFormat: 'Booking Video KOC',
+    kocId: matchedKoc?.id || resolvedParent.kocId || `KOC-${cleanHandle || item.id}`,
+    kocStageName:
+      matchedKoc?.stageName ||
+      resolvedParent.kocStageName ||
+      item.kocDisplayName ||
+      item.channelHandle,
+    kocChannelId:
+      resolvedParent.kocTiktokHandle ||
+      (item.channelHandle.startsWith('@') ? item.channelHandle : `@${item.channelHandle}`),
+    kocTier:
+      salaryGrade === 'KL6' || salaryGrade === 'KL7'
+        ? 'TIER_1_CELEB'
+        : salaryGrade === 'KL4' || salaryGrade === 'KL5'
+        ? 'TIER_2_MACRO'
+        : salaryGrade === 'KL2' || salaryGrade === 'KL3'
+        ? 'TIER_3_MICRO'
+        : 'TIER_4_AFFILIATE',
+    salaryGrade,
+    segment: salaryGrade === 'TAP UpAffiliate' ? 'Massive Creator' : 'Mid Creator',
+    tepKenh: (item.nicheTag as BookingDealItem['tepKenh']) || 'Chưa phân loại',
+    kocCategory: 'Reviewer',
+    contentPillar: 'Review trực tiếp',
+    brandApprovalStatus: 'ĐÃ_DUYỆT',
+    brandApprovalDate: (item.updatedAt || '').slice(0, 10),
+    kocResponseStatus: 'ĐỒNG_Ý',
+    pipelineText: isVerified ? 'Done' : 'Đang triển khai',
+    status: isVerified ? 'VIDEO_VERIFIED' : 'CONTRACT_GENERATED',
+    statusLabel: isVerified ? 'Đã nghiệm thu Đa sàn' : 'Đã tạo Deal Đa sàn',
+    currentStage: isVerified ? '5_SETTLEMENT' : '2_DEAL_CONTRACT',
+    adsCodeStatus: 'KHÔNG_DÙNG',
+    assignedStaff: item.staffName || matchedStore?.primaryPic || 'Chuyên viên Đa sàn',
+    bookingPic: item.staffName || matchedStore?.primaryPic || 'Chuyên viên Đa sàn',
+    leadBooking: matchedStore?.bookingLeader || 'Đặng Thị Yến Nhi',
+    totalValue: netFee,
+    advanceAmount: 0,
+    finalAmount: netFee,
+    deadlinePost: item.actualPostDate || item.plannedPostDate || `${item.monthKey.replace('/', '-')}-20`,
+    postedDate: item.actualPostDate || item.plannedPostDate || undefined,
+    videoUrl: item.postUrl || undefined,
+    tiktokVideoUrl: item.postUrl || undefined,
+    viewsCount:
+      Number(
+        item.platformMetrics?.views ||
+          item.platformMetrics?.reach ||
+          item.platformMetrics?.videoViews ||
+          0
+      ) || 0,
+    affiliateGmv: Number(item.platformMetrics?.gmvAttributed || 0) || 0,
+    gmv30: Number(item.platformMetrics?.gmvAttributed || 0) || 0,
+    roi:
+      netFee === 0
+        ? 0
+        : Number(((Number(item.platformMetrics?.gmvAttributed || 0) || 0) / netFee).toFixed(2)),
+    publishedDays: isVerified ? 7 : 0,
+    remainingSlaHours: 24,
+    isSlaWarning: false,
+    paymentStatus: item.paymentStatus,
+    contractAppendixCode: `SOW-${maBo}`,
+  };
+}
+
+export function loadMultiPlatformListingItems(
+  plans: InputPlanBreakdownState[],
+  kocs: KocItem[]
+): MultiPlatformListingItem[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw =
+        window.localStorage.getItem(MULTI_PLATFORM_STORAGE_KEY) ||
+        window.localStorage.getItem('upbase_b2c_multi_platform_listings_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw) as MultiPlatformListingItem[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback to seed
+    }
+  }
+  return buildInitialMultiPlatformSeed(plans, kocs).items;
+}
+
+export function saveMultiPlatformListingItems(items: MultiPlatformListingItem[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const serialized = JSON.stringify(items);
+    window.localStorage.setItem(MULTI_PLATFORM_STORAGE_KEY, serialized);
+    window.localStorage.setItem('upbase_b2c_multi_platform_listings_v1', serialized);
+    pushSharedStateToDb('multi-platform-listings-v1', items);
+    window.dispatchEvent(new CustomEvent('upbase:multi-platform-listings-updated', { detail: items }));
   } catch {
     // ignore quota errors
   }

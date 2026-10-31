@@ -45,8 +45,6 @@ export async function POST(req: NextRequest) {
       record.approval === 'IN_REVIEW',
       'Hồ sơ không ở trạng thái chờ duyệt.',
     );
-    const pendingLegal = record.steps.find(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED');
-    requireCondition(!pendingLegal, 'Pháp chế chưa duyệt hồ sơ này.');
 
     // Tự động kéo và lưu phiên bản mới nhất trên Google Doc ngay lúc Kế toán bấm chốt (không bắt B2C trình lại).
     const capture = await captureGoogleDocForRecord(record, actor.name);

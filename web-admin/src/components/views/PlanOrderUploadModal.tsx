@@ -215,14 +215,14 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
             {(unconfirmed41Plans.length > 0 || lockedDiffPlans.length > 0 || draftDiffPlans.length > 0) && (
               <div className="space-y-2">
                 {lockedDiffPlans.length > 0 && (
-                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs text-rose-900">
+                  <div className="rounded-lg border border-critical/30 bg-critical-soft px-3 py-3 text-xs text-critical">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-critical" />
                       <div>
                         <div className="font-semibold">
                           Cảnh báo: {lockedDiffPlans.length} gian hàng ĐÃ DUYỆT / ĐANG TRÌNH DUYỆT nhưng file 4.1 mới thay đổi số liệu
                         </div>
-                        <div className="mt-0.5 text-rose-800">
+                        <div className="mt-0.5 text-critical">
                           Hệ thống sẽ <strong>giữ nguyên bản đã duyệt</strong> và gắn cờ <strong>&ldquo;Lệch 4.1 mới&rdquo;</strong> trên từng gian hàng để Quản lý chủ động bấm <em>&ldquo;Mở khóa / Cập nhật theo 4.1 mới&rdquo;</em>: {lockedDiffPlans.map(p => p.storeName || p.brandName).join(', ')}.
                         </div>
                       </div>
@@ -231,14 +231,14 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                 )}
 
                 {unconfirmed41Plans.length > 0 && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
+                  <div className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-3 text-xs text-warning">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                       <div>
                         <div className="font-semibold">
                           Cảnh báo cột &ldquo;Chốt plan&rdquo;: {unconfirmed41Plans.length} gian hàng trên file 4.1 CHƯA CHỐT (số tạm tính)
                         </div>
-                        <div className="mt-0.5 text-amber-900">
+                        <div className="mt-0.5 text-warning">
                           Các gian hàng này chỉ được phép <strong>lưu Nháp</strong> và bị chặn gửi duyệt phân rã 4.1.1 cho đến khi tải lên bản 4.1 đã chốt: {unconfirmed41Plans.slice(0, 8).map(p => p.storeName || p.brandName).join(', ')}{unconfirmed41Plans.length > 8 ? ` (+${unconfirmed41Plans.length - 8} gian khác)` : ''}.
                         </div>
                       </div>
@@ -247,9 +247,9 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                 )}
 
                 {draftDiffPlans.length > 0 && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-950">
+                  <div className="rounded-lg border border-accent/30 bg-accent-soft px-3 py-2 text-xs text-accent-hover">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                       <div>
                         <span className="font-semibold">
                           Đối soát kế hoạch CHƯA DUYỆT (Đang nháp): {draftDiffPlans.length} gian hàng đang lệch chỉ tiêu với file 4.1 mới.
@@ -263,7 +263,7 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
             )}
 
             {/* Thanh lọc nhanh trong bảng xem trước */}
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {[
                 { key: 'ALL' as const, label: `Tất cả (${preview.plans.length})` },
                 ...(lockedDiffPlans.length > 0
@@ -280,7 +280,7 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                   key={tab.key}
                   type="button"
                   onClick={() => setPreviewFilter(tab.key)}
-                  className={`rounded-md border px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
+                  className={`rounded-md border px-3 py-1 text-xs font-medium transition cursor-pointer ${
                     previewFilter === tab.key
                       ? 'border-accent bg-accent text-white'
                       : 'border-line bg-surface text-ink-2 hover:bg-sunken'
@@ -299,11 +299,11 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                   return (
                     <div
                       key={`m-prev-${p.id}`}
-                      className={`p-3 space-y-1.5 text-xs ${
+                      className={`p-3 space-y-2 text-xs ${
                         p.relation === 'locked' && p.lockedHasDiff
-                          ? 'bg-rose-50/50'
+                          ? 'bg-critical-soft/50'
                           : !isLocked41
-                          ? 'bg-amber-50/40'
+                          ? 'bg-warning-soft/40'
                           : ''
                       }`}
                     >
@@ -333,7 +333,7 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                           </span>
                         ) : p.relation === 'draft' ? (
                           <div className="space-y-0.5">
-                            <div className={p.mismatches > 0 || (p.mismatchDetails && p.mismatchDetails.length > 0) ? 'font-semibold text-amber-800' : 'text-ink-2'}>
+                            <div className={p.mismatches > 0 || (p.mismatchDetails && p.mismatchDetails.length > 0) ? 'font-semibold text-warning' : 'text-ink-2'}>
                               {p.mismatches > 0
                                 ? `Đang nháp · Lệch ${p.mismatches} chỉ tiêu phân rã`
                                 : p.mismatchDetails && p.mismatchDetails.length > 0
@@ -341,24 +341,24 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                                 : 'Đang nháp · Khớp bảng 4.1'}
                             </div>
                             {p.mismatchDetails && p.mismatchDetails.length > 0 && (
-                              <div className="text-2xs text-amber-700">
+                              <div className="text-2xs text-warning">
                                 {p.mismatchDetails.slice(0, 3).join(' · ')}
                               </div>
                             )}
                           </div>
                         ) : p.lockedHasDiff ? (
                           <div className="space-y-0.5">
-                            <div className="font-semibold text-rose-700">
+                            <div className="font-semibold text-critical">
                               Đã duyệt / Đang trình · Lệch số 4.1 mới (Giữ nguyên &amp; gắn cờ)
                             </div>
                             {p.diffSummary && p.diffSummary.length > 0 && (
-                              <div className="text-2xs text-rose-600">
+                              <div className="text-2xs text-critical">
                                 {p.diffSummary.join(' · ')}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                          <span className="inline-flex items-center gap-1 text-positive font-medium">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Đã gửi duyệt / Đã duyệt · Khớp 4.1 (Giữ nguyên)
                           </span>
@@ -374,10 +374,10 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                 <thead className="sticky top-0 bg-surface text-left text-ink-3 border-b border-line">
                   <tr>
                     <th className="px-3 py-2 font-medium">Gian hàng</th>
-                    <th className="px-2.5 py-2 font-medium">Chốt 4.1</th>
-                    <th className="px-2.5 py-2 font-medium">Nhân sự</th>
-                    <th className="px-2.5 py-2 text-right font-medium">Số nội dung</th>
-                    <th className="px-2.5 py-2 text-right font-medium">Ngân sách Net</th>
+                    <th className="px-3 py-2 font-medium">Chốt 4.1</th>
+                    <th className="px-3 py-2 font-medium">Nhân sự</th>
+                    <th className="px-3 py-2 text-right font-medium">Số nội dung</th>
+                    <th className="px-3 py-2 text-right font-medium">Ngân sách Net</th>
                     <th className="px-3 py-2 font-medium">Trạng thái kế hoạch &amp; Cảnh báo đối soát</th>
                   </tr>
                 </thead>
@@ -389,9 +389,9 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                         key={p.id}
                         className={`border-t border-line ${
                           p.relation === 'locked' && p.lockedHasDiff
-                            ? 'bg-rose-50/50'
+                            ? 'bg-critical-soft/50'
                             : !isLocked41
-                            ? 'bg-amber-50/40'
+                            ? 'bg-warning-soft/40'
                             : ''
                         }`}
                       >
@@ -399,16 +399,16 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                           <div>{p.storeName || p.brandName}</div>
                           {p.bookingLeader && <div className="text-2xs font-normal text-ink-3">Leader: {p.bookingLeader}</div>}
                         </td>
-                        <td className="px-2.5 py-2 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {isLocked41 ? (
                             <Status tone="positive">Đã chốt</Status>
                           ) : (
                             <Status tone="warning">{p.growthLockLabel || 'Chưa chốt'}</Status>
                           )}
                         </td>
-                        <td className="px-2.5 py-2 text-ink-2">{p.pic || '—'}</td>
-                        <td className="px-2.5 py-2 text-right tabular-nums">{p.totalTargetContents}</td>
-                        <td className="px-2.5 py-2 text-right tabular-nums font-medium">{fmtMoney(p.totalTargetBudget)}</td>
+                        <td className="px-3 py-2 text-ink-2">{p.pic || '—'}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{p.totalTargetContents}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtMoney(p.totalTargetBudget)}</td>
                         <td className="px-3 py-2">
                           {p.relation === 'new' ? (
                             <span className="text-ink-2">
@@ -416,7 +416,7 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                             </span>
                           ) : p.relation === 'draft' ? (
                             <div className="space-y-0.5">
-                              <div className={p.mismatches > 0 || (p.mismatchDetails && p.mismatchDetails.length > 0) ? 'font-semibold text-amber-800' : 'text-ink-2'}>
+                              <div className={p.mismatches > 0 || (p.mismatchDetails && p.mismatchDetails.length > 0) ? 'font-semibold text-warning' : 'text-ink-2'}>
                                 {p.mismatches > 0
                                   ? `Đang nháp · Lệch ${p.mismatches} chỉ tiêu phân rã`
                                   : p.mismatchDetails && p.mismatchDetails.length > 0
@@ -424,24 +424,24 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
                                   : 'Đang nháp · Khớp bảng 4.1'}
                               </div>
                               {p.mismatchDetails && p.mismatchDetails.length > 0 && (
-                                <div className="text-2xs text-amber-700">
+                                <div className="text-2xs text-warning">
                                   {p.mismatchDetails.slice(0, 3).join(' · ')}
                                 </div>
                               )}
                             </div>
                           ) : p.lockedHasDiff ? (
                             <div className="space-y-0.5">
-                              <div className="font-semibold text-rose-700">
+                              <div className="font-semibold text-critical">
                                 Đã duyệt / Đang trình · Lệch số 4.1 mới (Giữ nguyên &amp; gắn cờ)
                               </div>
                               {p.diffSummary && p.diffSummary.length > 0 && (
-                                <div className="text-2xs text-rose-600">
+                                <div className="text-2xs text-critical">
                                   {p.diffSummary.join(' · ')}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                            <span className="inline-flex items-center gap-1 text-positive font-medium">
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               Đã gửi duyệt / Đã duyệt · Khớp 4.1 (Giữ nguyên)
                             </span>

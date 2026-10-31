@@ -203,7 +203,7 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
       }
     >
       <div className="space-y-4 text-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sunken px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sunken px-3 py-3">
           <div className="space-y-0.5 text-xs text-ink-2">
             <div>
               Gian hàng: <span className="font-semibold text-ink">{plan.storeName || plan.title}</span> · Kỳ làm việc:{' '}
@@ -297,12 +297,12 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
               <table className="w-full min-w-[740px] border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-line bg-sunken text-left text-ink-3">
-                    <th className="px-2.5 py-2 font-medium">Chọn</th>
-                    <th className="px-2.5 py-2 font-medium">Kỳ gốc / Mã Job</th>
-                    <th className="px-2.5 py-2 font-medium">KOC &amp; Bậc</th>
-                    <th className="px-2.5 py-2 font-medium">Sản phẩm &amp; Trạng thái treo</th>
-                    <th className="px-2.5 py-2 font-medium">Tiến độ &amp; Hồ sơ</th>
-                    <th className="px-2.5 py-2 text-right font-medium">Thù lao (Tháng cũ)</th>
+                    <th className="px-3 py-2 font-medium">Chọn</th>
+                    <th className="px-3 py-2 font-medium">Kỳ gốc / Mã Job</th>
+                    <th className="px-3 py-2 font-medium">KOC &amp; Bậc</th>
+                    <th className="px-3 py-2 font-medium">Sản phẩm &amp; Trạng thái treo</th>
+                    <th className="px-3 py-2 font-medium">Tiến độ &amp; Hồ sơ</th>
+                    <th className="px-3 py-2 text-right font-medium">Thù lao (Tháng cũ)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -325,7 +325,7 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
                           )
                         }
                       >
-                        <td className="px-2.5 py-2" onClick={e => e.stopPropagation()}>
+                        <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={checked}
@@ -338,40 +338,40 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
                             }
                           />
                         </td>
-                        <td className="px-2.5 py-2">
+                        <td className="px-3 py-2">
                           <div className="font-semibold text-ink">{c.jobCode}</div>
                           <div className="text-2xs text-ink-3">
                             Plan gốc: {c.sourceMonth} · {c.week ? c.week.split(' ')[0] : '—'}
                           </div>
                         </td>
-                        <td className="px-2.5 py-2">
+                        <td className="px-3 py-2">
                           <div className="font-medium text-ink">@{c.kocHandle.replace(/^@/, '')}</div>
                           <div className="text-2xs text-ink-3">
                             {c.grade === 'TAP UpAffiliate' ? 'FOC (0đ)' : c.grade}
                           </div>
                         </td>
-                        <td className="px-2.5 py-2">
+                        <td className="px-3 py-2">
                           <div className="max-w-[210px] truncate text-ink">{c.productName || c.title}</div>
-                          <div className="text-2xs font-medium text-amber-700">{c.reasonLabel}</div>
+                          <div className="text-2xs font-medium text-warning">{c.reasonLabel}</div>
                         </td>
-                        <td className="px-2.5 py-2">
+                        <td className="px-3 py-2">
                           <div className="text-ink">
                             Mẫu: {c.sampleStatus} · KB: {c.scriptStatus}
                           </div>
                           <div className="mt-0.5 flex flex-wrap gap-1 text-2xs">
                             {c.appendixNo && (
-                              <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700 border border-emerald-200">
+                              <span className="rounded bg-positive-soft px-2 py-0.5 font-medium text-positive border border-positive/30">
                                 HĐ: {c.appendixNo}
                               </span>
                             )}
                             {c.larkSlipCode && (
-                              <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700 border border-blue-200">
+                              <span className="rounded bg-accent-soft px-2 py-0.5 font-medium text-accent-hover border border-accent/30">
                                 6.1: {c.larkSlipCode}
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="px-2.5 py-2 text-right font-semibold tabular-nums text-ink">
+                        <td className="px-3 py-2 text-right font-semibold tabular-nums text-ink">
                           {fmt(c.totalFee)}đ
                         </td>
                       </tr>

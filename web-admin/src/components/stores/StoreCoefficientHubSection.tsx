@@ -12,6 +12,7 @@ import {
   normalizeStoreCoefficient,
   getStoreCoefficientByTier,
 } from '../../lib/types';
+import { canUserPerformAction } from '../../lib/rbacData';
 import {
   Button,
   ChannelTag,
@@ -93,7 +94,9 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
   onNotify,
 }) => {
   const isManager =
-    !currentUser || ['ADMIN', 'MANAGER'].includes(currentUser.role);
+    !currentUser ||
+    ['ADMIN', 'MANAGER'].includes(currentUser.role) ||
+    canUserPerformAction(currentUser, 'store_difficulty_coefficient', 'write');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<'ALL' | StoreDifficultyTier>('ALL');

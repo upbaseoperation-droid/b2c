@@ -3,7 +3,8 @@
 // Tab "Video kênh Brand & CTV": việc Self-channel theo gian, tổng quan tháng, hàng chờ duyệt, danh bạ CTV dùng chung, trao đổi.
 // Toàn bộ số liệu đọc từ bảng Job lưu trên máy chủ (self-channel-board) và danh bạ CTV (/api/contributors).
 import React, { useCallback, useState } from 'react';
-import { Tabs } from '../ui';
+import { Send } from 'lucide-react';
+import { Button, Tabs } from '../ui';
 import type { TabItem } from '../ui';
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
@@ -33,6 +34,7 @@ export interface SelfChannelCtvHubViewProps {
   ctvAccess?: CtvDirectoryAccess;
   /** Mở sẵn hồ sơ CTV này (điều hướng từ màn khác) */
   focusCtvId?: string | null;
+  onOpenLarkSettlement?: () => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -47,6 +49,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   onContributorUpdated,
   ctvAccess,
   focusCtvId,
+  onOpenLarkSettlement,
   onNotify,
 }) => {
   const isCtvPartner = currentUser?.role === 'CTV_PARTNER';
@@ -96,6 +99,42 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     if (tab === 'OVERVIEW' || tab === 'QUEUE' || tab === 'VIDEOS' || tab === 'PROGRESS') void loadHub();
   };
 
+  React.useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab !== 'self-channel-hub') return;
+      if (
+        detail.subView === 'WORK' ||
+        detail.subView === 'CONTRIBUTORS' ||
+        detail.subView === 'DISCUSSION'
+      ) {
+        setActiveTab(detail.subView);
+      }
+    };
+    const onNavigateTab = (e: Event) => {
+      const detail = (
+        e as CustomEvent<{ tab?: string; planId?: string; dealCode?: string }>
+      ).detail;
+      if (detail?.tab !== 'self-channel-hub') return;
+      if (detail.planId) {
+        setPlanFocus({
+          planId: detail.planId,
+          nonce: Date.now(),
+          jobCode: detail.dealCode,
+        });
+        setActiveTab('WORK');
+      } else {
+        setActiveTab('SETTLEMENT');
+      }
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    window.addEventListener('upbase-navigate-tab', onNavigateTab);
+    return () => {
+      window.removeEventListener('upbase-sidebar-subview', onSubView);
+      window.removeEventListener('upbase-navigate-tab', onNavigateTab);
+    };
+  }, []);
+
   if (isCtvPartner) {
     return (
       <div className="space-y-4">
@@ -119,7 +158,23 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onChange={selectTab} items={tabs} />
+      <Tabs
+        value={activeTab}
+        onChange={selectTab}
+        items={tabs}
+        actions={
+          onOpenLarkSettlement ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Send}
+              onClick={onOpenLarkSettlement}
+            >
+              Sổ Nghiệm thu & ĐNTT Lark
+            </Button>
+          ) : undefined
+        }
+      />
 
       {activeTab === 'WORK' && (
         <PlanSelfChannelBoard

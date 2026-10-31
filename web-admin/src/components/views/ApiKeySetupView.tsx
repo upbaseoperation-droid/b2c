@@ -581,7 +581,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
         items={[
           { key: 'ai-llm', label: 'Mô hình AI & LLM', count: 3 },
           { key: 'zalo-bot', label: 'Trợ lý Zalo Bot & Webhook' },
-          { key: 'google-sheets', label: 'Thiết lập Google Sheet & Phân quyền', count: stores?.length || 69 },
+          { key: 'google-sheets', label: 'Google Sheet', count: stores?.length || undefined },
           { key: 'storage', label: 'Kho Lưu Trữ Cloudflare R2' },
         ]}
         value={category}
@@ -646,7 +646,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
 
         <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shrink-0">
                 <KeyRound className="w-4 h-4" />
               </div>
@@ -660,7 +660,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                 type="button"
                 onClick={handleTestAllProviders}
                 disabled={isTestingAll}
-                className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-surface hover:bg-sunken text-ink border border-line-strong transition flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-surface hover:bg-sunken text-ink border border-line-strong transition flex items-center gap-2 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-accent ${isTestingAll ? 'animate-spin' : ''}`} />
                 <span>Kiểm tra kết nối</span>
@@ -669,7 +669,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsConfirmResetOpen(true)}
-                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-2 cursor-pointer"
                 title="Khôi phục bảng phân bổ về mặc định"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-ink-3" />
@@ -682,7 +682,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                   saveApiWorkspaceConfig(config);
                   onNotify?.('Đã lưu toàn bộ cấu hình khóa API và bảng phân bổ nghiệp vụ!', 'success');
                 }}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-2 shadow-2xs cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu cấu hình</span>
@@ -702,7 +702,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                 <div
                   key={pid}
                   onClick={() => setAiSubTab('providers')}
-                  className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
+                  className="p-4 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-2xs font-semibold text-ink-2">
@@ -745,7 +745,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
 
             <div
               onClick={() => setAiSubTab('routing')}
-              className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
+              className="p-4 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-2xs font-semibold text-accent">
@@ -788,7 +788,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     <div className="flex items-start justify-between gap-2 pb-3 border-b border-line">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${meta.badgeClass}`}>
+                          <span className={`px-3 py-0.5 rounded-md text-xs font-semibold border ${meta.badgeClass}`}>
                             {meta.name}
                           </span>
                         </div>
@@ -798,18 +798,18 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                         href={meta.docsUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-2xs font-semibold bg-sunken hover:bg-line text-ink-2 transition"
+                        className="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-md text-2xs font-semibold bg-sunken hover:bg-line text-ink-2 transition"
                         title={meta.docsLabel}
                       >
                         <span>Lấy Key</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </div>
 
                     {/* Input Khóa API */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                        <label className="text-xs font-semibold text-ink flex items-center gap-2">
                           <KeyRound className="w-3.5 h-3.5 text-ink-3" />
                           <span>Khóa API (API Key)</span>
                         </label>
@@ -842,7 +842,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                             onClick={() =>
                               setVisibleProviderKeys(prev => ({ ...prev, [pid]: !prev[pid] }))
                             }
-                            className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
+                            className="p-2 rounded text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
                             title={isVisible ? 'Ẩn khóa API' : 'Hiện khóa API'}
                           >
                             {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -852,7 +852,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleCopy(`prov-${pid}`, prov.apiKey)}
-                              className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
+                              className="p-2 rounded text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
                               title="Sao chép khóa API"
                             >
                               {copiedId === `prov-${pid}` ? (
@@ -867,7 +867,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     </div>
 
                     {/* Chọn Model Mặc định */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <label className="text-xs font-semibold text-ink block">
                         Mô hình xử lý mặc định (Default Model)
                       </label>
@@ -899,10 +899,10 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                       {(() => {
                         const selectedModelOpt = getModelOption(prov.defaultModel);
                         return (
-                          <div className="pt-1 space-y-1.5">
+                          <div className="pt-1 space-y-2">
                             <div className="flex flex-wrap items-center justify-between gap-1 text-2xs">
-                              <div className="flex items-center gap-1.5 font-mono text-ink-2 bg-canvas px-2 py-1 rounded border border-line">
-                                <Coins className="w-3 h-3 text-warning shrink-0" />
+                              <div className="flex items-center gap-2 font-mono text-ink-2 bg-canvas px-2 py-1 rounded border border-line">
+                                <Coins className="w-3.5 h-3.5 text-warning shrink-0" />
                                 <span>Vào: <strong className="text-ink">${selectedModelOpt.inputCostPerMillionUsd}/1M</strong></span>
                                 <span>·</span>
                                 <span>Ra: <strong className="text-ink">${selectedModelOpt.outputCostPerMillionUsd}/1M</strong></span>
@@ -921,7 +921,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                             </div>
 
                             {showCustomModelInput[pid] && (
-                              <div className="p-2.5 rounded-lg bg-surface-subtle border border-line space-y-1.5 animate-in fade-in duration-100">
+                              <div className="p-3 rounded-lg bg-surface-subtle border border-line space-y-2 animate-in fade-in duration-100">
                                 <label className="text-2xs font-semibold text-ink block">
                                   Nhập mã mô hình tùy chỉnh (Model ID từ {meta.shortName}):
                                 </label>
@@ -934,7 +934,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                       setCustomModelInputs(prev => ({ ...prev, [pid]: val }));
                                     }}
                                     placeholder="VD: gpt-6.1-sol, gpt-6-astra, claude-opus-5-5, gemini-4-argon..."
-                                    className="flex-1 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-line-strong bg-surface text-ink focus:outline-none focus:border-accent"
+                                    className="flex-1 px-3 py-2 text-xs font-mono rounded-lg border border-line-strong bg-surface text-ink focus:outline-none focus:border-accent"
                                   />
                                   <button
                                     type="button"
@@ -953,7 +953,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                       }));
                                       onNotify?.(`Đã thiết lập mô hình mặc định của ${meta.shortName} thành "${targetModel}"`, 'success');
                                     }}
-                                    className="px-3 py-1.5 rounded-lg bg-ink text-white hover:bg-ink-2 text-xs font-semibold shrink-0 cursor-pointer"
+                                    className="px-3 py-2 rounded-lg bg-ink text-white hover:bg-ink-2 text-xs font-semibold shrink-0 cursor-pointer"
                                   >
                                     Áp dụng
                                   </button>
@@ -985,7 +985,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                             }));
                           }}
                           placeholder={meta.defaultEndpoint}
-                          className="w-full px-2.5 py-1.5 text-2xs font-mono rounded-lg border border-line bg-canvas text-ink-2 focus:outline-none focus:border-accent"
+                          className="w-full px-3 py-2 text-2xs font-mono rounded-lg border border-line bg-canvas text-ink-2 focus:outline-none focus:border-accent"
                         />
                       </div>
 
@@ -1010,7 +1010,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                               },
                             }));
                           }}
-                          className="w-full px-2.5 py-1.5 text-2xs font-mono rounded-lg border border-line bg-canvas text-ink focus:outline-none focus:border-accent"
+                          className="w-full px-3 py-2 text-2xs font-mono rounded-lg border border-line bg-canvas text-ink focus:outline-none focus:border-accent"
                         />
                       </div>
                     </div>
@@ -1023,7 +1023,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                       const isOverbudget = spentUsd > limitUsd;
 
                       return (
-                        <div className="p-2.5 rounded-lg bg-canvas border border-line space-y-1.5 text-2xs">
+                        <div className="p-3 rounded-lg bg-canvas border border-line space-y-2 text-2xs">
                           <div className="flex items-center justify-between">
                             <span className="text-ink-3">Thực tế đã dùng tháng này:</span>
                             <span className={`font-mono font-semibold ${isOverbudget ? 'text-critical' : 'text-ink'}`}>
@@ -1046,7 +1046,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                             <span>Quy đổi: ≈ {Math.round(spentUsd * USD_TO_VND_RATE).toLocaleString('vi-VN')} đ</span>
                             {isOverbudget ? (
                               <span className="text-critical font-semibold flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3" />
+                                <AlertCircle className="w-3.5 h-3.5" />
                                 Vượt trần chi phí!
                               </span>
                             ) : (
@@ -1058,7 +1058,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     })()}
 
                     {/* Các mục đích đang sử dụng nhà cung cấp này */}
-                    <div className="pt-2 border-t border-line space-y-1.5">
+                    <div className="pt-2 border-t border-line space-y-2">
                       <div className="text-2xs font-semibold text-ink-2 flex items-center justify-between">
                         <span>Mục đích nghiệp vụ đang gán ({assignedPurposes.length}):</span>
                         <button
@@ -1074,7 +1074,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                           Chưa gán làm công cụ chính cho mục đích nào (có thể đang làm dự phòng).
                         </div>
                       ) : (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                           {assignedPurposes.map(p => (
                             <span
                               key={p.purposeId}
@@ -1090,7 +1090,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     {/* Kết quả kiểm tra kết nối gần nhất */}
                     {prov.lastTestMessage && (
                       <div
-                        className={`p-2.5 rounded-lg border text-2xs flex items-start gap-2 ${
+                        className={`p-3 rounded-lg border text-2xs flex items-start gap-2 ${
                           prov.lastTestStatus === 'CONNECTED'
                             ? 'bg-positive-soft border-positive/20 text-positive'
                             : 'bg-warning-soft border-warning/20 text-warning'
@@ -1133,7 +1133,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                         onNotify?.(`Đã xóa khóa API của ${prov.shortName}`, 'info');
                       }}
                       disabled={!prov.apiKey}
-                      className="px-2.5 py-1.5 rounded-lg text-2xs font-medium text-ink-3 hover:text-critical hover:bg-surface disabled:opacity-40 transition cursor-pointer"
+                      className="px-3 py-2 rounded-lg text-2xs font-medium text-ink-3 hover:text-critical hover:bg-surface disabled:opacity-40 transition cursor-pointer"
                     >
                       Xóa khóa
                     </button>
@@ -1142,7 +1142,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                       type="button"
                       onClick={() => handleTestProviderConnection(pid)}
                       disabled={isTesting}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-ink text-white hover:bg-ink-2 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="px-4 py-2 rounded-lg text-xs font-semibold bg-ink text-white hover:bg-ink-2 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
                       <span>{isTesting ? 'Đang kiểm tra...' : `Kiểm tra ${prov.shortName}`}</span>
@@ -1167,7 +1167,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddingNamedKey(prev => !prev)}
-                className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-accent text-white hover:opacity-95 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-accent text-white hover:opacity-95 transition flex items-center gap-2 shrink-0 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm khóa theo mục đích</span>
@@ -1269,13 +1269,13 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsAddingNamedKey(false)}
-                    className="px-3.5 py-1.5 rounded-lg border border-line bg-surface text-ink-2 font-medium"
+                    className="px-4 py-2 rounded-lg border border-line bg-surface text-ink-2 font-medium"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 rounded-lg bg-positive hover:bg-positive text-white font-semibold"
+                    className="px-4 py-2 rounded-lg bg-positive hover:bg-positive text-white font-semibold"
                   >
                     Lưu vào Kho khóa
                   </button>
@@ -1328,7 +1328,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                 }));
                               }}
                               placeholder={meta.keyPlaceholder}
-                              className="w-full pl-2.5 pr-8 py-1.5 text-2xs font-mono rounded-md border border-line bg-canvas text-ink focus:outline-none focus:border-accent"
+                              className="w-full pl-3 pr-8 py-2 text-2xs font-mono rounded-md border border-line bg-canvas text-ink focus:outline-none focus:border-accent"
                             />
                             <button
                               type="button"
@@ -1338,7 +1338,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                               className="absolute right-1.5 p-1 text-ink-3 hover:text-ink"
                               title={isKeyVis ? 'Ẩn' : 'Hiện'}
                             >
-                              {isKeyVis ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              {isKeyVis ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         </td>
@@ -1346,7 +1346,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteNamedKey(nk.id)}
-                            className="p-1.5 rounded text-ink-3 hover:text-critical hover:bg-critical-soft transition cursor-pointer"
+                            className="p-2 rounded text-ink-3 hover:text-critical hover:bg-critical-soft transition cursor-pointer"
                             title="Xóa khóa này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1369,7 +1369,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
       {aiSubTab === 'routing' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           <div className="bg-surface border border-line rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shrink-0">
                 <Sliders className="w-4 h-4" />
               </div>
@@ -1384,7 +1384,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsConfirmResetOpen(true)}
-                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-2 cursor-pointer"
                 title="Khôi phục bảng phân bổ về mặc định"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-ink-3" />
@@ -1397,7 +1397,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                   saveApiWorkspaceConfig(config);
                   onNotify?.('Đã lưu cấu hình phân bổ 13 nghiệp vụ!', 'success');
                 }}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-2 shadow-2xs cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu cấu hình</span>
@@ -1435,7 +1435,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                               {route.departmentTag}
                             </span>
                           </div>
-                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          <div className="flex flex-wrap items-center gap-2 pt-0.5">
                             <span className="text-2xs text-ink-3">Áp dụng tại:</span>
                             {route.usedInScreens.map(sc => (
                               <span
@@ -1481,7 +1481,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                     },
                                   }));
                                 }}
-                                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+                                className={`px-3 py-2 rounded-md text-xs font-semibold transition cursor-pointer ${
                                   isSelected
                                     ? 'bg-surface text-accent shadow-2xs border border-line'
                                     : 'text-ink-2 hover:text-ink'
@@ -1496,7 +1496,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleOpenPlaygroundForPurpose(route.purposeId)}
-                          className="px-3 py-2 rounded-lg bg-ink text-white hover:bg-ink-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          className="px-3 py-2 rounded-lg bg-ink text-white hover:bg-ink-2 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
                           title="Chạy thử mục đích này với dữ liệu mẫu"
                         >
                           <Play className="w-3.5 h-3.5 text-positive" />
@@ -1527,7 +1527,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                               },
                             }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-line-strong bg-surface text-ink font-medium text-xs"
+                          className="w-full px-3 py-2 rounded-lg border border-line-strong bg-surface text-ink font-medium text-xs"
                         >
                           {primaryModels.map(m => (
                             <option key={m.id} value={m.id}>
@@ -1540,8 +1540,8 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                         {(() => {
                           const modelOpt = getModelOption(route.primaryModel);
                           return (
-                            <div className="flex items-center gap-1.5 text-2xs text-ink-3 font-mono pt-0.5">
-                              <Coins className="w-3 h-3 text-warning shrink-0" />
+                            <div className="flex items-center gap-2 text-2xs text-ink-3 font-mono pt-0.5">
+                              <Coins className="w-3.5 h-3.5 text-warning shrink-0" />
                               <span>Vào: <strong className="text-ink">${modelOpt.inputCostPerMillionUsd}/1M</strong></span>
                               <span>·</span>
                               <span>Ra: <strong className="text-ink">${modelOpt.outputCostPerMillionUsd}/1M</strong></span>
@@ -1556,7 +1556,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                           2. Khóa API sử dụng cho mục đích này
                         </label>
                         {route.primaryProvider === 'INTERNAL' ? (
-                          <div className="px-2.5 py-1.5 rounded-lg border border-line bg-sunken text-ink-3 text-xs">
+                          <div className="px-3 py-2 rounded-lg border border-line bg-sunken text-ink-3 text-xs">
                             Không cần khóa API (Chạy trực tiếp trên máy chủ)
                           </div>
                         ) : (
@@ -1596,7 +1596,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                 }));
                               }
                             }}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-line-strong bg-surface text-ink font-medium text-xs"
+                            className="w-full px-3 py-2 rounded-lg border border-line-strong bg-surface text-ink font-medium text-xs"
                           >
                             <option value="__DEFAULT_PROVIDER__">
                               Khóa mặc định của {PROVIDER_META[route.primaryProvider].shortName} (
@@ -1619,7 +1619,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                         <label className="text-2xs font-semibold text-ink-2 block">
                           3. Công cụ dự phòng (Khi lỗi hoặc hết hạn mức)
                         </label>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <select
                             value={route.fallbackProvider}
                             onChange={e => {
@@ -1637,7 +1637,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                 },
                               }));
                             }}
-                            className="w-1/2 px-2.5 py-1.5 rounded-lg border border-line bg-surface text-ink font-medium text-xs"
+                            className="w-1/2 px-3 py-2 rounded-lg border border-line bg-surface text-ink font-medium text-xs"
                           >
                             <option value="INTERNAL">Nội bộ (Offline)</option>
                             <option value="GOOGLE">Google Gemini</option>
@@ -1660,7 +1660,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                 },
                               }));
                             }}
-                            className="w-1/2 px-2.5 py-1.5 rounded-lg border border-line bg-surface text-ink-2 font-mono text-2xs"
+                            className="w-1/2 px-3 py-2 rounded-lg border border-line bg-surface text-ink-2 font-mono text-2xs"
                           >
                             {fallbackModels.map(m => (
                               <option key={m.id} value={m.id}>
@@ -1673,9 +1673,9 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     </div>
 
                     {/* Ô cấu hình Câu lệnh (Prompt) hiển thị trực tiếp cho từng phân hệ */}
-                    <div className="pt-3 border-t border-line space-y-1.5 text-xs">
+                    <div className="pt-3 border-t border-line space-y-2 text-xs">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <label className="font-semibold text-ink flex items-center gap-1.5">
+                        <label className="font-semibold text-ink flex items-center gap-2">
                           <FileText className="w-3.5 h-3.5 text-accent" />
                           <span>Câu lệnh chỉ dẫn (System Prompt) áp dụng cho phân hệ này:</span>
                         </label>
@@ -1698,7 +1698,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                           }}
                           className="px-2 py-1 rounded border border-line bg-sunken hover:bg-line text-2xs font-semibold text-ink-2 flex items-center gap-1 cursor-pointer"
                         >
-                          <RotateCcw className="w-3 h-3" />
+                          <RotateCcw className="w-3.5 h-3.5" />
                           Khôi phục câu lệnh gốc
                         </button>
                       </div>
@@ -1719,7 +1719,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                           }));
                         }}
                         placeholder="Nhập câu lệnh chỉ dẫn (Prompt) cho phân hệ nghiệp vụ này..."
-                        className="w-full p-2.5 rounded-lg border border-line-strong bg-canvas text-ink text-xs leading-relaxed focus:outline-none focus:border-accent focus:bg-surface"
+                        className="w-full p-3 rounded-lg border border-line-strong bg-canvas text-ink text-xs leading-relaxed focus:outline-none focus:border-accent focus:bg-surface"
                       />
                     </div>
 
@@ -1737,7 +1737,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                         }
                         className="inline-flex items-center gap-1 text-accent font-semibold hover:underline cursor-pointer"
                       >
-                        <Sliders className="w-3 h-3" />
+                        <Sliders className="w-3.5 h-3.5" />
                         <span>
                           {isExpanded
                             ? 'Thu gọn cấu hình nâng cao'
@@ -1774,7 +1774,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                     }));
                                   }}
                                   placeholder="Để trống nếu dùng khóa mặc định của nhà cung cấp hoặc Kho khóa..."
-                                  className="w-full pl-3 pr-9 py-1.5 rounded-lg border border-line-strong bg-surface text-ink font-mono text-xs"
+                                  className="w-full pl-3 pr-9 py-2 rounded-lg border border-line-strong bg-surface text-ink font-mono text-xs"
                                 />
                                 <button
                                   type="button"
@@ -1846,7 +1846,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                                       },
                                     }));
                                   }}
-                                  className="w-full px-2.5 py-1.5 rounded-lg border border-line-strong bg-surface text-ink text-xs font-mono"
+                                  className="w-full px-3 py-2 rounded-lg border border-line-strong bg-surface text-ink text-xs font-mono"
                                 >
                                   <option value={512}>512 tokens (~380 từ - Tiết kiệm chi phí)</option>
                                   <option value={1024}>1,024 tokens (~760 từ - Gọn gàng)</option>
@@ -1878,7 +1878,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
           <div className="bg-surface border border-line rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 text-accent -line">
+                <span className="p-2 text-accent -line">
                   <Activity className="w-4 h-4" />
                 </span>
                 <h3 className="text-base font-semibold text-ink">
@@ -1891,7 +1891,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               <button
                 type="button"
                 onClick={handleExportLogsCsv}
-                className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-surface hover:bg-sunken text-ink border border-line-strong transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-surface hover:bg-sunken text-ink border border-line-strong transition flex items-center gap-2 cursor-pointer shadow-2xs"
                 title="Tải bảng tính CSV đối soát chi phí"
               >
                 <Download className="w-3.5 h-3.5 text-accent" />
@@ -1902,7 +1902,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                 type="button"
                 onClick={handleClearAllLogs}
                 disabled={usageLogs.length === 0}
-                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-critical-soft text-ink-3 hover:text-critical border border-line transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-critical-soft text-ink-3 hover:text-critical border border-line transition flex items-center gap-2 cursor-pointer disabled:opacity-40"
                 title="Xóa toàn bộ lịch sử đo lường"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -1916,7 +1916,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             {/* Card 1: Tổng Chi Phí */}
             <div className="bg-surface border border-line rounded-xl p-4 space-y-2 shadow-2xs">
               <div className="flex items-center justify-between text-2xs text-ink-3">
-                <span className="font-semibold uppercase tracking-wider">Tổng Chi Phí Phát Sinh</span>
+                <span className="font-semibold">Tổng Chi Phí Phát Sinh</span>
                 <Coins className="w-4 h-4 text-warning" />
               </div>
               <div className="text-2xl font-semibold font-mono text-accent">
@@ -1933,7 +1933,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             {/* Card 2: Tổng Token */}
             <div className="bg-surface border border-line rounded-xl p-4 space-y-2 shadow-2xs">
               <div className="flex items-center justify-between text-2xs text-ink-3">
-                <span className="font-semibold uppercase tracking-wider">Tổng Lượng Token</span>
+                <span className="font-semibold">Tổng Lượng Token</span>
                 <Cpu className="w-4 h-4 text-accent" />
               </div>
               <div className="text-2xl font-semibold font-mono text-ink">
@@ -1949,7 +1949,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             {/* Card 3: Số Lượt Gọi & Tỷ Lệ Thông Suốt */}
             <div className="bg-surface border border-line rounded-xl p-4 space-y-2 shadow-2xs">
               <div className="flex items-center justify-between text-2xs text-ink-3">
-                <span className="font-semibold uppercase tracking-wider">Lượt Gọi &amp; Sẵn Sàng</span>
+                <span className="font-semibold">Lượt Gọi &amp; Sẵn Sàng</span>
                 <Activity className="w-4 h-4 text-positive" />
               </div>
               <div className="flex items-baseline gap-2">
@@ -1976,7 +1976,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             {/* Card 4: Chi Phí Trung Bình & Độ Trễ */}
             <div className="bg-surface border border-line rounded-xl p-4 space-y-2 shadow-2xs">
               <div className="flex items-center justify-between text-2xs text-ink-3">
-                <span className="font-semibold uppercase tracking-wider">Chi Phí TB / Lượt</span>
+                <span className="font-semibold">Chi Phí TB / Lượt</span>
                 <TrendingUp className="w-4 h-4 text-accent" />
               </div>
               <div className="text-2xl font-semibold font-mono text-ink">
@@ -2022,7 +2022,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className={`px-2.5 py-0.5 rounded text-2xs font-semibold border ${meta.badgeClass}`}>
+                        <span className={`px-3 py-0.5 rounded text-2xs font-semibold border ${meta.badgeClass}`}>
                           {meta.name}
                         </span>
                         <span className="text-2xs font-mono text-ink-3">
@@ -2108,17 +2108,17 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-surface-subtle border-b border-line text-2xs uppercase tracking-wider text-ink-3">
+                <thead className="bg-surface-subtle border-b border-line text-2xs text-ink-3">
                   <tr>
-                    <th className="py-2.5 px-4 font-semibold">Mục Đích Nghiệp Vụ</th>
-                    <th className="py-2.5 px-3 font-semibold">Công Cụ Phân Bổ</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Số Lượt</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Token Vào</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Token Ra</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Tổng Token</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Chi Phí ($ USD)</th>
-                    <th className="py-2.5 px-4 font-semibold text-right">Chi Phí Quy Đổi (VNĐ)</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Tỷ Trọng</th>
+                    <th className="py-3 px-4 font-semibold">Mục Đích Nghiệp Vụ</th>
+                    <th className="py-3 px-3 font-semibold">Công Cụ Phân Bổ</th>
+                    <th className="py-3 px-3 font-semibold text-center">Số Lượt</th>
+                    <th className="py-3 px-3 font-semibold text-right">Token Vào</th>
+                    <th className="py-3 px-3 font-semibold text-right">Token Ra</th>
+                    <th className="py-3 px-3 font-semibold text-right">Tổng Token</th>
+                    <th className="py-3 px-3 font-semibold text-right">Chi Phí ($ USD)</th>
+                    <th className="py-3 px-4 font-semibold text-right">Chi Phí Quy Đổi (VNĐ)</th>
+                    <th className="py-3 px-3 font-semibold text-center">Tỷ Trọng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line font-mono">
@@ -2216,15 +2216,15 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-surface-subtle border-b border-line text-2xs uppercase tracking-wider text-ink-3">
+                <thead className="bg-surface-subtle border-b border-line text-2xs text-ink-3">
                   <tr>
-                    <th className="py-2.5 px-4 font-semibold">Nhà Cung Cấp</th>
-                    <th className="py-2.5 px-3 font-semibold">Tên Mô Hình</th>
-                    <th className="py-2.5 px-3 font-semibold">Mã Model ID</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Đơn Giá Vào ($/1M Token)</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Đơn Giá Ra ($/1M Token)</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Cửa Sổ Ngữ Cảnh</th>
-                    <th className="py-2.5 px-4 font-semibold">Đặc Tính Khuyến Nghị</th>
+                    <th className="py-3 px-4 font-semibold">Nhà Cung Cấp</th>
+                    <th className="py-3 px-3 font-semibold">Tên Mô Hình</th>
+                    <th className="py-3 px-3 font-semibold">Mã Model ID</th>
+                    <th className="py-3 px-3 font-semibold text-right">Đơn Giá Vào ($/1M Token)</th>
+                    <th className="py-3 px-3 font-semibold text-right">Đơn Giá Ra ($/1M Token)</th>
+                    <th className="py-3 px-3 font-semibold text-right">Cửa Sổ Ngữ Cảnh</th>
+                    <th className="py-3 px-4 font-semibold">Đặc Tính Khuyến Nghị</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line font-mono">
@@ -2233,27 +2233,27 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     const models = PROVIDER_MODELS_CATALOG[pid];
                     return models.map(m => (
                       <tr key={m.id} className="hover:bg-surface-subtle/50 transition">
-                        <td className="py-2.5 px-4 font-sans">
+                        <td className="py-3 px-4 font-sans">
                           <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${provMeta.badgeClass}`}>
                             {provMeta.shortName}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 font-sans font-semibold text-ink">
+                        <td className="py-3 px-3 font-sans font-semibold text-ink">
                           {m.label}
                         </td>
-                        <td className="py-2.5 px-3 text-ink-2 font-mono text-2xs">
+                        <td className="py-3 px-3 text-ink-2 font-mono text-2xs">
                           {m.id}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-ink">
+                        <td className="py-3 px-3 text-right font-semibold text-ink">
                           {m.inputCostPerMillionUsd === 0 ? '0 (Miễn phí)' : `$${m.inputCostPerMillionUsd}`}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-accent">
+                        <td className="py-3 px-3 text-right font-semibold text-accent">
                           {m.outputCostPerMillionUsd === 0 ? '0 (Miễn phí)' : `$${m.outputCostPerMillionUsd}`}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-ink-3">
+                        <td className="py-3 px-3 text-right text-ink-3">
                           {(m.contextWindowTokens / 1000).toLocaleString('vi-VN')}k tokens
                         </td>
-                        <td className="py-2.5 px-4 font-sans">
+                        <td className="py-3 px-4 font-sans">
                           <span className="inline-block text-2xs font-medium text-ink-2 -line">
                             {m.badge}
                           </span>
@@ -2283,7 +2283,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                 <select
                   value={metricFilterProvider}
                   onChange={e => setMetricFilterProvider(e.target.value as 'ALL' | ApiProviderId)}
-                  className="px-2.5 py-1.5 text-2xs rounded-lg border border-line bg-surface text-ink font-medium"
+                  className="px-3 py-2 text-2xs rounded-lg border border-line bg-surface text-ink font-medium"
                 >
                   <option value="ALL">Tất cả nhà cung cấp</option>
                   <option value="GOOGLE">Google Gemini</option>
@@ -2296,7 +2296,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                 <select
                   value={metricFilterPurpose}
                   onChange={e => setMetricFilterPurpose(e.target.value as 'ALL' | OperationalApiPurposeId)}
-                  className="px-2.5 py-1.5 text-2xs rounded-lg border border-line bg-surface text-ink font-medium"
+                  className="px-3 py-2 text-2xs rounded-lg border border-line bg-surface text-ink font-medium"
                 >
                   <option value="ALL">Tất cả {purposeList.length} nghiệp vụ</option>
                   {purposeList.map(p => (
@@ -2308,13 +2308,13 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
 
                 {/* Tìm kiếm */}
                 <div className="relative">
-                  <Search className="w-3 h-3 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={metricSearchQuery}
                     onChange={e => setMetricSearchQuery(e.target.value)}
                     placeholder="Tìm theo mô hình, từ khóa..."
-                    className="pl-7 pr-2.5 py-1 text-2xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:border-accent w-44"
+                    className="pl-7 pr-3 py-1 text-2xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:border-accent w-44"
                   />
                 </div>
               </div>
@@ -2330,7 +2330,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             ) : (
               <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-surface-subtle border-b border-line text-2xs uppercase tracking-wider text-ink-3 sticky top-0 z-10">
+                  <thead className="bg-surface-subtle border-b border-line text-2xs text-ink-3 sticky top-0 z-10">
                     <tr>
                       <th className="py-2 px-4 font-semibold">Thời Gian</th>
                       <th className="py-2 px-3 font-semibold">Nghiệp Vụ</th>
@@ -2357,7 +2357,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                           {item.purposeTitle}
                         </td>
                         <td className="py-2 px-3 font-sans text-2xs">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <span className="font-semibold text-ink">
                               {item.provider === 'INTERNAL'
                                 ? 'Bộ xử lý nội bộ'
@@ -2430,7 +2430,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               </h3>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="text-xs font-semibold text-ink block">Mục đích nghiệp vụ:</label>
               <select
                 value={selectedTestPurpose}
@@ -2455,7 +2455,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               const eff = getEffectiveConfigForPurpose(selectedTestPurpose, config);
               const meta = PROVIDER_META[eff.primaryProvider];
               return (
-                <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5 text-2xs">
+                <div className="p-3 rounded-lg bg-sunken border border-line space-y-2 text-2xs">
                   <div className="flex items-center justify-between">
                     <span className="text-ink-3">Công cụ đã phân bổ:</span>
                     <span className={`px-2 py-0.5 rounded font-semibold border ${meta.badgeClass}`}>
@@ -2477,11 +2477,11 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             })()}
 
             {/* Cho phép chọn ép chạy thử sang nhà cung cấp khác để so sánh */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="text-xs font-semibold text-ink block">
                 Chế độ chạy thử (Có thể chọn đổi nhanh để so sánh 3 bên):
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { id: 'ROUTE_DEFAULT', label: 'Theo phân bổ' },
                   { id: 'GOOGLE', label: 'Google Gemini' },
@@ -2492,7 +2492,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => setOverrideTestProvider(item.id as 'ROUTE_DEFAULT' | ApiProviderId)}
-                    className={`px-2.5 py-1.5 rounded-lg text-2xs font-semibold border transition cursor-pointer ${
+                    className={`px-3 py-2 rounded-lg text-2xs font-semibold border transition cursor-pointer ${
                       overrideTestProvider === item.id
                         ? 'bg-accent-soft text-accent border-accent'
                         : 'bg-surface text-ink-2 border-line hover:bg-sunken'
@@ -2505,7 +2505,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
             </div>
 
             {/* Nội dung đầu vào */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-ink">Dữ liệu nghiệp vụ đầu vào:</label>
                 <button
@@ -2530,7 +2530,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
               type="button"
               onClick={handleRunPlaygroundTest}
               disabled={isRunningTest || !testInputText.trim()}
-              className="w-full py-2.5 px-4 rounded-lg bg-positive hover:bg-positive disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 transition shadow-2xs cursor-pointer"
+              className="w-full py-3 px-4 rounded-lg bg-positive hover:bg-positive disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 transition shadow-2xs cursor-pointer"
             >
               {isRunningTest ? (
                 <>
@@ -2562,7 +2562,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                       {testResult.providerUsed} · {testResult.modelUsed}
                     </span>
                     <span className="text-ink-2 font-mono flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                      <Clock className="w-3.5 h-3.5" />
                       {testResult.latencyMs}ms
                     </span>
                   </div>
@@ -2585,7 +2585,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                   {testResult.usage && (
                     <div className="p-3 rounded-xl bg-surface-subtle border border-line space-y-2">
                       <div className="flex items-center justify-between text-2xs text-ink-3">
-                        <span className="font-semibold uppercase tracking-wider text-ink flex items-center gap-1.5">
+                        <span className="font-semibold text-ink flex items-center gap-2">
                           <Coins className="w-3.5 h-3.5 text-warning" />
                           <span>Đo lường Token &amp; Chi phí lượt gọi này:</span>
                         </span>
@@ -2645,7 +2645,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopy('playground-out', testResult.output)}
-                      className="px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-sunken text-xs font-semibold text-ink flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-2 rounded-lg border border-line bg-surface hover:bg-sunken text-xs font-semibold text-ink flex items-center gap-2 cursor-pointer"
                     >
                       {copiedId === 'playground-out' ? (
                         <>
@@ -2681,7 +2681,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
                 className="text-accent font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <span>Quay lại bảng phân bổ 13 nghiệp vụ</span>
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

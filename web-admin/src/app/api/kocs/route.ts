@@ -3,7 +3,6 @@ import type { KocItem } from '@/lib/types';
 import { USERS } from '@/lib/mockData';
 import { requestActor } from '@/lib/server/requestActor';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import prisma from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,57 +32,6 @@ async function resolveUser(req: NextRequest) {
     return USERS[0];
   }
   return null;
-}
-
-async function syncKocsToPrismaTable(items: KocItem[]): Promise<void> {
-  if (!process.env.DATABASE_URL || items.length === 0) return;
-  try {
-    for (const item of items.slice(0, 50)) {
-      const cleanHandle = item.channelId?.trim().replace(/^@+/, '')
-        ? `@${item.channelId.trim().replace(/^@+/, '')}`
-        : `@${item.id}`;
-      await prisma.kocProfile.upsert({
-        where: { channelId: cleanHandle },
-        update: {
-          stageName: item.stageName || cleanHandle,
-          realName: item.realName || null,
-          channelUrl: item.channelLink || `https://www.tiktok.com/${cleanHandle}`,
-          followersCount: Math.max(0, Math.round(Number(item.followers) || 0)),
-          avgViews: Math.max(0, Math.round(Number(item.avgViews) || 0)),
-          niche: item.niche || item.tepKenh || null,
-          phone: item.phone || null,
-          zalo: item.zalo || null,
-          email: item.email || null,
-          cccd: item.cccd || null,
-          taxCode: item.taxCode || null,
-          bankName: item.bankName || null,
-          bankAccount: item.bankAccount || null,
-          rateCardVideo: Number(item.rateCardVideo) || 0,
-          reliabilityScore: Number(item.reliabilityScore) || 10,
-        },
-        create: {
-          channelId: cleanHandle,
-          stageName: item.stageName || cleanHandle,
-          realName: item.realName || null,
-          channelUrl: item.channelLink || `https://www.tiktok.com/${cleanHandle}`,
-          followersCount: Math.max(0, Math.round(Number(item.followers) || 0)),
-          avgViews: Math.max(0, Math.round(Number(item.avgViews) || 0)),
-          niche: item.niche || item.tepKenh || null,
-          phone: item.phone || null,
-          zalo: item.zalo || null,
-          email: item.email || null,
-          cccd: item.cccd || null,
-          taxCode: item.taxCode || null,
-          bankName: item.bankName || null,
-          bankAccount: item.bankAccount || null,
-          rateCardVideo: Number(item.rateCardVideo) || 0,
-          reliabilityScore: Number(item.reliabilityScore) || 10,
-        },
-      });
-    }
-  } catch {
-    // Bỏ qua nếu bảng KocProfile chưa migrate trên môi trường local, dữ liệu vẫn được bảo toàn trong AppSharedRecord
-  }
 }
 
 export async function GET(req: NextRequest) {
@@ -192,8 +140,6 @@ export async function POST(req: NextRequest) {
         };
       }
     );
-
-    await syncKocsToPrismaTable(incoming);
 
     const allItems = Object.values(updatedRecord.data.itemsByHandle || {});
     return NextResponse.json(
