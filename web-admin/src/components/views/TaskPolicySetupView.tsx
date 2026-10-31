@@ -39,8 +39,6 @@ import {
   Panel,
   Segmented,
   Select,
-  Stat,
-  StatRow,
   Status,
   Textarea,
 } from '../ui';
@@ -438,27 +436,6 @@ export function TaskPolicySetupView({
       {/* SECTION 1: BẢNG 1 - 33 ĐẦU VIỆC SOW */}
       {section === 'SOW_TABLE_1' && (
         <div className="space-y-4">
-          <StatRow>
-            <Stat
-              label="Tổng danh mục SOW"
-              value={`${sowPolicies.length} đầu việc`}
-            />
-            <Stat
-              label="Đầu việc mức Khó (1,20)"
-              value={`${sowSummaryStats.hardCount} đầu việc`}
-              tone="critical"
-            />
-            <Stat
-              label="Đầu việc Tiêu chuẩn (1,00)"
-              value={`${sowSummaryStats.standardCount} đầu việc`}
-              tone="positive"
-            />
-            <Stat
-              label="Điểm chuẩn bình quân"
-              value={`${formatDecimal(sowSummaryStats.avgBase, 1)} pts`}
-            />
-          </StatRow>
-
           <Panel
             flush
             title="Bảng 1 · Chính sách điểm theo danh mục công việc (33 SOW)"

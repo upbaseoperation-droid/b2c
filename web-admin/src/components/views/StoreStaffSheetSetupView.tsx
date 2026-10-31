@@ -52,8 +52,6 @@ import {
   Modal,
   Panel,
   Select,
-  Stat,
-  StatRow,
   Status,
   Tabs,
   Textarea,
@@ -1267,32 +1265,6 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
 
   return (
     <div className="space-y-4">
-      <StatRow size="sm">
-        <Stat label="Gian hàng B2C" value={stats.total} note={`${brandOptions.length} thương hiệu`} />
-        <Stat
-          label="Đã gắn Google Sheet"
-          value={`${stats.withSheet}/${stats.total}`}
-          tone={stats.withSheet === stats.total ? 'positive' : 'warning'}
-          progress={{ value: stats.withSheet, max: Math.max(1, stats.total) }}
-        />
-        <Stat
-          label="Đã cài Apps Script"
-          value={`${
-            Object.values(drafts).filter(d => {
-              const id = extractSpreadsheetIdFromUrl(d.bookingSheetUrl);
-              return Boolean(id && appsScriptInstalledMap[id]);
-            }).length
-          }/${stats.withSheet}`}
-          note="Trên số gian đã gắn Sheet"
-        />
-        <Stat
-          label="Kết nối Google Sheets API"
-          value={saConfigured ? 'Sẵn sàng' : 'Chưa gắn Key'}
-          tone={saConfigured ? 'positive' : 'warning'}
-          note={saConfigured ? undefined : 'Cấu hình ở tab Kết nối Google'}
-        />
-      </StatRow>
-
       {saEmail && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-xs text-ink-2">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" />

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, DataTable, Field, Panel, PeriodPicker, Progress, Select, Stat, StatRow, Status } from '../../ui';
+import { Button, DataTable, Field, Panel, PeriodPicker, Progress, Select, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatNumber, getVietnamDateYmd } from '../../../lib/format';
 import {
@@ -161,35 +161,6 @@ export function SelfChannelProgressPanel({
           </Select>
         </Field>
       </div>
-
-      <StatRow>
-        <Stat
-          label="Đã giao việc"
-          value={`${formatNumber(t.jobs)}/${formatNumber(t.planQty)}`}
-          tone={t.notAssigned > 0 ? 'warning' : 'positive'}
-          progress={{ value: t.jobs, max: Math.max(1, t.planQty) }}
-          note={`${formatNumber(t.notAssigned)} video chưa giao việc`}
-        />
-        <Stat
-          label="Đã đăng"
-          value={`${formatNumber(t.aired)}/${formatNumber(base)}`}
-          progress={{ value: t.aired, max: Math.max(1, base) }}
-          note={`${t.airRate.toFixed(1)}% so với chỉ tiêu`}
-        />
-        <Stat
-          label="Nghiệm thu đạt"
-          value={`${formatNumber(t.accepted)}/${formatNumber(base)}`}
-          progress={{ value: t.accepted, max: Math.max(1, base) }}
-          note={`Đã chi: ${formatNumber(t.paid)} video`}
-        />
-        <Stat
-          label="Cần đôn đốc"
-          value={formatNumber(flagged)}
-          tone={t.overdue > 0 || t.brandLate > 0 ? 'critical' : flagged > 0 ? 'warning' : 'positive'}
-          note={`${formatNumber(t.overdue)} quá hạn đăng · ${formatNumber(t.brandLate)} Brand trễ · ${formatNumber(t.ctvPending)} CTV chưa nhận`}
-        />
-      </StatRow>
-
       <Panel title="Tiến độ theo gian: số video đang ở từng bước" flush>
         <DataTable columns={storeColumns} rows={progress.stores} rowKey={r => r.planId} loading={loading} empty="Không có gian nào có chỉ tiêu hoặc video Content kênh trong bộ lọc này." />
       </Panel>

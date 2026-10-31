@@ -49,8 +49,6 @@ import {
   Progress,
   Segmented,
   Select,
-  Stat,
-  StatRow,
   Status,
   Tabs,
   type Column,
@@ -982,32 +980,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
   return (
     <div className="space-y-4 min-w-0">
-      {/* 1. COMPACT KPI STRIP */}
-      <StatRow>
-        <Stat
-          label="Nhiệm vụ quy trình"
-          value={metrics.workflowTasksCount}
-          icon={Layers}
-        />
-        <Stat
-          label="Nhiệm vụ quản lý giao"
-          value={metrics.directorTasksCount}
-          icon={ClipboardList}
-        />
-        <Stat
-          label="Đạt chuẩn cơ cấu việc khó"
-          value={`${metrics.passCount}/${metrics.totalStaffCount}`}
-          tone="positive"
-          icon={ShieldCheck}
-        />
-        <Stat
-          label="Tổng quỹ điểm khối B2C"
-          value={formatDecimal(metrics.totalStaffFinalPts, 1)}
-          tone={metrics.criticalOpenCount > 0 ? 'warning' : 'positive'}
-          icon={BarChart3}
-        />
-      </StatRow>
-
       {/* 2. TOP NAVIGATION & ACTION BAR */}
       <div className="bg-surface border border-line rounded-lg px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <Tabs

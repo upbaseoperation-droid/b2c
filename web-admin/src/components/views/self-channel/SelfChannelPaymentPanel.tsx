@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, DataTable, Input, Panel, PeriodPicker, Stat, StatRow, Status } from '../../ui';
+import { Button, DataTable, Input, Panel, PeriodPicker, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatDate, formatNumber, formatVnd } from '../../../lib/format';
 import type { LarkPaymentRequestSlip } from '../../../lib/larkPaymentRequestEngine';
@@ -297,13 +297,6 @@ export function SelfChannelPaymentPanel({ onNotify, contributors = [] }: { onNot
 
   return (
     <div className="space-y-4">
-      <StatRow>
-        <Stat label="Video chờ lập phiếu" value={formatNumber(totals.pending)} />
-        <Stat label="Đủ điều kiện lập" value={formatNumber(totals.ready)} />
-        <Stat label="Đang trong luồng duyệt" value={formatVnd(totals.inFlow)} tone={totals.inFlow > 0 ? 'warning' : undefined} />
-        <Stat label="Đã đi tiền" value={formatVnd(totals.paid)} />
-      </StatRow>
-
       <Panel
         title="Video đã nghiệm thu, chờ lập phiếu"
         actions={

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { formatVndShort, formatNumber, getVietnamDateTimeShort } from '../../lib/format';
 import {
   Layers,
@@ -58,7 +59,10 @@ import {
 } from '../../lib/inputPlanDefaults';
 import { exportInputPlanStudioToExcel, exportBrandMonthlyOneSheetToExcel } from '../../lib/excelExport';
 import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
-import { BrandOneSheetPlanView } from './BrandOneSheetPlanView';
+const BrandOneSheetPlanView = dynamic(
+  () => import('./BrandOneSheetPlanView').then((m) => m.BrandOneSheetPlanView),
+  { ssr: false }
+);
 import { MonthlyPlanHub } from './MonthlyPlanHub';
 import { PlanWeeklyBreakdown } from './PlanWeeklyBreakdown';
 import {
@@ -89,7 +93,10 @@ import {
   PageHeaderNav,
   PageActions,
 } from '../ui';
-import { StorePlanMindmap } from './StorePlanMindmap';
+const StorePlanMindmap = dynamic(
+  () => import('./StorePlanMindmap').then((m) => m.StorePlanMindmap),
+  { ssr: false }
+);
 
 interface FormattedNumberInputProps {
   value: number;
@@ -291,8 +298,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }
   }
 
+  const isInitialMountRef = React.useRef(true);
   useEffect(() => {
     if (!onPlansChange) return;
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (monthlyPlans === INITIAL_MONTHLY_PLANS && planState === INITIAL_MONTHLY_PLANS[0]) {
+        return;
+      }
+    }
     const timer = window.setTimeout(() => {
       const merged = monthlyPlans.map(p => (p.id === planState.id ? planState : p));
       onPlansChange(merged);

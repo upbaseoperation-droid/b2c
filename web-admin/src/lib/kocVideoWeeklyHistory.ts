@@ -341,7 +341,7 @@ export function buildInitialSystemVideoRegistry(
 
     registry[videoId] = {
       videoId,
-      dealCode: existing?.dealCode || `BO2610_${videoId.slice(-5)}`,
+      dealCode: existing?.dealCode || '',
       kocId: existing?.kocId || matchedKoc?.id || `koc-${handleAcc || videoId.slice(-6)}`,
       kocChannelId: existing?.kocChannelId || matchedKoc?.channelId?.replace(/^@/, '') || cr.tiktokAccount,
       kocStageName: existing?.kocStageName || matchedKoc?.stageName || cr.tiktokAccount,
@@ -667,7 +667,7 @@ export function ingestWeeklyRowsBySystemVideoId(
       const cleanHandle = normalizeChannelHandle(row.tiktokAccount) || `koc_${videoId.slice(-5)}`;
       sysVideo = {
         videoId,
-        dealCode: row.dealCode || `BO2610_${videoId.slice(-5)}`,
+        dealCode: row.dealCode || '',
         kocId: `koc-${cleanHandle}`,
         kocChannelId: cleanHandle,
         kocStageName: sanitizeSystemText(row.tiktokAccount, 120) || cleanHandle,
@@ -990,7 +990,7 @@ export function registerNewSystemVideo(
 
   const registeredVideo: SystemRegisteredVideo = {
     videoId: extractedId,
-    dealCode: payload.dealCode?.trim() || `BO2610_${extractedId.slice(-5)}`,
+    dealCode: payload.dealCode?.trim() || '',
     kocId: payload.kocId || `koc-${cleanHandle}`,
     kocChannelId: cleanHandle,
     kocStageName: sanitizeSystemText(payload.kocStageName, 120) || cleanHandle,

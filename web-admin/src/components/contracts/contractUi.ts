@@ -25,6 +25,7 @@ import {
   DEFAULT_SIGN_TAGS,
   enrichTemplateWithSignFlow,
   mapRecordValuesToTemplateVariables,
+  normalizeTemplateFieldsToApiKeys,
 } from '../../lib/contracts/contractSystemRules';
 
 export {
@@ -36,6 +37,7 @@ export {
   enrichTemplateWithSignFlow,
   evaluateContractRules,
   mapRecordValuesToTemplateVariables,
+  normalizeTemplateFieldsToApiKeys,
   numberToVietnameseWords,
   OFFICIAL_3STAGE_TEMPLATE_IDS,
   type ContractRuleEvaluation,
@@ -182,8 +184,9 @@ export const GROUP_ORDER: Array<{ key: FieldGroup; title: string }> = [
   { key: 'OTHER', title: 'Ô khác trong mẫu' },
 ];
 
-/** Mỗi khóa một ô (token như [ID KOC] xuất hiện nhiều chỗ nhưng điền một lần). */
-export const uniqueFields = (t: LegalTemplate | null) => (t ? [...new Map(t.fields.map(f => [f.key, f])).values()] : []);
+/** Mỗi khóa một ô (token như KOC_CODE xuất hiện nhiều chỗ nhưng điền một lần). */
+export const uniqueFields = (t: LegalTemplate | null) =>
+  t ? [...new Map(normalizeTemplateFieldsToApiKeys(t.fields || []).map(f => [f.key, f])).values()] : [];
 
 export const isAcceptance = (templateId: string) => templateId.endsWith('-BBNT');
 
@@ -745,9 +748,18 @@ export function buildJobAcceptanceBreakdown(
           ? 'HKD'
           : baseSubject;
   const jobCode = deal?.dealCode || parentRecord?.dealCode || 'JOB-01';
-  const parentDocDate = parentRecord?.values['token:[dd.mm.yy]'] || '';
-  const parentBrand = parentRecord?.values['token:[BRAND]'] || (deal?.brandName || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const parentKocToken = parentRecord?.values['token:[ID KOC]'] || (koc?.channelId || deal?.kocChannelId || '').replace(/^@/, '');
+  const parentDocDate =
+    parentRecord?.values['CONTRACT_DATE_CODE'] ||
+    parentRecord?.values['token:[dd.mm.yy]'] ||
+    '';
+  const parentBrand =
+    parentRecord?.values['BRAND_CODE'] ||
+    parentRecord?.values['token:[BRAND]'] ||
+    (deal?.brandName || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const parentKocToken =
+    parentRecord?.values['KOC_CODE'] ||
+    parentRecord?.values['token:[ID KOC]'] ||
+    (koc?.channelId || deal?.kocChannelId || '').replace(/^@/, '');
 
   const appendixCode =
     deal?.contractAppendixCode ||
@@ -760,8 +772,8 @@ export function buildJobAcceptanceBreakdown(
     activeProfile?.frameworkContractCode ||
     (parentRecord?.templateId.endsWith('-HDNT') && parentDocDate && parentKocToken
       ? `${parentDocDate}/HĐNT/UPBASE-${parentKocToken}`
-      : parentRecord?.values['token:[Ngày HĐNT]'] && parentKocToken
-        ? `${parentRecord.values['token:[Ngày HĐNT]']}/HĐNT/UPBASE-${parentKocToken}`
+      : (parentRecord?.values['MASTER_CONTRACT_DATE'] || parentRecord?.values['token:[Ngày HĐNT]']) && parentKocToken
+        ? `${parentRecord.values['MASTER_CONTRACT_DATE'] || parentRecord.values['token:[Ngày HĐNT]']}/HĐNT/UPBASE-${parentKocToken}`
         : `HĐNT-${parentKocToken || 'KOC'}`);
 
   const savedFromParent = parseSavedSowTasks(parentRecord?.values?.[SOW_TASKS_META_KEY]);
@@ -1137,8 +1149,10 @@ export function prefill(
   const hasSeparateParentDateToken = fields.some(
     f => f.source === 'parentContractDate' || f.source === 'parentSowDate',
   );
-  const docDateStr = !hasSeparateParentDateToken && parentRecord?.values['token:[dd.mm.yy]']
-    ? parentRecord.values['token:[dd.mm.yy]']
+  const parentDocDateFromValues =
+    parentRecord?.values['CONTRACT_DATE_CODE'] || parentRecord?.values['token:[dd.mm.yy]'];
+  const docDateStr = !hasSeparateParentDateToken && parentDocDateFromValues
+    ? parentDocDateFromValues
     : todayDocDate;
 
   // Tự động tìm Phụ lục SOW của Job (nếu chưa truyền parentRecord trực tiếp)
@@ -1266,11 +1280,17 @@ export function prefill(
           : 0;
 
   const getUniqueKocIdToken = () => {
-    if (effectiveParentRecord?.values['token:[ID KOC]']?.trim()) {
-      return effectiveParentRecord.values['token:[ID KOC]'].trim();
+    const parentKocVal =
+      effectiveParentRecord?.values['KOC_CODE']?.trim() ||
+      effectiveParentRecord?.values['token:[ID KOC]']?.trim();
+    if (parentKocVal) {
+      return parentKocVal;
     }
-    if (frameworkRecord?.values['token:[ID KOC]']?.trim()) {
-      return frameworkRecord.values['token:[ID KOC]'].trim();
+    const frameworkKocVal =
+      frameworkRecord?.values['KOC_CODE']?.trim() ||
+      frameworkRecord?.values['token:[ID KOC]']?.trim();
+    if (frameworkKocVal) {
+      return frameworkKocVal;
     }
     const rawId = koc ? koc.channelId.replace(/^@/, '') : (deal?.kocChannelId || '').replace(/^@/, '');
     if (!rawId) return '';
@@ -1279,7 +1299,10 @@ export function prefill(
     }
     const sameDayCount = existingRecords.filter(r => {
       const matchKoc = r.kocId === koc?.id || r.partner === koc?.realName || r.partner === koc?.stageName;
-      const matchDate = r.values['token:[dd.mm.yy]'] === docDateStr || r.createdAt.startsWith(getVietnamDateYmd(d));
+      const matchDate =
+        r.values['CONTRACT_DATE_CODE'] === docDateStr ||
+        r.values['token:[dd.mm.yy]'] === docDateStr ||
+        r.createdAt.startsWith(getVietnamDateYmd(d));
       return matchKoc && matchDate;
     }).length;
     if (sameDayCount > 0) {
@@ -1291,13 +1314,17 @@ export function prefill(
   const resolvedCccd = activeProfile?.cccd || koc?.cccd || deal?.kocIdCardNumber || '';
   const resolvedIssueDate = activeProfile?.cccdIssueDate || koc?.issueDate || '';
   const resolvedIssuePlace = activeProfile?.cccdIssuePlace || koc?.issuePlace || '';
+  const hasSeparateIdIssueFields = fields.some(
+    x => x.key === 'PARTY_B_ID_ISSUE_DATE' || x.key === 'PARTY_B_ID_ISSUE_PLACE',
+  );
   const cccdWithIssue = (f: ContractField) =>
-    resolvedCccd && f.start !== undefined && (resolvedIssueDate || resolvedIssuePlace)
+    !hasSeparateIdIssueFields && resolvedCccd && f.start !== undefined && (resolvedIssueDate || resolvedIssuePlace)
       ? [resolvedCccd, resolvedIssueDate && `cấp ngày ${resolvedIssueDate}`, resolvedIssuePlace && `tại ${resolvedIssuePlace}`].filter(Boolean).join(' ')
       : resolvedCccd || parentValueBySource('cccd') || '';
 
   const effectiveBrand = ctx.brand || deal?.brandName || effectiveParentRecord?.brand || frameworkRecord?.brand || '';
   const brandCode =
+    effectiveParentRecord?.values['BRAND_CODE']?.trim() ||
     effectiveParentRecord?.values['token:[BRAND]']?.trim() ||
     effectiveBrand.toUpperCase().replace(/[^A-Z0-9]/g, '') ||
     'BRAND';
@@ -1308,7 +1335,7 @@ export function prefill(
       const kocRef = getUniqueKocIdToken() || 'KOC';
       return `${docDateStr.replace(/\D/g, '')}/HDNT/UPBASE-${kocRef.toUpperCase().replace(/[^A-Z0-9_-]/g, '')}`;
     }
-    if (upperKey === 'NOW_YEAR') return String(d.getFullYear());
+    if ((upperKey === 'NOW_YEAR' || upperKey === 'NAM') && f.start === undefined) return String(d.getFullYear());
     if (upperKey === 'PARTY_B_ID_ISSUE_DATE') return resolvedIssueDate || '01/01/2022';
     if (upperKey === 'PARTY_B_ID_ISSUE_PLACE') return resolvedIssuePlace || 'Cục Cảnh sát QLHC về TTXH';
     if (upperKey === 'PAYMENT_METHOD') return 'Chuyển khoản';
@@ -1394,7 +1421,9 @@ export function prefill(
           activeProfile?.bankHolderName ||
           activeProfile?.holderName ||
           deal?.kocBankHolder ||
+          effectiveParentRecord?.values['BANK_ACCOUNT_NAME'] ||
           effectiveParentRecord?.values['token:[Tên chủ tài khoản]'] ||
+          frameworkRecord?.values['BANK_ACCOUNT_NAME'] ||
           frameworkRecord?.values['token:[Tên chủ tài khoản]'] ||
           parentValueBySource('bankAccountName') ||
           (koc ? (type === 'COMPANY' ? koc.companyName || koc.realName : koc.realName) : '') ||
@@ -1407,7 +1436,9 @@ export function prefill(
           activeProfile?.bankAccountNumber ||
           deal?.kocBankAccount ||
           koc?.bankAccount ||
+          effectiveParentRecord?.values['BANK_ACCOUNT_NUMBER'] ||
           effectiveParentRecord?.values['token:[Số tài khoản]'] ||
+          frameworkRecord?.values['BANK_ACCOUNT_NUMBER'] ||
           frameworkRecord?.values['token:[Số tài khoản]'] ||
           parentValueBySource('bankAccountNumber') ||
           ''
@@ -1417,13 +1448,17 @@ export function prefill(
           activeProfile?.bankName ||
           deal?.kocBankName ||
           koc?.bankName ||
+          effectiveParentRecord?.values['BANK_NAME'] ||
           effectiveParentRecord?.values['token:[Tại Ngân hàng]'] ||
+          frameworkRecord?.values['BANK_NAME'] ||
           frameworkRecord?.values['token:[Tại Ngân hàng]'] ||
           parentValueBySource('bankName') ||
           ''
         );
       case 'brand':
-        return f.key === 'token:[BRAND]' ? brandCode : (effectiveBrand || parentValueBySource('brand') || '');
+        return f.key === 'BRAND_CODE' || f.key === 'token:[BRAND]'
+          ? brandCode
+          : (effectiveBrand || parentValueBySource('brand') || '');
       case 'airDate':
         return (
           formatYmdToVnDate(deal?.postedDate || deal?.deadlinePost) ||
@@ -1436,19 +1471,26 @@ export function prefill(
         return docDateStr;
       case 'parentContractDate':
         return (
+          frameworkRecord?.values['CONTRACT_DATE_CODE'] ||
           frameworkRecord?.values['token:[dd.mm.yy]'] ||
+          effectiveParentRecord?.values['MASTER_CONTRACT_DATE'] ||
           effectiveParentRecord?.values['token:[Ngày HĐNT]'] ||
           extractDocDateFromCode(activeProfile?.frameworkContractCode) ||
           extractDocDateFromCode(deal?.masterContractCode) ||
+          effectiveParentRecord?.values['CONTRACT_DATE_CODE'] ||
           effectiveParentRecord?.values['token:[dd.mm.yy]'] ||
           todayDocDate
         );
       case 'parentSowDate':
         return (
-          (sowRecord ? sowRecord.values['token:[dd.mm.yy]'] : '') ||
-          (effectiveParentRecord?.templateId.endsWith('-SOW') ? effectiveParentRecord.values['token:[dd.mm.yy]'] : '') ||
+          (sowRecord ? sowRecord.values['CONTRACT_DATE_CODE'] || sowRecord.values['token:[dd.mm.yy]'] : '') ||
+          (effectiveParentRecord?.templateId.endsWith('-SOW')
+            ? effectiveParentRecord.values['CONTRACT_DATE_CODE'] || effectiveParentRecord.values['token:[dd.mm.yy]']
+            : '') ||
+          effectiveParentRecord?.values['PARENT_SOW_DATE'] ||
           effectiveParentRecord?.values['token:[Ngày SOW]'] ||
           extractDocDateFromCode(deal?.contractAppendixCode) ||
+          effectiveParentRecord?.values['CONTRACT_DATE_CODE'] ||
           effectiveParentRecord?.values['token:[dd.mm.yy]'] ||
           todayDocDate
         );

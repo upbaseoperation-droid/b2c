@@ -642,6 +642,16 @@ test('Tích hợp GraphQL Contract Service (4 API: getContractTemplates, getCont
       'https://docs.google.com/document/d/1-5PaT5VaqUDrpYruenua2eRMVpqLzrdTZinXJk7bDT0/edit?usp=drivesdk',
     );
     assert.deepEqual(indHdnt.signTags, ['{{SIGN_PROVIDER}}', '{{SIGN_CLIENT}}']);
+    assert.equal(indHdnt.schemaDiff?.hasChanges, true, 'Tự động phát hiện form kéo từ API có thay đổi so với bản lưu hệ thống');
+    assert.equal(indHdnt.schemaDiff?.baselineTemplateId, 'IND-HDNT');
+    assert.ok(
+      indHdnt.schemaDiff?.addedFields.some((f: { key: string }) => f.key === 'PARTY_B_ID_ISSUE_DATE'),
+      'Phát hiện trường mới PARTY_B_ID_ISSUE_DATE từ API',
+    );
+    assert.ok(
+      indHdnt.schemaDiff?.removedFields.some((f: { key: string }) => f.key === 'ADVANCE_AMOUNT'),
+      'Phát hiện trường hệ thống ADVANCE_AMOUNT đã lược bỏ trên API',
+    );
 
     // Kiểm tra loadTemplate trực tiếp bằng mã remote (HDNT-CANHAN) hoặc UUID từ API 1 & API 2
     const loadedByRemoteCode = await loadTemplate('HDNT-CANHAN');

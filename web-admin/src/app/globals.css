@@ -144,23 +144,24 @@
   --color-rose-600: #A3241B; --color-rose-700: #891D16; --color-rose-800: #6F1812;
   --color-rose-900: #5A1511; --color-rose-950: #360C09;
 
-  /* ---- Chữ: nhỏ nhất 11px cho nhãn siêu nhỏ ---- */
-  --text-2xs: 0.75rem;      --text-2xs--line-height: 1.125rem;  /* 12/18 nhãn, chú thích */
-  --text-xs: 0.8125rem;     --text-xs--line-height: 1.25rem;    /* 13/20 ô bảng, nội dung dày */
-  --text-sm: 0.875rem;      --text-sm--line-height: 1.375rem;   /* 14/22 nội dung */
-  --text-base: 1rem;        --text-base--line-height: 1.5rem;   /* 16/24 tiêu đề khối */
-  --text-lg: 1.125rem;      --text-lg--line-height: 1.625rem;
-  --text-xl: 1.25rem;       --text-xl--line-height: 1.75rem;
-  --text-2xl: 1.375rem;     --text-2xl--line-height: 1.75rem;   /* 22/28 tiêu đề trang, số lớn */
-  --text-3xl: 1.75rem;      --text-3xl--line-height: 2.25rem;
-  --text-4xl: 2rem;         --text-4xl--line-height: 2.5rem;
-  /* Chữ điều khiển (tab, nút, ô nhập) và con số chỉ số — tách token để chế độ dày thu nhỏ được */
-  --text-ctl-sm: 0.78125rem; --text-ctl-sm--line-height: 1.125rem; /* 12,5 chip, nút chọn */
-  --text-ctl: 0.8125rem;     --text-ctl--line-height: 1.25rem;     /* 13 tab, nút nhỏ */
-  --text-ctl-md: 0.84375rem; --text-ctl-md--line-height: 1.25rem;  /* 13,5 nút, ô nhập */
-  --text-stat: 1.625rem;     --text-stat--line-height: 2rem;       /* 26/32 số chỉ số */
-  --text-stat-sm: 1.25rem;   --text-stat-sm--line-height: 1.75rem; /* 20/28 số chỉ số gọn */
-  --font-figure: var(--font-sans);                                  /* font của số chỉ số */
+  /* ---- Chữ: nhỏ gọn chuẩn hệ thống ERP / OPS ---- */
+  --text-2xs: 0.6875rem;     --text-2xs--line-height: 1rem;        /* 11/16 nhãn, chip nhỏ, chú thích */
+  --text-xs: 0.75rem;        --text-xs--line-height: 1.125rem;     /* 12/18 ô bảng, thông tin phụ */
+  --text-sm: 0.8125rem;      --text-sm--line-height: 1.25rem;      /* 13/20 nội dung chính */
+  --text-base: 0.875rem;     --text-base--line-height: 1.375rem;   /* 14/22 tiêu đề nhóm, khối */
+  --text-lg: 1rem;           --text-lg--line-height: 1.5rem;       /* 16/24 */
+  --text-xl: 1.125rem;       --text-xl--line-height: 1.625rem;     /* 18/26 tiêu đề trang */
+  --text-2xl: 1.25rem;       --text-2xl--line-height: 1.75rem;     /* 20/28 số lớn */
+  --text-3xl: 1.5rem;        --text-3xl--line-height: 2rem;
+  --text-4xl: 1.75rem;       --text-4xl--line-height: 2.25rem;
+
+  /* Chữ điều khiển (tab, nút, ô nhập) và con số chỉ số */
+  --text-ctl-sm: 0.75rem;    --text-ctl-sm--line-height: 1rem;     /* 12 chip, nút chọn */
+  --text-ctl: 0.75rem;       --text-ctl--line-height: 1.125rem;    /* 12 tab, nút nhỏ */
+  --text-ctl-md: 0.78125rem; --text-ctl-md--line-height: 1.125rem; /* 12.5 nút, ô nhập */
+  --text-stat: 1.25rem;      --text-stat--line-height: 1.75rem;    /* 20/28 số chỉ số */
+  --text-stat-sm: 1.125rem;  --text-stat-sm--line-height: 1.5rem;  /* 18/24 số chỉ số gọn */
+  --font-figure: var(--font-sans);                                 /* font của số chỉ số: font sans tabular-nums dễ nhìn */
 
   /* ---- Bo góc: nhãn 4, điều khiển 8, khung 12 ---- */
   --radius-xs: 4px;
@@ -212,7 +213,7 @@
   --text-ctl-md: 0.78125rem; --text-ctl-md--line-height: 1.125rem;
   --text-stat: 1.25rem;      --text-stat--line-height: 1.75rem;    /* 20/28 */
   --text-stat-sm: 1.125rem;  --text-stat-sm--line-height: 1.5rem;  /* 18/24 */
-  --font-figure: var(--font-mono);                                   /* số chỉ số dạng mono như bảng tính */
+  --font-figure: var(--font-sans);                                   /* số chỉ số dạng mono như bảng tính */
 }
 
 /* ========================================================================= */
@@ -224,6 +225,7 @@ html, body {
   color: var(--color-ink);
   min-height: 100dvh;
   font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1;
   overflow-x: clip; /* clip, không phải hidden: hidden biến body thành vùng cuộn và làm hỏng sticky */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

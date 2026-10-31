@@ -1247,192 +1247,18 @@ function getKocDealIndex(deals: BookingDealItem[]): KocDealIndex {
  * khi số lượng deal chi tiết ít hơn totalPastDeals ghi nhận trên Danh bạ KOC (RULE-SYNC-01 & RULE-DATA-01).
  */
 function buildHistoricalDealsFromKocSummary(
-  k: KocItem,
-  existingDeals: BookingDealItem[],
+  _k: KocItem,
+  _existingDeals: BookingDealItem[] = [],
 ): BookingDealItem[] {
-  const targetTotal = Math.max(
-    k.totalPastDeals || 0,
-    (k.totalPaidVideos || 0) + (k.totalFocVideos || 0),
-    k.latestBoCode && existingDeals.length === 0 ? 1 : 0,
-  );
-  const missingCount = Math.max(0, targetTotal - existingDeals.length);
-  if (missingCount <= 0) return [];
-
-  const validExisting = existingDeals.filter((d) => d.status !== 'CANCELLED');
-  const existingPaidCount = validExisting.filter((d) => (d.totalValue || 0) > 0).length;
-  const existingCost = validExisting.reduce((s, d) => s + (d.totalValue || 0), 0);
-  const existingGmv = validExisting.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
-  const existingCodes = new Set(existingDeals.map((d) => (d.dealCode || '').toUpperCase()));
-
-  const hasPaidHistory =
-    (k.totalPaidVideos || 0) > 0 ||
-    (k.totalPastCost || 0) > 0 ||
-    ((k.totalFocVideos || 0) === 0 && ((k.minRate || 0) > 0 || (k.rateCardVideo || 0) > 0));
-  const targetPaidTotal =
-    k.totalPaidVideos !== undefined
-      ? k.totalPaidVideos
-      : k.totalFocVideos !== undefined
-        ? Math.max(0, targetTotal - k.totalFocVideos)
-        : hasPaidHistory
-          ? targetTotal
-          : 0;
-  const missingPaidCount = Math.min(missingCount, Math.max(0, targetPaidTotal - existingPaidCount));
-
-  let remainingCost = Math.max(0, (k.totalPastCost || 0) - existingCost);
-  if (remainingCost === 0 && missingPaidCount > 0) {
-    const unitRate = k.minRate || k.rateCardVideo || k.maxRate || 0;
-    remainingCost = unitRate * missingPaidCount;
-  }
-  const estimatedTotalGmv =
-    k.totalPastGmv ||
-    (k.historicalRoi && (k.totalPastCost || remainingCost + existingCost) > 0
-      ? Math.round((k.totalPastCost || remainingCost + existingCost) * k.historicalRoi)
-      : k.gmvBestCase || 0);
-  const remainingGmv = Math.max(0, estimatedTotalGmv - existingGmv);
-
-  const brands = Array.from(
-    new Set(
-      [
-        ...(k.brandName ? k.brandName.split(/[,;/]/).map((s) => s.trim()) : []),
-        ...(k.workedBrands || []),
-        ...((k.alternatePayees || []).map((p) => (p.latestBrand || '').trim())),
-      ].filter(Boolean),
-    ),
-  );
-  if (brands.length === 0) brands.push('UpBase B2C');
-
-  const pics = Array.from(
-    new Set(
-      (k.workedPicsList || k.bookingPic || '')
-        .split(/[,\n]/)
-        .map((s) => s.trim())
-        .filter(Boolean),
-    ),
-  );
-  const defaultPic = pics[0] || 'Chuyên viên Booking';
-  const payees = k.alternatePayees || [];
-  const baseMonth = k.latestBookMonth || '2026/04';
-  const [yearStr = '2026', monthStr = '04'] = baseMonth.split('/');
-  const postedDateStr = `${yearStr}-${monthStr.padStart(2, '0')}-15`;
-  const cleanHandle = normHandle(k.channelId) || k.id;
-  const connectedChs = getKocConnectedChannels(k);
-  const tiktokChs = connectedChs.filter((c) => c.platform === 'TIKTOK');
-
-  const synthesized: BookingDealItem[] = [];
-  let allocatedCostSoFar = 0;
-  let allocatedGmvSoFar = 0;
-
-  for (let i = 0; i < missingCount; i++) {
-    const isPaid = i < missingPaidCount;
-    let dealValue = 0;
-    if (isPaid && missingPaidCount > 0) {
-      if (i === missingPaidCount - 1) {
-        dealValue = Math.max(0, remainingCost - allocatedCostSoFar);
-      } else {
-        dealValue = Math.round(remainingCost / missingPaidCount);
-        allocatedCostSoFar += dealValue;
-      }
-    }
-
-    let dealGmv = 0;
-    if (remainingGmv > 0) {
-      if (i === missingCount - 1) {
-        dealGmv = Math.max(0, remainingGmv - allocatedGmvSoFar);
-      } else {
-        dealGmv = Math.round(remainingGmv / missingCount);
-        allocatedGmvSoFar += dealGmv;
-      }
-    }
-
-    const brand = brands[i % brands.length];
-    const pic = pics[i % Math.max(1, pics.length)] || defaultPic;
-    const payee = payees.length > 0 ? payees[i % payees.length] : undefined;
-
-    let boCode = '';
-    if (i === 0 && k.latestBoCode && !existingCodes.has(k.latestBoCode.toUpperCase())) {
-      boCode = k.latestBoCode;
-    } else if (k.latestBoCode && /^BO\d+$/i.test(k.latestBoCode)) {
-      const prefix = k.latestBoCode.slice(0, 6);
-      const baseNum = parseInt(k.latestBoCode.slice(6), 10) || 10000;
-      boCode = `${prefix}${String(Math.max(1, baseNum - (i + 1))).padStart(5, '0')}`;
-    } else {
-      const ym = `${yearStr.slice(-2)}${monthStr.padStart(2, '0')}`;
-      const numId = parseInt(k.id.replace(/\D/g, ''), 10) || 1;
-      boCode = `BO${ym}${String(numId * 10 + i + 1).padStart(5, '0')}`;
-    }
-    existingCodes.add(boCode.toUpperCase());
-
-    const dealRoi = dealValue > 0 && dealGmv > 0 ? Number((dealGmv / dealValue).toFixed(2)) : 0;
-    const aov = k.aov || 260000;
-    const ordersCount = dealGmv > 0 ? Math.max(1, Math.round(dealGmv / aov)) : 0;
-
-    synthesized.push({
-      id: `deal-hist-master-${k.id}-${i + 1}`,
-      dealCode: boCode,
-      jobId: `ID-${boCode}`,
-      campaignCode: `CAMP-${brand.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'B2C'}-${yearStr.slice(-2)}${monthStr}`,
-      campaignTitle: `Chiến dịch Booking ${brand} (${baseMonth})`,
-      brandName: brand,
-      storeName: `${brand}_TikTok_Shop`,
-      productName: `Sản phẩm chiến dịch ${brand}`,
-      bookingBatch: baseMonth,
-      bookingFormat: isPaid ? (k.bookingFormat || 'Booking Video KOC') : 'Affiliate Thuần',
-      kocId: k.id,
-      kocStageName: k.stageName || cleanHandle,
-      kocChannelId: `@${tiktokChs.length > 1 ? tiktokChs[i % tiktokChs.length].handle : cleanHandle}`,
-      targetChannels:
-        connectedChs.length > 1 && i % 2 === 0
-          ? connectedChs.slice(0, Math.min(3, connectedChs.length)).map((c) => `${c.platform}::${c.handle}`)
-          : [
-              `TIKTOK::${tiktokChs.length > 1 ? tiktokChs[i % tiktokChs.length].handle : cleanHandle}`,
-            ],
-      kocTier: k.tier || 'TIER_3_MICRO',
-      salaryGrade: isPaid ? (k.salaryGrade || 'KL3') : 'TAP UpAffiliate',
-      segment: k.segment || 'Mid Creator',
-      tepKenh: k.tepKenh || k.creatorCategory || 'Chưa phân loại',
-      creatorCategory: k.creatorCategory || k.tepKenh,
-      kocCategory: k.kocCategory || 'Personal care',
-      contentPillar: 'Review trực tiếp',
-      brandApprovalStatus: 'ĐÃ_DUYỆT',
-      kocResponseStatus: 'ĐỒNG_Ý',
-      pipelineText: 'Hoàn tất',
-      status: 'COMPLETED',
-      statusLabel: isPaid ? 'Hoàn Tất (Lịch Sử Master KOC)' : 'Hoàn Tất (Suất Gửi Mẫu FOC)',
-      sampleStatus: 'ĐÃ_NHẬN',
-      adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-      assignedStaff: pic,
-      bookingPic: pic,
-      totalValue: dealValue,
-      advanceAmount: 0,
-      finalAmount: dealValue,
-      deadlinePost: postedDateStr,
-      postedDate: postedDateStr,
-      viewsCount: k.avgViews || 0,
-      affiliateGmv: dealGmv,
-      gmv30: dealGmv,
-      roi: dealRoi,
-      ordersCount,
-      publishedDays: 30,
-      isWinnerTop20: Boolean(k.isWinnerTop20 && i === 0),
-      hasGmv: dealGmv > 0,
-      isBreakEven: dealValue > 0 ? dealGmv >= dealValue : dealGmv > 0,
-      remainingSlaHours: 0,
-      isSlaWarning: false,
-      kocBankHolder: payee?.holderName || k.realName || undefined,
-      kocBankName: payee?.bankName || k.bankName || undefined,
-      kocBankAccount: payee?.bankAccount || k.bankAccount || undefined,
-      kocIdCardNumber: payee?.legalId || k.cccd || k.taxCode || undefined,
-      hasIdCardScan: Boolean(payee?.legalId || k.cccd || k.taxCode),
-    });
-  }
-
-  return synthesized;
+  // RULE-DATA-01: Tuyệt đối không tự sinh deal ảo, mã BO ảo hay doanh số ước tính.
+  // Chỉ hiển thị các deal thực tế phát sinh từ Deal Board / Kế hoạch tháng.
+  return [];
 }
 
 /** Các booking của một KOC, khớp theo id (có kiểm chứng handle), tên kênh / handle và đồng bộ lịch sử Master KOC. */
 export function dealsOfKoc(deals: BookingDealItem[] | undefined, k: KocItem): BookingDealItem[] {
   if (!deals || deals.length === 0) {
-    return buildHistoricalDealsFromKocSummary(k, []);
+    return [];
   }
   const idx = getKocDealIndex(deals);
   const connectedHandles = getKocConnectedChannels(k)
@@ -1483,13 +1309,6 @@ export function dealsOfKoc(deals: BookingDealItem[] | undefined, k: KocItem): Bo
       const dh = normHandle(d.kocChannelId);
       if (knownHandles.size > 0 && dh && !knownHandles.has(dh)) continue;
       addDeal(d);
-    }
-  }
-
-  if ((k.totalPastDeals || 0) > out.length || (out.length === 0 && Boolean(k.latestBoCode))) {
-    const synthesized = buildHistoricalDealsFromKocSummary(k, out);
-    for (const sd of synthesized) {
-      out.push(sd);
     }
   }
 

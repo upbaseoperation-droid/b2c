@@ -9,6 +9,7 @@ import { requireCondition } from './domain';
 import prisma from '../prisma';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
 import { loadTemplateFromContractService } from './contractSystemClient';
+import { normalizeTemplateFieldsToApiKeys } from './contractSystemRules';
 const SOURCES = [
   ['IND-HD', 'Hợp đồng video · Cá nhân', 'Cá nhân', 'CONTRACT', '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'],
   ['IND-BBNT', 'Nghiệm thu video · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '1.1.2. BM.BBNT.VID.IND.Ver052026 booking Video.docx'],
@@ -226,13 +227,14 @@ const PROSE: ProseRule[] = [
 ];
 function describeFields(fields: ContractField[], subject: string): ContractField[] {
   const titles = new Map<string, number>(); const byKey = new Map<string, string>();
-  return describeEach(fields, subject).map(f => {
+  const rawDescribed = describeEach(fields, subject).map(f => {
     if (!f.title) return f;
     let title = f.title.length > 70 && f.title.includes("(") ? f.title.slice(0, f.title.indexOf("(")).trim() : f.title;
     if (byKey.has(f.key)) return { ...f, title: byKey.get(f.key) };
     const n = (titles.get(title) || 0) + 1; titles.set(title, n); if (n > 1) title = `${title} (${n})`;
     byKey.set(f.key, title); return { ...f, title };
   });
+  return normalizeTemplateFieldsToApiKeys(rawDescribed);
 }
 function describeEach(fields: ContractField[], subject: string): ContractField[] {
   const seenInParagraph = new Map<string, number>();
@@ -348,19 +350,39 @@ function defaultDescriptionFor(id: string, subject: string, kind: 'CONTRACT' | '
     : `Biên bản nghiệm thu link bài đăng, mã Spark Ads và giá trị thanh toán thực tế cho đối tác ${subject.toLowerCase()}.`;
 }
 
+let cachedCatalogOverrides: { data: Record<string, CatalogOverride>; expiresAt: number } | null = null;
+const parsedTemplateCache = new Map<string, { template: LegalTemplate; buffer?: Buffer }>();
+let cachedCatalogResult: LegalTemplate[] | null = null;
+
+function invalidateTemplateCaches() {
+  cachedCatalogOverrides = null;
+  parsedTemplateCache.clear();
+  cachedCatalogResult = null;
+}
+
 async function readCatalogOverrides(): Promise<Record<string, CatalogOverride>> {
+  const now = Date.now();
+  if (cachedCatalogOverrides && cachedCatalogOverrides.expiresAt > now) {
+    return cachedCatalogOverrides.data;
+  }
   try {
     const raw = await readFile(catalogFile(), 'utf8');
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    const data = parsed && typeof parsed === 'object' ? parsed : {};
+    cachedCatalogOverrides = { data, expiresAt: now + 30_000 };
+    return data;
   } catch {
-    return {};
+    const empty: Record<string, CatalogOverride> = {};
+    cachedCatalogOverrides = { data: empty, expiresAt: now + 30_000 };
+    return empty;
   }
 }
 
 async function writeCatalogOverrides(map: Record<string, CatalogOverride>) {
+  invalidateTemplateCaches();
   await mkdir(path.dirname(catalogFile()), { recursive: true });
   await writeFile(catalogFile(), JSON.stringify(map, null, 2), 'utf8');
+  cachedCatalogOverrides = { data: map, expiresAt: Date.now() + 30_000 };
 }
 
 export function resolveTemplateDir(): string {
@@ -606,6 +628,15 @@ function buildFallbackZipFromSnapshot(snap: LegalTemplate): JSZip {
 export async function loadTemplate(id: string, expectedHash?: string, options?: { skipRemote?: boolean }): Promise<{ template: LegalTemplate; zip: JSZip }> {
   const overrides = await readCatalogOverrides();
   const override = overrides[id];
+  const cacheKey = `${id}::${expectedHash || 'latest'}::${override?.updatedAt || ''}::${override?.customFile || ''}`;
+  const cached = parsedTemplateCache.get(cacheKey);
+  if (cached) {
+    const zip = cached.buffer
+      ? await JSZip.loadAsync(cached.buffer)
+      : buildFallbackZipFromSnapshot(cached.template);
+    return { zip, template: cached.template };
+  }
+
   const source = SOURCES.find(s => s[0] === id);
   if (!options?.skipRemote && !override?.customFile && !process.env.CONTRACT_TEMPLATE_DIR) {
     const remoteTpl = await loadTemplateFromContractService(id);
@@ -623,6 +654,7 @@ export async function loadTemplate(id: string, expectedHash?: string, options?: 
         legalNotes: override?.legalNotes || remoteTpl.legalNotes,
         hash: expectedHash || remoteTpl.hash,
       };
+      parsedTemplateCache.set(cacheKey, { template: merged });
       return { zip: buildFallbackZipFromSnapshot(merged), template: merged };
     }
   }
@@ -655,33 +687,39 @@ export async function loadTemplate(id: string, expectedHash?: string, options?: 
   } catch (e) {
     if (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !override?.customFile && (!expectedHash || expectedHash === OFFICIAL_TEMPLATES_SNAPSHOT[id].hash)) {
       const snap = OFFICIAL_TEMPLATES_SNAPSHOT[id];
+      const normalizedSnapFields = normalizeTemplateFieldsToApiKeys(snap.fields || []);
       const fallbackZip = buildFallbackZipFromSnapshot(snap);
+      const templateObj: LegalTemplate = {
+        ...snap,
+        fields: normalizedSnapFields,
+        fieldCount: normalizedSnapFields.length,
+        requiredFieldCount: normalizedSnapFields.filter(f => f.required).length,
+        name,
+        filename,
+        subject,
+        kind,
+        version,
+        category,
+        description,
+        active,
+        defaultReviewRoles,
+        exemptLegalReview,
+        scope,
+        kocId,
+        kocName,
+        approvedByLegal,
+        approvedAt,
+        originalContractId,
+        customType,
+        legalNotes,
+        updatedAt,
+        updatedBy,
+        history: override?.history?.length ? override.history : snap.history,
+      };
+      parsedTemplateCache.set(cacheKey, { template: templateObj });
       return {
         zip: fallbackZip,
-        template: {
-          ...snap,
-          name,
-          filename,
-          subject,
-          kind,
-          version,
-          category,
-          description,
-          active,
-          defaultReviewRoles,
-          exemptLegalReview,
-          scope,
-          kocId,
-          kocName,
-          approvedByLegal,
-          approvedAt,
-          originalContractId,
-          customType,
-          legalNotes,
-          updatedAt,
-          updatedBy,
-          history: override?.history?.length ? override.history : snap.history,
-        },
+        template: templateObj,
       };
     }
     if (!expectedHash) throw e;
@@ -691,32 +729,38 @@ export async function loadTemplate(id: string, expectedHash?: string, options?: 
     requireCondition(/^[a-f0-9]{64}$/.test(expectedHash), 'Phiên bản nguồn không hợp lệ.', 409);
     if (OFFICIAL_TEMPLATES_SNAPSHOT[id]?.hash === expectedHash && !override?.customFile) {
       const snap = OFFICIAL_TEMPLATES_SNAPSHOT[id];
+      const normalizedSnapFields = normalizeTemplateFieldsToApiKeys(snap.fields || []);
+      const templateObj: LegalTemplate = {
+        ...snap,
+        fields: normalizedSnapFields,
+        fieldCount: normalizedSnapFields.length,
+        requiredFieldCount: normalizedSnapFields.filter(f => f.required).length,
+        name,
+        filename,
+        subject,
+        kind,
+        version,
+        category,
+        description,
+        active,
+        defaultReviewRoles,
+        exemptLegalReview,
+        scope,
+        kocId,
+        kocName,
+        approvedByLegal,
+        approvedAt,
+        originalContractId,
+        customType,
+        legalNotes,
+        updatedAt,
+        updatedBy,
+        history: override?.history?.length ? override.history : snap.history,
+      };
+      parsedTemplateCache.set(cacheKey, { template: templateObj });
       return {
         zip: buildFallbackZipFromSnapshot(snap),
-        template: {
-          ...snap,
-          name,
-          filename,
-          subject,
-          kind,
-          version,
-          category,
-          description,
-          active,
-          defaultReviewRoles,
-          exemptLegalReview,
-          scope,
-          kocId,
-          kocName,
-          approvedByLegal,
-          approvedAt,
-          originalContractId,
-          customType,
-          legalNotes,
-          updatedAt,
-          updatedBy,
-          history: override?.history?.length ? override.history : snap.history,
-        },
+        template: templateObj,
       };
     }
     if (process.env.CONTRACT_DATA_DIR || !process.env.DATABASE_URL || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
@@ -729,15 +773,16 @@ export async function loadTemplate(id: string, expectedHash?: string, options?: 
     requireCondition(createHash('sha256').update(buffer).digest('hex') === expectedHash, 'Bản mẫu lưu trữ không khớp phiên bản.', 409);
   }
   const zip = await JSZip.loadAsync(buffer);
-  const fields: ContractField[] = []; const texts: string[] = [];
+  const rawFields: ContractField[] = []; const texts: string[] = [];
   const blocksByPart = new Map<string, DocBlock[]>();
   const parts = Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort();
   for (const part of parts) {
     const xml = await zip.file(part)!.async('string');
-    fields.push(...describeFields(extractFields(xml, part), subject));
+    rawFields.push(...describeFields(extractFields(xml, part), subject));
     texts.push(...paragraphs(xml).map(p => paragraphText(p[0])));
     blocksByPart.set(part, extractBlocks(xml, part));
   }
+  const fields = normalizeTemplateFieldsToApiKeys(rawFields);
   const orderedParts = [
     ...parts.filter(p => p.startsWith('word/header')),
     ...parts.filter(p => p === 'word/document.xml'),
@@ -748,52 +793,109 @@ export async function loadTemplate(id: string, expectedHash?: string, options?: 
   const history: TemplateVersionHistoryItem[] = override?.history?.length
     ? override.history
     : [{ version, hash, filename, updatedAt, updatedBy, note: 'Phiên bản chuẩn ban hành bởi Pháp chế' }];
+  const templateObj: LegalTemplate = {
+    id,
+    name,
+    filename,
+    subject,
+    kind,
+    version,
+    hash,
+    fields,
+    paragraphs: texts,
+    blocks,
+    category,
+    description,
+    active,
+    defaultReviewRoles,
+    exemptLegalReview,
+    scope,
+    kocId,
+    kocName,
+    approvedByLegal,
+    approvedAt,
+    originalContractId,
+    customType,
+    legalNotes,
+    updatedAt,
+    updatedBy,
+    fieldCount: fields.length,
+    requiredFieldCount: fields.filter(f => f.required).length,
+    history,
+  };
+  parsedTemplateCache.set(cacheKey, { template: templateObj, buffer });
   return {
     zip,
-    template: {
-      id,
-      name,
-      filename,
-      subject,
-      kind,
-      version,
-      hash,
-      fields,
-      paragraphs: texts,
-      blocks,
-      category,
-      description,
-      active,
-      defaultReviewRoles,
-      exemptLegalReview,
-      scope,
-      kocId,
-      kocName,
-      approvedByLegal,
-      approvedAt,
-      originalContractId,
-      customType,
-      legalNotes,
-      updatedAt,
-      updatedBy,
-      fieldCount: fields.length,
-      requiredFieldCount: fields.filter(f => f.required).length,
-      history,
-    },
+    template: templateObj,
   };
 }
 
 export async function templateCatalog() {
+  if (cachedCatalogResult) {
+    return cachedCatalogResult;
+  }
   const overrides = await readCatalogOverrides();
   const builtInIds = SOURCES.map(s => s[0] as string);
   const customIds = Object.keys(overrides).filter(id => !builtInIds.includes(id));
   const allIds = [...builtInIds, ...customIds];
-  return Promise.all(
+  const catalog = await Promise.all(
     allIds.map(async id => {
+      const override = overrides[id];
+      const source = SOURCES.find(s => s[0] === id);
+      const snap = OFFICIAL_TEMPLATES_SNAPSHOT[id];
+      // Nhánh siêu tốc: Với 25 mẫu chuẩn đã có trong OFFICIAL_TEMPLATES_SNAPSHOT và không dùng customFile riêng,
+      // lấy ngay metadata từ snapshot + override mà không cần giải nén 25 file .docx bằng JSZip trên mỗi lần mở màn hình.
+      if (snap && source && !override?.customFile && !process.env.CONTRACT_TEMPLATE_DIR) {
+        const name = override?.name || source[1];
+        const filename = override?.filename || source[4];
+        const subject = override?.subject || source[2];
+        const kind = override?.kind || source[3];
+        const version = override?.version || snap.version || 'Ver052026';
+        const category = override?.category || defaultCategoryFor(id, kind);
+        const description = override?.description || defaultDescriptionFor(id, subject, kind);
+        const active = override?.active !== undefined ? override.active : true;
+        const defaultReviewRoles = override?.defaultReviewRoles?.length ? override.defaultReviewRoles : defaultReviewRolesFor(kind);
+        const exemptLegalReview = override?.exemptLegalReview !== undefined ? override.exemptLegalReview : true;
+        const scope = override?.scope || 'GLOBAL';
+        const updatedAt = override?.updatedAt || snap.updatedAt || '2026-05-01T08:00:00.000Z';
+        const updatedBy = override?.updatedBy || snap.updatedBy || 'Phòng Pháp chế';
+        const normalizedSnapFields = normalizeTemplateFieldsToApiKeys(snap.fields || []);
+        return {
+          ...snap,
+          name,
+          filename,
+          subject,
+          kind,
+          version,
+          category,
+          description,
+          active,
+          defaultReviewRoles,
+          exemptLegalReview,
+          scope,
+          kocId: override?.kocId,
+          kocName: override?.kocName,
+          approvedByLegal: override?.approvedByLegal,
+          approvedAt: override?.approvedAt,
+          originalContractId: override?.originalContractId,
+          customType: override?.customType,
+          legalNotes: override?.legalNotes,
+          updatedAt,
+          updatedBy,
+          fieldCount: normalizedSnapFields.length,
+          requiredFieldCount: normalizedSnapFields.filter(f => f.required).length,
+          history: override?.history?.length ? override.history : snap.history,
+          paragraphs: [],
+          fields: [],
+          blocks: [],
+        };
+      }
       const { template } = await loadTemplate(id);
       return { ...template, paragraphs: [], fields: [], blocks: [] };
     }),
   );
+  cachedCatalogResult = catalog;
+  return catalog;
 }
 
 export async function saveTemplateMeta(
@@ -1190,12 +1292,36 @@ export async function renderTemplate(
       const fields = template.fields.filter(f => f.part === part && f.paragraph === paragraphIndex).sort((a, b) => (b.start || 0) - (a.start || 0));
       let next = paragraph;
       for (const field of fields) {
-        const value = values[field.key];
+        const legacyTokenKey =
+          field.key === 'CONTRACT_DATE_CODE' ? 'token:[dd.mm.yy]'
+          : field.key === 'KOC_CODE' ? 'token:[ID KOC]'
+          : field.key === 'BRAND_CODE' ? 'token:[BRAND]'
+          : field.key === 'BANK_ACCOUNT_NAME' ? 'token:[Tên chủ tài khoản]'
+          : field.key === 'BANK_ACCOUNT_NUMBER' ? 'token:[Số tài khoản]'
+          : field.key === 'BANK_NAME' ? 'token:[Tại Ngân hàng]'
+          : field.key === 'MASTER_CONTRACT_DATE' ? 'token:[Ngày HĐNT]'
+          : field.key === 'PARENT_SOW_DATE' ? 'token:[Ngày SOW]'
+          : '';
+        const legacyRangeKey =
+          field.start !== undefined && field.end !== undefined
+            ? `${field.part}:p${field.paragraph}:${field.start}:${field.end}`
+            : '';
+        const legacyCellKey = `${field.part}:p${field.paragraph}:cell`;
+        const value =
+          values[field.key] ||
+          (legacyTokenKey ? values[legacyTokenKey] : '') ||
+          (legacyRangeKey ? values[legacyRangeKey] : '') ||
+          values[legacyCellKey] ||
+          '';
         if (!value?.trim()) continue;
         if (field.start !== undefined && field.end !== undefined) {
           next = replaceRange(next, field.start, field.end, value);
         } else {
           next = next.split(`{{${field.key}}}`).join(encodeXml(value));
+          if (legacyTokenKey) {
+            const rawTokenLabel = legacyTokenKey.replace(/^token:/, '');
+            next = next.split(rawTokenLabel).join(encodeXml(value));
+          }
         }
       }
       return next;

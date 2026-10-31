@@ -98,7 +98,7 @@ import {
   BrandProductDropdownInput,
   buildBrandProductCatalogGroups,
 } from './BrandProductDropdownInput';
-import { ActionMenu, Avatar, BulkBar, Button, Field, Input, Modal, PageActions, Person, Segmented, Select, Status } from '../ui';
+import { ActionMenu, Avatar, BulkBar, Button, Field, Input, Modal, PageActions, Pagination, Person, Segmented, Select, Status } from '../ui';
 import { PushSheetReconciliationView, type PushSheetReconciliationReport } from './PushSheetReconciliationView';
 
 import {
@@ -1071,6 +1071,19 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     return sorted;
   }, [rows, filterDot, filterBrandChon, filterNhanSu, currentUserName, rowSearchQuery, appSortBy]);
 
+  const [sheetPage, setSheetPage] = useState(1);
+  const sheetPageSize = 50;
+  const [prevSheetFilterKey, setPrevSheetFilterKey] = useState('');
+  const currentSheetFilterKey = `${activeSheetKey}|${filterDot}|${filterBrandChon}|${filterNhanSu}|${rowSearchQuery}|${appSortBy}`;
+  if (currentSheetFilterKey !== prevSheetFilterKey) {
+    setPrevSheetFilterKey(currentSheetFilterKey);
+    setSheetPage(1);
+  }
+  const pagedDisplayedRows = useMemo(
+    () => displayedRows.slice((sheetPage - 1) * sheetPageSize, sheetPage * sheetPageSize),
+    [displayedRows, sheetPage]
+  );
+
   // Các nhóm dòng thuộc Tháng cũ của cùng Gian hàng (dựa trên Cột B: Tháng) để hiển thị thu gọn / mở rộng ngay trên Bảng
   const oldMonthSheet202611 = activeMonth !== '2026/11' ? collection?.sheets?.[makeSheetKey('2026/11', activeStoreName)] : undefined;
   const oldMonthSheet202610 = activeMonth !== '2026/10' ? collection?.sheets?.[makeSheetKey('2026/10', activeStoreName)] : undefined;
@@ -1844,8 +1857,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [isShowingSaJsonInput, setIsShowingSaJsonInput] = useState<boolean>(false);
   const [pushSaJsonDraft, setPushSaJsonDraft] = useState<string>('');
   const [savingPushSa, setSavingPushSa] = useState<boolean>(false);
+  const hasCheckedSaRef = useRef(false);
 
   useEffect(() => {
+    if (!isPushSheetModalOpen && !isPullSheetModalOpen) return;
+    if (hasCheckedSaRef.current) return;
+    hasCheckedSaRef.current = true;
     fetch('/api/booking-list/push-sheet')
       .then((r) => r.json())
       .then((d: { configured?: boolean }) => {
@@ -1858,7 +1875,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isPushSheetModalOpen, isPullSheetModalOpen]);
 
   const handleSavePushServiceAccount = async () => {
     if (!pushSaJsonDraft.trim()) return;
@@ -3314,7 +3331,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   </td>
                 </tr>
               ) : (
-                displayedRows.map((row, rIdx) => {
+                pagedDisplayedRows.map((row, pageIdx) => {
+                  const rIdx = (sheetPage - 1) * sheetPageSize + pageIdx;
                   const isSelected = selectedRowIdSet.has(row.id);
                   const rowEditable = canEditRow(row);
                   const stickyCellBg = isSelected
@@ -4029,6 +4047,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </tbody>
           </table>
         </div>
+        {displayedRows.length > sheetPageSize && (
+          <div className="px-3 py-2 border-t border-line bg-surface">
+            <Pagination
+              page={sheetPage}
+              pageSize={sheetPageSize}
+              total={displayedRows.length}
+              onPageChange={setSheetPage}
+            />
+          </div>
+        )}
       </div>
 
       <ListingSheetModals

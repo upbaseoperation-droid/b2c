@@ -27,8 +27,6 @@ import {
   Button,
   DataTable,
   FilterBar,
-  StatRow,
-  Stat,
   Modal,
   ConfirmDialog,
   Input,
@@ -1950,14 +1948,6 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
   return (
     <div className="space-y-4">
-      {/* Tối đa 4 chỉ số đầu trang */}
-      <StatRow>
-        <Stat label="Trạng thái Webhook" value="Hoạt động" tone="positive" />
-        <Stat label="Tên Zalo Bot" value={botInfo.display_name || 'Bot tttttttupbase'} />
-        <Stat label="Nhóm chat đang quản lý" value={mappings.length} />
-        <Stat label="Mẫu tin nhắn trả lời" value={replyConfig.autoReplyTemplates.length} />
-      </StatRow>
-
       {/* Thanh điều hướng phân hệ chuẩn Design System <Tabs> */}
       <Tabs
         value={activeTab}

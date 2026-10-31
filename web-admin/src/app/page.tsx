@@ -229,7 +229,7 @@ export default function App() {
     }
   }, [activeTab, currentUser, isLoadingAuth]);
 
-  // Nạp sẵn tối đa 2 màn thường dùng khi trình duyệt thực sự rảnh rỗi (idle) để không chiếm dụng băng thông / CPU lúc vào trang
+  // Nạp sẵn các màn cốt lõi ngay khi trình duyệt rảnh rỗi (idle) để bấm menu chuyển trang tức thì
   useEffect(() => {
     if (isLoadingAuth) return;
     const idleCallback = typeof window !== 'undefined'
@@ -237,20 +237,26 @@ export default function App() {
       : undefined;
     let cancelId: number | undefined;
     let timerId: number | undefined;
+    let timerId2: number | undefined;
     const prefetchIdle = () => {
       void import('../components/views/InputPlanBreakdownView');
       void import('../components/views/KocListingBatchHubView');
+      timerId2 = window.setTimeout(() => {
+        void import('../components/views/ContractManagementView');
+        void import('../components/views/MasterDataHubView');
+      }, 400);
     };
     if (typeof idleCallback === 'function') {
-      cancelId = idleCallback(prefetchIdle, { timeout: 3500 });
+      cancelId = idleCallback(prefetchIdle, { timeout: 600 });
     } else if (typeof window !== 'undefined') {
-      timerId = window.setTimeout(prefetchIdle, 3500);
+      timerId = window.setTimeout(prefetchIdle, 600);
     }
     return () => {
       if (typeof window !== 'undefined') {
         const cancelIdle = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
         if (cancelIdle && cancelId !== undefined) cancelIdle(cancelId);
         if (timerId !== undefined) window.clearTimeout(timerId);
+        if (timerId2 !== undefined) window.clearTimeout(timerId2);
       }
     };
   }, [isLoadingAuth]);

@@ -4,7 +4,7 @@
 - **Tham chiếu bắt buộc:** Mọi màn hình, bảng biểu, hộp thoại đều phải tuân thủ nghiêm ngặt [`web-admin/DESIGN_SYSTEM.md`](web-admin/DESIGN_SYSTEM.md) và nhập thành phần từ `@/components/ui`.
 - **Thành phần dựng trang chuẩn:**
   - Bảng dữ liệu: Dùng `<DataTable>`, `<FilterBar>`, `<Pagination>`, `<ActionMenu>`; không tự viết thẻ `<table>` thô.
-  - Khung & Khối: Dùng `<Panel>`, `<StatRow>` / `<Stat>` (tối đa 4 chỉ số đầu trang), `<EmptyState>` khi không có dữ liệu.
+  - Khung & Khối: Dùng `<Panel>`, `<EmptyState>` khi không có dữ liệu. Với `<StatRow>` / `<Stat>`: CẤM lạm dụng đặt hàng thẻ chỉ số ở đầu các màn hình tác nghiệp / danh sách bảng biểu (gây chiếm chỗ dọc và trùng lặp vô ích với bộ lọc trạng thái); CHỈ dùng trên các màn hình Báo cáo phân tích / Dashboard tổng quan khi thực sự cần thiết.
   - Tác vụ & Hộp thoại: Dùng `<Modal>` (tác vụ ngắn), `<ConfirmDialog>` (xác nhận xóa/hủy/duyệt); `<Button>` tối đa 1 nút `primary` cho mỗi vùng. Phân biệt rõ props: `<Modal open onClose={...}>` và `<ConfirmDialog open onCancel={...} onConfirm={...}>`.
   - Định danh & Trạng thái: Dùng `<Person>` / `<Avatar>` cho nhân sự; `<ChannelTag>` / `<ChannelBar>` cho kênh/sàn; `<Status>` cho trạng thái nghiệp vụ.
 - **Hệ màu Token ngữ nghĩa (Cấm tự bịa màu Tailwind):**

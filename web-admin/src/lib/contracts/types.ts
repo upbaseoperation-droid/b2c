@@ -114,6 +114,35 @@ export interface ContractServiceTemplateParticipant {
   phone?: string | null;
   signatureType?: string | null;
 }
+export interface TemplateSchemaDiff {
+  /** Có phát hiện sự thay đổi giữa biểu mẫu kéo từ API và biểu mẫu chuẩn lưu trên hệ thống hay không */
+  hasChanges: boolean;
+  /** Mã biểu mẫu chuẩn lưu trên hệ thống dùng để đối chiếu (ví dụ: IND-HDNT, IND-HD, IND-SOW...) */
+  baselineTemplateId?: string;
+  /** Tên biểu mẫu chuẩn lưu trên hệ thống */
+  baselineTemplateName?: string;
+  /** Phiên bản lưu trên hệ thống (ví dụ: Ver052026) */
+  baselineVersion?: string;
+  /** Phiên bản kéo về từ API (ví dụ: v1 (HDNT-CANHAN)) */
+  remoteVersion?: string;
+  /** Thời điểm thực hiện đối chiếu */
+  checkedAt: string;
+  /** Các trường có trên API nhưng chưa có trên biểu mẫu lưu trên hệ thống */
+  addedFields: Array<{ key: string; title: string; required: boolean; kind?: FieldKind }>;
+  /** Các trường có trên biểu mẫu lưu trên hệ thống nhưng đã bị lược bỏ hoặc đổi mã trên API */
+  removedFields: Array<{ key: string; title: string; required: boolean; kind?: FieldKind }>;
+  /** Các trường trùng mã fieldKey nhưng thay đổi cấu hình (bắt buộc / kiểu dữ liệu) */
+  changedFields: Array<{
+    key: string;
+    title: string;
+    changeSummary: string;
+  }>;
+  /** Các mã fieldKey trùng khớp hoàn toàn giữa API và bản lưu trên hệ thống */
+  matchedFieldKeys: string[];
+  /** Tóm tắt ngắn gọn kết quả đối chiếu để hiển thị cảnh báo */
+  summaryText: string;
+}
+
 export interface LegalTemplate {
   id: string;
   name: string;
@@ -182,6 +211,8 @@ export interface LegalTemplate {
       signTag: string;
     }>;
   };
+  /** Kết quả đối chiếu tự động giữa biểu mẫu kéo từ API và biểu mẫu chuẩn lưu trên hệ thống. */
+  schemaDiff?: TemplateSchemaDiff;
 }
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }

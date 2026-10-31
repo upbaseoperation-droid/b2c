@@ -158,10 +158,8 @@ export function ContractManagementView({
 
   useEffect(() => {
     (async () => {
-      if (currentUserId) {
+      if (currentUserId?.startsWith('contract-demo-')) {
         await contractApi('/api/contracts/demo', { id: currentUserId }).catch(() => undefined);
-      } else if (process.env.NODE_ENV === 'development') {
-        await contractApi('/api/auth/me').catch(() => undefined);
       }
       const nextData = await refresh();
       if (!intent) {
@@ -821,7 +819,33 @@ export function ContractManagementView({
       </Panel>
     );
   }
-  if (!data) return <p className="text-xs text-ink-3 px-1">Đang tải hồ sơ hợp đồng…</p>;
+  if (!data) {
+    return (
+      <div className="space-y-4 animate-pulse py-2" aria-busy="true" aria-label="Đang tải hồ sơ hợp đồng">
+        <div className="flex items-center justify-between gap-4">
+          <div className="h-7 w-56 bg-sunken rounded-md" />
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-28 bg-sunken rounded-md" />
+            <div className="h-8 w-32 bg-sunken rounded-md" />
+          </div>
+        </div>
+        <div className="bg-surface border border-line rounded-lg p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-64 bg-sunken rounded-md" />
+            <div className="h-8 w-24 bg-sunken rounded-md" />
+            <div className="h-8 w-24 bg-sunken rounded-md" />
+          </div>
+          <div className="space-y-2 pt-2">
+            <div className="h-9 bg-sunken/70 rounded" />
+            <div className="h-11 bg-sunken/40 rounded" />
+            <div className="h-11 bg-sunken/40 rounded" />
+            <div className="h-11 bg-sunken/40 rounded" />
+            <div className="h-11 bg-sunken/40 rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const canCreate = data.actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r));
 

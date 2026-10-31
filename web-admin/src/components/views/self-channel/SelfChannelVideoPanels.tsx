@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, DataTable, EmptyState, Field, Input, Panel, PeriodPicker, Select, Stat, StatRow, Status } from '../../ui';
+import { Button, DataTable, EmptyState, Field, Input, Panel, PeriodPicker, Select, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatDate, formatNumber, formatVnd } from '../../../lib/format';
 import {
@@ -205,14 +205,7 @@ export function SelfChannelVideoListPanel({
   ];
 
   return (
-    <div className="space-y-4">
-      <StatRow>
-        <Stat label="Video trong bộ lọc" value={formatNumber(totals.all)} />
-        <Stat label="Đã đăng" value={formatNumber(totals.aired)} />
-        <Stat label="Nghiệm thu đạt" value={formatNumber(totals.accepted)} />
-        <Stat label="Chờ CTV xác nhận" value={formatNumber(totals.waitingCtv)} tone={totals.waitingCtv > 0 ? 'warning' : undefined} />
-      </StatRow>
-      <Panel
+    <div className="space-y-4">      <Panel
         title="Danh sách video trong tháng"
         actions={
           <div className="flex flex-wrap items-end gap-2">
@@ -363,14 +356,7 @@ export function SelfChannelAirReportPanel({ onNotify }: { onNotify?: Notify }) {
   return (
     <div className="space-y-4">
       {data && !data.dw.configured && <Status tone="warning">Chưa kết nối Data Warehouse (thiếu DW_API_BASE_URL / DW_API_TOKEN). Cột số liệu để trống.</Status>}
-      {data?.dw.configured && !data.dw.ok && <Status tone="critical">{data.dw.error || 'Không lấy được số liệu từ Data Warehouse.'}</Status>}
-      <StatRow>
-        <Stat label="Video đã đăng" value={formatNumber(totals.videos)} />
-        <Stat label="Đã có số Data Warehouse" value={`${formatNumber(totals.withDw)}/${formatNumber(totals.videos)}`} />
-        <Stat label="Đơn 30 ngày" value={formatNumber(totals.orders)} />
-        <Stat label="GMV 30 ngày" value={formatVnd(totals.gmv)} />
-      </StatRow>
-      <Panel
+      {data?.dw.configured && !data.dw.ok && <Status tone="critical">{data.dw.error || 'Không lấy được số liệu từ Data Warehouse.'}</Status>}      <Panel
         title="Báo cáo air"
         actions={
           <div className="flex flex-wrap items-end gap-2">

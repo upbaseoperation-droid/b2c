@@ -187,7 +187,8 @@ export function ContractForm({
           r.templateId.endsWith('-HDNT') &&
           r.templateId.startsWith(expectedPrefix) &&
           ((targetKocId && r.kocId === targetKocId) ||
-            (targetCleanHandle && (r.values['token:[ID KOC]'] || '').toLowerCase().startsWith(targetCleanHandle))),
+            (targetCleanHandle &&
+              (r.values['KOC_CODE'] || r.values['token:[ID KOC]'] || '').toLowerCase().startsWith(targetCleanHandle))),
       );
       return prefixAndKocMatch;
     }
@@ -199,7 +200,8 @@ export function ContractForm({
         r.templateId.endsWith('-HDNT') &&
         ((kId && r.kocId === kId) ||
           (pName && r.partner === pName) ||
-          (cleanHandle && (r.values['token:[ID KOC]'] || '').toLowerCase().startsWith(cleanHandle))),
+          (cleanHandle &&
+            (r.values['KOC_CODE'] || r.values['token:[ID KOC]'] || '').toLowerCase().startsWith(cleanHandle))),
     );
   };
 
@@ -419,7 +421,8 @@ export function ContractForm({
       : null,
   );
   const [customContractValue, setCustomContractValue] = useState<string>(
-    record?.values?.['token:[Tổng tiền trước thuế/sau thuế]'] ||
+    record?.values?.['NET_TOTAL'] ||
+      record?.values?.['token:[Tổng tiền trước thuế/sau thuế]'] ||
       (initialDeal?.totalValue ? formatMoneyInput(String(initialDeal.totalValue)) : ''),
   );
   const kocDocxInputRef = useRef<HTMLInputElement | null>(null);
@@ -568,6 +571,7 @@ export function ContractForm({
   );
   const [creatingQuickFramework, setCreatingQuickFramework] = useState<boolean>(false);
   const [quickFwNotice, setQuickFwNotice] = useState<string>('');
+  const [showSchemaDiffDetail, setShowSchemaDiffDetail] = useState<boolean>(false);
   const jobAcceptanceBreakdown = useMemo(
     () =>
       aggregateMultiJobAcceptanceBreakdown({
@@ -869,10 +873,14 @@ export function ContractForm({
         kocId: koc?.id,
       });
       setParentId(created.record.id);
-      const fwDocDate = created.record.values['token:[dd.mm.yy]'] || '';
+      const fwDocDate =
+        created.record.values['CONTRACT_DATE_CODE'] ||
+        created.record.values['token:[dd.mm.yy]'] ||
+        '';
       if (fwDocDate) {
         setValues(prev => ({
           ...prev,
+          MASTER_CONTRACT_DATE: fwDocDate,
           'token:[Ngày HĐNT]': fwDocDate,
         }));
       }
@@ -1691,15 +1699,15 @@ export function ContractForm({
     return slice;
   }, [deals, deal]);
 
-  const docDateVal = values['token:[dd.mm.yy]'] || '';
-  const kocIdVal = values['token:[ID KOC]'] || '';
+  const docDateVal = values['CONTRACT_DATE_CODE'] || values['token:[dd.mm.yy]'] || '';
+  const kocIdVal = values['KOC_CODE'] || values['token:[ID KOC]'] || '';
   const duplicateRecord = useMemo(() => {
     if (!docDateVal || !kocIdVal) return null;
     return data.records.find(
       r =>
         r.id !== record?.id &&
-        r.values['token:[dd.mm.yy]'] === docDateVal &&
-        r.values['token:[ID KOC]'] === kocIdVal,
+        (r.values['CONTRACT_DATE_CODE'] === docDateVal || r.values['token:[dd.mm.yy]'] === docDateVal) &&
+        (r.values['KOC_CODE'] === kocIdVal || r.values['token:[ID KOC]'] === kocIdVal),
     );
   }, [data.records, record?.id, docDateVal, kocIdVal]);
 
@@ -1707,6 +1715,7 @@ export function ContractForm({
     const suffix = deal?.dealCode ? `-${deal.dealCode}` : `-${String(data.records.length + 1).padStart(2, '0')}`;
     setValues(prev => ({
       ...prev,
+      KOC_CODE: `${kocIdVal}${suffix}`,
       'token:[ID KOC]': `${kocIdVal}${suffix}`,
     }));
   };
@@ -1716,6 +1725,9 @@ export function ContractForm({
     const raw =
       (isKocForm || isAmendedGoogleDoc ? customContractValue : '') ||
       (netField ? values[netField.key] : '') ||
+      values['NET_TOTAL'] ||
+      values['LINE_TOTAL'] ||
+      values['GROSS_TOTAL'] ||
       values['token:[Tổng tiền trước thuế/sau thuế]'] ||
       values['token:[Thù lao trọn gói]'] ||
       values['token:[Thành tiền (VNĐ)]'] ||
@@ -1730,7 +1742,11 @@ export function ContractForm({
 
   const numericAdvance = useMemo(() => {
     const advField = fields.find(f => f.source === 'advanceAmount');
-    const raw = (advField ? values[advField.key] : '') || values['token:[Số tiền tạm ứng đợt 1]'] || '';
+    const raw =
+      (advField ? values[advField.key] : '') ||
+      values['ADVANCE_AMOUNT'] ||
+      values['token:[Số tiền tạm ứng đợt 1]'] ||
+      '';
     const parsed = parseInt(raw.replace(/[^\d]/g, ''), 10);
     return Number.isFinite(parsed) ? parsed : (deal?.advanceAmount || 0);
   }, [values, fields, deal]);
@@ -1752,6 +1768,7 @@ export function ContractForm({
     parentId ||
       activeLegalProfile?.frameworkContractCode?.trim() ||
       deal?.masterContractCode?.trim() ||
+      values['MASTER_CONTRACT_DATE']?.trim() ||
       values['token:[Ngày HĐNT]']?.trim(),
   );
 
@@ -1821,6 +1838,10 @@ export function ContractForm({
                 [SOW_TASKS_META_KEY]: JSON.stringify(draftAddons),
                 [SOW_JOBS_META_KEY]: JSON.stringify(draftJobTables),
                 [PAYMENT_SCHEDULE_META_KEY]: paymentScheduleOption,
+                ADVANCE_AMOUNT:
+                  paymentScheduleOption === 'TWO_TIMES'
+                    ? formatMoneyInput(String(draftAdvanceAmount || 0))
+                    : '0',
                 'token:[Số tiền tạm ứng đợt 1]':
                   paymentScheduleOption === 'TWO_TIMES'
                     ? formatMoneyInput(String(draftAdvanceAmount || 0))
@@ -1829,7 +1850,11 @@ export function ContractForm({
               }
             : values;
         const nextValues = (isKocForm || isAmendedGoogleDoc) && customContractValue.trim()
-          ? { ...baseValues, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
+          ? {
+              ...baseValues,
+              NET_TOTAL: customContractValue.trim(),
+              'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim(),
+            }
           : baseValues;
         onSave({
           title: title.trim(),
@@ -2592,6 +2617,80 @@ export function ContractForm({
                             </Field>
                           )}
                         </div>
+
+                        {!isKocOwnForm && template?.schemaDiff?.hasChanges && (
+                          <div className="rounded-lg border border-warning/40 bg-warning-soft/40 p-3 space-y-2 text-xs">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                <Status tone="warning">Form API có thay đổi</Status>
+                                <span className="font-semibold text-ink">
+                                  {template.schemaDiff.summaryText}
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setShowSchemaDiffDetail(prev => !prev)}
+                              >
+                                {showSchemaDiffDetail ? 'Thu gọn đối chiếu' : 'Xem chi tiết thay đổi'}
+                              </Button>
+                            </div>
+
+                            {showSchemaDiffDetail && (
+                              <div className="grid gap-3 pt-2 border-t border-warning/30 sm:grid-cols-2">
+                                {template.schemaDiff.addedFields.length > 0 && (
+                                  <div className="rounded-md border border-line bg-surface p-2.5 space-y-1.5">
+                                    <div className="font-semibold text-positive text-2xs">
+                                      + Trường mới kéo về từ API ({template.schemaDiff.addedFields.length} trường)
+                                    </div>
+                                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                                      {template.schemaDiff.addedFields.map(af => (
+                                        <div key={af.key} className="flex items-center justify-between gap-2 text-2xs">
+                                          <span className="text-ink truncate">{af.title}</span>
+                                          <span className="font-code text-accent shrink-0">{af.key}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {template.schemaDiff.removedFields.length > 0 && (
+                                  <div className="rounded-md border border-line bg-surface p-2.5 space-y-1.5">
+                                    <div className="font-semibold text-critical text-2xs">
+                                      - Trường có trên hệ thống nhưng API đã lược bỏ ({template.schemaDiff.removedFields.length} trường)
+                                    </div>
+                                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                                      {template.schemaDiff.removedFields.map(rf => (
+                                        <div key={rf.key} className="flex items-center justify-between gap-2 text-2xs">
+                                          <span className="text-ink-2 truncate">{rf.title}</span>
+                                          <span className="font-code text-ink-3 shrink-0">{rf.key}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {template.schemaDiff.changedFields.length > 0 && (
+                                  <div className="rounded-md border border-line bg-surface p-2.5 space-y-1.5 sm:col-span-2">
+                                    <div className="font-semibold text-warning text-2xs">
+                                      ~ Trường thay đổi cấu hình ({template.schemaDiff.changedFields.length} trường)
+                                    </div>
+                                    <div className="space-y-1">
+                                      {template.schemaDiff.changedFields.map(cf => (
+                                        <div key={cf.key} className="flex flex-wrap items-center justify-between gap-2 text-2xs">
+                                          <span className="text-ink font-medium">
+                                            {cf.title} (<span className="font-code">{cf.key}</span>)
+                                          </span>
+                                          <span className="text-warning">{cf.changeSummary}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {isAmendedGoogleDoc && (
                           <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-amended-total">

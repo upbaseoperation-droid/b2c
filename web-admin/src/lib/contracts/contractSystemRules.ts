@@ -19,7 +19,9 @@ import type {
   FieldSource,
   LegalTemplate,
   SigningAttempt,
+  TemplateSchemaDiff,
 } from './types';
+import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
 
 export const CONTRACT_SERVICE_TYPE_LABELS: Record<ContractServiceTemplateType, string> = {
   MASTER: 'Hợp đồng nguyên tắc (MASTER)',
@@ -204,10 +206,17 @@ export function buildStableContractCode(input: {
   values?: Record<string, string>;
 }): string {
   const values = input.values || {};
+  const explicitContractNo = values['CONTRACT_NO']?.trim();
+  if (explicitContractNo && /\/(?:HĐNT|HDNT|HĐDV|HDDV|SOW|BBNT)\//i.test(explicitContractNo)) {
+    return explicitContractNo;
+  }
   const rawDate =
+    values['CONTRACT_DATE_CODE'] ||
     values['token:[dd.mm.yy]'] ||
     values['token:[DDMMYY]'] ||
+    values['MASTER_CONTRACT_DATE'] ||
     values['token:[Ngày HĐNT]'] ||
+    values['PARENT_SOW_DATE'] ||
     values['token:[Ngày SOW]'] ||
     '26';
   const cleanDate = rawDate.replace(/[^0-9]/g, '').slice(0, 6) || '26';
@@ -220,7 +229,7 @@ export function buildStableContractCode(input: {
         ? 'BBNT'
         : 'HDDV';
 
-  const rawTokenId = (values['token:[ID KOC]'] || '').trim();
+  const rawTokenId = (values['KOC_CODE'] || values['token:[ID KOC]'] || '').trim();
   const isStaleDemoToken =
     rawTokenId.toLowerCase() === 'chanhbeauty' &&
     Boolean(input.partner) &&
@@ -251,7 +260,7 @@ export function buildStableContractCode(input: {
   }
 
   const cleanBrand =
-    (values['token:[BRAND]'] || input.brand || 'UPBASE')
+    (values['BRAND_CODE'] || values['BRAND_NAME'] || values['token:[BRAND]'] || input.brand || 'UPBASE')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/đ/gi, 'd')
@@ -294,8 +303,11 @@ export function enrichTemplateWithSignFlow(template: LegalTemplate): LegalTempla
     ],
   };
 
+  const normalizedFields = normalizeTemplateFieldsToApiKeys(template.fields || []);
+
   return {
     ...template,
+    fields: normalizedFields,
     remoteTemplateId: template.remoteTemplateId || criteria.fallbackUuid,
     remoteTemplateCode: template.remoteTemplateCode || criteria.preferredCodes[0],
     contractType: template.contractType || criteria.type,
@@ -308,42 +320,254 @@ export function enrichTemplateWithSignFlow(template: LegalTemplate): LegalTempla
   };
 }
 
-const REMOTE_FIELD_DICTIONARY: Record<
+export const REMOTE_FIELD_DICTIONARY: Record<
   string,
   { title: string; group: FieldGroup; kind: FieldKind; source?: FieldSource }
 > = {
-  CONTRACT_NO: { title: 'Số hợp đồng / phụ lục', group: 'NUMBER', kind: 'text' },
-  NOW_DAY: { title: 'Ngày ký (DD)', group: 'DATE', kind: 'text', source: 'signDay' },
-  NOW_MONTH: { title: 'Tháng ký (MM)', group: 'DATE', kind: 'text', source: 'signMonth' },
-  NOW_YEAR: { title: 'Năm ký (YYYY)', group: 'DATE', kind: 'text', source: 'signYearDigit' },
-  PARTY_B_NAME: { title: 'Họ và tên / Tên đơn vị Bên B', group: 'PARTY', kind: 'text', source: 'partyName' },
-  PARTY_B_REPRESENTATIVE: { title: 'Người đại diện Bên B', group: 'PARTY', kind: 'text', source: 'representative' },
-  PARTY_B_PHONE: { title: 'Số điện thoại Bên B', group: 'PARTY', kind: 'text', source: 'phone' },
-  PARTY_B_EMAIL: { title: 'Email nhận hợp đồng & ký số Bên B', group: 'PARTY', kind: 'text', source: 'email' },
-  PARTY_B_ADDRESS: { title: 'Địa chỉ thường trú / Trụ sở Bên B', group: 'PARTY', kind: 'text', source: 'address' },
-  PARTY_B_ID_NUMBER: { title: 'Số CCCD / CMND Bên B', group: 'PARTY', kind: 'text', source: 'cccd' },
-  PARTY_B_ID_ISSUE_DATE: { title: 'Ngày cấp CCCD', group: 'PARTY', kind: 'date' },
-  PARTY_B_ID_ISSUE_PLACE: { title: 'Nơi cấp CCCD', group: 'PARTY', kind: 'text' },
-  PARTY_B_TAX_CODE: { title: 'Mã số thuế Bên B', group: 'PARTY', kind: 'text', source: 'taxCode' },
-  SOCIAL_ACCOUNT_LINK: { title: 'Link kênh mạng xã hội (TikTok / Kênh chính)', group: 'PARTY', kind: 'text', source: 'channelLink' },
-  BANK_ACCOUNT_NAME: { title: 'Tên chủ tài khoản ngân hàng', group: 'MONEY', kind: 'text', source: 'bankAccountName' },
-  BANK_ACCOUNT_NUMBER: { title: 'Số tài khoản ngân hàng', group: 'MONEY', kind: 'text', source: 'bankAccountNumber' },
-  BANK_NAME: { title: 'Tên ngân hàng & Chi nhánh', group: 'MONEY', kind: 'text', source: 'bankName' },
-  PAYMENT_METHOD: { title: 'Hình thức thanh toán', group: 'MONEY', kind: 'text' },
-  PAYMENT_TERMS: { title: 'Điều khoản & Thời hạn thanh toán', group: 'MONEY', kind: 'long' },
-  PRODUCT_NAME: { title: 'Sản phẩm / Nhãn hàng quảng bá', group: 'SCOPE', kind: 'text', source: 'product' },
-  AIR_DATE: { title: 'Ngày đăng bài dự kiến (Air Date)', group: 'SCOPE', kind: 'date', source: 'airDate' },
-  QUANTITY: { title: 'Số lượng hạng mục', group: 'SCOPE', kind: 'number', source: 'quantity' },
-  UNIT_PRICE: { title: 'Đơn giá dịch vụ (VNĐ)', group: 'MONEY', kind: 'money', source: 'unitPrice' },
-  LINE_TOTAL: { title: 'Thành tiền dịch vụ (VNĐ)', group: 'MONEY', kind: 'money', source: 'lineTotal' },
-  NET_TOTAL: { title: 'Tổng giá trị thực nhận Net (VNĐ)', group: 'MONEY', kind: 'money', source: 'netTotal' },
-  GROSS_TOTAL: { title: 'Tổng giá trị hợp đồng Gross (VNĐ)', group: 'MONEY', kind: 'money', source: 'grossTotal' },
-  PIT_AMOUNT: { title: 'Thuế TNCN khấu trừ tại nguồn (VNĐ)', group: 'MONEY', kind: 'money', source: 'pitAmount' },
-  VAT_AMOUNT: { title: 'Thuế GTGT / VAT (VNĐ)', group: 'MONEY', kind: 'money', source: 'vatAmount' },
-  ADVANCE_AMOUNT: { title: 'Số tiền tạm ứng lần 1 (VNĐ)', group: 'MONEY', kind: 'money', source: 'advanceAmount' },
-  REMAINING_AMOUNT: { title: 'Số tiền thanh toán còn lại (VNĐ)', group: 'MONEY', kind: 'money', source: 'remainingAmount' },
-  AMOUNT_IN_WORDS: { title: 'Số tiền bằng chữ', group: 'MONEY', kind: 'text', source: 'amountInWords' },
+  CONTRACT_NO: { title: 'Số hợp đồng / phụ lục (CONTRACT_NO)', group: 'NUMBER', kind: 'text' },
+  CONTRACT_DATE_CODE: { title: 'Ngày lập trong số hợp đồng (CONTRACT_DATE_CODE)', group: 'NUMBER', kind: 'text', source: 'docDate' },
+  MASTER_CONTRACT_DATE: { title: 'Ngày lập HĐNT gốc (MASTER_CONTRACT_DATE)', group: 'NUMBER', kind: 'text', source: 'parentContractDate' },
+  PARENT_SOW_DATE: { title: 'Ngày lập Phụ lục SOW (PARENT_SOW_DATE)', group: 'NUMBER', kind: 'text', source: 'parentSowDate' },
+  BRAND_CODE: { title: 'Mã nhãn hàng trong số hợp đồng (BRAND_CODE)', group: 'NUMBER', kind: 'text', source: 'brand' },
+  KOC_CODE: { title: 'Mã KOC trong số hợp đồng (KOC_CODE)', group: 'NUMBER', kind: 'text', source: 'kocId' },
+  NOW_DAY: { title: 'Ngày ký (NOW_DAY)', group: 'DATE', kind: 'text', source: 'signDay' },
+  NGAY: { title: 'Ngày ký (NGAY)', group: 'DATE', kind: 'text', source: 'signDay' },
+  NOW_MONTH: { title: 'Tháng ký (NOW_MONTH)', group: 'DATE', kind: 'text', source: 'signMonth' },
+  THANG: { title: 'Tháng ký (THANG)', group: 'DATE', kind: 'text', source: 'signMonth' },
+  NOW_YEAR: { title: 'Năm ký (NOW_YEAR)', group: 'DATE', kind: 'text', source: 'signYearDigit' },
+  NAM: { title: 'Năm ký (NAM)', group: 'DATE', kind: 'text', source: 'signYearDigit' },
+  PARTY_B_NAME: { title: 'Họ và tên / Tên đơn vị Bên B (PARTY_B_NAME)', group: 'PARTY', kind: 'text', source: 'partyName' },
+  NAME_B: { title: 'Họ và tên Bên B (NAME_B)', group: 'PARTY', kind: 'text', source: 'partyName' },
+  PARTY_B_OWNER_NAME: { title: 'Họ tên chủ hộ / Nghệ danh KOC (PARTY_B_OWNER_NAME)', group: 'PARTY', kind: 'text', source: 'ownerName' },
+  PARTY_B_REPRESENTATIVE: { title: 'Người đại diện Bên B (PARTY_B_REPRESENTATIVE)', group: 'PARTY', kind: 'text', source: 'representative' },
+  PARTY_B_POSITION: { title: 'Chức vụ người đại diện (PARTY_B_POSITION)', group: 'PARTY', kind: 'text' },
+  PARTY_B_PHONE: { title: 'Số điện thoại Bên B (PARTY_B_PHONE)', group: 'PARTY', kind: 'text', source: 'phone' },
+  PHONE: { title: 'Số điện thoại Bên B (PHONE)', group: 'PARTY', kind: 'text', source: 'phone' },
+  PARTY_B_EMAIL: { title: 'Email nhận hợp đồng & ký số Bên B (PARTY_B_EMAIL)', group: 'PARTY', kind: 'text', source: 'email' },
+  PARTY_B_ADDRESS: { title: 'Địa chỉ thường trú / Trụ sở Bên B (PARTY_B_ADDRESS)', group: 'PARTY', kind: 'text', source: 'address' },
+  PARTY_B_ID_NUMBER: { title: 'Số CCCD / CMND Bên B (PARTY_B_ID_NUMBER)', group: 'PARTY', kind: 'text', source: 'cccd' },
+  CCCD: { title: 'Số CCCD / CMND Bên B (CCCD)', group: 'PARTY', kind: 'text', source: 'cccd' },
+  PARTY_B_ID_ISSUE_DATE: { title: 'Ngày cấp CCCD (PARTY_B_ID_ISSUE_DATE)', group: 'PARTY', kind: 'date' },
+  PARTY_B_ID_ISSUE_PLACE: { title: 'Nơi cấp CCCD (PARTY_B_ID_ISSUE_PLACE)', group: 'PARTY', kind: 'text' },
+  PARTY_B_TAX_CODE: { title: 'Mã số thuế Bên B (PARTY_B_TAX_CODE)', group: 'PARTY', kind: 'text', source: 'taxCode' },
+  SOCIAL_ACCOUNT_LINK: { title: 'Link kênh mạng xã hội (SOCIAL_ACCOUNT_LINK)', group: 'PARTY', kind: 'text', source: 'channelLink' },
+  BANK_ACCOUNT_NAME: { title: 'Tên chủ tài khoản ngân hàng (BANK_ACCOUNT_NAME)', group: 'MONEY', kind: 'text', source: 'bankAccountName' },
+  BANK_ACCOUNT_NUMBER: { title: 'Số tài khoản ngân hàng (BANK_ACCOUNT_NUMBER)', group: 'MONEY', kind: 'text', source: 'bankAccountNumber' },
+  BANK_NAME: { title: 'Tên ngân hàng & Chi nhánh (BANK_NAME)', group: 'MONEY', kind: 'text', source: 'bankName' },
+  PAYMENT_METHOD: { title: 'Hình thức thanh toán (PAYMENT_METHOD)', group: 'MONEY', kind: 'text' },
+  PAYMENT_TERMS: { title: 'Điều khoản & Thời hạn thanh toán (PAYMENT_TERMS)', group: 'MONEY', kind: 'long' },
+  PRODUCT_NAME: { title: 'Sản phẩm / Nhãn hàng quảng bá (PRODUCT_NAME)', group: 'SCOPE', kind: 'text', source: 'product' },
+  AIR_DATE: { title: 'Ngày đăng bài dự kiến (AIR_DATE)', group: 'SCOPE', kind: 'date', source: 'airDate' },
+  QUANTITY: { title: 'Số lượng hạng mục (QUANTITY)', group: 'SCOPE', kind: 'number', source: 'quantity' },
+  UNIT_PRICE: { title: 'Đơn giá dịch vụ (UNIT_PRICE)', group: 'MONEY', kind: 'money', source: 'unitPrice' },
+  LINE_TOTAL: { title: 'Thành tiền dịch vụ (LINE_TOTAL)', group: 'MONEY', kind: 'money', source: 'lineTotal' },
+  NET_TOTAL: { title: 'Tổng giá trị thực nhận Net (NET_TOTAL)', group: 'MONEY', kind: 'money', source: 'netTotal' },
+  GROSS_TOTAL: { title: 'Tổng giá trị hợp đồng Gross (GROSS_TOTAL)', group: 'MONEY', kind: 'money', source: 'grossTotal' },
+  PIT_AMOUNT: { title: 'Thuế TNCN khấu trừ tại nguồn (PIT_AMOUNT)', group: 'MONEY', kind: 'money', source: 'pitAmount' },
+  VAT_AMOUNT: { title: 'Thuế GTGT / VAT (VAT_AMOUNT)', group: 'MONEY', kind: 'money', source: 'vatAmount' },
+  ADVANCE_AMOUNT: { title: 'Số tiền tạm ứng lần 1 (ADVANCE_AMOUNT)', group: 'MONEY', kind: 'money', source: 'advanceAmount' },
+  REMAINING_AMOUNT: { title: 'Số tiền thanh toán còn lại (REMAINING_AMOUNT)', group: 'MONEY', kind: 'money', source: 'remainingAmount' },
+  AMOUNT_IN_WORDS: { title: 'Số tiền bằng chữ (AMOUNT_IN_WORDS)', group: 'MONEY', kind: 'text', source: 'amountInWords' },
 };
+
+/**
+ * Chuẩn hóa mã trường (`key`) của các mẫu nội bộ sang quy tắc đặt tên `fieldKey` viết hoa của API Contract Service
+ * (`CONTRACT_NO`, `NOW_DAY`, `NOW_MONTH`, `NOW_YEAR`, `PARTY_B_NAME`, `PARTY_B_ID_NUMBER`, `BANK_ACCOUNT_NAME`...).
+ */
+export function toStandardApiFieldKey(f: ContractField): string {
+  const rawKey = (f.key || '').trim();
+  if (/^[A-Z][A-Z0-9_]*$/.test(rawKey)) {
+    return rawKey;
+  }
+
+  const title = (f.title || f.label || '').toLowerCase();
+  const context = (f.context || '').toLowerCase();
+
+  // 1. Nhóm Số hợp đồng / Mã định danh
+  if (rawKey === 'token:[dd.mm.yy]' || f.source === 'docDate') return 'CONTRACT_DATE_CODE';
+  if (rawKey === 'token:[Ngày HĐNT]' || f.source === 'parentContractDate') return 'MASTER_CONTRACT_DATE';
+  if (rawKey === 'token:[Ngày SOW]' || f.source === 'parentSowDate') return 'PARENT_SOW_DATE';
+  if (rawKey === 'token:[BRAND]') return 'BRAND_CODE';
+  if (rawKey === 'token:[ID KOC]' || f.source === 'kocId') return 'KOC_CODE';
+
+  // 2. Nhóm Ngày ký / Tháng nghiệm thu
+  if (f.source === 'signDay') return 'NOW_DAY';
+  if (f.source === 'signMonth') {
+    if (title.includes('nghiệm thu')) {
+      return title.includes('(2)') ? 'ACCEPTANCE_MONTH_2' : 'ACCEPTANCE_MONTH';
+    }
+    return 'NOW_MONTH';
+  }
+  if (f.source === 'signYearDigit') {
+    if (title.includes('nghiệm thu')) {
+      return title.includes('(2)') ? 'ACCEPTANCE_YEAR_2' : 'ACCEPTANCE_YEAR';
+    }
+    return 'NOW_YEAR';
+  }
+
+  // 3. Nhóm Thông tin Bên B & Tài khoản ngân hàng
+  if (f.source === 'partyName') return 'PARTY_B_NAME';
+  if (f.source === 'ownerName') return 'PARTY_B_OWNER_NAME';
+  if (f.source === 'representative') return 'PARTY_B_REPRESENTATIVE';
+  if (f.source === 'cccd') return 'PARTY_B_ID_NUMBER';
+  if (f.source === 'taxCode') return 'PARTY_B_TAX_CODE';
+  if (f.source === 'address') return 'PARTY_B_ADDRESS';
+  if (f.source === 'phone') return 'PARTY_B_PHONE';
+  if (f.source === 'email') return 'PARTY_B_EMAIL';
+  if (f.source === 'channelLink') {
+    if (title.includes('livestream')) return 'LIVESTREAM_CHANNEL_LINK';
+    return 'SOCIAL_ACCOUNT_LINK';
+  }
+  if (f.source === 'bankAccountName' || rawKey === 'token:[Tên chủ tài khoản]') return 'BANK_ACCOUNT_NAME';
+  if (f.source === 'bankAccountNumber' || rawKey === 'token:[Số tài khoản]') return 'BANK_ACCOUNT_NUMBER';
+  if (f.source === 'bankName' || rawKey === 'token:[Tại Ngân hàng]') return 'BANK_NAME';
+
+  // 4. Bảng nghiệm thu tháng CTV (Dòng 1..5)
+  const ctvMatch = title.match(/^dòng\s+([1-5])\s*·\s*(.+)$/i);
+  if (ctvMatch) {
+    const rNum = ctvMatch[1];
+    const col = ctvMatch[2].trim().toLowerCase();
+    if (col.includes('dạng video')) return `CTV_ROW_${rNum}_VIDEO_TYPE`;
+    if (col.includes('ghi chú')) return `CTV_ROW_${rNum}_NOTE`;
+    if (col.includes('nhãn hàng')) return `CTV_ROW_${rNum}_BRAND`;
+    if (col.includes('link')) return `CTV_ROW_${rNum}_VIDEO_LINK`;
+    if (col.includes('trạng thái')) return `CTV_ROW_${rNum}_STATUS`;
+    if (col.includes('đơn giá') || col.includes('mức giá')) return `CTV_ROW_${rNum}_UNIT_PRICE`;
+    if (col.includes('số lượng')) return `CTV_ROW_${rNum}_QUANTITY`;
+    if (col.includes('thành tiền')) return `CTV_ROW_${rNum}_LINE_TOTAL`;
+  }
+
+  // 5. Nhóm Hạng mục công việc & Tài chính theo source
+  if (f.source === 'brand') return 'BRAND_NAME';
+  if (f.source === 'product') {
+    if (title.includes('giỏ hàng')) return 'CART_LINK_PRODUCT';
+    if (title.includes('livestream')) return 'LIVESTREAM_PRODUCT_NAME';
+    return 'PRODUCT_NAME';
+  }
+  if (f.source === 'airDate') return 'AIR_DATE';
+  if (f.source === 'unitPrice') return 'UNIT_PRICE';
+  if (f.source === 'quantity') return 'QUANTITY';
+  if (f.source === 'lineTotal') return f.group === 'MONEY' ? 'SUBTOTAL_BEFORE_VAT' : 'LINE_TOTAL';
+  if (f.source === 'netTotal') {
+    if (title.includes('phí dịch vụ phải thanh toán')) return 'PAYABLE_SERVICE_FEE';
+    return 'NET_TOTAL';
+  }
+  if (f.source === 'pitAmount') return 'PIT_AMOUNT';
+  if (f.source === 'vatAmount') return 'VAT_AMOUNT';
+  if (f.source === 'grossTotal') return 'GROSS_TOTAL';
+  if (f.source === 'advanceAmount') return 'ADVANCE_AMOUNT';
+  if (f.source === 'adjustmentAmount') return 'ADJUSTMENT_AMOUNT';
+  if (f.source === 'remainingAmount') return 'REMAINING_AMOUNT';
+  if (f.source === 'amountInWords') return 'AMOUNT_IN_WORDS';
+
+  // 6. Các trường chuyên biệt theo tiêu đề / ngữ cảnh
+  if (title.includes('chức vụ')) return 'PARTY_B_POSITION';
+  if (title.includes('số văn bản ủy quyền')) return 'PARTY_B_AUTH_NO';
+  if (title.includes('ngày ủy quyền')) return 'PARTY_B_AUTH_DATE';
+  if (title.includes('hạn tạm ứng')) return 'ADVANCE_DUE_DAYS';
+  if (title.includes('hạn thanh toán')) return 'SETTLEMENT_DUE_DAYS';
+  if (title.includes('hoa hồng organic')) return 'ORGANIC_COMMISSION_PCT';
+  if (title.includes('hoa hồng chạy ads')) return 'ADS_COMMISSION_PCT';
+  if (title.includes('hoa hồng affiliate')) return 'AFFILIATE_COMMISSION_PCT';
+  if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
+    if (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money') return 'SPARK_ADS_FEE';
+    return 'SPARK_ADS_DAYS';
+  }
+  if (title.includes('hạng mục quảng cáo') || title.includes('cấp mã code')) return 'SPARK_ADS_FEE';
+  if (title.includes('hạng mục thương mại') || (title.includes('gắn giỏ hàng') && f.kind === 'money')) return 'CART_LINK_FEE';
+  if (title.includes('sử dụng hình ảnh livestream')) return 'LIVESTREAM_IMAGE_USAGE_MONTHS';
+  if (title.includes('bắt đầu sử dụng hình ảnh')) return 'IMAGE_USAGE_START_DATE';
+  if (title.includes('sử dụng hình ảnh')) {
+    if (title.includes('đơn giá')) return 'IMAGE_USAGE_UNIT_PRICE';
+    if (title.includes('số lượng')) return 'IMAGE_USAGE_QUANTITY';
+    if (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money') return 'IMAGE_USAGE_FEE';
+    return 'IMAGE_USAGE_DAYS';
+  }
+  if (title.includes('tham dự sự kiện')) {
+    if (title.includes('số giờ')) return 'EVENT_HOURS';
+    if (title.includes('ngày tham dự')) return 'EVENT_DATE';
+    if (title.includes('đơn giá')) return 'EVENT_UNIT_PRICE';
+    if (title.includes('số lượng')) return 'EVENT_QUANTITY';
+    return 'EVENT_FEE';
+  }
+  if (title.includes('trang facebook') || title.includes('post trên facebook')) {
+    if (title.includes('trang facebook')) return 'FACEBOOK_POST_PAGE';
+    if (title.includes('đơn giá')) return 'FACEBOOK_POST_UNIT_PRICE';
+    if (title.includes('số lượng')) return 'FACEBOOK_POST_QUANTITY';
+    return 'FACEBOOK_POST_FEE';
+  }
+  if (title.includes('thời lượng video')) return 'VIDEO_DURATION_SEC';
+  if (title.includes('vòng chỉnh sửa')) return 'MAX_REVISION_ROUNDS';
+  if (title.includes('hoàn trả sản phẩm mẫu')) return 'SAMPLE_RETURN_DAYS';
+  if (title.includes('nội dung cung cấp') || title.includes('post-only')) return 'PROVIDED_CONTENT';
+  if (title.includes('định dạng file bàn giao') || title.includes('production-only')) return 'DELIVERY_FORMAT';
+  if (title.includes('số lượng phiên bản cắt ngắn')) return 'CUTDOWN_VERSION_COUNT';
+  if (title.includes('thời lượng từng phiên bản cắt ngắn')) return 'CUTDOWN_DURATION';
+  if (title.includes('link video nghiệm thu') || context.includes('link video')) return 'VIDEO_LINK';
+  if (title.includes('link kênh shopee')) return 'SHOPEE_CHANNEL_LINK';
+  if (title.includes('link kênh facebook')) return 'FACEBOOK_CHANNEL_LINK';
+  if (title.includes('link kênh instagram')) return 'INSTAGRAM_CHANNEL_LINK';
+  if (title.includes('link kênh youtube')) return 'YOUTUBE_CHANNEL_LINK';
+  if (title.includes('link kênh threads')) return 'THREADS_CHANNEL_LINK';
+  if (title.includes('nền tảng livestream')) return 'LIVESTREAM_PLATFORM';
+  if (title.includes('khung giờ livestream')) return 'LIVESTREAM_TIME_SLOT';
+  if (title.includes('thời lượng lên hình tối thiểu')) return 'LIVESTREAM_DURATION_MIN';
+  if (title.includes('điều khoản điều chỉnh') || title.includes('ngoại lệ áp dụng theo sow')) {
+    return title.includes('(2)') ? 'SOW_CUSTOM_CLAUSE_2' : 'SOW_CUSTOM_CLAUSE_1';
+  }
+
+  // Fallback: chuẩn hóa chuỗi title sang SNAKE_CASE viết hoa giống chuẩn fieldKey của API
+  const ascii = (f.title || f.label || rawKey)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase()
+    .slice(0, 42);
+  return ascii || `FIELD_P${f.paragraph}`;
+}
+
+export function normalizeTemplateFieldsToApiKeys(fields: ContractField[]): ContractField[] {
+  const keyByLegacyKey = new Map<string, string>();
+  const usedByDistinctPosition = new Map<string, string>();
+  // Các khóa dùng chung ở nhiều vị trí trong cùng 1 tài liệu (ví dụ header + footer cùng điền số HĐ / mã KOC)
+  const sharedRepeatableKeys = new Set([
+    'CONTRACT_NO',
+    'CONTRACT_DATE_CODE',
+    'MASTER_CONTRACT_DATE',
+    'PARENT_SOW_DATE',
+    'BRAND_CODE',
+    'KOC_CODE',
+  ]);
+
+  return fields.map(f => {
+    const baseKey = toStandardApiFieldKey(f);
+    let finalKey = keyByLegacyKey.get(f.key);
+    if (!finalKey) {
+      if (sharedRepeatableKeys.has(baseKey)) {
+        finalKey = baseKey;
+      } else {
+        let candidate = baseKey;
+        let suffix = 2;
+        while (usedByDistinctPosition.has(candidate) && usedByDistinctPosition.get(candidate) !== f.key) {
+          candidate = `${baseKey}_${suffix++}`;
+        }
+        finalKey = candidate;
+        usedByDistinctPosition.set(finalKey, f.key);
+      }
+      keyByLegacyKey.set(f.key, finalKey);
+    }
+
+    const baseTitle = (f.title || f.label || finalKey).replace(/\s*\([A-Z0-9_]+\)\s*$/, '').trim();
+    return {
+      ...f,
+      key: finalKey,
+      label: `{{${finalKey}}}`,
+      title: `${baseTitle} (${finalKey})`,
+    };
+  });
+}
 
 /**
  * Chuyển đổi 1 field từ API 2 (`getContractTemplate`) sang `ContractField` của giao diện B2C Portal.
@@ -383,18 +607,19 @@ export function describeRemoteTemplateField(
               ? 'SCOPE'
               : 'OTHER');
 
-  const humanizedTitle =
+  const rawTitle =
     dict?.title ||
     key
       .replace(/_/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, c => c.toUpperCase());
+  const humanizedTitle = rawTitle.includes(`(${key})`) ? rawTitle : `${rawTitle} (${key})`;
 
   return {
     key,
     label: `{{${key}}}`,
     title: humanizedTitle,
-    context: `${humanizedTitle} ({{${key}}})`,
+    context: `${humanizedTitle} — {{${key}}}`,
     required: Boolean(rf.required),
     part: 'word/document.xml',
     paragraph: index + 1,
@@ -442,6 +667,184 @@ export function mapRemoteTemplateToB2cId(
 }
 
 /**
+ * Xác định mã biểu mẫu chuẩn lưu trên hệ thống (`OFFICIAL_TEMPLATES_SNAPSHOT`) tương ứng với mẫu kéo từ API
+ * để thực hiện đối chiếu sự thay đổi cấu trúc trường (`fieldKey`, `required`, `kind`).
+ */
+export function resolveBaselineSystemTemplateId(params: {
+  b2cId?: string;
+  code?: string;
+  type?: string;
+  object?: string;
+}): string | undefined {
+  const b2cId = (params.b2cId || '').trim().toUpperCase();
+  if (b2cId && OFFICIAL_TEMPLATES_SNAPSHOT[b2cId]) {
+    return b2cId;
+  }
+  const code = (params.code || '').trim().toUpperCase();
+  if (code && OFFICIAL_TEMPLATES_SNAPSHOT[code]) {
+    return code;
+  }
+  const type = (params.type || 'MASTER').trim().toUpperCase();
+  const object = (params.object || 'INDIVIDUAL').trim().toUpperCase();
+  const prefix = object === 'BUSINESS' ? 'HKD' : object === 'COMPANY' ? 'COM' : 'IND';
+
+  const inferredId =
+    type === 'MASTER'
+      ? `${prefix}-HDNT`
+      : type === 'APPENDIX'
+        ? `${prefix}-SOW`
+        : type === 'VIDEO_ACCEPTANCE'
+          ? `${prefix}-VID-BBNT`
+          : type === 'LIVESTREAM_ACCEPTANCE'
+            ? `${prefix}-LIVE-BBNT`
+            : `${prefix}-HD`;
+
+  return OFFICIAL_TEMPLATES_SNAPSHOT[inferredId] ? inferredId : undefined;
+}
+
+/**
+ * Đối chiếu biểu mẫu vừa kéo từ Contract Service API với biểu mẫu chuẩn đang lưu trên hệ thống
+ * để phát hiện và cảnh báo khi danh sách trường (`fieldKey`) hoặc cấu hình trường có thay đổi.
+ */
+export function compareRemoteTemplateWithLocalBaseline(params: {
+  remoteFields: ContractField[];
+  b2cId?: string;
+  remoteCode?: string;
+  remoteVersion?: string;
+  type?: string;
+  object?: string;
+  localBaseline?: LegalTemplate | null;
+}): TemplateSchemaDiff {
+  const checkedAt = new Date().toISOString();
+  const baselineId =
+    params.localBaseline?.id ||
+    resolveBaselineSystemTemplateId({
+      b2cId: params.b2cId,
+      code: params.remoteCode,
+      type: params.type,
+      object: params.object,
+    });
+  const baselineTpl =
+    params.localBaseline && params.localBaseline.fields && params.localBaseline.fields.length > 0
+      ? params.localBaseline
+      : baselineId
+        ? OFFICIAL_TEMPLATES_SNAPSHOT[baselineId]
+        : undefined;
+
+  const normalizedRemote = normalizeTemplateFieldsToApiKeys(params.remoteFields || []);
+  const remoteMap = new Map<string, ContractField>();
+  for (const f of normalizedRemote) {
+    if (!remoteMap.has(f.key)) remoteMap.set(f.key, f);
+  }
+
+  if (!baselineTpl) {
+    const addedFields = [...remoteMap.values()].map(f => ({
+      key: f.key,
+      title: f.title || f.label || f.key,
+      required: Boolean(f.required),
+      kind: f.kind,
+    }));
+    return {
+      hasChanges: true,
+      remoteVersion: params.remoteVersion,
+      checkedAt,
+      addedFields,
+      removedFields: [],
+      changedFields: [],
+      matchedFieldKeys: [],
+      summaryText: `Biểu mẫu mới trên API (${params.remoteCode || params.b2cId || 'Mới'}) chưa có bản lưu đối chiếu trên hệ thống (${addedFields.length} trường).`,
+    };
+  }
+
+  const normalizedBaseline = normalizeTemplateFieldsToApiKeys(baselineTpl.fields || []);
+  const baselineMap = new Map<string, ContractField>();
+  for (const f of normalizedBaseline) {
+    if (!baselineMap.has(f.key)) baselineMap.set(f.key, f);
+  }
+
+  const addedFields: TemplateSchemaDiff['addedFields'] = [];
+  const removedFields: TemplateSchemaDiff['removedFields'] = [];
+  const changedFields: TemplateSchemaDiff['changedFields'] = [];
+  const matchedFieldKeys: string[] = [];
+
+  for (const [key, rf] of remoteMap.entries()) {
+    const bf = baselineMap.get(key);
+    if (!bf) {
+      addedFields.push({
+        key,
+        title: rf.title || rf.label || key,
+        required: Boolean(rf.required),
+        kind: rf.kind,
+      });
+      continue;
+    }
+
+    const changes: string[] = [];
+    if (Boolean(rf.required) !== Boolean(bf.required)) {
+      changes.push(
+        rf.required ? 'Đổi từ Tùy chọn → Bắt buộc' : 'Đổi từ Bắt buộc → Tùy chọn',
+      );
+    }
+    const rKind = rf.kind || 'text';
+    const bKind = bf.kind || 'text';
+    const isCompatibleTextLong =
+      (rKind === 'text' && bKind === 'long') || (rKind === 'long' && bKind === 'text');
+    const isCompatibleMoneyNumber =
+      (rKind === 'money' && bKind === 'number') || (rKind === 'number' && bKind === 'money');
+    if (rKind !== bKind && !isCompatibleTextLong && !isCompatibleMoneyNumber) {
+      changes.push(`Đổi kiểu dữ liệu (${bKind} → ${rKind})`);
+    }
+
+    if (changes.length > 0) {
+      changedFields.push({
+        key,
+        title: rf.title || bf.title || key,
+        changeSummary: changes.join(' · '),
+      });
+    } else {
+      matchedFieldKeys.push(key);
+    }
+  }
+
+  for (const [key, bf] of baselineMap.entries()) {
+    if (!remoteMap.has(key)) {
+      removedFields.push({
+        key,
+        title: bf.title || bf.label || key,
+        required: Boolean(bf.required),
+        kind: bf.kind,
+      });
+    }
+  }
+
+  const hasChanges =
+    addedFields.length > 0 || removedFields.length > 0 || changedFields.length > 0;
+
+  const parts: string[] = [];
+  if (addedFields.length > 0) parts.push(`+${addedFields.length} trường mới trên API`);
+  if (removedFields.length > 0) parts.push(`-${removedFields.length} trường hệ thống không có trên API`);
+  if (changedFields.length > 0) parts.push(`${changedFields.length} trường đổi cấu hình`);
+
+  const summaryText = hasChanges
+    ? `Form API (${params.remoteCode || params.b2cId}) có thay đổi so với mẫu lưu trên hệ thống (${baselineTpl.id} · ${baselineTpl.version}): ${parts.join(', ')}.`
+    : `Khớp 100% danh sách trường (${matchedFieldKeys.length} trường) với mẫu lưu trên hệ thống (${baselineTpl.id}).`;
+
+  return {
+    hasChanges,
+    baselineTemplateId: baselineTpl.id,
+    baselineTemplateName: baselineTpl.name,
+    baselineVersion: baselineTpl.version,
+    remoteVersion: params.remoteVersion,
+    checkedAt,
+    addedFields,
+    removedFields,
+    changedFields,
+    matchedFieldKeys,
+    summaryText,
+  };
+}
+
+/**
  * Chuyển đổi trực tiếp dữ liệu mẫu lấy từ API 1 (`getContractTemplates`) & API 2 (`getContractTemplate`)
  * thành đối tượng `LegalTemplate` để `web-admin` hiển thị và vận hành mà không cần lưu sẵn file `.docx` cục bộ.
  */
@@ -476,6 +879,7 @@ export function convertRemoteTemplateToLegalTemplate(
     }>;
   } | null,
   preferredB2cId?: string,
+  localBaseline?: LegalTemplate | null,
 ): LegalTemplate {
   const type = (detail?.type || summary.type || 'MASTER').toUpperCase();
   const object = (detail?.object || summary.object || 'INDIVIDUAL').toUpperCase();
@@ -621,6 +1025,15 @@ export function convertRemoteTemplateToLegalTemplate(
           signTag: p.code.startsWith('{{') ? p.code : `{{${p.code}}}`,
         })),
     },
+    schemaDiff: compareRemoteTemplateWithLocalBaseline({
+      remoteFields: fields,
+      b2cId,
+      remoteCode: summary.code,
+      remoteVersion: versionLabel,
+      type,
+      object,
+      localBaseline,
+    }),
   };
 }
 

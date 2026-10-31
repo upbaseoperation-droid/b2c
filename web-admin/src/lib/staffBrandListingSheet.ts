@@ -1525,6 +1525,20 @@ export function buildInitialStaffSheetCollection(
   };
 }
 
+let deferredHydrationSaveTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleDeferredLocalStorageSave(collection: StaffBrandSheetCollection) {
+  if (typeof window === 'undefined') return;
+  if (deferredHydrationSaveTimer) clearTimeout(deferredHydrationSaveTimer);
+  deferredHydrationSaveTimer = setTimeout(() => {
+    deferredHydrationSaveTimer = null;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
+    } catch {
+      // ignore quota errors
+    }
+  }, 400);
+}
+
 export function loadStaffSheetCollection(
   kocs: KocItem[],
   stores: StorePortfolioItem[],
@@ -1551,7 +1565,7 @@ export function loadStaffSheetCollection(
           normalizedSheets[k] = Array.isArray(sheetRows)
             ? sheetRows
                 .filter((r): r is StaffListingSheetRow => Boolean(r && typeof r === 'object'))
-                .map((r) => recalculateStaffListingRow(r))
+                .map((r) => (r.slaBrandDuyet && r.tepBooking ? r : recalculateStaffListingRow(r)))
             : [];
         }
 
@@ -1640,11 +1654,7 @@ export function loadStaffSheetCollection(
         memoryCollectionCache = resultCollection;
         lastPersistedSnapshot = resultCollection;
         if (needsSaveHydrated) {
-          try {
-            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resultCollection));
-          } catch {
-            // ignore quota errors
-          }
+          scheduleDeferredLocalStorageSave(resultCollection);
         }
         return resultCollection;
       }
@@ -1655,11 +1665,7 @@ export function loadStaffSheetCollection(
   const initial = buildInitialStaffSheetCollection(kocs, stores, deals, defaultStaffName);
   memoryCollectionCache = initial;
   lastPersistedSnapshot = initial;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-  } catch {
-    // ignore quota errors
-  }
+  scheduleDeferredLocalStorageSave(initial);
   return initial;
 }
 

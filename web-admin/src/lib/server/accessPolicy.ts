@@ -194,6 +194,7 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
 }
 
 let cachedReconciledPolicy: { revision: number; data: AccessPolicy } | null = null;
+const cachedEffectiveUserByKey = new Map<string, UserProfile | null>();
 
 export async function readPolicy() {
   const record = await readRecord('access-policy', defaultPolicy, { clone: false });
@@ -205,6 +206,7 @@ export async function readPolicy() {
   }
   const reconciled = reconcileAccessPolicy(record.data);
   cachedReconciledPolicy = { revision: record.revision, data: reconciled };
+  cachedEffectiveUserByKey.clear();
   return {
     ...record,
     data: reconciled,
@@ -214,7 +216,13 @@ export async function readPolicy() {
 export async function effectiveUser(user: UserProfile | null): Promise<UserProfile | null> {
   if (!user) return null;
   const { data: policy, revision } = await readPolicy();
-  return userWithPolicy(user, policy, revision);
+  const cacheKey = `${revision}::${user.id}::${user.role}::${user.email || ''}::${user.canLogin ?? true}`;
+  if (cachedEffectiveUserByKey.has(cacheKey)) {
+    return cachedEffectiveUserByKey.get(cacheKey) ?? null;
+  }
+  const computed = userWithPolicy(user, policy, revision);
+  cachedEffectiveUserByKey.set(cacheKey, computed);
+  return computed;
 }
 
 export function userWithPolicy(user: UserProfile, policy: AccessPolicy, _revision = 1): UserProfile | null {

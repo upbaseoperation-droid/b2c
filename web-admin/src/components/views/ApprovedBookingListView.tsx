@@ -126,8 +126,6 @@ import {
   Person,
   Segmented,
   Select,
-  Stat,
-  StatRow,
   Status,
   Textarea,
   type Column,
@@ -217,14 +215,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   );
 
   // Đồng bộ tự động khi deals hoặc kocs từ phân hệ khác (Hợp đồng, PlanDealBoard, Danh bạ KOC) thay đổi
-  const [prevSyncDeps, setPrevSyncDeps] = useState<{ deals: BookingDealItem[]; kocs: KocItem[] }>({
+  const prevSyncDepsRef = useRef<{ deals: BookingDealItem[]; kocs: KocItem[] }>({
     deals,
     kocs,
   });
-  if (prevSyncDeps.deals !== deals || prevSyncDeps.kocs !== kocs) {
-    setPrevSyncDeps({ deals, kocs });
-    setItems(loadApprovedBookingList(kocs, stores, deals, currentUserName));
-  }
+  useEffect(() => {
+    if (prevSyncDepsRef.current.deals !== deals || prevSyncDepsRef.current.kocs !== kocs) {
+      prevSyncDepsRef.current = { deals, kocs };
+      setItems(loadApprovedBookingList(kocs, stores, deals, currentUserName));
+    }
+  }, [deals, kocs, stores, currentUserName]);
 
   // Tải danh sách hồ sơ Hợp đồng / SOW / BBNT thực tế từ /api/contracts (có fallback an toàn)
   useEffect(() => {
@@ -3364,60 +3364,6 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               ]}
             />
           </PageActions>
-
-          <StatRow size="sm">
-            <Stat
-              label={bookingScope === 'LIVESTREAM' ? 'Tổng phiên Live' : 'Tổng deal duyệt'}
-              value={stats.total}
-              numeric={stats.total}
-            />
-            <Stat
-              label={bookingScope === 'LIVESTREAM' ? 'Phí cứng Net chốt' : 'Ngân sách Net chốt'}
-              value={formatVnd(stats.totalFinalNet)}
-              numeric={stats.totalFinalNet}
-              invert
-              tone={
-                budgetSummary.isOverbudget || budgetSummary.isUnbudgetedSpend
-                  ? 'critical'
-                  : undefined
-              }
-              progress={
-                budgetSummary.targetBudget > 0
-                  ? {
-                      value: stats.totalFinalNet,
-                      max: budgetSummary.targetBudget,
-                      invert: true,
-                    }
-                  : undefined
-              }
-              note={
-                budgetSummary.isOverbudget
-                  ? `Vượt trần ${formatVnd(stats.totalFinalNet - budgetSummary.targetBudget)} (Trần: ${formatVnd(budgetSummary.targetBudget)})`
-                  : budgetSummary.isUnbudgetedSpend
-                  ? 'Cảnh báo: Chi phí phát sinh khi hạn mức = 0đ'
-                  : budgetSummary.targetBudget > 0
-                  ? `Hạn mức Net: ${formatVnd(budgetSummary.targetBudget)}`
-                  : undefined
-              }
-            />
-            <Stat
-              label={
-                bookingScope === 'LIVESTREAM'
-                  ? 'Đã nghiệm thu / Tổng phiên'
-                  : 'Đã nghiệm thu / Tổng deal'
-              }
-              value={`${stats.acceptedCount} / ${stats.total}`}
-              progress={{ value: stats.acceptedCount, max: Math.max(1, stats.total) }}
-            />
-            <Stat
-              label={
-                bookingScope === 'LIVESTREAM' ? 'Doanh số GMV Phiên Live' : 'Doanh số GMV 30 ngày'
-              }
-              value={formatVnd(stats.totalGmv30d)}
-              numeric={stats.totalGmv30d}
-              tone={stats.avgRoi >= 2 ? 'positive' : undefined}
-            />
-          </StatRow>
 
       {/* Khung bảng chính chuẩn Panel flush + FilterBar + Chips + DataTable + Pagination */}
       <Panel flush>

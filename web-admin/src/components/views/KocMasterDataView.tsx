@@ -104,8 +104,6 @@ import {
   Pagination,
   Panel,
   Select,
-  Stat,
-  StatRow,
   Status,
   Tabs,
   Textarea,
@@ -1366,62 +1364,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             />
           ) : (
             <>
-              {datasetTab === 'COOPERATED' ? (
-                <StatRow key="coop">
-                  <Stat
-                    label="KOC đã hợp tác"
-                    value={formatNumber(cooperatedKocs.length)}
-                    numeric={cooperatedKocs.length}
-                    note={`${formatNumber(datasetStats.coopPicCount)} PIC từng phụ trách`}
-                  />
-                  <Stat
-                    label="Đã ký HĐ nguyên tắc"
-                    value={formatNumber(datasetStats.coopSigned)}
-                    numeric={datasetStats.coopSigned}
-                    progress={{ value: datasetStats.coopSigned, max: Math.max(1, cooperatedKocs.length) }}
-                    note={`${formatPercent(datasetStats.coopSigned / Math.max(1, cooperatedKocs.length))} · ${formatNumber(datasetStats.coopWithDocs)} có CCCD/MST + STK`}
-                  />
-                  <Stat
-                    label="Chi phí booking lịch sử"
-                    value={formatVndShort(datasetStats.coopTotalCost)}
-                    numeric={datasetStats.coopTotalCost}
-                    note={`${formatNumber(datasetStats.coopPaidVideos)} video Paid · ${formatNumber(datasetStats.coopFocVideos)} FOC`}
-                  />
-                  <Stat
-                    label="Đơn giá trung vị"
-                    value={datasetStats.coopRatedCount ? formatVndShort(datasetStats.coopMedianRate) : '—'}
-                    note={`${formatNumber(datasetStats.coopRatedCount)} KOC có đơn giá`}
-                  />
-                </StatRow>
-              ) : (
-                <StatRow key="new">
-                  <Stat
-                    label="KOC mới / tiềm năng"
-                    value={formatNumber(newKocs.length)}
-                    numeric={newKocs.length}
-                    note={`${formatNumber(datasetStats.newHighTraffic)} kênh traffic tốt`}
-                  />
-                  <Stat
-                    label="Sẵn sàng booking"
-                    value={formatNumber(datasetStats.newReady)}
-                    numeric={datasetStats.newReady}
-                    progress={{ value: datasetStats.newReady, max: Math.max(1, newKocs.length) }}
-                    note="Đã có định danh và báo giá"
-                  />
-                  <Stat
-                    label="Có SĐT / Email"
-                    value={formatNumber(datasetStats.newWithContact)}
-                    numeric={datasetStats.newWithContact}
-                    note={`${formatNumber(datasetStats.newContacted)} đã liên hệ`}
-                  />
-                  <Stat
-                    label="Có báo giá"
-                    value={formatNumber(datasetStats.newWithQuote)}
-                    numeric={datasetStats.newWithQuote}
-                  />
-                </StatRow>
-              )}
-
               {/* Bảng KOC: một hàng lọc chính + một hàng chip xem nhanh; bộ lọc phụ mở khi cần */}
               <Panel
                 flush

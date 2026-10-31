@@ -64,3 +64,4 @@ web-admin/*.cjs
 web-admin/*.xml
 web-admin/tmp-*
 
+.aider*

@@ -12,8 +12,6 @@ import {
   Modal,
   Panel,
   Select,
-  Stat,
-  StatRow,
   Status,
 } from '../ui';
 import { Combobox } from '../ui/Combobox';
@@ -420,33 +418,6 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
   return (
     <div className="space-y-4">
-      <StatRow size="sm">
-        <Stat
-          label="Tổng tài khoản Gmail cấp"
-          value={accounts.length}
-          note={`${activeCount} tài khoản đang hoạt động`}
-          tone="positive"
-        />
-        <Stat
-          label="Đối tác Nhãn hàng"
-          value={brandCount}
-          note="Cổng duyệt KOC & kịch bản"
-          icon={Building}
-        />
-        <Stat
-          label="Đối tác KOC / KOL"
-          value={kocCount}
-          note="Nhận mẫu & nộp link video"
-          icon={Users}
-        />
-        <Stat
-          label="Cộng tác viên"
-          value={ctvCount}
-          note="Sản xuất kênh nội bộ"
-          icon={Video}
-        />
-      </StatRow>
-
       <Panel flush>
         <div className="p-4 border-b border-line">
           <FilterBar

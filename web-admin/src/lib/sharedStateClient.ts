@@ -301,6 +301,19 @@ function extractClientEntityIds(dbKey: SharedStateDbKey, data: unknown): Set<str
 
 function recordEntitySnapshotAndDiffDeletes(dbKey: SharedStateDbKey, data: unknown): void {
   if (!Array.isArray(data)) return;
+  if (!knownEntityIdsByKey.has(dbKey) && typeof window !== 'undefined') {
+    const cfg = SHARED_STATE_REGISTRY[dbKey];
+    if (cfg) {
+      try {
+        const raw = window.localStorage.getItem(cfg.localStorageKey);
+        if (raw) {
+          knownEntityIdsByKey.set(dbKey, extractClientEntityIds(dbKey, JSON.parse(raw)));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
   const nextIds = extractClientEntityIds(dbKey, data);
   const prevIds = knownEntityIdsByKey.get(dbKey);
   if (prevIds && prevIds.size > 0) {
@@ -493,19 +506,6 @@ export async function hydrateAllSharedStatesFromDb(options?: {
         const rec = records[dbKey];
         if (rec && rec.unchanged && typeof rec.revision === 'number' && rec.revision > 0) {
           saveStoredRevision(dbKey, rec.revision);
-          if (!inMemorySharedStateCache.has(dbKey)) {
-            try {
-              const raw = window.localStorage.getItem(cfg.localStorageKey);
-              if (raw) {
-                const parsed = sanitizeClientSharedState(dbKey, JSON.parse(raw));
-                inMemorySharedStateCache.set(dbKey, parsed);
-                knownEntityIdsByKey.set(dbKey, extractClientEntityIds(dbKey, parsed));
-                lastSyncedSerializedByKey.set(dbKey, JSON.stringify(parsed));
-              }
-            } catch {
-              // ignore
-            }
-          }
           continue;
         }
 

@@ -139,11 +139,14 @@ export function KocListingBatchHubView({
   >('STAFF_BRAND_SHEET');
 
   const defaultInitialStore = useMemo(() => {
+    const storeNamesWithListings = new Set<string>();
+    for (const l of listings) {
+      if (l.monthKey === '2026/10' && l.storeName) {
+        storeNamesWithListings.add(l.storeName);
+      }
+    }
     const firstWithListings = stores.find(
-      (s) =>
-        s.isB2cManaged !== false &&
-        s.storeName &&
-        listings.some((l) => l.monthKey === '2026/10' && l.storeName === s.storeName)
+      (s) => s.isB2cManaged !== false && s.storeName && storeNamesWithListings.has(s.storeName)
     )?.storeName;
     return (
       firstWithListings ||

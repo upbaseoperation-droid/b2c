@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, ConfirmDialog, DataTable, Input, Panel, Segmented, Stat, StatRow, Status } from '../../ui';
+import { Button, ConfirmDialog, DataTable, Input, Panel, Segmented, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatDate, formatNumber, formatVnd } from '../../../lib/format';
 import {
@@ -310,13 +310,6 @@ export function CtvPortalPanel({ onNotify }: { onNotify?: Notify }) {
 
   return (
     <div className="space-y-4">
-      <StatRow>
-        <Stat label="Việc trong kỳ" value={formatNumber(monthTotals.jobs)} />
-        <Stat label="Nghiệm thu đạt" value={formatNumber(monthTotals.accepted)} />
-        <Stat label="Thực nhận chưa chi" value={formatVnd(monthTotals.unpaid)} tone={monthTotals.unpaid > 0 ? 'warning' : undefined} />
-        <Stat label="Đã nhận" value={formatVnd(monthTotals.paid)} />
-      </StatRow>
-
       <Panel title={data.contributor ? `Việc của ${data.contributor.name}` : 'Việc được giao'} actions={<Segmented items={tabs} value={bucket} onChange={setBucket} />} flush>
         {bucket === 'PAYMENT' ? (
           <div className="space-y-4 p-4">

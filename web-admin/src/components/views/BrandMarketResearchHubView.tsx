@@ -69,8 +69,6 @@ import {
   Input,
   PageActions,
   Panel,
-  Stat,
-  StatRow,
   Status,
   Tabs,
   Textarea,
@@ -2076,37 +2074,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       {/* ===================================================================== */}
       {/* 2. HÀNG CHỈ SỐ CỐT LÕI                                                */}
       {/* ===================================================================== */}
-      <StatRow size="sm">
-        <Stat
-          label="Khoảng giá & Giá trị đơn"
-          value={dossier.fourP.priceRangeText}
-          note={`Đơn TB ${formatVndShort(dossier.marketLandscape.avgOrderValueVnd)} · Mua lại ${dossier.marketLandscape.repeatPurchaseRatePct}% (${dossier.marketLandscape.replenishmentCycleDays} ngày)`}
-        />
-        <Stat
-          label="Sản phẩm chính & Hoa hồng"
-          value={competitorBenchmarkSummary.brandHeroName}
-          note={`Giá bán: ${formatVnd(competitorBenchmarkSummary.brandHeroPrice)} · Hoa hồng: ${dossier.fourP.affiliateCommissionRange}`}
-        />
-        <Stat
-          label="Đối thủ cùng phân khúc"
-          value={`${dossier.competitors.length} đối thủ`}
-          note={`Giá TB: ${formatVnd(competitorBenchmarkSummary.avgCompPrice)} · Hoa hồng TB: ${competitorBenchmarkSummary.avgCompCommission}%`}
-        />
-        <Stat
-          label="Dữ liệu tìm thấy trên mạng"
-          value={
-            webSearchSnippets.length > 0 || webScrapedProducts.length > 0
-              ? `${webScrapedProducts.length} SP · ${webSearchSnippets.length} nguồn web`
-              : `${dossier.skuPortfolio.length} SP · ${dossier.evidenceLedger.length} nguồn`
-          }
-          note={
-            dossier.liveAutoWebIntel?.officialWebsiteDomain
-              ? `Web hãng: ${dossier.liveAutoWebIntel.officialWebsiteDomain} · Sàn TMĐT & TikTok`
-              : 'Tổng hợp từ Website hãng, Sàn TMĐT & TikTok'
-          }
-        />
-      </StatRow>
-
       {/* ===================================================================== */}
       {/* 3. TỔNG HỢP NGHIÊN CỨU                                                */}
       {/* ===================================================================== */}

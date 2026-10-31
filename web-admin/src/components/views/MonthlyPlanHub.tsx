@@ -184,6 +184,26 @@ interface B2cWorkloadBreakdown {
 }
 
 const b2cPlanBreakdownCache = new WeakMap<InputPlanBreakdownState, B2cWorkloadBreakdown>();
+const workstreamSummaryCache = new WeakMap<InputPlanBreakdownState, StorePlanWorkstreamSummary>();
+const planValidityCache = new WeakMap<InputPlanBreakdownState, PlanValidityEvaluation>();
+
+function getCachedWorkstreamSummary(plan: InputPlanBreakdownState | null): StorePlanWorkstreamSummary {
+  if (!plan) return getStorePlanWorkstreamSummary(null);
+  const cached = workstreamSummaryCache.get(plan);
+  if (cached) return cached;
+  const computed = getStorePlanWorkstreamSummary(plan);
+  workstreamSummaryCache.set(plan, computed);
+  return computed;
+}
+
+function getCachedPlanValidity(plan: InputPlanBreakdownState | null): PlanValidityEvaluation {
+  if (!plan) return evaluatePlanValiditySummary(null);
+  const cached = planValidityCache.get(plan);
+  if (cached) return cached;
+  const computed = evaluatePlanValiditySummary(plan);
+  planValidityCache.set(plan, computed);
+  return computed;
+}
 
 function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: StorePortfolioItem): B2cWorkloadBreakdown {
   if (!plan) {
@@ -1195,8 +1215,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           hasPlan: true,
           status: (plan.status || 'DRAFT') as MonthlyPlanStatus,
           breakdown: getB2cPlanBreakdown(plan, store),
-          workstreamSummary: getStorePlanWorkstreamSummary(plan),
-          validity: evaluatePlanValiditySummary(plan),
+          workstreamSummary: getCachedWorkstreamSummary(plan),
+          validity: getCachedPlanValidity(plan),
           searchKey,
         };
       });
@@ -1218,8 +1238,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         hasPlan: !!plan,
         status: (plan?.status || 'MISSING') as MonthlyPlanStatus | 'MISSING',
         breakdown: getB2cPlanBreakdown(plan, store),
-        workstreamSummary: getStorePlanWorkstreamSummary(plan),
-        validity: evaluatePlanValiditySummary(plan),
+        workstreamSummary: getCachedWorkstreamSummary(plan),
+        validity: getCachedPlanValidity(plan),
         searchKey,
       };
     });

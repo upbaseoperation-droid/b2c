@@ -794,14 +794,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         navId: target.id,
       };
       window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
-      if (target.subView) {
-        window.setTimeout(() => {
-          window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
-        }, 0);
-        window.setTimeout(() => {
-          window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
-        }, 150);
-      }
     }
     onCloseMobile?.();
   };

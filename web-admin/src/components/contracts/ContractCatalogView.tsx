@@ -510,13 +510,18 @@ export function ContractCatalogView({
                         {t.subject}
                         {typeof t.fieldCount === 'number' && t.fieldCount > 0 ? ` · ${t.fieldCount} ô điền` : ''}
                       </span>
-                      {t.scope === 'KOC_CUSTOM' ? (
-                        <span className="inline-flex items-center gap-0.5 font-medium text-accent">
-                          <Star className="w-2.5 h-2.5 shrink-0" /> {t.kocName || t.kocId}
-                        </span>
-                      ) : !isActive ? (
-                        <span className="text-ink-3">Ngừng áp dụng</span>
-                      ) : null}
+                      <div className="flex items-center gap-1.5">
+                        {t.schemaDiff?.hasChanges && (
+                          <Status tone="warning">Form API thay đổi</Status>
+                        )}
+                        {t.scope === 'KOC_CUSTOM' ? (
+                          <span className="inline-flex items-center gap-0.5 font-medium text-accent">
+                            <Star className="w-2.5 h-2.5 shrink-0" /> {t.kocName || t.kocId}
+                          </span>
+                        ) : !isActive ? (
+                          <span className="text-ink-3">Ngừng áp dụng</span>
+                        ) : null}
+                      </div>
                     </div>
                   </button>
                 );
@@ -626,6 +631,24 @@ export function ContractCatalogView({
                   </div>
                 )}
 
+                {loadedTemplate.schemaDiff?.hasChanges && (
+                  <div className="rounded-lg border border-warning/40 bg-warning-soft/40 p-3 space-y-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <Status tone="warning">Form API có thay đổi</Status>
+                        <span className="font-semibold text-ink">
+                          {loadedTemplate.schemaDiff.summaryText}
+                        </span>
+                      </div>
+                      {subTab !== 'FIELDS' && (
+                        <Button size="sm" variant="secondary" onClick={() => setSubTab('FIELDS')}>
+                          Xem chi tiết trường thay đổi
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {subTab === 'PREVIEW' && (
                   <ContractDocumentViewer
                     title={loadedTemplate.name}
@@ -644,8 +667,48 @@ export function ContractCatalogView({
                   const signTags = enrichedTpl.signTags || [];
                   const flowCfg = enrichedTpl.signingFlowConfig;
                   const signers = flowCfg?.signers || [];
+                  const diff = loadedTemplate.schemaDiff;
+                  const addedKeySet = new Set(diff?.addedFields.map(f => f.key) || []);
+                  const changedKeyMap = new Map(diff?.changedFields.map(f => [f.key, f.changeSummary]) || []);
                   return (
                     <div className="space-y-4">
+                      {diff && (
+                        <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-ink">
+                              Đối chiếu Form kéo từ API ({loadedTemplate.remoteTemplateCode || loadedTemplate.id}) với Form lưu trên hệ thống ({diff.baselineTemplateId || 'Chưa có mẫu gốc'})
+                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Status tone="positive">Khớp {diff.matchedFieldKeys.length} trường</Status>
+                              {diff.addedFields.length > 0 && (
+                                <Status tone="info">+{diff.addedFields.length} mới từ API</Status>
+                              )}
+                              {diff.removedFields.length > 0 && (
+                                <Status tone="critical">-{diff.removedFields.length} lược bỏ trên API</Status>
+                              )}
+                              {diff.changedFields.length > 0 && (
+                                <Status tone="warning">{diff.changedFields.length} đổi cấu hình</Status>
+                              )}
+                            </div>
+                          </div>
+
+                          {diff.removedFields.length > 0 && (
+                            <div className="rounded-lg border border-line bg-sunken/50 p-3 space-y-1.5">
+                              <div className="text-2xs font-semibold text-critical">
+                                Các trường có trên bản lưu hệ thống ({diff.baselineTemplateId}) nhưng không còn trên Form API:
+                              </div>
+                              <div className="grid gap-1.5 sm:grid-cols-2">
+                                {diff.removedFields.map(rf => (
+                                  <div key={rf.key} className="flex items-center justify-between gap-2 rounded bg-surface px-2.5 py-1.5 border border-line text-2xs">
+                                    <span className="text-ink-2 truncate">{rf.title}</span>
+                                    <span className="font-code text-ink-3 shrink-0">{rf.key}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="rounded-lg bg-sunken/70 border border-line px-4 py-2 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
                         <span>
                           <strong>{dedupedFields.length} trường thông tin</strong> ({dedupedFields.filter(f => f.required).length} bắt buộc)
@@ -703,32 +766,41 @@ export function ContractCatalogView({
                               <span className="text-2xs font-medium text-ink-2">{groupFields.length} trường</span>
                             </div>
                             <div className="divide-y divide-line">
-                              {groupFields.map(f => (
-                                <div key={f.key} className="px-4 py-3 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
-                                  <div className="min-w-0">
-                                    <span className="font-medium text-ink block truncate">{f.title || f.label}</span>
-                                    <span className="text-2xs text-ink-3 font-code">{f.key}</span>
-                                  </div>
-                                  <div>
-                                    {f.source ? (
-                                      <span className="inline-flex items-center gap-1 text-2xs text-accent font-medium">
-                                        <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                                        {SOURCE_LABELS[f.source] || f.source}
+                              {groupFields.map(f => {
+                                const isAdded = addedKeySet.has(f.key);
+                                const changeInfo = changedKeyMap.get(f.key);
+                                return (
+                                  <div key={f.key} className="px-4 py-3 grid lg:grid-cols-[240px_180px_minmax(0,1fr)_110px] gap-2 items-center text-xs">
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="font-medium text-ink block truncate">{f.title || f.label}</span>
+                                        {isAdded && <Status tone="info">Mới từ API</Status>}
+                                        {changeInfo && <Status tone="warning">Đổi cấu hình</Status>}
+                                      </div>
+                                      <span className="text-2xs text-ink-3 font-code">{f.key}</span>
+                                    </div>
+                                    <div>
+                                      {f.source ? (
+                                        <span className="inline-flex items-center gap-1 text-2xs text-accent font-medium">
+                                          <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                                          {SOURCE_LABELS[f.source] || f.source}
+                                        </span>
+                                      ) : (
+                                        <span className="text-2xs text-ink-3">Nhập tay khi soạn</span>
+                                      )}
+                                    </div>
+                                    <div className="text-2xs text-ink-2 truncate" title={changeInfo ? `${f.context} · ${changeInfo}` : f.context}>
+                                      {changeInfo ? <span className="text-warning font-medium">{changeInfo} · </span> : null}
+                                      {f.context}
+                                    </div>
+                                    <div className="text-right">
+                                      <span className={`text-2xs font-medium ${f.required ? 'text-warning' : 'text-ink-3'}`}>
+                                        {f.required ? 'Bắt buộc' : 'Tùy chọn'}
                                       </span>
-                                    ) : (
-                                      <span className="text-2xs text-ink-3">Nhập tay khi soạn</span>
-                                    )}
+                                    </div>
                                   </div>
-                                  <div className="text-2xs text-ink-2 truncate" title={f.context}>
-                                    {f.context}
-                                  </div>
-                                  <div className="text-right">
-                                    <span className={`text-2xs font-medium ${f.required ? 'text-warning' : 'text-ink-3'}`}>
-                                      {f.required ? 'Bắt buộc' : 'Tùy chọn'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         );

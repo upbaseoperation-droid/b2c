@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CockpitView } from './views/CockpitView';
@@ -479,29 +479,35 @@ export function WorkspaceViewRouter(props: WorkspaceViewRouterProps) {
     persistKocsToDatabase,
   } = props;
 
-  const mergeUpdatedDeals = (newOrUpdatedDeals: BookingDealItem[]) => {
-    setDeals((prev) => {
-      const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
-      const existingCodes = new Set(prev.map((d) => d.dealCode));
-      const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
-      const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
-      return [...brandNew, ...updatedExisting];
-    });
-  };
+  const mergeUpdatedDeals = useCallback(
+    (newOrUpdatedDeals: BookingDealItem[]) => {
+      setDeals((prev) => {
+        const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
+        const existingCodes = new Set(prev.map((d) => d.dealCode));
+        const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
+        const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
+        return [...brandNew, ...updatedExisting];
+      });
+    },
+    [setDeals]
+  );
 
-  const handleListingNavigateTab = (
-    tab: string,
-    ctx?: { subTab?: string; sheetTab?: StoreSheetSetupTabKey; storeName?: string; monthKey?: string }
-  ) => {
-    if (tab === 'api-settings') {
-      if (ctx?.sheetTab) {
-        setApiSettingsSheetSubTab(ctx.sheetTab);
+  const handleListingNavigateTab = useCallback(
+    (
+      tab: string,
+      ctx?: { subTab?: string; sheetTab?: StoreSheetSetupTabKey; storeName?: string; monthKey?: string }
+    ) => {
+      if (tab === 'api-settings') {
+        if (ctx?.sheetTab) {
+          setApiSettingsSheetSubTab(ctx.sheetTab);
+        }
+        setActiveTab('api-settings');
+      } else if (tab === 'lark-settlement') {
+        setActiveTab('lark-settlement');
       }
-      setActiveTab('api-settings');
-    } else if (tab === 'lark-settlement') {
-      setActiveTab('lark-settlement');
-    }
-  };
+    },
+    [setApiSettingsSheetSubTab, setActiveTab]
+  );
 
   return (
     <>

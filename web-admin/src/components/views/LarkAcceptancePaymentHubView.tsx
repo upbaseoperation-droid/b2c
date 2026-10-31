@@ -68,8 +68,6 @@ import {
   Panel,
   Segmented,
   Select,
-  Stat,
-  StatRow,
   Status,
   Tabs,
   type Column,
@@ -1823,12 +1821,21 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
         render: r => {
           const allowFull = revealPii && canRevealPii;
           const displayBank = allowFull ? r.bankAccount || '—' : maskSensitivePii(r.bankAccount);
-          const displayHandle = formatPartnerHandle(r.partnerHandle, allowFull);
+          const rawName = r.partnerName || '';
+          const rawHandle = r.partnerHandle || '';
+          const isGarbage = (s: string) => !s || s.includes('link_record_ids') || s.startsWith('{');
+          const cleanName = !isGarbage(rawName)
+            ? rawName
+            : !isGarbage(rawHandle)
+            ? rawHandle.replace(/^@/, '')
+            : 'KOC / Đối tác';
+          const safeHandle = !isGarbage(rawHandle) ? rawHandle : '';
+          const displayHandle = safeHandle ? formatPartnerHandle(safeHandle, allowFull) : '';
           return (
             <div className="space-y-1 leading-snug">
               <div className="font-medium text-ink text-xs truncate max-w-[185px]">
-                {r.partnerName}{' '}
-                <span className="font-normal text-ink-3 font-mono">({displayHandle})</span>
+                {cleanName}{' '}
+                {displayHandle && <span className="font-normal text-ink-3">({displayHandle})</span>}
               </div>
               <div className="text-2xs text-ink-3 truncate max-w-[185px]">
                 {r.bankName ? `${r.bankName} · ${displayBank}` : 'Chưa có STK ngân hàng'}
@@ -2235,32 +2242,6 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
           Lập phiếu chi
         </Button>
       </PageActions>
-
-      <StatRow>
-        <Stat
-          label="Đủ điều kiện chờ đẩy ĐNTT"
-          value={`${kpiStats.readyCount} hạng mục`}
-          note={`Thực chuyển: ${formatVnd(kpiStats.readyNet)}`}
-          tone={kpiStats.readyCount > 0 ? 'warning' : undefined}
-        />
-        <Stat
-          label="Phiếu đang trình duyệt trên Lark"
-          value={`${kpiStats.activeSlipsCount} phiếu`}
-          note={`Đang trình: ${formatVnd(kpiStats.activeSlipsNet)}`}
-        />
-        <Stat
-          label="Đã giải ngân (Đi tiền UNC)"
-          value={`${kpiStats.paidSlipsCount} phiếu`}
-          note={`Đã chi: ${formatVnd(kpiStats.paidSlipsNet)}`}
-          tone="positive"
-        />
-        <Stat
-          label="Thiếu hồ sơ / Lark từ chối"
-          value={`${kpiStats.blockedCount + kpiStats.rejectedSlipsCount} cảnh báo`}
-          note={`${kpiStats.blockedCount} thiếu chứng từ · ${kpiStats.rejectedSlipsCount} phiếu từ chối`}
-          tone={kpiStats.blockedCount + kpiStats.rejectedSlipsCount > 0 ? 'critical' : undefined}
-        />
-      </StatRow>
 
       {larkConfig ? (
         <div className="flex items-center justify-end gap-2 text-2xs text-ink-3">
