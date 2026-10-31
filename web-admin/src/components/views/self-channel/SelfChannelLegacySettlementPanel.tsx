@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, DataTable, Field, Input, Modal, Panel, Select, Status } from '../../ui';
+import { Button, DataTable, Field, Input, Modal, Panel, PeriodPicker, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatNumber, formatVnd } from '../../../lib/format';
 import { SELF_FORMAT_LABEL } from '../../../lib/selfChannelBoardRules';
@@ -161,7 +161,7 @@ export function SelfChannelLegacySettlementPanel({ onNotify }: { onNotify?: Noti
       header: '',
       align: 'right',
       render: s => (
-        <div className="flex justify-end gap-1.5 flex-wrap">
+        <div className="flex justify-end gap-2 flex-wrap">
           <Button size="sm" variant="ghost" onClick={() => downloadBbntCsv(s)}>
             Tải BBNT
           </Button>
@@ -199,15 +199,7 @@ export function SelfChannelLegacySettlementPanel({ onNotify }: { onNotify?: Noti
       <Panel
         title="Đợt quyết toán tháng đã lập trước đây"
         actions={
-          <Field label="Tháng" className="w-36">
-            <Select value={month} onChange={e => setMonth(e.target.value)} aria-label="Chọn tháng">
-              {recentMonths(defaultMonth()).map(m => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <PeriodPicker value={month} onChange={setMonth} options={recentMonths(defaultMonth())} />
         }
         flush
       >

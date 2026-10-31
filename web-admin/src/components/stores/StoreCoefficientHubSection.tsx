@@ -21,6 +21,7 @@ import {
   Panel,
   BrandAvatar,
   Person,
+  BulkBar,
 } from '../ui';
 
 export interface StoreCoefficientHubSectionProps {
@@ -287,7 +288,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
   return (
     <div className="space-y-4">
       {/* 4 THẺ LỌC NHANH THEO MỨC HỆ SỐ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3">
         {STORE_COEFFICIENT_TABLE_2.rows.map(rule => {
           const isSelected = tierFilter === rule.tier;
           const count = tierCounts[rule.tier] || 0;
@@ -382,19 +383,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
         </div>
 
         {/* THANH GÁN HÀNG LOẠT — CHỈ HIỆN KHI ĐÃ TÍCH CHỌN GIAN HÀNG */}
-        {selectedStoreIds.size > 0 && (
-          <div className="px-4 py-2.5 bg-brand/5 border-b border-brand/20 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-              <span>Đã chọn {selectedStoreIds.size} gian hàng</span>
-              <button
-                type="button"
-                onClick={() => setSelectedStoreIds(new Set())}
-                className="text-ink-3 hover:text-ink underline cursor-pointer font-normal"
-              >
-                Bỏ chọn
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+        <BulkBar flush count={selectedStoreIds.size} unit="gian hàng" onClear={() => setSelectedStoreIds(new Set())}>
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-ink-2 mr-1">Gán nhanh hệ số:</span>
               {STORE_COEFFICIENT_TABLE_2.rows.map(rule => (
                 <Button
@@ -408,8 +398,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                 </Button>
               ))}
             </div>
-          </div>
-        )}
+        </BulkBar>
 
         {/* MOBILE CARDS (< 768px) */}
         <div className="md:hidden divide-y divide-line">
@@ -419,7 +408,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             </div>
           ) : (
             <>
-              <div className="px-3.5 py-2 bg-surface-2/60 flex items-center justify-between text-xs">
+              <div className="px-4 py-2 bg-surface-2/60 flex items-center justify-between text-xs">
                 <button
                   type="button"
                   onClick={toggleSelectAllFiltered}
@@ -444,12 +433,12 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                 return (
                   <div
                     key={`m-coeff-${store.id}`}
-                    className={`p-3.5 space-y-2.5 transition-colors ${
+                    className={`p-4 space-y-3 transition-colors ${
                       isChecked ? 'bg-brand/5' : ''
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2.5 min-w-0">
+                      <div className="flex items-start gap-3 min-w-0">
                         <button
                           type="button"
                           onClick={() => toggleSelectStore(store.id)}
@@ -462,7 +451,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                           )}
                         </button>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-xs text-ink">{store.storeName}</span>
                             <ChannelTag channel={store.platform} />
                           </div>
@@ -479,7 +468,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2 pl-6">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <BrandAvatar
                           brandName={store.brandName}
                           brandId={store.brandId}
@@ -487,7 +476,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         />
                         <span className="font-medium">{store.brandName}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Person name={pic} size={16} />
                         {store.hasBookingLeader && store.bookingLeader && (
                           <span className="text-ink-3">· TN: {store.bookingLeader}</span>
@@ -495,7 +484,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    <div className="grid grid-cols-2 gap-2 pt-1">
                       {STORE_COEFFICIENT_TABLE_2.rows.map(rule => {
                         const active = norm.tier === rule.tier;
                         return (
@@ -504,7 +493,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                             type="button"
                             disabled={!isManager}
                             onClick={() => applyTierToStore(store, rule.tier)}
-                            className={`px-2.5 py-1.5 rounded-md text-xs border transition cursor-pointer flex items-center justify-between ${
+                            className={`px-3 py-2 rounded-md text-xs border transition cursor-pointer flex items-center justify-between ${
                               active
                                 ? TIER_STYLES[rule.tier].activeBtn
                                 : 'bg-surface-2/60 border-line text-ink-2 hover:text-ink hover:bg-surface'
@@ -529,8 +518,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[720px] text-left border-collapse">
             <thead>
-              <tr className="bg-surface-2/60 border-b border-line text-2xs font-semibold uppercase tracking-wider text-ink-3">
-                <th className="py-2.5 px-3 w-10 text-center">
+              <tr className="bg-surface-2/60 border-b border-line text-2xs font-semibold text-ink-3">
+                <th className="py-3 px-3 w-10 text-center">
                   <button
                     type="button"
                     onClick={toggleSelectAllFiltered}
@@ -544,10 +533,10 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                     )}
                   </button>
                 </th>
-                <th className="py-2.5 px-3">Gian hàng &amp; Sàn</th>
-                <th className="py-2.5 px-3">Thương hiệu</th>
-                <th className="py-2.5 px-3">Nhân sự phụ trách (PIC)</th>
-                <th className="py-2.5 px-3 text-right">Hệ số gian hàng</th>
+                <th className="py-3 px-3">Gian hàng &amp; Sàn</th>
+                <th className="py-3 px-3">Thương hiệu</th>
+                <th className="py-3 px-3">Nhân sự phụ trách (PIC)</th>
+                <th className="py-3 px-3 text-right">Hệ số gian hàng</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line text-xs">
@@ -573,7 +562,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         isChecked ? 'bg-brand/5' : 'hover:bg-surface-2/40'
                       }`}
                     >
-                      <td className="py-2.5 px-3 text-center align-middle">
+                      <td className="py-3 px-3 text-center align-middle">
                         <button
                           type="button"
                           onClick={() => toggleSelectStore(store.id)}
@@ -588,8 +577,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       </td>
 
                       {/* 1. Gian hàng & Sàn */}
-                      <td className="py-2.5 px-3 align-middle">
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      <td className="py-3 px-3 align-middle">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-ink">{store.storeName}</span>
                           <ChannelTag channel={store.platform} />
                         </div>
@@ -600,8 +589,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       </td>
 
                       {/* 2. Thương hiệu */}
-                      <td className="py-2.5 px-3 align-middle">
-                        <div className="flex items-center gap-1.5">
+                      <td className="py-3 px-3 align-middle">
+                        <div className="flex items-center gap-2">
                           <BrandAvatar
                             brandName={store.brandName}
                             brandId={store.brandId}
@@ -612,7 +601,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       </td>
 
                       {/* 3. Chuyên viên PIC */}
-                      <td className="py-2.5 px-3 align-middle">
+                      <td className="py-3 px-3 align-middle">
                         <Person name={pic} size={18} />
                         {store.hasBookingLeader && store.bookingLeader && (
                           <div className="text-2xs text-ink-3 mt-0.5">
@@ -622,7 +611,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       </td>
 
                       {/* 4. Bộ chọn 4 mức Hệ số */}
-                      <td className="py-2.5 px-3 align-middle text-right">
+                      <td className="py-3 px-3 align-middle text-right">
                         <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-surface-2/70 border border-line">
                           {STORE_COEFFICIENT_TABLE_2.rows.map(rule => {
                             const active = norm.tier === rule.tier;
@@ -632,7 +621,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                                 type="button"
                                 disabled={!isManager}
                                 onClick={() => applyTierToStore(store, rule.tier)}
-                                className={`px-2.5 py-1 rounded-md text-xs border transition cursor-pointer ${
+                                className={`px-3 py-1 rounded-md text-xs border transition cursor-pointer ${
                                   active
                                     ? TIER_STYLES[rule.tier].activeBtn
                                     : 'bg-transparent border-transparent text-ink-2 hover:text-ink hover:bg-surface'

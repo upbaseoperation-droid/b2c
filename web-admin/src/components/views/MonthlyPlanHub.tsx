@@ -19,13 +19,17 @@ import {
   Pagination,
   PageActions,
   PageHeaderNav,
+  PeriodPicker,
+  Stat,
+  StatRow,
   ActionMenu,
   Status,
   Avatar,
   BrandAvatar,
   useFlipList
 } from '../ui';
-import { formatVndShort, getVietnamDateYmd } from '../../lib/format';
+import type { ActionMenuItem } from '../ui';
+import { formatNumber, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { pushSharedStateToDb } from '../../lib/sharedStateClient';
 import { KEY_VISUAL_CATEGORY_LABEL, uploadKeyVisualImageClient } from '../brands/brandUi';
 import { PlanOrderUploadModal } from './PlanOrderUploadModal';
@@ -43,7 +47,6 @@ import {
   Copy,
   ArrowRight,
   MessageSquare,
-  Layers,
   Store as StoreIcon,
   RefreshCw,
   Database,
@@ -98,6 +101,7 @@ import { PlanHistoryModal } from './PlanHistoryModal';
 import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
 import { BrandOneSheetPlanView } from './BrandOneSheetPlanView';
 import { filterScopedPlans, isBrandManagedByUser, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
+import { buildFinalApproval, canFinalApprovePlan } from '../../lib/planApproval';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
@@ -340,7 +344,7 @@ interface MonthlyPlanHubProps {
   onSelectPlan: (plan: InputPlanBreakdownState, options?: { focusStaffName?: string; focusWorkstream?: B2cWorkstreamType }) => void;
   onCreatePlan: (newPlan: InputPlanBreakdownState) => void;
   onClonePlan: (sourcePlan: InputPlanBreakdownState, targetMonth: string) => void;
-  onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus, logMessage?: string, note?: string) => void;
+  onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus, logMessage?: string, note?: string, patch?: Partial<InputPlanBreakdownState>) => void;
   onUpdatePlan?: (planId: string, updated: Partial<InputPlanBreakdownState>) => void;
   onSendMessage?: (planId: string, msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>) => void;
   onImportLarkbasePlans?: (importedPlans: InputPlanBreakdownState[]) => void;
@@ -384,6 +388,52 @@ const getStatusBadge = (status?: MonthlyPlanStatus) => {
   }
 };
 
+/** Gian cần xử lý: chưa lập kế hoạch, chưa chia 4.1.1 hoặc lệch 4.1. */
+const isNeedsAction = (item: StoreGovernanceItem): boolean =>
+  item.isB2c && (!item.hasPlan || !item.validity.hasWeeklyBreakdown || !item.validity.isValidForSubmit);
+
+const STATUS_TEXT: Partial<Record<MonthlyPlanStatus, string>> = {
+  PENDING_PRE_APPROVAL: 'Chờ sơ duyệt',
+  PRE_APPROVED: 'Sơ duyệt đạt',
+  REVISION_REQUESTED: 'Cần sửa',
+  PENDING_APPROVAL: 'Chờ duyệt',
+  LEAD_APPROVED: 'Đã duyệt',
+  BRAND_APPROVED: 'Đã duyệt',
+  APPROVED: 'Đã duyệt',
+  IN_EXECUTION: 'Đang chạy',
+  COMPLETED: 'Hoàn tất',
+  DRAFT: 'Nháp',
+};
+
+/** Một nhãn trạng thái duy nhất cho mỗi dòng; chi tiết kiểm định 4.1 nằm ở tooltip. */
+function RowStatus({ item }: { item: StoreGovernanceItem }) {
+  const { plan, isB2c, validity } = item;
+  if (!isB2c) return <Status tone="neutral">Ngoài B2C</Status>;
+  if (!plan) return <Status tone="neutral">Chưa lập</Status>;
+  const st: MonthlyPlanStatus = plan.status || 'DRAFT';
+  const approvalText = STATUS_TEXT[st] || 'Nháp';
+  const detail = `${approvalText} · Kiểm định 4.1: ${validity.badgeLabel}${validity.shortDetail ? ` (${validity.shortDetail})` : ''}`;
+  let badge: React.ReactNode;
+  if (plan.pendingReference41) badge = <Status tone="critical">Có 4.1 mới</Status>;
+  else if (st === 'DRAFT' && !validity.isValidForSubmit) badge = <Status tone={validity.badgeTone}>{validity.badgeLabel}</Status>;
+  else badge = getStatusBadge(st);
+  return <span title={detail} className="inline-flex">{badge}</span>;
+}
+
+/** Dòng phụ ghi PIC chính của một đầu việc (+N người khác); đủ danh sách ở tooltip. */
+function PicLine({ staff, onOpen }: { staff: Array<{ staffName: string; qty: number }>; onOpen: (staffName: string) => void }) {
+  if (staff.length === 0) return null;
+  const all = staff.map((x) => `${x.staffName} (${x.qty})`).join(', ');
+  return (
+    <div className="mt-0.5 flex items-center justify-end gap-1 text-2xs text-ink-3" title={all} onClick={(e) => e.stopPropagation()}>
+      <Button variant="ghost" size="sm" className="h-5 px-1 text-2xs font-normal" onClick={() => onOpen(staff[0].staffName)}>
+        {getShortStaffName(staff[0].staffName)}
+      </Button>
+      {staff.length > 1 && <span>+{staff.length - 1}</span>}
+    </div>
+  );
+}
+
 interface StoreGovernanceTableRowProps {
   item: StoreGovernanceItem;
   isCampaignActive: boolean;
@@ -393,6 +443,8 @@ interface StoreGovernanceTableRowProps {
   onUpdatePlan?: (planId: string, updated: Partial<InputPlanBreakdownState>) => void;
   onOpenListingForPlan?: (plan: InputPlanBreakdownState) => void;
   handleCreatePlanForStore: (store: StorePortfolioItem, e: React.MouseEvent) => void;
+  /** Mở hộp thoại thẩm định và duyệt nhanh của gian hàng. */
+  onInspect: (storeId: string) => void;
   notify: (msg: string) => void;
 }
 
@@ -405,6 +457,7 @@ const StoreGovernanceTableRow = React.memo(function StoreGovernanceTableRow({
   onUpdatePlan,
   onOpenListingForPlan,
   handleCreatePlanForStore,
+  onInspect,
   notify,
 }: StoreGovernanceTableRowProps) {
   const store = item.store;
@@ -421,308 +474,169 @@ const StoreGovernanceTableRow = React.memo(function StoreGovernanceTableRow({
       ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
       : 0;
   const hasLeader = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
+  const isManager = Boolean(currentUser && isStaffGlobalAdminOrManager(currentUser));
+  const canReview = Boolean(currentUser && (isManager || currentUser.role === 'LEADER'));
+  const awaitingReview = Boolean(
+    isB2c && plan && canReview && (plan.status === 'PENDING_APPROVAL' || plan.status === 'PENDING_PRE_APPROVAL')
+  );
+  const openFocus = (workstream: B2cWorkstreamType) => (staffName: string) => {
+    if (plan) onSelectPlan(plan, { focusStaffName: staffName, focusWorkstream: workstream });
+  };
+
+  // Mở khóa kế hoạch đã duyệt để áp dụng số liệu 4.1 mới
+  const handleUnlock41 = () => {
+    if (!plan || !plan.pendingReference41 || !currentUser || !onUpdatePlan) return;
+        const nextRef = plan.pendingReference41!;
+        const nextBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
+        const nextContents = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
+        const actorName = currentUser.name || 'Giám đốc Marketing B2C';
+        const unlockMsg: PlanDiscussionMessage = {
+          id: `DISC-UNLOCK41-${Date.now()}`,
+          authorName: actorName,
+          authorRole: 'LEAD',
+          authorTitle: 'Quản lý B2C',
+          content: `Quản lý (${actorName}) đã mở khóa kế hoạch đã duyệt và cập nhật theo số liệu Bảng 4.1 mới (Tổng Net: ${formatVndShort(
+            nextBudget
+          )}, Tổng nội dung: ${nextContents} video). Chuyển về trạng thái Cần sửa để chuyên viên điều chỉnh phân rã tuần.`,
+          type: 'REVISION_REQUEST',
+          timestamp: new Date().toISOString(),
+          tags: ['Cập nhật 4.1 mới', 'Mở khóa'],
+        };
+        onUpdatePlan(plan.id, {
+          reference41: nextRef,
+          pendingReference41: undefined,
+          totalTargetBudget: nextBudget,
+          totalTargetContents: nextContents,
+          budgetAffiliate: nextRef.affCostNet,
+          budgetSelfChannel: nextRef.selfCostNet,
+          isVersionLocked: false,
+          status: 'REVISION_REQUESTED',
+          revisionNotes: 'Mở khóa cập nhật theo Bảng 4.1 Plan order tổng mới',
+          discussions: [unlockMsg, ...(plan.discussions || [])],
+        });
+        notify(`Đã mở khóa và cập nhật mốc 4.1 mới cho gian hàng "${store.storeName}".`);
+  };
+
+  const menuItems: ActionMenuItem[] = [];
+  if (plan) {
+    menuItems.push({ label: 'Mở kế hoạch', onSelect: () => onSelectPlan(plan) });
+    if (isB2c) menuItems.push({ label: 'Thẩm định 4.1', onSelect: () => onInspect(store.id) });
+    if (onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0)) {
+      menuItems.push({ label: 'Listing KOC', onSelect: () => onOpenListingForPlan(plan) });
+    }
+    if (plan.pendingReference41 && isManager && onUpdatePlan) {
+      menuItems.push({ label: 'Mở khóa 4.1', danger: true, onSelect: handleUnlock41 });
+    }
+    menuItems.push({ label: 'Lịch sử phiên bản', onSelect: () => openVersionModal(plan.id, 'VERSION_HISTORY') });
+  }
+
+  const otherStaff = [...ws.selfChannel.assignees, ...ws.multiPlatform.assignees];
+  const otherTitle = otherStaff.length > 0 ? otherStaff.map((x) => `${x.staffName} (${x.qty})`).join(', ') : undefined;
+  const picName = store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán';
 
   return (
     <tr
       data-flip={store.id}
+      onClick={() => plan && onSelectPlan(plan)}
       className={cx(
         'group hover:bg-canvas transition-colors',
+        plan && 'cursor-pointer',
         !isB2c && 'bg-sunken/30 text-ink-3'
       )}
     >
-      {/* 1. GIAN HÀNG & PHIÊN BẢN */}
-      <td className="py-2.5 px-3 align-middle">
-        <div className="flex items-center justify-between gap-1.5 min-w-0">
-          <span className="font-semibold text-ink text-xs truncate" title={store.storeName}>
-            {store.storeName}
-          </span>
-          {plan && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openVersionModal(plan.id, 'VERSION_HISTORY');
-              }}
-              className="inline-flex items-center gap-1 text-2xs font-mono text-ink-3 hover:text-accent hover:underline cursor-pointer shrink-0"
-              title="Quản lý & so sánh các phiên bản kế hoạch trong tháng"
-            >
-              <Layers className="w-2.5 h-2.5" />
-              <span>{activeVersionCode}</span>
-              {versionCount > 1 && <span>({versionCount})</span>}
-            </button>
-          )}
+      {/* Gian hàng: tên, sàn, thương hiệu; phiên bản và chênh lệch ngân sách ở tooltip */}
+      <td className="py-3 px-3 align-middle">
+        <div
+          className="font-medium text-ink text-xs truncate"
+          title={`${store.storeName}${plan ? ` · Phiên bản ${activeVersionCode}${versionCount > 1 ? ` (${versionCount} bản)` : ''}` : ''}${
+            budgetDelta !== 0 ? ` · Chênh so với bản gốc: ${budgetDelta > 0 ? '+' : ''}${formatVndShort(budgetDelta)}` : ''
+          }`}
+        >
+          {store.storeName}
         </div>
         <div
-          className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3 min-w-0"
+          className="flex items-center gap-2 mt-1 text-2xs text-ink-3 min-w-0"
           title={`${store.storeName} (${store.brandName}) · ${
             isCampaignActive ? `Campaign: ${plan?.campaignCode || 'Có'}` : 'Duy trì'
           } · Hệ số: ${normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier).label}`}
         >
           <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
           <span className="truncate">{store.brandName}</span>
-          {budgetDelta !== 0 && (
-            <span
-              className={cx(
-                'text-2xs font-semibold tabular-nums shrink-0',
-                budgetDelta > 0 ? 'text-positive' : 'text-warning'
-              )}
-            >
-              · {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
-            </span>
-          )}
         </div>
       </td>
 
-      {/* 2. ĐẦU MỐI GIAN HÀNG & TỔ ĐỘI PHỐI HỢP */}
-      <td className="py-2.5 px-2.5 align-middle">
+      {/* Phụ trách: PIC chính và luồng duyệt */}
+      <td className="py-3 px-3 align-middle">
         <div className="flex items-center gap-1 min-w-0">
-          <span
-            className="font-medium text-ink text-xs truncate"
-            title={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'}
-          >
-            {store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}
-          </span>
+          <span className="text-ink text-xs truncate" title={picName}>{picName}</span>
           {ws.allStaffNames.length > 1 && (
-            <span
-              className="text-2xs text-ink-3 shrink-0"
-              title={`Gian hàng có ${ws.allStaffNames.length} nhân sự phối hợp: ${ws.allStaffNames.join(', ')}`}
-            >
-              · {ws.allStaffNames.length} người
+            <span className="text-2xs text-ink-3 shrink-0" title={`Gian hàng có ${ws.allStaffNames.length} nhân sự phối hợp: ${ws.allStaffNames.join(', ')}`}>
+              +{ws.allStaffNames.length - 1}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 mt-0.5 text-2xs text-ink-3" onClick={(e) => e.stopPropagation()}>
-          <span className="truncate">{hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}</span>
-        </div>
+        <div className="mt-0.5 text-2xs text-ink-3">{hasLeader ? 'Qua Trưởng nhóm' : 'Trực tiếp'}</div>
       </td>
 
-      {/* 3. HẠN MỨC NET B2C */}
-      <td className="py-2.5 px-2 text-right tabular-nums align-middle bg-sunken/25">
-        <div className="font-semibold text-ink text-xs">{formatVndShort(bd.totalBudget)}</div>
-        <div className="text-2xs font-medium text-accent">{bd.totalVideos} video</div>
+      {/* Ngân sách Net */}
+      <td className="py-3 px-2 text-right tabular-nums align-middle">
+        <div className="text-ink text-xs">{formatVndShort(bd.totalBudget)}</div>
+        <div className="text-2xs text-ink-3">{bd.totalVideos} video</div>
       </td>
 
-      {/* 4. ĐẦU VIỆC 1: VIDEO AFFILIATE TRẢ PHÍ (HIỂN THỊ 1–3 PIC BOOKING) */}
+      {/* KOC trả phí */}
       <td className="py-2 px-2 text-right tabular-nums align-middle">
         {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
-          <div>
-            <div className="font-semibold text-ink text-xs">
-              {bd.affPaidQty} video · <span className="text-ink-2 font-medium">{formatVndShort(bd.affPaidBudget)}</span>
-            </div>
-            {ws.affiliatePaid.assignees.length > 0 && (
-              <div className="flex flex-wrap justify-end gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
-                {ws.affiliatePaid.assignees.map((s) => (
-                  <button
-                    key={s.staffName}
-                    type="button"
-                    onClick={() =>
-                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'AFFILIATE_PAID' })
-                    }
-                    className="text-2xs text-ink-2 hover:text-accent hover:underline transition-colors cursor-pointer"
-                    title={`Mở phần việc KOC trả phí của ${s.staffName}: ${s.qty} video (${formatVndShort(s.budget)})`}
-                  >
-                    {getShortStaffName(s.staffName)} ({s.qty})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <>
+            <div className="text-ink text-xs">{bd.affPaidQty} video · {formatVndShort(bd.affPaidBudget)}</div>
+            <PicLine staff={ws.affiliatePaid.assignees} onOpen={openFocus('AFFILIATE_PAID')} />
+          </>
         ) : (
           <span className="text-ink-3 text-2xs">—</span>
         )}
       </td>
 
-      {/* 5. ĐẦU VIỆC 2: FOC (0Đ) */}
-      <td className="py-2 px-2 text-center tabular-nums align-middle">
+      {/* FOC (0đ) */}
+      <td className="py-2 px-2 text-right tabular-nums align-middle">
         {bd.focQty > 0 ? (
-          <div>
-            <div className="font-medium text-ink text-xs">{bd.focQty} mẫu</div>
-            {ws.focSample.assignees.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
-                {ws.focSample.assignees.map((s) => (
-                  <button
-                    key={s.staffName}
-                    type="button"
-                    onClick={() =>
-                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'FOC_SAMPLE' })
-                    }
-                    className="text-2xs text-ink-2 hover:text-accent hover:underline cursor-pointer"
-                    title={`Mở phần việc Gửi mẫu FOC của ${s.staffName}: ${s.qty} mẫu`}
-                  >
-                    {getShortStaffName(s.staffName)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <>
+            <div className="text-ink text-xs">{bd.focQty} mẫu</div>
+            <PicLine staff={ws.focSample.assignees} onOpen={openFocus('FOC_SAMPLE')} />
+          </>
         ) : (
           <span className="text-ink-3 text-2xs">—</span>
         )}
       </td>
 
-      {/* 6. ĐẦU VIỆC 3: SELF-CHANNEL (HIỂN THỊ 1–2 PIC CONTENT DƯỚI VIỆT HOÀNG) */}
-      <td className="py-2 px-2 text-right tabular-nums align-middle">
-        {bd.selfQty > 0 || bd.selfBudget > 0 ? (
-          <div>
-            <div className="font-semibold text-ink text-xs">
-              {bd.selfQty} video · <span className="text-ink-2 font-medium">{formatVndShort(bd.selfBudget)}</span>
-            </div>
-            {ws.selfChannel.assignees.length > 0 && (
-              <div className="flex flex-wrap justify-end gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
-                {ws.selfChannel.assignees.map((s) => (
-                  <button
-                    key={s.staffName}
-                    type="button"
-                    onClick={() =>
-                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'SELF_CHANNEL' })
-                    }
-                    className="text-2xs text-ink-2 hover:text-accent hover:underline transition-colors cursor-pointer"
-                    title={`Mở kế hoạch Self-Channel của ${s.staffName} (Leader Partnership: Việt Hoàng): ${s.qty} video`}
-                  >
-                    {getShortStaffName(s.staffName)} ({s.qty})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Kênh Brand và Đa sàn (gộp); tách đôi và danh sách PIC ở tooltip */}
+      <td className="py-2 px-2 text-right tabular-nums align-middle" title={otherTitle}>
+        {bd.selfQty + bd.otherQty > 0 || bd.selfBudget + bd.otherBudget > 0 ? (
+          <>
+            <div className="text-ink text-xs">{bd.selfQty + bd.otherQty} video · {formatVndShort(bd.selfBudget + bd.otherBudget)}</div>
+            <div className="mt-0.5 text-2xs text-ink-3">Brand {bd.selfQty} · Đa sàn {bd.otherQty}</div>
+          </>
         ) : (
           <span className="text-ink-3 text-2xs">—</span>
         )}
       </td>
 
-      {/* 7. ĐẦU VIỆC 4: KÊNH KHÁC */}
-      <td className="py-2 px-2 text-right tabular-nums align-middle">
-        {bd.otherQty > 0 || bd.otherBudget > 0 ? (
-          <div>
-            <div className="font-semibold text-ink text-xs">{bd.otherQty} video</div>
-            <div className="text-2xs text-ink-3">{formatVndShort(bd.otherBudget)}</div>
-            {ws.multiPlatform.assignees.length > 0 && (
-              <div className="flex flex-wrap justify-end gap-1 mt-0.5" onClick={(e) => e.stopPropagation()}>
-                {ws.multiPlatform.assignees.map((s) => (
-                  <button
-                    key={s.staffName}
-                    type="button"
-                    onClick={() =>
-                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'MULTI_PLATFORM' })
-                    }
-                    className="text-2xs text-ink-2 hover:text-accent hover:underline cursor-pointer"
-                    title={`Mở phần việc Đa sàn của ${s.staffName}: ${s.qty} video`}
-                  >
-                    {getShortStaffName(s.staffName)} ({s.qty})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <span className="text-ink-3 text-2xs">—</span>
-        )}
-      </td>
-
-      {/* 8. KIỂM ĐỊNH 4.1 VS 4.1.1 */}
-      <td className="py-2 px-2.5 text-center align-middle">
-        {!isB2c ? (
-          <span className="text-2xs text-ink-3">—</span>
-        ) : plan ? (
-          <span className="inline-flex justify-center" title={item.validity.shortDetail}>
-            <Status tone={item.validity.badgeTone}>{item.validity.badgeLabel}</Status>
-          </span>
-        ) : (
-          <span className="text-2xs text-ink-3">Chưa có 4.1</span>
-        )}
-      </td>
-
-      {/* 9. TRẠNG THÁI DUYỆT & THAO TÁC */}
+      {/* Trạng thái (một nhãn) và thao tác (một nút hiện sẵn, còn lại trong menu) */}
       <td className="py-2 px-3 text-right align-middle">
-        <div className="flex flex-col items-end gap-1">
-          {!isB2c ? (
-            <Status tone="neutral">Ngoài B2C</Status>
-          ) : plan ? (
-            <>
-              <div className="flex items-center justify-end gap-1 flex-wrap">{getStatusBadge(plan.status)}</div>
-              <div className="flex items-center justify-end gap-1 flex-wrap">
-                {plan.pendingReference41 && currentUser && isStaffGlobalAdminOrManager(currentUser) && onUpdatePlan && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextRef = plan.pendingReference41!;
-                      const nextBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
-                      const nextContents = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
-                      const actorName = currentUser.name || 'Giám đốc Marketing B2C';
-                      const unlockMsg: PlanDiscussionMessage = {
-                        id: `DISC-UNLOCK41-${Date.now()}`,
-                        authorName: actorName,
-                        authorRole: 'LEAD',
-                        authorTitle: 'Quản lý B2C',
-                        content: `Quản lý (${actorName}) đã mở khóa kế hoạch đã duyệt và cập nhật theo số liệu Bảng 4.1 mới (Tổng Net: ${formatVndShort(
-                          nextBudget
-                        )}, Tổng nội dung: ${nextContents} video). Chuyển về trạng thái Cần sửa để chuyên viên điều chỉnh phân rã tuần.`,
-                        type: 'REVISION_REQUEST',
-                        timestamp: new Date().toISOString(),
-                        tags: ['Cập nhật 4.1 mới', 'Mở khóa'],
-                      };
-                      onUpdatePlan(plan.id, {
-                        reference41: nextRef,
-                        pendingReference41: undefined,
-                        totalTargetBudget: nextBudget,
-                        totalTargetContents: nextContents,
-                        budgetAffiliate: nextRef.affCostNet,
-                        budgetSelfChannel: nextRef.selfCostNet,
-                        isVersionLocked: false,
-                        status: 'REVISION_REQUESTED',
-                        revisionNotes: 'Mở khóa cập nhật theo Bảng 4.1 Plan order tổng mới',
-                        discussions: [unlockMsg, ...(plan.discussions || [])],
-                      });
-                      notify(`Đã mở khóa và cập nhật mốc 4.1 mới cho gian hàng "${store.storeName}".`);
-                    }}
-                    className="h-6 px-2 rounded bg-rose-600 hover:bg-rose-700 text-white text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
-                    title="Mở khóa kế hoạch đã duyệt và áp dụng số liệu 4.1 mới"
-                  >
-                    Mở khóa 4.1
-                  </button>
-                )}
-                {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenListingForPlan(plan)}
-                    className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
-                    title="Triển khai Listing KOC theo Plan Final (KL1–KL7)"
-                  >
-                    Listing KOC
-                  </button>
-                )}
-                {plan.status === 'PENDING_APPROVAL' ? (
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => onSelectPlan(plan)}
-                    className="h-6 px-2 text-2xs font-medium shrink-0"
-                  >
-                    Duyệt
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => onSelectPlan(plan)}
-                    className="h-6 px-2 text-2xs font-medium shrink-0"
-                  >
-                    Mở
-                  </Button>
-                )}
-              </div>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Plus}
-              onClick={(e) => handleCreatePlanForStore(store, e)}
-              className="h-6 px-2 text-2xs font-medium"
-            >
-              Lập plan
-            </Button>
-          )}
+        <div className="flex flex-col items-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <RowStatus item={item} />
+          <div className="flex items-center justify-end gap-1">
+            {isB2c && !plan && (
+              <Button size="sm" variant="secondary" icon={Plus} onClick={(e) => handleCreatePlanForStore(store, e)}>
+                Lập plan
+              </Button>
+            )}
+            {awaitingReview && (
+              <Button size="sm" variant="primary" onClick={() => onInspect(store.id)}>
+                Duyệt
+              </Button>
+            )}
+            {menuItems.length > 0 && <ActionMenu items={menuItems} label={`Thao tác của ${store.storeName}`} />}
+          </div>
         </div>
       </td>
     </tr>
@@ -1141,6 +1055,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Lọc cho Ma trận gian hàng (mặc định lọc gian B2C làm kế hoạch)
   const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<
     | 'ALL'
+    | 'NEEDS_ACTION'
     | 'B2C_ONLY'
     | 'MULTI_VERSION'
     | 'MISSING_PLAN'
@@ -1178,10 +1093,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
   const [isGovernanceOverviewModalOpen, setIsGovernanceOverviewModalOpen] = useState<boolean>(false);
-  const [approvingQuickPlan, setApprovingQuickPlan] = useState<{ planId: string; storeName: string } | null>(null);
+  const [revisionTarget, setRevisionTarget] = useState<{ planId: string; storeName: string } | null>(null);
   const [inspectingStoreId, setInspectingStoreId] = useState<string | null>(null);
   const [auditNoteDraft, setAuditNoteDraft] = useState<string>('');
-  const [revisionReasonDraft, setRevisionReasonDraft] = useState<string>('');
 
   // Bảng hứng kế hoạch B2C Booking từ Larkbase (API / Webhook)
   const [isLarkbaseModalOpen, setIsLarkbaseModalOpen] = useState<boolean>(false);
@@ -1502,6 +1416,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       countDraft,
       countMultiVersion,
       countReadyToBatchApprove: readyToBatchApproveList.length,
+      countNeedsAction: storeGovernanceList.filter(isNeedsAction).length,
       readyToBatchApproveList,
       picBottleneckSummary,
       coveragePct,
@@ -1522,6 +1437,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const filteredStoreGovernance = useMemo<StoreGovernanceItem[]>(() => {
     return storeGovernanceList.filter((item: StoreGovernanceItem) => {
       if (storeGovernanceFilter === 'B2C_ONLY' && !item.isB2c) return false;
+      if (storeGovernanceFilter === 'NEEDS_ACTION' && !isNeedsAction(item)) return false;
       if (storeGovernanceFilter === 'EXEMPT' && item.isB2c) return false;
       if (storeGovernanceFilter === 'MULTI_VERSION' && (!item.plan || getPlanVersionSnapshots(item.plan).length <= 1)) return false;
       if (storeGovernanceFilter === 'MISSING_PLAN' && (!item.isB2c || item.hasPlan)) return false;
@@ -1577,18 +1493,25 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const governanceBodyRef = useRef<HTMLTableSectionElement>(null);
   useFlipList(governanceBodyRef, paginatedStoreGovernance.map(i => i.store.id).join('|'));
 
-  // Phê duyệt nhanh
-  const handleQuickApprovePlan = (planId: string, storeName: string) => {
-    if (onUpdatePlanStatus) {
-      onUpdatePlanStatus(
-        planId,
-        'LEAD_APPROVED',
-        `Giám đốc Marketing B2C (${currentUser?.name || 'Lead B2C'}) đã duyệt nhanh kế hoạch gian hàng ${storeName}.`,
-        'Phê duyệt nhanh trên bảng quản trị kế hoạch tháng.'
-      );
+  // Duyệt chốt: cùng một đường với Studio (lib/planApproval.ts): khóa phiên bản, chụp bản lưu, chữ ký đủ các bên.
+  // Chưa đủ các bên thì không duyệt, chỉ báo đang chờ bên nào.
+  const approvePlanFinal = (plan: InputPlanBreakdownState, storeName: string, silent = false): boolean => {
+    const gate = canFinalApprovePlan(plan);
+    if (!gate.ok) {
+      if (!silent) notify(`${storeName}: ${gate.reason}`);
+      return false;
     }
-    notify(`Đã phê duyệt kế hoạch cho gian hàng "${storeName}".`);
+    if (!onUpdatePlanStatus) return false;
+    const { patch, log } = buildFinalApproval({ plan, author: currentUser?.name || 'Giám đốc MKT' });
+    onUpdatePlanStatus(plan.id, 'IN_EXECUTION', log, undefined, patch);
+    return true;
   };
+
+  // Các kế hoạch hợp lệ 4.1 vs 4.1.1 và đủ các bên để duyệt hàng loạt.
+  const batchApprovableList = useMemo(
+    () => governanceStats.readyToBatchApproveList.filter((i) => i.plan && canFinalApprovePlan(i.plan).ok),
+    [governanceStats]
+  );
 
   // Modal lập kế hoạch mới
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -2055,7 +1978,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return (
       <div className="space-y-4 animate-in fade-in duration-200 pb-6">
         <PageHeaderNav>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2 shrink-0">
             <span className="text-slate-300 hidden sm:inline">|</span>
             <button
               type="button"
@@ -2063,7 +1986,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 persistBrandMonthlyPlan(editingBrandPlan);
                 setEditingBrandPlan(null);
               }}
-              className="h-8 px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
+              className="h-8 px-3 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
               title="Quay lại danh sách Kế hoạch theo Brand"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -2079,7 +2002,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   setEditingBrandPlan(nextBrand);
                 }
               }}
-              className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[160px] sm:max-w-[220px] truncate"
+              className="h-8 px-3 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[160px] sm:max-w-[220px] truncate"
               title="Chuyển nhanh sang thương hiệu khác"
             >
               {monthScopedBrandMonthlyPlans.map(bp => (
@@ -2113,7 +2036,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </PageActions>
 
         {/* Thanh tổng hợp Brand & chuyển góc nhìn Chi tiết */}
-        <div className="p-3.5 sm:p-4 rounded-xl bg-surface border border-line shadow-2xs space-y-3">
+        <div className="p-4 sm:p-4 rounded-xl bg-surface border border-line shadow-2xs space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -2122,7 +2045,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   persistBrandMonthlyPlan(editingBrandPlan);
                   setEditingBrandPlan(null);
                 }}
-                className="h-9 px-2.5 rounded-lg bg-canvas hover:bg-sunken border border-line text-ink text-xs font-semibold inline-flex items-center gap-1 transition cursor-pointer shrink-0"
+                className="h-9 px-3 rounded-lg bg-canvas hover:bg-sunken border border-line text-ink text-xs font-semibold inline-flex items-center gap-1 transition cursor-pointer shrink-0"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Quay lại</span>
@@ -2139,7 +2062,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   {getStatusBadge(editingBrandPlan.status)}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-ink-2 mt-1">
-                  <span className="inline-flex items-center gap-1.5 flex-wrap">
+                  <span className="inline-flex items-center gap-2 flex-wrap">
                     <span className="text-ink-3">Gian hàng:</span>
                     <strong className="text-ink font-semibold">{rollup?.stores.length || 1} gian</strong>
                     {(rollup?.storePlans || []).map(sp => {
@@ -2202,7 +2125,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   type="button"
                   onClick={() => setBrandModalTab('ONE_SHEET')}
                   className={cx(
-                    'px-3 py-1.5 rounded-md text-xs font-semibold text-center transition cursor-pointer',
+                    'px-3 py-2 rounded-md text-xs font-semibold text-center transition cursor-pointer',
                     brandModalTab === 'ONE_SHEET'
                       ? 'bg-primary text-white'
                       : 'text-ink-2 hover:text-ink'
@@ -2214,7 +2137,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   type="button"
                   onClick={() => setBrandModalTab('POSITIONS')}
                   className={cx(
-                    'px-3 py-1.5 rounded-md text-xs font-semibold text-center transition cursor-pointer',
+                    'px-3 py-2 rounded-md text-xs font-semibold text-center transition cursor-pointer',
                     brandModalTab === 'POSITIONS'
                       ? 'bg-primary text-white'
                       : 'text-ink-2 hover:text-ink'
@@ -2303,7 +2226,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       );
                     }}
                     className={cx(
-                      'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
+                      'px-3 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
                       editingBrandPlan.hasCampaign
                         ? 'bg-accent text-white'
                         : 'text-ink-2 hover:text-ink'
@@ -2328,7 +2251,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       )
                     }
                     className={cx(
-                      'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
+                      'px-3 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
                       !editingBrandPlan.hasCampaign
                         ? 'bg-ink text-white'
                         : 'text-ink-2 hover:text-ink'
@@ -2404,9 +2327,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* 1. Phân bổ nhân sự cho 3 vị trí gắn theo Brand */}
-            <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/80 space-y-3">
+            <div className="p-4 rounded-xl bg-warning-soft/50 border border-warning/80 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-amber-950 text-xs">
+                <span className="font-semibold text-warning text-xs">
                   Phân bổ nhân sự phụ trách 3 vị trí gắn theo Brand ({editingBrandPlan.brandName})
                 </span>
               </div>
@@ -2464,9 +2387,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
             {/* 2. Nhập chỉ tiêu đầu việc cho từng vị trí */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl border border-amber-200 bg-surface space-y-3">
+              <div className="p-4 rounded-xl border border-warning/30 bg-surface space-y-3">
                 <div className="flex items-center justify-between border-b border-line pb-2">
-                  <span className="font-semibold text-amber-950">1. Content / Brand main</span>
+                  <span className="font-semibold text-warning">1. Content / Brand main</span>
                   <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.contentBrandMainPic}</span>
                 </div>
 
@@ -2574,9 +2497,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </Field>
               </div>
 
-              <div className="p-4 rounded-xl border border-blue-200 bg-surface space-y-3">
+              <div className="p-4 rounded-xl border border-accent/30 bg-surface space-y-3">
                 <div className="flex items-center justify-between border-b border-line pb-2">
-                  <span className="font-semibold text-blue-950">2. Plan / Strategy</span>
+                  <span className="font-semibold text-accent-hover">2. Plan / Strategy</span>
                   <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.planStrategyPic}</span>
                 </div>
 
@@ -2774,13 +2697,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </Field>
 
                 {/* Tải ảnh Key Visual / SIS trực tiếp tại thẻ vị trí số 3 */}
-                <div className="pt-2 border-t border-line space-y-2.5">
+                <div className="pt-2 border-t border-line space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-ink text-xs inline-flex items-center gap-1.5">
+                    <span className="font-semibold text-ink text-xs inline-flex items-center gap-2">
                       <ImageIcon className="w-3.5 h-3.5 text-accent" />
                       <span>Ảnh Key Visual ({currentKvImages.length})</span>
                     </span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <input
                         ref={posKvFileInputRef}
                         type="file"
@@ -2803,9 +2726,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         type="button"
                         disabled={uploadingPosKv}
                         onClick={() => posKvFileInputRef.current?.click()}
-                        className="h-7 px-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-2xs font-semibold inline-flex items-center gap-1 cursor-pointer disabled:opacity-60"
+                        className="h-7 px-3 rounded-lg bg-primary hover:bg-primary-hover text-white text-2xs font-semibold inline-flex items-center gap-1 cursor-pointer disabled:opacity-60"
                       >
-                        {uploadingPosKv ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                        {uploadingPosKv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                         <span>Tải ảnh lên</span>
                       </button>
                     </div>
@@ -2835,11 +2758,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               alt={imgItem.fileName}
                               className="w-full h-full object-cover"
                             />
-                            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/75 text-white text-3xs font-semibold">
+                            <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded bg-ink/75 text-white text-2xs font-semibold">
                               {KEY_VISUAL_CATEGORY_LABEL[imgItem.category || 'MASTER_KV']}
                             </span>
                           </div>
-                          <div className="p-1.5 flex items-center justify-between gap-1 text-3xs">
+                          <div className="p-2 flex items-center justify-between gap-1 text-2xs">
                             <span className="truncate font-medium text-ink" title={imgItem.fileName}>
                               {imgItem.fileName}
                             </span>
@@ -2869,10 +2792,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                   return nextItem;
                                 });
                               }}
-                              className="text-rose-600 hover:text-rose-700 shrink-0 cursor-pointer"
+                              className="text-critical hover:text-critical shrink-0 cursor-pointer"
                               title="Xóa ảnh"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -2886,7 +2809,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         )}
 
         {/* Thanh thao tác cuối màn hình chi tiết */}
-        <div className="p-3.5 rounded-xl bg-surface border border-line flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+        <div className="p-4 rounded-xl bg-surface border border-line flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <Button
             variant="ghost"
             onClick={() => {
@@ -2913,7 +2836,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           size="lg"
         >
           {previewPosKvImg && (
-            <div className="rounded-xl overflow-hidden bg-slate-950/5 border border-line flex items-center justify-center max-h-[75vh]">
+            <div className="rounded-xl overflow-hidden bg-ink/5 border border-line flex items-center justify-center max-h-[75vh]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewPosKvImg.url}
@@ -2938,16 +2861,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               ? [{ label: 'Tải Plan order tổng (4.1)', icon: Upload, onSelect: () => setIsPlanOrderUploadOpen(true) }]
               : []),
             { label: 'Đồng bộ Larkbase', icon: Database, onSelect: () => setIsLarkbaseModalOpen(true) },
+            {
+              label: 'Tiến độ & Kiểm định 4 chặng',
+              icon: Target,
+              onSelect: () => {
+                if (onOpenGovernanceDashboard) onOpenGovernanceDashboard();
+                else setIsGovernanceOverviewModalOpen(true);
+              },
+            },
             ...(onOpenPlanReport
               ? [{ label: 'Báo cáo thẩm định kế hoạch', icon: FileText, onSelect: onOpenPlanReport }]
               : []),
           ]}
         />
-        {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
-          <Button variant="secondary" size="sm" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)} className="hidden md:inline-flex">
-            Tải Plan 4.1
-          </Button>
-        )}
         <Button
           variant="primary"
           size="sm"
@@ -2958,8 +2884,20 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </Button>
       </PageActions>
 
-      {/* 1. THANH ĐIỀU HƯỚNG GỘP 1 DÒNG: CHUYỂN TAB + CHỌN THÁNG */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2.5">
+      <PageHeaderNav>
+        <PeriodPicker
+          value={selectedMonth === 'ALL' ? '' : selectedMonth}
+          onChange={(v) => {
+            setSelectedMonth(v || 'ALL');
+            setGovernancePage(1);
+          }}
+          options={planMonths.map((m) => ({ value: m, hint: String(scopedPlans.filter((p) => p.month === m).length) }))}
+          allLabel="Tất cả tháng"
+          label="Chọn tháng kế hoạch"
+        />
+      </PageHeaderNav>
+
+      <div className="border-b border-line pb-3">
         <Tabs
           items={[
             { key: 'STORE_GOVERNANCE', label: 'Kế hoạch gian hàng', count: governanceStats.totalB2cManaged },
@@ -2968,39 +2906,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           value={activeHubTab}
           onChange={setActiveHubTab}
         />
-
-        {/* Bộ chọn tháng */}
-        <div className="flex items-center gap-1 overflow-x-auto p-0.5 rounded-lg bg-sunken">
-          {[{ value: 'ALL' }, ...planMonths.map(value => ({ value }))].map(m => {
-            const isSelected = selectedMonth === m.value;
-            const countInMonth = m.value === 'ALL'
-              ? scopedPlans.length
-              : scopedPlans.filter(p => p.month === m.value).length;
-            const label = m.value === 'ALL' ? 'Tất cả' : m.value;
-
-            return (
-              <button
-                key={m.value}
-                type="button"
-                onClick={() => {
-                  setSelectedMonth(m.value);
-                  setGovernancePage(1);
-                }}
-                className={cx(
-                  'h-7 px-2.5 rounded-[5px] text-xs whitespace-nowrap transition-colors flex items-center gap-1.5',
-                  isSelected
-                    ? 'bg-surface text-ink font-semibold shadow-[0_1px_2px_rgb(22_23_26/0.08)]'
-                    : 'text-ink-3 hover:text-ink'
-                )}
-              >
-                <span>{label}</span>
-                <span className={cx('text-2xs tabular-nums', isSelected ? 'text-ink-2' : 'text-ink-3')}>
-                  {countInMonth}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {activeHubTab === 'STORE_GOVERNANCE' ? (
@@ -3008,126 +2913,29 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG VÀ TRẠNG THÁI GỬI DUYỆT PLAN            */
         /* ========================================================================= */
         <div className="space-y-4">
-          {/* TỔNG HỢP GỌN 1 KHỐI: THANH TÓM TẮT 1 DÒNG + 5 Ô KPI ĐẦU VIỆC B2C */}
-          <section className="bg-surface border border-line rounded-xl overflow-hidden">
-            <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5 border-b border-line bg-sunken/30 text-xs">
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <span className="font-semibold text-ink">
-                  Kỳ {selectedMonth === 'ALL' ? 'Tất cả các tháng' : selectedMonth}
-                </span>
-                <span className="text-ink-3">•</span>
-                <span className="text-ink-2 tabular-nums">
-                  Đã lập 4.1: <strong className="text-ink">{governanceStats.countWithPlan}/{governanceStats.totalB2cManaged}</strong>
-                </span>
-                <span className="text-ink-3">•</span>
-                <span className="text-ink-2 tabular-nums">
-                  Đã chia 4.1.1: <strong className="text-blue-700">{governanceStats.countHasWeekly411}/{governanceStats.countWithPlan || 1} ({governanceStats.weekly411Pct}%)</strong>
-                </span>
-                <span className="text-ink-3">•</span>
-                <span className="text-ink-2 tabular-nums">
-                  Hợp lệ: <strong className="text-emerald-700">{governanceStats.countValidTotal}/{governanceStats.countWithPlan || 1} ({governanceStats.validPct}%)</strong>
-                </span>
-                <span className="text-ink-3">•</span>
-                <span className="text-ink-2 tabular-nums">
-                  Đã duyệt: <strong className="text-accent">{governanceStats.countApproved}/{governanceStats.totalB2cManaged} ({governanceStats.approvedPct}%)</strong>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Target}
-                  onClick={() => {
-                    if (onOpenGovernanceDashboard) {
-                      onOpenGovernanceDashboard();
-                    } else {
-                      setIsGovernanceOverviewModalOpen(true);
-                    }
-                  }}
-                >
-                  Tiến độ &amp; Kiểm định 4 chặng
-                </Button>
-                {(storeGovernanceFilter !== 'B2C_ONLY' ||
-                  governanceRouteFilter !== 'ALL' ||
-                  governancePlatformFilter !== 'ALL' ||
-                  governancePicFilter !== 'ALL') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStoreGovernanceFilter('B2C_ONLY');
-                      setGovernanceRouteFilter('ALL');
-                      setGovernancePlatformFilter('ALL');
-                      setGovernancePicFilter('ALL');
-                      setGovernancePage(1);
-                    }}
-                    className="h-7 px-2.5 rounded-lg border border-line bg-surface hover:bg-sunken text-2xs font-semibold text-ink-2 cursor-pointer"
-                  >
-                    Đặt lại bộ lọc
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C THEO THÁNG ĐANG CHỌN */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y lg:divide-y-0 sm:divide-x divide-line bg-surface">
-              <div className="col-span-2 sm:col-span-1 px-3.5 py-2.5">
-                <div className="text-2xs text-ink-3 font-medium">Tổng hạn mức Net B2C</div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink tabular-nums">{formatVndShort(governanceStats.totalBudget)}</span>
-                  <span className="text-xs font-semibold text-accent tabular-nums">{governanceStats.totalVideos.toLocaleString('vi-VN')} video</span>
-                </div>
-              </div>
-
-              <div className="px-3.5 py-2.5">
-                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>1. KOC trả phí</span>
-                  <span className="text-accent font-semibold">KL1–KL7</span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.affPaidQty.toLocaleString('vi-VN')} video</span>
-                  <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.affPaidBudget)}</span>
-                </div>
-              </div>
-
-              <div className="px-3.5 py-2.5">
-                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>2. Gửi mẫu FOC</span>
-                  <span className="text-positive font-semibold">0đ Cast</span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-positive tabular-nums">{governanceStats.focQty.toLocaleString('vi-VN')} video</span>
-                  <span className="text-xs font-medium text-ink-3 tabular-nums">0 đ</span>
-                </div>
-              </div>
-
-              <div className="px-3.5 py-2.5">
-                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>3. Kênh Brand</span>
-                  <span className="text-ink-3">Self-channel</span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.selfQty.toLocaleString('vi-VN')} video</span>
-                  <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.selfBudget)}</span>
-                </div>
-              </div>
-
-              <div className="px-3.5 py-2.5">
-                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>4. Đa sàn khác</span>
-                  <span className="text-ink-3">SP/FB/IG</span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.otherQty.toLocaleString('vi-VN')} video</span>
-                  <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.otherBudget)}</span>
-                </div>
-              </div>
-            </div>
-          </section>
+          {/* 4 ô chỉ số của kỳ đang chọn. Tiến độ lập/chia/duyệt đã nằm trong số đếm của các chip bên dưới */}
+          <StatRow size="sm">
+            <Stat
+              label="Tổng hạn mức Net B2C"
+              value={formatVndShort(governanceStats.totalBudget)}
+              note={`${formatNumber(governanceStats.totalVideos)} video`}
+            />
+            <Stat
+              label="KOC trả phí"
+              value={`${formatNumber(governanceStats.affPaidQty)} video`}
+              note={`KL1–KL7 · ${formatVndShort(governanceStats.affPaidBudget)}`}
+            />
+            <Stat label="FOC (0đ)" value={`${formatNumber(governanceStats.focQty)} video`} note="Gửi mẫu, không cast" />
+            <Stat
+              label="Kênh Brand & Đa sàn"
+              value={`${formatNumber(governanceStats.selfQty + governanceStats.otherQty)} video`}
+              note={`Brand ${formatNumber(governanceStats.selfQty)} · Đa sàn ${formatNumber(governanceStats.otherQty)} · ${formatVndShort(governanceStats.selfBudget + governanceStats.otherBudget)}`}
+            />
+          </StatRow>
 
           {/* BẢNG MA TRẬN GIAN HÀNG & PHÂN RÃ 4 ĐẦU VIỆC */}
           <Panel flush>
-            <div className="p-3 border-b border-line space-y-2.5">
+            <div className="p-3 border-b border-line space-y-3">
               <FilterBar
                 search={{
                   value: storeSearchInput,
@@ -3147,8 +2955,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       aria-label="Lọc theo luồng duyệt"
                     >
                       <option value="ALL">Luồng duyệt: Tất cả ({governanceStats.totalB2cManaged} gian)</option>
-                      <option value="WITH_LEADER">Qua Leader Nguyễn Thị Ngọc Tâm ({governanceStats.countWithLeader} gian)</option>
-                      <option value="DIRECT_HEAD">Trình trực tiếp GĐ Yến Nhi ({governanceStats.countDirectHead} gian)</option>
+                      <option value="WITH_LEADER">Qua Trưởng nhóm ({governanceStats.countWithLeader} gian)</option>
+                      <option value="DIRECT_HEAD">Trình trực tiếp ({governanceStats.countDirectHead} gian)</option>
                     </Select>
 
                     <Select
@@ -3179,6 +2987,24 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         </option>
                       ))}
                     </Select>
+                    {(storeGovernanceFilter !== 'B2C_ONLY' ||
+                      governanceRouteFilter !== 'ALL' ||
+                      governancePlatformFilter !== 'ALL' ||
+                      governancePicFilter !== 'ALL') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setStoreGovernanceFilter('B2C_ONLY');
+                          setGovernanceRouteFilter('ALL');
+                          setGovernancePlatformFilter('ALL');
+                          setGovernancePicFilter('ALL');
+                          setGovernancePage(1);
+                        }}
+                      >
+                        Đặt lại bộ lọc
+                      </Button>
+                    )}
                   </>
                 }
                 resultCount={filteredStoreGovernance.length}
@@ -3186,16 +3012,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
               <Chips
                 items={[
-                  { key: 'B2C_ONLY', label: 'B2C phụ trách', count: governanceStats.totalB2cManaged },
+                  { key: 'B2C_ONLY', label: 'Tất cả', count: governanceStats.totalB2cManaged },
+                  { key: 'NEEDS_ACTION', label: 'Cần xử lý', count: governanceStats.countNeedsAction },
                   { key: 'VALID_MATCHED', label: 'Khớp 4.1', count: governanceStats.countValidTotal },
-                  { key: 'INVALID_411', label: 'Cần xử lý / Lệch 4.1', count: governanceStats.countInvalid411 },
-                  { key: 'EMPTY_WEEKLY', label: 'Chưa chia 4.1.1', count: governanceStats.countEmptyWeekly411 },
                   { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: governanceStats.countPendingApproval + governanceStats.countPendingPreApproval },
                   { key: 'APPROVED', label: 'Đã duyệt', count: governanceStats.countApproved },
-                  ...(governanceStats.countMissingPlan > 0
-                    ? [{ key: 'MISSING_PLAN' as const, label: 'Chưa lập', count: governanceStats.countMissingPlan }]
-                    : []),
-                  { key: 'ALL', label: 'Tất cả', count: storeGovernanceList.length },
                 ]}
                 value={storeGovernanceFilter}
                 onChange={(k) => {
@@ -3224,67 +3045,56 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     <div key={`mob-store-${store.id}`} className="p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-ink text-xs truncate">{store.storeName}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-ink text-xs truncate" title={store.storeName}>{store.storeName}</span>
                             {plan && (
-                              <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-sunken text-ink-2">
+                              <span className="text-2xs font-mono px-2 py-0.5 rounded bg-sunken text-ink-2">
                                 {activeVersionCode}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3 flex-wrap">
+                          <div className="flex items-center gap-2 mt-0.5 text-2xs text-ink-3 flex-wrap">
                             <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
                             <span>{store.brandName}</span>
                             <span>·</span>
                             <span>PIC: <strong className="text-ink-2">{store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}</strong></span>
                             <span>·</span>
-                            <span>{hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}</span>
+                            <span>{hasLeader ? 'Qua Trưởng nhóm' : 'Trực tiếp'}</span>
                           </div>
                         </div>
 
                         <div className="flex flex-col items-end gap-1 shrink-0">
-                          {!isB2c ? (
-                            <Status tone="neutral">Ngoài B2C</Status>
-                          ) : plan ? (
-                            <>
-                              {getStatusBadge(plan.status)}
-                              <span title={item.validity.shortDetail}>
-                                <Status tone={item.validity.badgeTone}>{item.validity.badgeLabel}</Status>
-                              </span>
-                            </>
-                          ) : (
-                            <Status tone="neutral">Chưa lập</Status>
-                          )}
+                          <RowStatus item={item} />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 text-2xs tabular-nums">
-                        <div className="rounded-lg bg-sunken/50 border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
+                      <div className="grid grid-cols-2 gap-2 text-2xs tabular-nums">
+                        <div className="rounded-lg bg-sunken/50 border border-line px-3 py-2 flex flex-col gap-0.5">
                           <span className="text-ink-3">Ngân sách Net</span>
                           <strong className="text-ink font-semibold">{formatVndShort(bd.totalBudget)} ({bd.totalVideos} vid)</strong>
                         </div>
-                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
-                          <span className="text-ink-3">1. KOC trả phí</span>
+                        <div className="rounded-lg bg-surface border border-line px-3 py-2 flex flex-col gap-0.5">
+                          <span className="text-ink-3">KOC trả phí</span>
                           <strong className="text-ink font-semibold">{bd.affPaidQty} vid · {formatVndShort(bd.affPaidBudget)}</strong>
                         </div>
-                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
-                          <span className="text-ink-3">2. Mẫu FOC (0đ)</span>
+                        <div className="rounded-lg bg-surface border border-line px-3 py-2 flex flex-col gap-0.5">
+                          <span className="text-ink-3">Mẫu FOC (0đ)</span>
                           <strong className="text-positive font-semibold">{bd.focQty} mẫu</strong>
                         </div>
-                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
-                          <span className="text-ink-3">3. Brand / Đa sàn</span>
+                        <div className="rounded-lg bg-surface border border-line px-3 py-2 flex flex-col gap-0.5">
+                          <span className="text-ink-3">Brand / Đa sàn</span>
                           <strong className="text-ink font-semibold">{bd.selfQty + bd.otherQty} vid · {formatVndShort(bd.selfBudget + bd.otherBudget)}</strong>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-1.5 pt-0.5 flex-wrap">
+                      <div className="flex items-center justify-end gap-2 pt-0.5 flex-wrap">
                         {plan ? (
                           <>
                             {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
                               <button
                                 type="button"
                                 onClick={() => onOpenListingForPlan(plan)}
-                                className="h-7 px-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-2xs font-semibold cursor-pointer"
+                                className="h-7 px-3 rounded-lg bg-accent-soft text-accent-hover border border-accent/30 text-2xs font-semibold cursor-pointer"
                               >
                                 Listing KOC
                               </button>
@@ -3321,21 +3131,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <table className="w-full min-w-[820px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
-                    <th className="py-2.5 px-3 w-[18%]">Gian hàng</th>
-                    <th className="py-2.5 px-2 w-[12%]">Phụ trách</th>
-                    <th className="py-2.5 px-2 text-right w-[9%] bg-sunken">Ngân sách Net</th>
-                    <th className="py-2.5 px-2 text-right w-[12%]">1. KOC trả phí</th>
-                    <th className="py-2.5 px-2 text-center w-[7%]">2. FOC (0đ)</th>
-                    <th className="py-2.5 px-2 text-right w-[10%]">3. Kênh Brand</th>
-                    <th className="py-2.5 px-2 text-right w-[8%]">4. Đa sàn</th>
-                    <th className="py-2.5 px-2.5 text-center w-[12%]">Kiểm định 4.1 vs 4.1.1</th>
-                    <th className="py-2.5 px-3 text-right w-[12%]">Duyệt &amp; Thực thi</th>
+                    <th className="py-3 px-3 w-[22%]">Gian hàng</th>
+                    <th className="py-3 px-3 w-[13%]">Phụ trách</th>
+                    <th className="py-3 px-2 text-right w-[11%]">Ngân sách Net</th>
+                    <th className="py-3 px-2 text-right w-[15%]">KOC trả phí</th>
+                    <th className="py-3 px-2 text-right w-[9%]">FOC (0đ)</th>
+                    <th className="py-3 px-2 text-right w-[15%]">Kênh Brand &amp; Đa sàn</th>
+                    <th className="py-3 px-3 text-right w-[15%]">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody ref={governanceBodyRef} className="divide-y divide-line">
                   {filteredStoreGovernance.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-12 text-center text-ink-3">
+                      <td colSpan={7} className="py-12 text-center text-ink-3">
                         <StoreIcon className="w-8 h-8 mx-auto mb-2 text-line-strong" />
                         <p className="font-medium text-ink">Không tìm thấy gian hàng phù hợp</p>
                         <p className="text-2xs text-ink-3 mt-0.5">Thử chọn bộ lọc khác hoặc nhập từ khóa tìm kiếm</p>
@@ -3356,6 +3164,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           onUpdatePlan={onUpdatePlan}
                           onOpenListingForPlan={onOpenListingForPlan}
                           handleCreatePlanForStore={handleCreatePlanForStore}
+                          onInspect={setInspectingStoreId}
                           notify={notify}
                         />
                       );
@@ -3381,8 +3190,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         <div key="brand-monthly-plans-root-view" className="space-y-4">
           {/* 1. KHỐI THỐNG KÊ NHANH (KPI STRIP) CẤP BRAND */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                 <Building2 className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -3393,8 +3202,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               </div>
             </div>
 
-            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-positive-soft text-positive flex items-center justify-center shrink-0">
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -3405,7 +3214,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               </div>
             </div>
 
-            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
+            <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
@@ -3417,8 +3226,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               </div>
             </div>
 
-            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-warning-soft text-warning flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -3435,7 +3244,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             {/* Hàng 1: Phân loại vị trí & Chế độ xem */}
             <div className="p-3 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-sunken/30">
               {/* Vị trí nghiệp vụ pills */}
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 {[
                   { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: brandPlanKpis.total },
                   { key: 'CONTENT_BRAND_MAIN' as const, label: '1. Content / Brand main' },
@@ -3449,7 +3258,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       type="button"
                       onClick={() => setBrandPlanPositionFilter(pos.key)}
                       className={cx(
-                        'px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border',
+                        'px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer border',
                         active
                           ? 'bg-primary text-white border-primary shadow-2xs font-semibold'
                           : 'bg-surface border-line text-ink-2 hover:bg-sunken hover:text-ink'
@@ -3457,7 +3266,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     >
                       <span>{pos.label}</span>
                       {pos.badge !== undefined && (
-                        <span className={cx('ml-1.5 text-2xs tabular-nums', active ? 'text-white/80' : 'text-ink-3')}>
+                        <span className={cx('ml-2 text-2xs tabular-nums', active ? 'text-white/80' : 'text-ink-3')}>
                           ({pos.badge})
                         </span>
                       )}
@@ -3472,7 +3281,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   type="button"
                   onClick={() => setBrandViewMode('TABLE')}
                   className={cx(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer',
+                    'inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition cursor-pointer',
                     brandViewMode === 'TABLE'
                       ? 'bg-sunken text-ink font-semibold shadow-2xs'
                       : 'text-ink-3 hover:text-ink'
@@ -3486,7 +3295,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   type="button"
                   onClick={() => setBrandViewMode('CARDS')}
                   className={cx(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer',
+                    'inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition cursor-pointer',
                     brandViewMode === 'CARDS'
                       ? 'bg-sunken text-ink font-semibold shadow-2xs'
                       : 'text-ink-3 hover:text-ink'
@@ -3564,12 +3373,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <table key="brand-monthly-plans-table" className="w-full min-w-[780px] md:table-fixed text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-sunken/60 border-b border-line text-ink-2 font-semibold text-2xs">
-                      <th className="py-2.5 px-3 w-[22%] sticky left-0 z-10 bg-sunken/95">Thương hiệu &amp; Gian hàng</th>
-                      <th className="py-2.5 px-2.5 w-[15%] text-right">Tổng hợp từ Gian</th>
-                      <th className="py-2.5 px-2.5 w-[17%]">1. Content / Brand main</th>
-                      <th className="py-2.5 px-2.5 w-[18%]">2. Plan / Strategy</th>
-                      <th className="py-2.5 px-2.5 w-[16%]">3. Key Visual / SIS</th>
-                      <th className="py-2.5 px-3 w-[12%] text-right">Trạng thái &amp; Plan</th>
+                      <th className="py-3 px-3 w-[22%] sticky left-0 z-10 bg-sunken/95">Thương hiệu &amp; Gian hàng</th>
+                      <th className="py-3 px-3 w-[15%] text-right">Tổng hợp từ Gian</th>
+                      <th className="py-3 px-3 w-[17%]">Content / Brand main</th>
+                      <th className="py-3 px-3 w-[18%]">Plan / Strategy</th>
+                      <th className="py-3 px-3 w-[16%]">Key Visual / SIS</th>
+                      <th className="py-3 px-3 w-[12%] text-right">Trạng thái &amp; Plan</th>
                     </tr>
                   </thead>
                   <tbody key="brand-monthly-plans-tbody" className="divide-y divide-line">
@@ -3605,23 +3414,23 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             className="hover:bg-canvas transition-colors cursor-pointer group"
                           >
                             {/* Cột 1: Thương hiệu (Ghim cố định bên trái) */}
-                            <td className="py-2.5 px-3 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas transition-colors">
-                              <div className="flex items-center gap-2.5 min-w-0">
+                            <td className="py-3 px-3 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas transition-colors">
+                              <div className="flex items-center gap-3 min-w-0">
                                 <BrandAvatar brandName={bp.brandName} code={bp.brandCode} size={32} rounded="md" />
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="flex items-center gap-2 min-w-0">
                                     <span className="font-semibold text-ink text-xs group-hover:text-accent transition-colors truncate" title={bp.brandName}>
                                       {bp.brandName}
                                     </span>
                                     {bp.hasCampaign ? (
                                       <span
-                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0"
+                                        className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-accent-soft text-accent-hover border border-accent/30 shrink-0"
                                         title={bp.campaignTitle || 'Có Chiến dịch'}
                                       >
                                         {bp.campaignCode || 'Campaign'}
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-medium bg-sunken text-ink-3 shrink-0">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-3 shrink-0">
                                         Duy trì
                                       </span>
                                     )}
@@ -3654,7 +3463,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </td>
 
                             {/* Cột 2: Tổng hợp từ Gian hàng */}
-                            <td className="py-2.5 px-2.5 align-middle text-right tabular-nums">
+                            <td className="py-3 px-3 align-middle text-right tabular-nums">
                               <div className="font-semibold text-ink text-xs">
                                 {budget > 0 ? formatVndShort(budget) : <span className="text-ink-3 font-normal">Chưa cấp</span>}
                               </div>
@@ -3665,8 +3474,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </td>
 
                             {/* Cột 3: 1. Content / Brand main */}
-                            <td className="py-2.5 px-2.5 align-middle">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                            <td className="py-3 px-3 align-middle">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Avatar name={bp.contentBrandMainPic} size={18} />
                                 <span className="font-medium text-ink text-xs truncate">{bp.contentBrandMainPic}</span>
                               </div>
@@ -3676,8 +3485,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </td>
 
                             {/* Cột 4: 2. Plan / Strategy */}
-                            <td className="py-2.5 px-2.5 align-middle">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                            <td className="py-3 px-3 align-middle">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Avatar name={bp.planStrategyPic} size={18} />
                                 <span className="font-medium text-ink text-xs truncate">{bp.planStrategyPic}</span>
                               </div>
@@ -3687,8 +3496,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </td>
 
                             {/* Cột 5: 3. Key Visual / SIS */}
-                            <td className="py-2.5 px-2.5 align-middle">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                            <td className="py-3 px-3 align-middle">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Avatar name={bp.keyVisualSisPic} size={18} />
                                 <span className="font-medium text-ink text-xs truncate">{bp.keyVisualSisPic}</span>
                               </div>
@@ -3705,7 +3514,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </td>
 
                             {/* Cột 6: Trạng thái & Nút Nhập Plan duy nhất */}
-                            <td className="py-2.5 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                            <td className="py-3 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
                               <div className="flex flex-col items-end gap-1">
                                 {getStatusBadge(bp.status)}
                                 <Button
@@ -3715,7 +3524,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                     setBrandModalTab('ONE_SHEET');
                                     setEditingBrandPlan(bp);
                                   }}
-                                  className="h-6 px-2.5 text-2xs font-medium"
+                                  className="h-6 px-3 text-2xs font-medium"
                                 >
                                   Nhập Plan
                                 </Button>
@@ -3757,7 +3566,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       >
                         <div className="space-y-2">
                           <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0">
                               <BrandAvatar brandName={bp.brandName} code={bp.brandCode} size={40} rounded="lg" />
                               <div className="min-w-0">
                                 <div className="font-semibold text-ink text-sm truncate" title={bp.brandName}>
@@ -3774,10 +3583,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </div>
 
                           <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-sunken/60 text-2xs">
-                            <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
                               {bp.hasCampaign ? (
-                                <span className="inline-flex items-center gap-1 font-semibold text-blue-700 truncate" title={bp.campaignTitle}>
-                                  <Sparkles className="w-3 h-3 text-blue-600 shrink-0" />
+                                <span className="inline-flex items-center gap-1 font-semibold text-accent-hover truncate" title={bp.campaignTitle}>
+                                  <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
                                   <span>{bp.campaignCode || 'Campaign'}</span>
                                 </span>
                               ) : (
@@ -3790,7 +3599,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                 {budget > 0 ? formatVndShort(budget) : 'Chưa cấp'}
                               </strong>
                               {targetGmv > 0 && (
-                                <span className="text-ink-3 ml-1.5">· GMV {formatVndShort(targetGmv)}</span>
+                                <span className="text-ink-3 ml-2">· GMV {formatVndShort(targetGmv)}</span>
                               )}
                             </div>
                           </div>
@@ -3800,15 +3609,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-ink-3 font-medium">1. Content / Brand main</span>
-                              <span className="text-3xs text-ink-2 font-medium">
+                              <span className="text-2xs text-ink-2 font-medium">
                                 {contentP.contentPillarsCount} Pillar · {contentP.heroScriptsTarget} kịch bản
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-ink">
+                            <div className="flex items-center gap-2 text-ink">
                               <Avatar name={bp.contentBrandMainPic} size={16} />
                               <span className="font-semibold truncate">{bp.contentBrandMainPic}</span>
                             </div>
-                            <div className="text-3xs text-ink-3 line-clamp-1" title={contentP.focusPillars}>
+                            <div className="text-2xs text-ink-3 line-clamp-1" title={contentP.focusPillars}>
                               {contentP.focusPillars}
                             </div>
                           </div>
@@ -3816,15 +3625,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-ink-3 font-medium">2. Plan / Strategy</span>
-                              <span className="text-3xs text-ink-2 font-medium">
+                              <span className="text-2xs text-ink-2 font-medium">
                                 {strategyP.campaignStrategyCount} Strategy · {strategyP.brandAuditCount} Audit
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-ink">
+                            <div className="flex items-center gap-2 text-ink">
                               <Avatar name={bp.planStrategyPic} size={16} />
                               <span className="font-semibold truncate">{bp.planStrategyPic}</span>
                             </div>
-                            <div className="text-3xs text-ink-3 line-clamp-1" title={strategyP.bigIdeaAndKeyMessage}>
+                            <div className="text-2xs text-ink-3 line-clamp-1" title={strategyP.bigIdeaAndKeyMessage}>
                               {strategyP.bigIdeaAndKeyMessage}
                             </div>
                           </div>
@@ -3832,7 +3641,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-ink-3 font-medium">3. Key Visual / SIS</span>
-                              <span className="text-3xs text-ink-2 font-medium">
+                              <span className="text-2xs text-ink-2 font-medium">
                                 {kvP.kvDirectionCount} KV · {kvP.sisBannerPackageCount} SIS · {kvP.pdpSeoProductCount} PDP
                                 {((bp.oneSheetPlanData?.keyVisual?.kvImages ?? kvP.kvImages ?? []).length > 0) && (
                                   <span className="text-accent font-semibold">
@@ -3841,18 +3650,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                 )}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-ink">
+                            <div className="flex items-center gap-2 text-ink">
                               <Avatar name={bp.keyVisualSisPic} size={16} />
                               <span className="font-semibold truncate">{bp.keyVisualSisPic}</span>
                             </div>
-                            <div className="text-3xs text-ink-3 line-clamp-1" title={kvP.designTheme}>
+                            <div className="text-2xs text-ink-3 line-clamp-1" title={kvP.designTheme}>
                               {kvP.designTheme}
                             </div>
                           </div>
                         </div>
 
                         <div className="pt-2 border-t border-line flex items-center justify-between gap-2 flex-wrap">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {(rollup?.storePlans || []).map(sp => {
                               const st = stores.find(s => s.id === sp.storeId || normStoreSlug(s.storeName) === normStoreSlug(sp.storeName));
                               const platShort = st?.platform === 'TikTok Shop' ? 'TikTok' : st?.platform === 'Shopee Mall' ? 'Shopee' : (sp.storeName || 'Gian');
@@ -4026,7 +3835,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   key={p.id}
                   onClick={() => setNewPlanPreset(p.id as StrategyPreset)}
                   className={cx(
-                    'h-8 px-2.5 rounded-md text-[13px] border transition-colors text-center font-medium',
+                    'h-8 px-3 rounded-md text-xs border transition-colors text-center font-medium',
                     newPlanPreset === p.id
                       ? 'bg-primary text-white border-primary'
                       : 'bg-surface border-line text-ink-2 hover:bg-sunken'
@@ -4112,19 +3921,29 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         />
       )}
 
-      {/* 6. MODAL XÁC NHẬN DUYỆT NHANH */}
+      {/* 6. YÊU CẦU SỬA KẾ HOẠCH: lý do bắt buộc (DESIGN_SYSTEM.md, quy tắc thao tác chung) */}
       <ConfirmDialog
-        open={!!approvingQuickPlan}
-        title="Xác nhận phê duyệt nhanh kế hoạch"
-        message={`Bạn có chắc chắn muốn phê duyệt nhanh kế hoạch của gian hàng "${approvingQuickPlan?.storeName}"?`}
-        confirmLabel="Xác nhận duyệt nhanh"
-        onConfirm={() => {
-          if (approvingQuickPlan) {
-            handleQuickApprovePlan(approvingQuickPlan.planId, approvingQuickPlan.storeName);
-            setApprovingQuickPlan(null);
-          }
+        open={!!revisionTarget}
+        title="Yêu cầu sửa kế hoạch"
+        message={`Gian hàng "${revisionTarget?.storeName}": người lập kế hoạch sẽ nhận lý do bên dưới.`}
+        confirmLabel="Yêu cầu sửa"
+        tone="danger"
+        reason={{ label: 'Lý do', placeholder: 'Nêu rõ cần sửa gì ở kế hoạch này', required: true }}
+        onConfirm={(reasonText) => {
+          if (!revisionTarget || !onUpdatePlanStatus) return;
+          const reason = (reasonText || '').trim();
+          onUpdatePlanStatus(
+            revisionTarget.planId,
+            'REVISION_REQUESTED',
+            `Quản lý (${currentUser?.name || 'Lead'}) yêu cầu chỉnh sửa kế hoạch ${revisionTarget.storeName}: ${reason}`,
+            reason
+          );
+          if (onUpdatePlan) onUpdatePlan(revisionTarget.planId, { isVersionLocked: false, revisionNotes: reason });
+          notify(`Đã chuyển kế hoạch "${revisionTarget.storeName}" sang trạng thái Cần sửa.`);
+          setRevisionTarget(null);
+          setInspectingStoreId(null);
         }}
-        onCancel={() => setApprovingQuickPlan(null)}
+        onCancel={() => setRevisionTarget(null)}
       />
 
       {onPlanOrderUploaded && (
@@ -4162,7 +3981,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       >
         <div className="space-y-4">
           {/* Khối 1: Cấu hình kết nối API Bitable & Webhook Larkbase Automation */}
-          <div className="rounded-lg border border-line bg-sunken/50 p-3.5 space-y-3">
+          <div className="rounded-lg border border-line bg-sunken/50 p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-accent" />
@@ -4203,7 +4022,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
           {/* Khối 2: Bảng hứng kế hoạch B2C Booking đã duyệt */}
           <div className="rounded-lg border border-line overflow-hidden bg-surface">
-            <div className="px-3.5 py-2.5 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
+            <div className="px-4 py-3 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
               <div className="text-xs font-semibold text-ink">
                 Danh sách bản ghi trong Bảng hứng Kế hoạch B2C Booking ({larkbaseRecords.length} bản ghi đã duyệt)
               </div>
@@ -4240,7 +4059,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </div>
                           <div className="text-right tabular-nums">
                             <span className="text-ink-3 block">Net / GMV</span>
-                            <span className="font-semibold text-emerald-700">{formatVndShort(rec.budgetNet)}</span>
+                            <span className="font-semibold text-positive">{formatVndShort(rec.budgetNet)}</span>
                             <span className="text-ink-3"> / {formatVndShort(rec.targetGmv)}</span>
                           </div>
                         </div>
@@ -4272,14 +4091,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full min-w-[820px] text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-line bg-sunken/60 text-2xs font-semibold text-ink-3 uppercase">
-                      <th className="py-2.5 px-3">Record Larkbase &amp; Phiên bản</th>
-                      <th className="py-2.5 px-3">Gian hàng &amp; Brand</th>
-                      <th className="py-2.5 px-3">Nhân sự B2C &amp; Cấp duyệt</th>
-                      <th className="py-2.5 px-3 text-right">Hạn mức Net / Gross</th>
-                      <th className="py-2.5 px-3">4 Đầu việc B2C</th>
-                      <th className="py-2.5 px-3">Thông tin duyệt Lark</th>
-                      <th className="py-2.5 px-3 text-right">Thao tác</th>
+                    <tr className="border-b border-line bg-sunken/60 text-2xs font-semibold text-ink-3">
+                      <th className="py-3 px-3">Record Larkbase &amp; Phiên bản</th>
+                      <th className="py-3 px-3">Gian hàng &amp; Brand</th>
+                      <th className="py-3 px-3">Nhân sự B2C &amp; Cấp duyệt</th>
+                      <th className="py-3 px-3 text-right">Hạn mức Net / Gross</th>
+                      <th className="py-3 px-3">4 Đầu việc B2C</th>
+                      <th className="py-3 px-3">Thông tin duyệt Lark</th>
+                      <th className="py-3 px-3 text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
@@ -4292,11 +4111,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                       return (
                         <tr key={rec.larkRecordId} className="hover:bg-sunken/30 transition-colors">
-                          <td className="py-2.5 px-3 align-top">
+                          <td className="py-3 px-3 align-top">
                             <div className="font-mono text-2xs text-ink-2 font-semibold">
                               {rec.larkRecordId}
                             </div>
-                            <div className="mt-1 flex items-center gap-1.5 text-2xs text-ink-2">
+                            <div className="mt-1 flex items-center gap-2 text-2xs text-ink-2">
                               <span className="font-mono font-semibold text-ink">
                                 {rec.versionCode}
                               </span>
@@ -4308,7 +4127,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
 
-                          <td className="py-2.5 px-3 align-top">
+                          <td className="py-3 px-3 align-top">
                             <div className="font-semibold text-ink">{rec.storeName}</div>
                             <div className="text-2xs text-ink-3 mt-0.5">
                               Brand: <span className="text-ink-2 font-medium">{rec.brandName}</span> • {rec.platform}
@@ -4318,7 +4137,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
 
-                          <td className="py-2.5 px-3 align-top">
+                          <td className="py-3 px-3 align-top">
                             <div className="text-xs font-medium text-ink">
                               PIC: {rec.b2cPic}
                             </div>
@@ -4328,7 +4147,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                   Leader sơ duyệt: <strong className="text-ink-2">{rec.bookingLeader}</strong>
                                 </span>
                               ) : (
-                                <span className="text-amber-700 font-medium">
+                                <span className="text-warning font-medium">
                                   Không qua Leader (Trình trực tiếp Lead B2C)
                                 </span>
                               )}
@@ -4340,8 +4159,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             )}
                           </td>
 
-                          <td className="py-2.5 px-3 align-top text-right tabular-nums">
-                            <div className="font-semibold text-emerald-700">
+                          <td className="py-3 px-3 align-top text-right tabular-nums">
+                            <div className="font-semibold text-positive">
                               Net: {formatVndShort(rec.budgetNet)}
                             </div>
                             <div className="text-2xs text-ink-3 mt-0.5">
@@ -4352,7 +4171,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
 
-                          <td className="py-2.5 px-3 align-top">
+                          <td className="py-3 px-3 align-top">
                             <div className="space-y-1 text-2xs">
                               <div>
                                 <span className="font-semibold text-ink">1. KOC trả phí:</span>{' '}
@@ -4364,7 +4183,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               </div>
                               <div>
                                 <span className="font-semibold text-ink">2. Suất FOC 0đ:</span>{' '}
-                                <span className="text-emerald-700 font-semibold">{rec.focFreeVideos} video</span> (0đ)
+                                <span className="text-positive font-semibold">{rec.focFreeVideos} video</span> (0đ)
                               </div>
                               <div>
                                 <span className="font-semibold text-ink">3. Kênh Brand:</span>{' '}
@@ -4380,7 +4199,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
 
-                          <td className="py-2.5 px-3 align-top">
+                          <td className="py-3 px-3 align-top">
                             <Status tone="positive">Đã duyệt</Status>
                             <div className="text-2xs text-ink-2 font-medium mt-1">
                               {rec.approvedBy}
@@ -4390,7 +4209,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
 
-                          <td className="py-2.5 px-3 align-top text-right">
+                          <td className="py-3 px-3 align-top text-right">
                             <Button
                               variant="secondary"
                               size="sm"
@@ -4497,20 +4316,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => {
-                            const reason = revisionReasonDraft.trim() || 'Yêu cầu rà soát lại số liệu phân rã tuần 4.1.1 khớp với Bảng 4.1.';
-                            onUpdatePlanStatus(
-                              iPlan.id,
-                              'REVISION_REQUESTED',
-                              `Quản lý (${currentUser?.name || 'Lead'}) yêu cầu chỉnh sửa kế hoạch ${iStore.storeName}: ${reason}`,
-                              reason
-                            );
-                            if (onUpdatePlan) {
-                              onUpdatePlan(iPlan.id, { isVersionLocked: false, revisionNotes: reason });
-                            }
-                            notify(`Đã chuyển kế hoạch "${iStore.storeName}" sang trạng thái Cần sửa.`);
-                            setInspectingStoreId(null);
-                          }}
+                          onClick={() => setRevisionTarget({ planId: iPlan.id, storeName: iStore.storeName })}
                         >
                           Yêu cầu sửa lại
                         </Button>
@@ -4541,8 +4347,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             size="sm"
                             icon={CheckCircle2}
                             onClick={() => {
-                              handleQuickApprovePlan(iPlan.id, iStore.storeName);
-                              setInspectingStoreId(null);
+                              if (approvePlanFinal(iPlan, iStore.storeName)) {
+                                notify(`Đã duyệt chốt kế hoạch "${iStore.storeName}".`);
+                                setInspectingStoreId(null);
+                              }
                             }}
                           >
                             Phê duyệt kế hoạch
@@ -4558,7 +4366,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             {iStore && iPlan && iVal && (
               <div className="space-y-4 text-xs">
                 {/* 1. Tóm tắt 4 chặng của gian hàng */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-sunken/50 border border-line">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-sunken/50 border border-line">
                   <div>
                     <div className="text-2xs text-ink-3">1. Plan Tổng (4.1)</div>
                     <div className="mt-1 font-semibold text-ink">
@@ -4585,7 +4393,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </div>
                   <div>
                     <div className="text-2xs text-ink-3">4. Luồng phê duyệt</div>
-                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                    <div className="mt-1 flex items-center gap-2 flex-wrap">
                       {getStatusBadge(iPlan.status)}
                       <span className="text-2xs text-ink-3">
                         ({hasLeader ? 'Qua Leader Ngọc Tâm' : 'Trình thẳng GĐ'})
@@ -4599,12 +4407,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   className={cx(
                     'p-3 rounded-xl border',
                     iVal.badgeTone === 'positive'
-                      ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                      ? 'bg-positive-soft/70 border-positive/30 text-positive'
                       : iVal.badgeTone === 'info'
-                        ? 'bg-blue-50/70 border-blue-200 text-blue-950'
+                        ? 'bg-accent-soft/70 border-accent/30 text-accent-hover'
                         : iVal.badgeTone === 'critical'
-                          ? 'bg-rose-50/80 border-rose-200 text-rose-950'
-                          : 'bg-amber-50/80 border-amber-200 text-amber-950'
+                          ? 'bg-critical-soft/80 border-critical/30 text-critical'
+                          : 'bg-warning-soft/80 border-warning/30 text-warning'
                   )}
                 >
                   <div className="font-semibold">
@@ -4620,7 +4428,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 {/* 3. Bảng đối soát 7 chỉ tiêu cốt lõi: Bảng 4.1 (Plan Tổng) vs Bảng 4.1.1 (Phân rã Tuần) */}
                 {iVal.comparison.length > 0 && (
                   <div className="rounded-xl border border-line overflow-hidden">
-                    <div className="px-3.5 py-2 bg-sunken/70 border-b border-line font-semibold text-ink flex items-center justify-between">
+                    <div className="px-4 py-2 bg-sunken/70 border-b border-line font-semibold text-ink flex items-center justify-between">
                       <span>Bảng đối soát 7 chỉ tiêu: Plan Tổng (4.1) vs Phân rã Tuần (4.1.1)</span>
                       <span className="text-2xs text-ink-3 font-normal">Đơn vị tiền: Net (VNĐ)</span>
                     </div>
@@ -4639,14 +4447,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           const fmtVal = (v: number) =>
                             row.unit === 'money' ? formatVndShort(v) : v.toLocaleString('vi-VN');
                           return (
-                            <tr key={row.key} className={row.matched ? '' : 'bg-amber-50/40'}>
+                            <tr key={row.key} className={row.matched ? '' : 'bg-warning-soft/40'}>
                               <td className="py-2 px-3 font-medium text-ink">{row.label}</td>
                               <td className="py-2 px-3 text-right tabular-nums text-ink-2">{fmtVal(row.reference)}</td>
                               <td className="py-2 px-3 text-right tabular-nums font-semibold text-ink">{fmtVal(row.planned)}</td>
                               <td
                                 className={cx(
                                   'py-2 px-3 text-right tabular-nums font-semibold',
-                                  row.matched ? 'text-ink-3' : row.diff > 0 ? 'text-amber-700' : 'text-rose-700'
+                                  row.matched ? 'text-ink-3' : row.diff > 0 ? 'text-warning' : 'text-critical'
                                 )}
                               >
                                 {row.matched
@@ -4670,7 +4478,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                 {/* 4. Danh sách lỗi logic hoặc cảnh báo đơn giá Ratecard Bảng 5.6 */}
                 {iVal.issues.length > 0 && (
-                  <div className="rounded-xl border border-line p-3 space-y-1.5 bg-surface">
+                  <div className="rounded-xl border border-line p-3 space-y-2 bg-surface">
                     <div className="font-semibold text-ink">
                       Chi tiết cảnh báo &amp; lỗi kiểm định ({iVal.issues.length} mục)
                     </div>
@@ -4679,14 +4487,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <li
                           key={`${iss.code}-${idx}`}
                           className={cx(
-                            'px-2.5 py-1.5 rounded-lg border flex items-center justify-between gap-2',
+                            'px-3 py-2 rounded-lg border flex items-center justify-between gap-2',
                             iss.severity === 'error'
-                              ? 'bg-rose-50 border-rose-200 text-rose-900 font-medium'
-                              : 'bg-amber-50/70 border-amber-200 text-amber-900'
+                              ? 'bg-critical-soft border-critical/30 text-critical font-medium'
+                              : 'bg-warning-soft/70 border-warning/30 text-warning'
                           )}
                         >
                           <span>{iss.message}</span>
-                          <span className="shrink-0 font-mono text-2xs uppercase">
+                          <span className="shrink-0 font-mono text-2xs">
                             {iss.severity === 'error' ? 'Lỗi chặn gửi' : iss.needsNote ? 'Cần giải trình' : 'Lưu ý giá'}
                           </span>
                         </li>
@@ -4697,7 +4505,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                 {/* 5. Giải trình của chuyên viên (breakdownNote) & Ghi chú yêu cầu sửa của Quản lý */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label className="font-semibold text-ink block">
                       Giải trình chênh lệch 4.1 vs 4.1.1 của PIC
                     </label>
@@ -4724,19 +4532,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     )}
                   </div>
 
-                  {canManageApproval && (
-                    <div className="space-y-1.5">
-                      <label className="font-semibold text-ink block">
-                        Ghi chú phản hồi của Quản lý (khi duyệt / yêu cầu sửa)
-                      </label>
-                      <Textarea
-                        rows={2}
-                        placeholder="Nhập chỉ đạo hoặc lý do yêu cầu sửa kế hoạch..."
-                        value={revisionReasonDraft}
-                        onChange={e => setRevisionReasonDraft(e.target.value)}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -4780,7 +4575,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     Chia tuần 4.1.1 chuẩn ({governanceStats.countEmptyWeekly411} gian chưa chia)
                   </Button>
                 )}
-              {governanceStats.countReadyToBatchApprove > 0 &&
+              {batchApprovableList.length > 0 &&
                 currentUser &&
                 isStaffGlobalAdminOrManager(currentUser) &&
                 onUpdatePlanStatus && (
@@ -4789,21 +4584,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     variant="primary"
                     icon={CheckCircle2}
                     onClick={() => {
-                      for (const item of governanceStats.readyToBatchApproveList) {
-                        if (!item.plan) continue;
-                        onUpdatePlanStatus(
-                          item.plan.id,
-                          'LEAD_APPROVED',
-                          `Quản lý (${currentUser.name || 'Giám đốc MKT'}) đã phê duyệt hàng loạt kế hoạch hợp lệ cho gian hàng ${item.store.storeName}.`,
-                          'Phê duyệt nhanh kế hoạch đã đạt kiểm định 4.1 vs 4.1.1.'
-                        );
+                      let approved = 0;
+                      for (const item of batchApprovableList) {
+                        if (item.plan && approvePlanFinal(item.plan, item.store.storeName, true)) approved += 1;
                       }
+                      const waiting = governanceStats.readyToBatchApproveList.length - approved;
                       notify(
-                        `Đã phê duyệt hàng loạt ${governanceStats.countReadyToBatchApprove} kế hoạch hợp lệ đang chờ duyệt.`
+                        `Đã duyệt chốt ${approved} kế hoạch hợp lệ.${waiting > 0 ? ` ${waiting} kế hoạch chưa đủ các bên xác nhận nên giữ nguyên.` : ''}`
                       );
                     }}
                   >
-                    Duyệt nhanh {governanceStats.countReadyToBatchApprove} plan hợp lệ
+                    Duyệt chốt {batchApprovableList.length} plan hợp lệ
                   </Button>
                 )}
             </div>
@@ -4832,11 +4623,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           {/* 4 CỘT SCORECARD QUẢN TRỊ: 1. PLAN TỔNG -> 2. PLAN CHI TIẾT -> 3. TÍNH HỢP LỆ -> 4. DUYỆT & THỰC THI */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-line border border-line rounded-xl overflow-hidden bg-surface">
             {/* CHẶNG 1 */}
-            <div className="p-3.5 flex flex-col justify-between gap-2.5">
+            <div className="p-4 flex flex-col justify-between gap-3">
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">1. Plan Tổng (4.1 &amp; Brand)</span>
-                  <span className="text-sm font-semibold font-mono text-emerald-700 tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-positive tabular-nums">
                     {governanceStats.countConfirmed41}/{governanceStats.totalB2cManaged}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.coveragePct}%)</span>
                   </span>
@@ -4852,13 +4643,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       key: 'CONFIRMED_41' as const,
                       label: 'Đã chốt Bảng 4.1',
                       count: governanceStats.countConfirmed41,
-                      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                      badgeClass: 'bg-positive-soft text-positive border-positive/30',
                     },
                     {
                       key: 'UNCONFIRMED_41' as const,
                       label: '4.1 Chưa chốt (Tạm)',
                       count: governanceStats.countUnconfirmed41,
-                      badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+                      badgeClass: 'bg-warning-soft text-warning border-warning/30',
                     },
                     ...(governanceStats.countPending41Diff > 0
                       ? [
@@ -4866,7 +4657,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             key: 'PENDING_41_DIFF' as const,
                             label: 'Có 4.1 mới lệch bản duyệt',
                             count: governanceStats.countPending41Diff,
-                            badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
+                            badgeClass: 'bg-critical-soft text-critical border-critical/30',
                           },
                         ]
                       : []),
@@ -4895,7 +4686,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <span>{row.label}</span>
                       <span
                         className={cx(
-                          'px-1.5 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
+                          'px-2 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
                           storeGovernanceFilter === row.key ? 'bg-white/20 text-white border-white/30' : row.badgeClass
                         )}
                       >
@@ -4905,7 +4696,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+              <div className="pt-2 border-t border-line/70 flex items-center justify-between text-2xs">
                 <span className="text-ink-3">
                   Plan Brand: <strong className="text-ink">{brandPlanKpis.completeCoverageCount}/{brandPlanKpis.total} nhãn</strong>
                 </span>
@@ -4923,11 +4714,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* CHẶNG 2 */}
-            <div className="p-3.5 flex flex-col justify-between gap-2.5">
+            <div className="p-4 flex flex-col justify-between gap-3">
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">2. Plan Chi Tiết (4.1.1 Tuần)</span>
-                  <span className="text-sm font-semibold font-mono text-blue-700 tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-accent-hover tabular-nums">
                     {governanceStats.countHasWeekly411}/{governanceStats.totalB2cManaged}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.weekly411Pct}%)</span>
                   </span>
@@ -4943,13 +4734,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       key: 'HAS_WEEKLY_411' as const,
                       label: 'Đã chia lịch tuần 4.1.1 (W1–W4)',
                       count: governanceStats.countHasWeekly411,
-                      badgeClass: 'bg-blue-50 text-blue-800 border-blue-200',
+                      badgeClass: 'bg-accent-soft text-accent-hover border-accent/30',
                     },
                     {
                       key: 'EMPTY_WEEKLY' as const,
                       label: 'Có 4.1 nhưng chưa chia 4.1.1',
                       count: governanceStats.countEmptyWeekly411,
-                      badgeClass: 'bg-amber-50 text-amber-900 border-amber-200',
+                      badgeClass: 'bg-warning-soft text-warning border-warning/30',
                     },
                     {
                       key: 'MISSING_PLAN' as const,
@@ -4976,7 +4767,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <span>{row.label}</span>
                       <span
                         className={cx(
-                          'px-1.5 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
+                          'px-2 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
                           storeGovernanceFilter === row.key ? 'bg-white/20 text-white border-white/30' : row.badgeClass
                         )}
                       >
@@ -4986,7 +4777,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+              <div className="pt-2 border-t border-line/70 flex items-center justify-between text-2xs">
                 <span className="text-ink-3">
                   Gói việc nhân sự: <strong className="text-ink">{allPersonalPackages.length} đầu mục</strong>
                 </span>
@@ -4995,11 +4786,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* CHẶNG 3 */}
-            <div className="p-3.5 flex flex-col justify-between gap-2.5">
+            <div className="p-4 flex flex-col justify-between gap-3">
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">3. Kiểm Định Hợp Lệ (4.1 vs 4.1.1)</span>
-                  <span className="text-sm font-semibold font-mono text-emerald-700 tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-positive tabular-nums">
                     {governanceStats.countValidTotal}/{governanceStats.countWithPlan || 1}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.validPct}%)</span>
                   </span>
@@ -5015,7 +4806,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       key: 'VALID_MATCHED' as const,
                       label: '✓ Khớp 100% Bảng 4.1',
                       count: governanceStats.countValidMatched,
-                      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                      badgeClass: 'bg-positive-soft text-positive border-positive/30',
                     },
                     ...(governanceStats.countValidWithNote > 0
                       ? [
@@ -5023,7 +4814,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             key: 'VALID_WITH_NOTE' as const,
                             label: '✓ Lệch 4.1 đã có giải trình',
                             count: governanceStats.countValidWithNote,
-                            badgeClass: 'bg-blue-50 text-blue-800 border-blue-200',
+                            badgeClass: 'bg-accent-soft text-accent-hover border-accent/30',
                           },
                         ]
                       : []),
@@ -5031,13 +4822,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       key: 'UNEXPLAINED_MISMATCH' as const,
                       label: 'Lệch 4.1 chưa giải trình',
                       count: governanceStats.countUnexplainedMismatch,
-                      badgeClass: 'bg-amber-50 text-amber-900 border-amber-200',
+                      badgeClass: 'bg-warning-soft text-warning border-warning/30',
                     },
                     {
                       key: 'HAS_ERRORS' as const,
                       label: '✕ Lỗi cấu trúc 4.1.1 (SL/Tiền)',
                       count: governanceStats.countHasErrors,
-                      badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
+                      badgeClass: 'bg-critical-soft text-critical border-critical/30',
                     },
                   ].map((row) => (
                     <button
@@ -5058,7 +4849,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <span>{row.label}</span>
                       <span
                         className={cx(
-                          'px-1.5 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
+                          'px-2 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
                           storeGovernanceFilter === row.key ? 'bg-white/20 text-white border-white/30' : row.badgeClass
                         )}
                       >
@@ -5068,7 +4859,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+              <div className="pt-2 border-t border-line/70 flex items-center justify-between text-2xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -5087,7 +4878,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     setGovernancePage(1);
                     setIsGovernanceOverviewModalOpen(false);
                   }}
-                  className="text-amber-800 hover:underline font-semibold cursor-pointer"
+                  className="text-warning hover:underline font-semibold cursor-pointer"
                 >
                   Lọc cần xử lý ({governanceStats.countInvalid411}) →
                 </button>
@@ -5095,7 +4886,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* CHẶNG 4 */}
-            <div className="p-3.5 flex flex-col justify-between gap-2.5">
+            <div className="p-4 flex flex-col justify-between gap-3">
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">4. Phê Duyệt &amp; Triển Khai</span>
@@ -5115,19 +4906,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       key: 'APPROVED' as const,
                       label: 'Đã duyệt (Triển khai Listing)',
                       count: governanceStats.countApproved,
-                      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                      badgeClass: 'bg-positive-soft text-positive border-positive/30',
                     },
                     {
                       key: 'PENDING_APPROVAL' as const,
                       label: 'Chờ Giám đốc duyệt',
                       count: governanceStats.countPendingApproval,
-                      badgeClass: 'bg-amber-50 text-amber-900 border-amber-200',
+                      badgeClass: 'bg-warning-soft text-warning border-warning/30',
                     },
                     {
                       key: 'PENDING_PRE_APPROVAL' as const,
                       label: 'Chờ Leader Ngọc Tâm sơ duyệt',
                       count: governanceStats.countPendingPreApproval,
-                      badgeClass: 'bg-blue-50 text-blue-800 border-blue-200',
+                      badgeClass: 'bg-accent-soft text-accent-hover border-accent/30',
                     },
                     {
                       key: 'DRAFT' as const,
@@ -5154,7 +4945,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <span>{row.label}</span>
                       <span
                         className={cx(
-                          'px-1.5 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
+                          'px-2 py-0.2 rounded font-mono font-semibold border text-2xs tabular-nums',
                           storeGovernanceFilter === row.key ? 'bg-white/20 text-white border-white/30' : row.badgeClass
                         )}
                       >
@@ -5164,7 +4955,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+              <div className="pt-2 border-t border-line/70 flex items-center justify-between text-2xs">
                 <span className="text-ink-3">Sau duyệt: Listing KOC · HĐ · Air</span>
                 <span className="text-ink-2 font-medium tabular-nums">
                   {governanceStats.countWithLeader} qua Leader · {governanceStats.countDirectHead} trình thẳng
@@ -5176,7 +4967,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           {/* TIẾN ĐỘ & ĐIỂM NGHẼN THEO CHUYÊN VIÊN PHỤ TRÁCH (PIC) */}
           {governanceStats.picBottleneckSummary.length > 0 && (
             <div className="rounded-xl border border-line overflow-hidden bg-surface">
-              <div className="px-3.5 py-2 bg-sunken/60 border-b border-line font-semibold text-ink flex items-center justify-between">
+              <div className="px-4 py-2 bg-sunken/60 border-b border-line font-semibold text-ink flex items-center justify-between">
                 <span>Tiến độ &amp; Điểm nghẽn theo Chuyên viên phụ trách (Bấm tên PIC để lọc trên bảng)</span>
                 {governancePicFilter !== 'ALL' && (
                   <button
@@ -5201,24 +4992,24 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         setIsGovernanceOverviewModalOpen(false);
                       }}
                       className={cx(
-                        'px-2.5 py-1.5 rounded-lg border text-2xs transition cursor-pointer flex items-center gap-2',
+                        'px-3 py-2 rounded-lg border text-2xs transition cursor-pointer flex items-center gap-2',
                         isSelected
                           ? 'bg-ink text-white border-ink font-semibold'
                           : p.bottleneckCount > 0
-                            ? 'bg-amber-50/50 hover:bg-amber-100/70 text-ink border-amber-200'
-                            : 'bg-emerald-50/50 hover:bg-emerald-100/70 text-ink border-emerald-200'
+                            ? 'bg-warning-soft/50 hover:bg-warning-soft/70 text-ink border-warning/30'
+                            : 'bg-positive-soft/50 hover:bg-positive-soft/70 text-ink border-positive/30'
                       )}
                       title={`Tổng ${p.totalStores} gian: ${p.emptyWeeklyCount} chưa chia 4.1.1, ${p.invalidCount} lệch/lỗi, ${p.missingCount} chưa lập`}
                     >
                       <span className="font-medium">{p.picName}</span>
                       <span
                         className={cx(
-                          'font-mono font-semibold px-1.5 py-0.5 rounded',
+                          'font-mono font-semibold px-2 py-0.5 rounded',
                           isSelected
                             ? 'bg-white/20 text-white'
                             : p.bottleneckCount > 0
-                              ? 'bg-amber-100 text-amber-900'
-                              : 'bg-emerald-100 text-emerald-900'
+                              ? 'bg-warning-soft text-warning'
+                              : 'bg-positive-soft text-positive'
                         )}
                       >
                         {p.bottleneckCount > 0 ? `${p.bottleneckCount}/${p.totalStores} cần xử lý` : `${p.totalStores}/${p.totalStores} đạt`}

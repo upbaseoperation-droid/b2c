@@ -85,12 +85,12 @@ export const SELF_PAYMENT_LABEL: Record<SelfPaymentStatus, string> = {
 };
 
 export const SELF_STAGE_LABEL: Record<SelfJobStage, string> = {
-  BRIEF: '1. Nhận Brief & Sản phẩm',
-  SCRIPT: '2. Soạn & Duyệt kịch bản',
-  PRODUCTION: '3. Quay dựng & QA video',
-  BRAND_AIR: '4. Duyệt Brand & Đăng video',
-  ACCEPTANCE: '5. Nghiệm thu video',
-  SETTLEMENT: '6. Quyết toán & Chi trả',
+  BRIEF: 'Nhận Brief & Sản phẩm',
+  SCRIPT: 'Soạn & Duyệt kịch bản',
+  PRODUCTION: 'Quay dựng & QA video',
+  BRAND_AIR: 'Duyệt Brand & Đăng video',
+  ACCEPTANCE: 'Nghiệm thu video',
+  SETTLEMENT: 'Quyết toán & Chi trả',
 };
 
 export interface SelfChannelJob {

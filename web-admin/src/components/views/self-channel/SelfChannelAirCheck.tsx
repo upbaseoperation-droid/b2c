@@ -33,7 +33,7 @@ export function AirCheckResult({ check, currentLink }: { check?: SelfAirCheck; c
         <img src={check.coverUrl} alt="Ảnh bìa video đã đăng" className="h-24 w-16 rounded object-cover border border-line" />
       )}
       <div className="space-y-1 text-xs min-w-0">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <Status tone={stale ? 'warning' : VERDICT[check.verdict].tone}>{stale ? 'Link đã đổi, kiểm lại' : VERDICT[check.verdict].label}</Status>
           <span className="text-ink-3">
             Kênh đăng: <span className="text-ink">{check.authorHandle ? `@${check.authorHandle}` : '—'}</span>

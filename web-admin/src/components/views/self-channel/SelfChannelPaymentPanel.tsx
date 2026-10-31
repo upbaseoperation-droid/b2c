@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, DataTable, Field, Input, Panel, Select, Stat, StatRow, Status } from '../../ui';
+import { Button, DataTable, Input, Panel, PeriodPicker, Stat, StatRow, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatDate, formatNumber, formatVnd } from '../../../lib/format';
 import type { LarkPaymentRequestSlip } from '../../../lib/larkPaymentRequestEngine';
@@ -265,7 +265,7 @@ export function SelfChannelPaymentPanel({ onNotify, contributors = [] }: { onNot
         const st = s.larkSync.approvalStatus;
         const open = st !== 'PAID' && st !== 'REJECTED';
         return (
-          <div className="flex flex-wrap justify-end gap-1.5">
+          <div className="flex flex-wrap justify-end gap-2">
             {s.larkSync.syncMode === 'LIVE_LARK_API' && open && (
               <Button size="sm" variant="secondary" disabled={busy !== null} onClick={() => syncLark(s)}>
                 Đồng bộ Lark
@@ -309,15 +309,7 @@ export function SelfChannelPaymentPanel({ onNotify, contributors = [] }: { onNot
         actions={
           <div className="flex flex-wrap items-end gap-2">
             <Status tone="neutral">Thuế TNCN 10% từ 2.000.000 ₫ · Hợp đồng từ 10.000.000 ₫ · BBNT từ 20.000.000 ₫ (mỗi video)</Status>
-            <Field label="Tháng" className="w-36">
-              <Select value={month} onChange={e => setMonth(e.target.value)} aria-label="Chọn tháng">
-                {recentMonths(defaultMonth()).map(m => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <PeriodPicker value={month} onChange={setMonth} options={recentMonths(defaultMonth())} />
             <Button size="sm" variant="primary" disabled={totals.ready === 0 || busy !== null} onClick={() => void createAllReady()}>
               Lập phiếu cho {formatNumber(totals.ready)} video đủ điều kiện
             </Button>

@@ -363,7 +363,7 @@ Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
 
 ## 8. Trạng thái chuyển đổi
 
-**Hoàn tất 100% toàn bộ màn hình và hộp thoại:** Toàn bộ `src/components/**/*.tsx` và `src/app/**/*.tsx` (23 màn hình chính, các tab con và toàn bộ hộp thoại) đã chuyển sang hệ thống token ngữ nghĩa và thành phần `ui/`, đồng thời bật kiểm tra `no-restricted-syntax` ở mức `error` trong `eslint.config.mjs`:
+**Đã chuyển một phần (xem `UI_SYNC_PLAN.md` §3.2 để biết số liệu lệch còn lại):** Toàn bộ `src/components/**/*.tsx` và `src/app/**/*.tsx` (23 màn hình chính, các tab con và toàn bộ hộp thoại) đã chuyển sang hệ thống token ngữ nghĩa và thành phần `ui/`, đồng thời bật kiểm tra `no-restricted-syntax` ở mức `error` trong `eslint.config.mjs`:
 
 - **Khung ứng dụng & Xác thực:** `Sidebar.tsx` (thu gọn vừa 1 màn hình không cần cuộn chuột), `TopHeader.tsx`, `src/app/page.tsx`, `src/app/login/page.tsx`.
 - **Tổng quan & Điều phối:** Việc của tôi (`CockpitView.tsx`), Tổng quan (`OverviewView.tsx`), Kế hoạch tháng (`MonthlyPlanHub.tsx`, `InputPlanBreakdownView.tsx`, `GrowthPlanBreakdownView.tsx`, `PlanApprovalStepper.tsx`, `PlanChatDrawer.tsx`, `PlanDiscussionHub.tsx`, `PlanHistoryModal.tsx`, `PlanSyncBadge.tsx`), Hồ sơ thương hiệu (`BrandProfilesView.tsx`, `components/brands/`), Hồ sơ gian hàng (`StoreManagementView.tsx`, `components/stores/`), Phân bổ & điều phối (`ManagerView.tsx`, `ManagerDelegationHub.tsx`, `EmployeePlanInspectorModal.tsx`, `AiStaffReviewModal.tsx`).

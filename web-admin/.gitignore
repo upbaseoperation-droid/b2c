@@ -52,3 +52,6 @@ next-env.d.ts
 /.partner-hub-data/
 
 .shared-data/
+
+# Báo cáo sinh ra bởi npm run ui:audit
+/scripts/ui-audit-browser/last-report.json

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, DataTable, EmptyState, Field, Input, Panel, Select, Stat, StatRow, Status } from '../../ui';
+import { Button, DataTable, EmptyState, Field, Input, Panel, PeriodPicker, Select, Stat, StatRow, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatDate, formatNumber, formatVnd } from '../../../lib/format';
 import {
@@ -374,15 +374,7 @@ export function SelfChannelAirReportPanel({ onNotify }: { onNotify?: Notify }) {
         title="Báo cáo air"
         actions={
           <div className="flex flex-wrap items-end gap-2">
-            <Field label="Tháng" className="w-36">
-              <Select value={month} onChange={e => void load(e.target.value)} aria-label="Chọn tháng">
-                {(data?.months || []).map(m => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <PeriodPicker value={month} onChange={(m) => void load(m)} options={(data?.months || [])} />
             <Facet label="Pillar" value={pillar} onChange={setPillar} options={facets.pillars} />
             <Facet label="Gian hàng" value={store} onChange={setStore} options={facets.stores} />
             <Facet label="CTV" value={ctv} onChange={setCtv} options={facets.ctvs} />

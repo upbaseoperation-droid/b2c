@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "ui:check": "node scripts/ui-check.mjs",
+    "ui:codemod": "node scripts/ui-codemod.mjs",
+    "ui:audit": "node scripts/ui-audit-browser/run.mjs",
     "test": "tsx --test tests/*.test.ts",
     "db:push": "node --env-file=.env.local node_modules/prisma/build/index.js db push",
     "db:status": "node --env-file=.env.local node_modules/prisma/build/index.js migrate status"
@@ -36,6 +39,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "playwright": "^1.64.1",
     "prisma": "^6.4.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",

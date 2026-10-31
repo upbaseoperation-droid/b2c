@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, DataTable, Field, Panel, Progress, Select, Stat, StatRow, Status } from '../../ui';
+import { Button, DataTable, Field, Panel, PeriodPicker, Progress, Select, Stat, StatRow, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatNumber, getVietnamDateYmd } from '../../../lib/format';
 import {
@@ -139,15 +139,7 @@ export function SelfChannelProgressPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-2">
-        <Field label="Tháng" className="w-36">
-          <Select value={month} onChange={e => setMonth(e.target.value)} aria-label="Chọn tháng">
-            {months.map(m => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <PeriodPicker value={month} onChange={setMonth} options={months} />
         <Field label="Gian hàng" className="w-48">
           <Select value={store} onChange={e => setStore(e.target.value)} aria-label="Lọc gian hàng">
             <option value="ALL">Tất cả</option>

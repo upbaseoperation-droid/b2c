@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import dynamic from 'next/dynamic';
 import { 
   ActionMenu,
   Button, 
@@ -26,7 +25,7 @@ import {
 } from '../ui';
 import { DEFAULT_MASTER_CATALOG, INITIAL_MASTER_PRODUCTS, type MasterCatalog } from '../../lib/masterCatalog';
 import type { Column } from '../ui';
-import { formatVnd, getVietnamDateYmd } from '../../lib/format';
+import { formatVnd, getVietnamDateYmd, formatNumber } from '../../lib/format';
 import { 
   ExternalLink, 
   RotateCcw, 
@@ -46,16 +45,6 @@ import {
   UPBASE_STAFF_MASTER,
   UPBASE_MASTER_PILLARS
 } from '../../lib/importedMasterData';
-const KocMasterDataView = dynamic(
-  () => import('./KocMasterDataView').then((m) => m.KocMasterDataView),
-  {
-    loading: () => (
-      <div className="rounded-xl border border-line bg-surface p-12 text-center text-xs text-ink-3">
-        Đang tải Danh bạ KOC...
-      </div>
-    ),
-  }
-);
 import { 
   CastTiersMasterView, 
   KocNichesMasterView, 
@@ -151,6 +140,8 @@ interface MasterDataHubViewProps {
   onSavePartnershipStaff?: (staff: PartnershipStaffEntry[]) => Promise<boolean>;
   deals?: BookingDealItem[];
   onNavigateToKocPortal?: (kocId: string | null) => void;
+  /** Mở màn Danh bạ KOC (nơi duy nhất quản lý danh sách KOC). */
+  onOpenKocDirectory?: () => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
 
@@ -177,6 +168,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   onNavigateToStoreProfile,
   onNavigateToCtvProfile,
   onNavigateToKocPortal,
+  onOpenKocDirectory,
   onSelectDealForContract
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MasterDataSubTab>(initialSubTab);
@@ -868,7 +860,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {(catalogDirty || catalogError) && (
         <div role="status" className="rounded-lg border border-line bg-surface p-3 text-xs flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 font-medium text-ink">
-            {catalogDirty && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+            {catalogDirty && <span className="w-2 h-2 rounded-full bg-warning" />}
             <span>{catalogDirty ? 'Có thay đổi chưa lưu' : ''}</span>
             {catalogError && <span role="alert" className="text-critical ml-2">{catalogError}</span>}
           </div>
@@ -991,7 +983,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             render: (b) => {
               const initials = b.name.substring(0, 2).toUpperCase();
               return (
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
                   <BrandAvatar
                     id={b.id}
                     brandId={b.id}
@@ -1037,7 +1029,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           {
             key: 'shopee',
             header: (
-              <span className="inline-flex items-center gap-1.5 text-ink-2 font-medium justify-center">
+              <span className="inline-flex items-center gap-2 text-ink-2 font-medium justify-center">
                 <ShopeeLogo className="w-3.5 h-3.5" />
                 <span>Shopee</span>
               </span>
@@ -1053,7 +1045,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               return (
                 <div className="flex items-center justify-center">
                   <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-sunken text-ink border border-line shadow-2xs hover:bg-canvas transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full text-2xs font-medium bg-sunken text-ink border border-line shadow-2xs hover:bg-canvas transition-colors"
                     title={shopee.storeNames.join('\n') || 'Shopee'}
                   >
                     <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />
@@ -1066,7 +1058,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           {
             key: 'tiktok',
             header: (
-              <span className="inline-flex items-center gap-1.5 text-ink-2 font-medium justify-center">
+              <span className="inline-flex items-center gap-2 text-ink-2 font-medium justify-center">
                 <TikTokLogo className="w-3.5 h-3.5" />
                 <span>TikTok</span>
               </span>
@@ -1082,7 +1074,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               return (
                 <div className="flex items-center justify-center">
                   <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-zinc-100 text-zinc-900 border border-zinc-200/90 shadow-2xs hover:bg-zinc-200/60 transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full text-2xs font-medium bg-sunken text-ink border border-line/90 shadow-2xs hover:bg-sunken/60 transition-colors"
                     title={tiktok.storeNames.join('\n') || 'TikTok Shop'}
                   >
                     <TikTokLogo className="w-3.5 h-3.5 shrink-0" />
@@ -1237,7 +1229,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             </PageActions>
 
             <Panel flush>
-              <div className="p-4 border-b border-line grid gap-2.5">
+              <div className="p-4 border-b border-line grid gap-3">
                 <FilterBar
                   search={{
                     value: brandSearch,
@@ -1426,7 +1418,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           </PageActions>
 
           <Panel flush>
-            <div className="p-4 border-b border-line grid gap-2.5">
+            <div className="p-4 border-b border-line grid gap-3">
               <FilterBar
                 search={{
                   value: pillarSearch,
@@ -1469,7 +1461,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   key: 'code',
                   header: 'Trụ cột nội dung',
                   render: (p: MasterContentPillar) => (
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-3">
                       <span 
                         className="w-2.5 h-2.5 rounded-full shrink-0" 
                         style={{ backgroundColor: p.colorTag || '#4F46E5' }} 
@@ -1511,7 +1503,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                         {formats.map((fmt, idx) => (
                           <span 
                             key={idx} 
-                            className="inline-block px-1.5 py-0.5 rounded text-2xs bg-surface-subtle border border-line text-ink-2 font-medium"
+                            className="inline-block px-2 py-0.5 rounded text-2xs bg-surface-subtle border border-line text-ink-2 font-medium"
                           >
                             {fmt}
                           </span>
@@ -1633,19 +1625,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         />
       )}
 
-      {/* SUB-TAB: DANH BẠ KOC */}
+      {/* SUB-TAB: DANH BẠ KOC. Danh sách KOC chỉ ở màn Danh bạ KOC; ở đây chỉ để liên kết (UI_SYNC_PLAN.md §4.6) */}
       {activeSubTab === 'kocs' && (
-        <KocMasterDataView
-          kocs={kocs}
-          allDeals={deals}
-          currentUser={currentUser}
-          onOpenQuickBookWithKoc={onOpenQuickBookWithKoc || (() => {})}
-          onKocCreated={onKocCreated}
-          onKocUpdated={onKocUpdated}
-          onOpenKocPortal={onNavigateToKocPortal}
-          onSelectDealForContract={onSelectDealForContract}
-          onNotify={onNotify}
-        />
+        <Panel title="Danh bạ KOC">
+          <EmptyState
+            title={`${formatNumber(kocs.length)} KOC trong danh bạ`}
+            description="Danh sách, hồ sơ và pháp lý KOC được quản lý ở màn Danh bạ KOC."
+            action={onOpenKocDirectory ? <Button variant="primary" onClick={onOpenKocDirectory}>Mở Danh bạ KOC</Button> : undefined}
+          />
+        </Panel>
       )}
 
       {/* SUB-TAB: DỮ LIỆU GỐC CỘNG TÁC VIÊN / VJ */}
@@ -1702,7 +1690,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           </>
         }
       >
-        <form id="quick-brand-form" onSubmit={handleQuickCreateBrand} className="space-y-3.5 text-xs">
+        <form id="quick-brand-form" onSubmit={handleQuickCreateBrand} className="space-y-4 text-xs">
           <div>
             <label className="block text-ink font-semibold mb-1">
               Tên thương hiệu (Brand Name) <span className="text-critical">*</span>
@@ -1726,7 +1714,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <select
                 value={quickBrandCategory}
                 onChange={(e) => setQuickBrandCategory(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               >
                 {brandCategories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -1746,7 +1734,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="Tự sinh nếu trống"
                 value={quickBrandCode}
                 onChange={(e) => setQuickBrandCode(e.target.value.toUpperCase())}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink "
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink "
               />
             </div>
           </div>
@@ -1780,7 +1768,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       >
         <div className="space-y-4 text-xs">
           {/* Lựa chọn 1: Đồng bộ API tự động */}
-          <div className="p-3.5 bg-canvas rounded-lg border border-line flex items-center justify-between gap-3">
+          <div className="p-4 bg-canvas rounded-lg border border-line flex items-center justify-between gap-3">
             <div>
               <p className="font-semibold text-ink">Đồng bộ tự động từ Bảng 3.5 Lark Base</p>
             </div>
@@ -1865,7 +1853,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         }
       >
         {editingBrand && (
-          <form id="edit-brand-form" onSubmit={handleSaveEditBrand} className="space-y-3.5 text-xs">
+          <form id="edit-brand-form" onSubmit={handleSaveEditBrand} className="space-y-4 text-xs">
             <div>
               <label className="block text-ink font-semibold mb-1">
                 Tên thương hiệu <span className="text-critical">*</span>
@@ -1888,7 +1876,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   type="text"
                   value={editBrandCode}
                   onChange={(e) => setEditBrandCode(e.target.value.toUpperCase())}
-                  className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink "
+                  className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink "
                 />
               </div>
 
@@ -1899,7 +1887,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <select
                   value={editBrandCategory}
                   onChange={(e) => setEditBrandCategory(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                  className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
                 >
                   {brandCategories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -1915,7 +1903,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <select
                 value={editBrandStatus}
                 onChange={(e) => setEditBrandStatus(e.target.value as 'ACTIVE' | 'PAUSED' | 'UPCOMING')}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
               >
                 <option value="ACTIVE">Đang hợp tác (Active)</option>
                 <option value="UPCOMING">Sắp triển khai (Upcoming)</option>
@@ -1923,7 +1911,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               </select>
             </div>
 
-            <div className="pt-2 border-t border-line space-y-2.5">
+            <div className="pt-2 border-t border-line space-y-3">
               <div className="text-ink font-semibold">Vị trí phụ trách theo nhãn</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <StaffSearchSelect
@@ -2002,7 +1990,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             {hasDeps ? (
               <div className="space-y-3 text-xs">
                 <div className="bg-warning-soft border border-line p-3 rounded-lg text-ink space-y-2">
-                  <p className="font-semibold text-xs flex items-center gap-1.5 text-warning">
+                  <p className="font-semibold text-xs flex items-center gap-2 text-warning">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     Phát hiện {deps.totalCount} đối tượng đang liên kết trực tiếp:
                   </p>
@@ -2028,7 +2016,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 </div>
 
                 <div className="p-3 bg-canvas border border-line rounded-lg space-y-2">
-                  <div className="flex items-center gap-1.5 text-ink font-semibold text-xs">
+                  <div className="flex items-center gap-2 text-ink font-semibold text-xs">
                     <Archive className="w-4 h-4 text-ink-2" />
                     <span>Khuyến nghị: Chuyển sang Tạm dừng (Lưu trữ an toàn)</span>
                   </div>
@@ -2054,7 +2042,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     placeholder="Nhập tên thương hiệu để xác nhận..."
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-line-strong rounded-lg text-xs font-medium focus:outline-none focus:border-critical bg-surface text-ink"
+                    className="w-full px-3 py-2 border border-line-strong rounded-lg text-xs font-medium focus:outline-none focus:border-critical bg-surface text-ink"
                   />
                 </div>
               </div>
@@ -2093,7 +2081,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           </>
         }
       >
-        <form id="product-catalog-form" onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
+        <form id="product-catalog-form" onSubmit={handleSaveProduct} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Mã SKU *</label>
@@ -2103,7 +2091,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="VD: KUTIE-SOOTH-30G"
                 value={productForm.sku}
                 onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value.toUpperCase() }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
             <div>
@@ -2114,7 +2102,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 step={10000}
                 value={productForm.originalPrice}
                 onChange={(e) => setProductForm(prev => ({ ...prev, originalPrice: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
               />
               <span className="text-2xs text-ink-3 font-mono mt-0.5 block">{formatVnd(productForm.originalPrice)}</span>
             </div>
@@ -2128,7 +2116,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               placeholder="Ví dụ: Kem bôi dịu da Kutieskin 30g cho bé"
               value={productForm.productName}
               onChange={(e) => setProductForm(prev => ({ ...prev, productName: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface font-medium text-ink"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface font-medium text-ink"
             />
           </div>
 
@@ -2138,7 +2126,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <select
                 value={productForm.brandName}
                 onChange={(e) => setProductForm(prev => ({ ...prev, brandName: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface focus:outline-none focus:border-focus font-medium text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface focus:outline-none focus:border-focus font-medium text-ink"
               >
                 {brandList.map(b => (
                   <option key={b.id} value={b.name}>{b.name}</option>
@@ -2151,7 +2139,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <select
                 value={productForm.platform}
                 onChange={(e) => setProductForm(prev => ({ ...prev, platform: e.target.value as 'TikTok Shop' | 'Shopee Mall' | 'Lazada' }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               >
                 <option value="Shopee Mall">Shopee Mall</option>
                 <option value="TikTok Shop">TikTok Shop</option>
@@ -2168,7 +2156,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="Ví dụ: Kutieskin Shopee Mall"
                 value={productForm.storeName}
                 onChange={(e) => setProductForm(prev => ({ ...prev, storeName: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
             <div>
@@ -2177,7 +2165,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 type="text"
                 value={productForm.category}
                 onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
           </div>
@@ -2193,7 +2181,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <select
                   value={productForm.heroType}
                   onChange={(e) => setProductForm(prev => ({ ...prev, heroType: e.target.value as 'HERO' | 'ENTRY' | 'ADDON' }))}
-                  className="w-full px-2 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus text-xs font-semibold"
+                  className="w-full px-2 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus text-xs font-semibold"
                 >
                   <option value="HERO">HERO (Chủ lực)</option>
                   <option value="ENTRY">ENTRY (Sản phẩm phễu)</option>
@@ -2208,7 +2196,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   max={100}
                   value={productForm.commissionRate}
                   onChange={(e) => setProductForm(prev => ({ ...prev, commissionRate: Number(e.target.value) }))}
-                  className="w-full px-2 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink text-xs"
+                  className="w-full px-2 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink text-xs"
                 />
               </div>
               <div>
@@ -2218,7 +2206,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   min={0}
                   value={productForm.sampleAvailableCount}
                   onChange={(e) => setProductForm(prev => ({ ...prev, sampleAvailableCount: Number(e.target.value) }))}
-                  className="w-full px-2 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink text-xs"
+                  className="w-full px-2 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink text-xs"
                 />
               </div>
             </div>
@@ -2230,7 +2218,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="Chiết xuất thảo dược tự nhiên, chứng nhận an toàn cho trẻ sơ sinh..."
                 value={productForm.usp}
                 onChange={(e) => setProductForm(prev => ({ ...prev, usp: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
           </div>
@@ -2242,7 +2230,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               placeholder="https://shopee.vn/... hoặc https://shop.tiktok.com/..."
               value={productForm.pdpUrl}
               onChange={(e) => setProductForm(prev => ({ ...prev, pdpUrl: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
             />
           </div>
 
@@ -2251,7 +2239,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             <select
               value={productForm.status}
               onChange={(e) => setProductForm(prev => ({ ...prev, status: e.target.value as 'ACTIVE' | 'DISCONTINUED' }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
             >
               <option value="ACTIVE">Đang kinh doanh (Active)</option>
               <option value="DISCONTINUED">Tạm ngừng kinh doanh (Discontinued)</option>
@@ -2337,7 +2325,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           </>
         }
       >
-        <form id="content-pillar-form" onSubmit={handleSavePillar} className="space-y-3.5 text-xs">
+        <form id="content-pillar-form" onSubmit={handleSavePillar} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Mã trụ cột (Code) *</label>
@@ -2347,7 +2335,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="VD: EDUCATIONAL, STORYTELLING..."
                 value={pillarForm.code}
                 onChange={(e) => setPillarForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
 
@@ -2359,7 +2347,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="VD: Giáo Dục & Lời Khuyên Chuyên Gia"
                 value={pillarForm.name}
                 onChange={(e) => setPillarForm(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink font-medium"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink font-medium"
               />
             </div>
           </div>
@@ -2373,7 +2361,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 step="50000"
                 value={pillarForm.benchmarkUnitCost}
                 onChange={(e) => setPillarForm(prev => ({ ...prev, benchmarkUnitCost: Number(e.target.value) }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
 
@@ -2390,7 +2378,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   type="text"
                   value={pillarForm.colorTag}
                   onChange={(e) => setPillarForm(prev => ({ ...prev, colorTag: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
+                  className="w-full px-3 py-2 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
                 />
               </div>
             </div>
@@ -2405,7 +2393,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               placeholder="Mẹ & Bé, Chăm Sóc Da, Sức Khỏe, Toàn ngành"
               value={pillarForm.applicableNiches}
               onChange={(e) => setPillarForm(prev => ({ ...prev, applicableNiches: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
             />
           </div>
 
@@ -2418,7 +2406,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               placeholder="Voiceover chuyên gia + B-roll, Q&A giải đáp thắc mắc, Infographic"
               value={pillarForm.suggestedFormats}
               onChange={(e) => setPillarForm(prev => ({ ...prev, suggestedFormats: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
             />
           </div>
 
@@ -2430,7 +2418,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="VD: Phụ huynh có con nhỏ, Gen Z chuộng skincare..."
                 value={pillarForm.targetAudience}
                 onChange={(e) => setPillarForm(prev => ({ ...prev, targetAudience: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
 
@@ -2441,7 +2429,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="VD: Xây dựng uy tín, thúc đẩy chuyển đổi giỏ hàng..."
                 value={pillarForm.keyObjectives}
                 onChange={(e) => setPillarForm(prev => ({ ...prev, keyObjectives: e.target.value }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
           </div>
@@ -2454,7 +2442,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               placeholder="Mô tả cụ thể góc nhìn nội dung, lưu ý kịch bản, các Do & Don'ts khi sản xuất video thuộc pillar này..."
               value={pillarForm.description}
               onChange={(e) => setPillarForm(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface text-ink"
             />
           </div>
 
@@ -2463,7 +2451,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             <select
               value={pillarForm.status}
               onChange={(e) => setPillarForm(prev => ({ ...prev, status: e.target.value as 'ACTIVE' | 'INACTIVE' }))}
-              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             >
               <option value="ACTIVE">Đang áp dụng (Khả dụng cho mọi Brand)</option>
               <option value="INACTIVE">Tạm dừng (Không gợi ý khi lập kế hoạch)</option>
@@ -2477,7 +2465,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="space-y-6">
           {/* Section 1: SLA Milestones Config */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-line bg-canvas flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-xs text-ink">
                   Mốc thời gian cam kết dịch vụ (SLA)
@@ -2492,13 +2480,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-canvas text-ink-3 border-b border-line font-semibold text-2xs">
                   <tr>
-                    <th className="py-2.5 px-4 w-[110px]">Mã mốc</th>
-                    <th className="py-2.5 px-4 min-w-[200px]">Tên mốc vận hành</th>
-                    <th className="py-2.5 px-4 text-center w-[100px]">SLA Chuẩn</th>
-                    <th className="py-2.5 px-4 text-center w-[110px]">Cảnh báo</th>
-                    <th className="py-2.5 px-4 w-[130px]">Vai trò PIC</th>
-                    <th className="py-2.5 px-4 w-[130px]">Leo thang đến</th>
-                    <th className="py-2.5 px-4 text-center w-[100px]">Điểm phạt SLA</th>
+                    <th className="py-3 px-4 w-[110px]">Mã mốc</th>
+                    <th className="py-3 px-4 min-w-[200px]">Tên mốc vận hành</th>
+                    <th className="py-3 px-4 text-center w-[100px]">SLA Chuẩn</th>
+                    <th className="py-3 px-4 text-center w-[110px]">Cảnh báo</th>
+                    <th className="py-3 px-4 w-[130px]">Vai trò PIC</th>
+                    <th className="py-3 px-4 w-[130px]">Leo thang đến</th>
+                    <th className="py-3 px-4 text-center w-[100px]">Điểm phạt SLA</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -2539,7 +2527,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           {/* Section 2: Master KPI Definitions */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-line bg-canvas flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-xs text-ink">
                   Chỉ số đo lường hiệu suất làm việc (KPI)
@@ -2554,13 +2542,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-canvas text-ink-3 border-b border-line font-semibold text-2xs">
                   <tr>
-                    <th className="py-2.5 px-4 w-[100px]">Mã KPI</th>
-                    <th className="py-2.5 px-4 w-[110px]">Chức danh</th>
-                    <th className="py-2.5 px-4 min-w-[220px]">Tên chỉ số KPI</th>
-                    <th className="py-2.5 px-4 text-center w-[120px]">Chỉ tiêu chuẩn</th>
-                    <th className="py-2.5 px-4 text-center w-[90px]">Trọng số</th>
-                    <th className="py-2.5 px-4 w-[90px]">Chu kỳ</th>
-                    <th className="py-2.5 px-4 min-w-[240px]">Tiêu chí đối chuẩn</th>
+                    <th className="py-3 px-4 w-[100px]">Mã KPI</th>
+                    <th className="py-3 px-4 w-[110px]">Chức danh</th>
+                    <th className="py-3 px-4 min-w-[220px]">Tên chỉ số KPI</th>
+                    <th className="py-3 px-4 text-center w-[120px]">Chỉ tiêu chuẩn</th>
+                    <th className="py-3 px-4 text-center w-[90px]">Trọng số</th>
+                    <th className="py-3 px-4 w-[90px]">Chu kỳ</th>
+                    <th className="py-3 px-4 min-w-[240px]">Tiêu chí đối chuẩn</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">

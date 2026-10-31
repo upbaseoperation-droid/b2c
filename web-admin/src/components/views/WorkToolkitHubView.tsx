@@ -74,6 +74,7 @@ import {
   EmptyState,
   type Column,
 } from '../ui';
+import { Combobox } from '../ui/Combobox';
 
 export interface WorkToolkitHubViewProps {
   currentUser: UserProfile;
@@ -912,7 +913,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             className="inline-flex items-center gap-1 text-accent hover:underline truncate max-w-[200px]"
           >
             <span className="truncate">{r.channelUrl}</span>
-            <ExternalLink className="w-3 h-3 shrink-0" />
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
           </a>
         ) : (
           <span className="text-ink-3">—</span>
@@ -1010,7 +1011,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
       />
 
       {/* BENTO GRID KHO CÔNG CỤ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {filteredTools.map((tool) => {
           const Icon = tool.icon;
           const isSelected = tool.id === activeTool.id;
@@ -1027,7 +1028,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                   setActiveToolId(tool.id);
                 }
               }}
-              className={`group relative rounded-xl border p-3.5 text-left transition-colors cursor-pointer flex flex-col justify-between gap-2.5 ${
+              className={`group relative rounded-xl border p-4 text-left transition-colors cursor-pointer flex flex-col justify-between gap-3 ${
                 isSelected
                   ? 'bg-accent-soft/45 border-accent shadow-xs'
                   : 'bg-surface border-line hover:border-line-strong hover:bg-canvas/60'
@@ -1113,7 +1114,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
           }
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-5 space-y-3.5">
+            <div className="lg:col-span-5 space-y-4">
               <Field label="Chiều quy đổi">
                 <Segmented
                   items={[
@@ -1170,13 +1171,13 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                 </Field>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-2 pt-1">
                 {[300000, 800000, 1500000, 2500000, 4000000, 7000000, 15000000].map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => setFeeInputAmount(String(preset))}
-                    className="h-7 px-2.5 rounded-md border border-line bg-sunken/60 hover:bg-sunken text-2xs font-medium text-ink-2 tabular-nums"
+                    className="h-7 px-3 rounded-md border border-line bg-sunken/60 hover:bg-sunken text-2xs font-medium text-ink-2 tabular-nums"
                   >
                     {(preset / 1000000 >= 1 ? `${preset / 1000000}M` : `${preset / 1000}k`)}
                   </button>
@@ -1185,12 +1186,12 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             </div>
 
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start">
-              <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-2">
+              <div className="rounded-xl border border-line bg-canvas p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-ink-3">Đơn giá 1 Video</span>
                   <Status tone="info">Bậc {taxCalculation.klGrade}</Status>
                 </div>
-                <div className="space-y-1.5 pt-1 text-[13px]">
+                <div className="space-y-2 pt-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-ink-2">Thực nhận KOC (Net):</span>
                     <span className="font-semibold text-ink tabular-nums">{formatVnd(taxCalculation.unitNet)}</span>
@@ -1199,19 +1200,19 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                     <span className="text-ink-2">Thuế khấu trừ / VAT:</span>
                     <span className="font-medium text-warning tabular-nums">{formatVnd(taxCalculation.unitTax)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-line pt-1.5">
+                  <div className="flex justify-between border-t border-line pt-2">
                     <span className="text-ink-2 font-medium">Chi phí Gross kèm thuế:</span>
                     <span className="font-semibold text-accent tabular-nums">{formatVnd(taxCalculation.unitGross)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-2">
+              <div className="rounded-xl border border-line bg-canvas p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-ink-3">Tổng cộng ({taxCalculation.qty} video)</span>
                   <Status tone="positive">Kế toán kiểm soát Net</Status>
                 </div>
-                <div className="space-y-1.5 pt-1 text-[13px]">
+                <div className="space-y-2 pt-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-ink-2">Tổng chi Net (ĐNTT):</span>
                     <span className="font-semibold text-positive tabular-nums">{formatVnd(taxCalculation.totalNet)}</span>
@@ -1220,7 +1221,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                     <span className="text-ink-2">Tổng chi Gross:</span>
                     <span className="font-semibold text-ink tabular-nums">{formatVnd(taxCalculation.totalGross)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-line pt-1.5">
+                  <div className="flex justify-between border-t border-line pt-2">
                     <span className="text-ink-2">Tạm ứng / Còn lại:</span>
                     <span className="font-medium text-ink tabular-nums">
                       {formatVnd(taxCalculation.advanceAmount)} / {formatVnd(taxCalculation.remainingNet)}
@@ -1373,7 +1374,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
 
             <div className="lg:col-span-6 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                <div className="rounded-xl border border-line bg-canvas p-4 space-y-1">
                   <span className="text-2xs text-ink-3">Doanh thu hòa vốn (Break-even GMV)</span>
                   <div className="text-lg font-semibold text-ink tabular-nums">{formatVnd(roasMetrics.breakEvenGmv)}</div>
                   <span className="text-2xs text-ink-2">
@@ -1381,7 +1382,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                     <strong>{roasMetrics.breakEvenRoas.toFixed(2)}x</strong>
                   </span>
                 </div>
-                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                <div className="rounded-xl border border-line bg-canvas p-4 space-y-1">
                   <span className="text-2xs text-ink-3">CIR Net & ROAS ở mức GMV mục tiêu</span>
                   <div className="text-lg font-semibold text-accent tabular-nums">
                     CIR {roasMetrics.cirNetPct.toFixed(1)}% · ROAS {roasMetrics.expectedRoas.toFixed(2)}x
@@ -1392,7 +1393,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2 text-[13px]">
+              <div className="rounded-xl border border-line bg-surface p-4 space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-ink-2">Tổng chi phí cố định (Booking Gross + Ads + Mẫu):</span>
                   <span className="font-semibold text-ink tabular-nums">{formatVnd(roasMetrics.totalFixedCost)}</span>
@@ -1442,7 +1443,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             </Button>
           }
         >
-          <div className="p-3.5 sm:p-4 border-b border-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="p-4 sm:p-4 border-b border-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <Field label="Hạn mức Order Net tháng (₫)">
               <Input
                 type="number"
@@ -1567,14 +1568,18 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start">
               <Field label="Chọn nhanh từ Danh bạ KOC (Tùy chọn)" className="sm:col-span-2">
-                <Select value={qrSelectedKocId} onChange={(e) => handleSelectKocForQr(e.target.value)}>
-                  <option value="">-- Nhập thủ công hoặc chọn KOC từ danh bạ --</option>
-                  {kocs.slice(0, 120).map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.stageName} (@{k.channelId}) — {k.bankName || 'Chưa rõ NH'} {k.bankAccount || ''}
-                    </option>
-                  ))}
-                </Select>
+                <Combobox
+                  value={qrSelectedKocId}
+                  onChange={handleSelectKocForQr}
+                  placeholder="Nhập thủ công hoặc tìm KOC trong danh bạ…"
+                  clearable
+                  options={kocs.map((k) => ({
+                    value: k.id,
+                    label: `${k.stageName} (@${k.channelId.replace(/^@/, '')})`,
+                    hint: k.bankName ? `${k.bankName}${k.bankAccount ? ` ••••${k.bankAccount.slice(-4)}` : ''}` : undefined,
+                    searchText: `${k.bankAccount || ''} ${k.phone || ''}`,
+                  }))}
+                />
               </Field>
 
               <Field label="Ngân hàng thụ hưởng">
@@ -1715,7 +1720,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
               {generatedUtmLinks.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-lg border border-line bg-canvas px-3 py-2.5 flex items-center justify-between gap-3"
+                  className="rounded-lg border border-line bg-canvas px-3 py-3 flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
                     <div className="text-xs font-semibold text-ink">@{item.handle}</div>
@@ -1777,14 +1782,14 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             </div>
 
             <div className="lg:col-span-6 space-y-3">
-              <div className="flex items-center justify-between rounded-xl border border-line bg-canvas px-3.5 py-2.5">
+              <div className="flex items-center justify-between rounded-xl border border-line bg-canvas px-4 py-3">
                 <div className="flex items-center gap-2">
                   {scriptScanMatches.length === 0 ? (
                     <CheckCircle2 className="w-4 h-4 text-positive" />
                   ) : (
                     <AlertTriangle className="w-4 h-4 text-critical" />
                   )}
-                  <span className="text-[13px] font-semibold text-ink">
+                  <span className="text-xs font-semibold text-ink">
                     {scriptScanMatches.length === 0
                       ? 'Không phát hiện từ ngữ nằm trong danh mục hạn chế'
                       : `Phát hiện ${scriptScanMatches.length} cụm từ có nguy cơ bóp tương tác / vi phạm`}
@@ -1804,7 +1809,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                     >
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-semibold text-critical">&ldquo;{m.term}&rdquo;</span>
+                          <span className="text-xs font-semibold text-critical">&ldquo;{m.term}&rdquo;</span>
                           <Status tone={m.severity === 'CAO' ? 'critical' : 'warning'}>
                             {m.categoryLabel}
                           </Status>
@@ -1877,7 +1882,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
 
             <div className="lg:col-span-5 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                <div className="rounded-xl border border-line bg-canvas p-4 space-y-1">
                   <span className="text-2xs text-ink-3">Thời lượng đọc ước tính</span>
                   <div className="text-xl font-semibold text-ink tabular-nums">
                     {voiceoverStats.estimatedSec} giây
@@ -1899,7 +1904,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                   </Status>
                 </div>
 
-                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                <div className="rounded-xl border border-line bg-canvas p-4 space-y-1">
                   <span className="text-2xs text-ink-3">Tổng số từ / Ký tự</span>
                   <div className="text-xl font-semibold text-accent tabular-nums">
                     {voiceoverStats.wordCount} từ
@@ -1910,7 +1915,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2 text-[13px]">
+              <div className="rounded-xl border border-line bg-surface p-4 space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-ink-2">Số từ khuyến nghị cho video {voiceoverStats.targetSec}s:</span>
                   <span className="font-semibold text-ink tabular-nums">
@@ -1998,9 +2003,9 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             </div>
 
             <div className="lg:col-span-6 space-y-3">
-              <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-2">
+              <div className="rounded-xl border border-line bg-canvas p-4 space-y-2">
                 <span className="text-2xs font-medium text-ink-3">Bản tóm tắt gửi nhanh qua Zalo / Lark cho KOC:</span>
-                <pre className="whitespace-pre-wrap font-sans text-[13px] text-ink leading-relaxed bg-surface p-3 rounded-lg border border-line">
+                <pre className="whitespace-pre-wrap font-sans text-xs text-ink leading-relaxed bg-surface p-3 rounded-lg border border-line">
                   {generatedBriefOutput.briefText}
                 </pre>
               </div>
@@ -2042,7 +2047,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             </div>
 
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start">
-              <div className="rounded-xl border border-line bg-canvas p-3 space-y-1.5">
+              <div className="rounded-xl border border-line bg-canvas p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-ink-2">Có ở A nhưng thiếu ở B</span>
                   <Status tone={listComparison.onlyInA.length > 0 ? 'warning' : 'positive'}>
@@ -2054,7 +2059,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-line bg-canvas p-3 space-y-1.5">
+              <div className="rounded-xl border border-line bg-canvas p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-ink-2">Phát sinh ở B nhưng chưa có ở A</span>
                   <Status tone={listComparison.onlyInB.length > 0 ? 'critical' : 'positive'}>
@@ -2066,7 +2071,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-line bg-canvas p-3 space-y-1.5">
+              <div className="rounded-xl border border-line bg-canvas p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-ink-2">Khớp trùng cả 2 danh sách</span>
                   <Status tone="positive">{listComparison.inBoth.length} mã</Status>
@@ -2076,7 +2081,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-line bg-canvas p-3 space-y-1.5">
+              <div className="rounded-xl border border-line bg-canvas p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-ink-2">Mã bị lặp trong cùng danh sách</span>
                   <Status
@@ -2170,7 +2175,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
 
             <div className="lg:col-span-6 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                <div className="rounded-xl border border-line bg-canvas p-4 space-y-1">
                   <span className="text-2xs text-ink-3">Điểm tải quy đổi (Workload Points)</span>
                   <div className="text-xl font-semibold text-ink tabular-nums">
                     {p3Simulation.workloadPoints} điểm
@@ -2179,7 +2184,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                     Hệ số gian ×{p3Simulation.storeMultiplier.toFixed(2)} ({p3Simulation.difficultyTier})
                   </Status>
                 </div>
-                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                <div className="rounded-xl border border-line bg-canvas p-4 space-y-1">
                   <span className="text-2xs text-ink-3">Thưởng P3 ước tính</span>
                   <div className="text-xl font-semibold text-positive tabular-nums">
                     {formatVnd(p3Simulation.estimatedBonusVnd)}
@@ -2187,7 +2192,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                   <span className="text-2xs text-ink-2">PIC: {p3Simulation.picName}</span>
                 </div>
               </div>
-              <div className="rounded-xl border border-line bg-surface p-3.5 text-xs text-ink-2">
+              <div className="rounded-xl border border-line bg-surface p-4 text-xs text-ink-2">
                 Công thức chuẩn B2C: <strong>Điểm tải = Số đầu việc × Hệ số Gian hàng (0.80 / 1.00 / 1.25 / 1.50) × Hệ số Chất lượng × Hệ số SLA</strong>.
               </div>
             </div>
@@ -2234,7 +2239,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             </div>
           }
         >
-          <div className="p-3.5 sm:p-4 border-b border-line grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-4 sm:p-4 border-b border-line grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Ngày dự kiến KOC Air Video (T0)">
               <Input
                 type="date"

@@ -228,7 +228,7 @@ export function CtvPortalPanel({ onNotify }: { onNotify?: Notify }) {
         const key = `${j.planId}:${j.code}`;
         if (j.ctvConfirmStatus === 'ASSIGNED') {
           return (
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <Button size="sm" variant="primary" disabled={busy !== null} onClick={() => void post(j, { kind: 'CONFIRM' }, key)}>
                 {busy === key ? 'Đang gửi…' : 'Nhận việc'}
               </Button>
@@ -240,7 +240,7 @@ export function CtvPortalPanel({ onNotify }: { onNotify?: Notify }) {
         }
         if (!j.waitingOnCtv || !j.submitKind || j.submitKind === 'CONFIRM') return <span className="text-xs text-ink-3">—</span>;
         return (
-          <div className="flex gap-1.5 min-w-[18rem]">
+          <div className="flex gap-2 min-w-[18rem]">
             <Input value={links[key] || ''} onChange={e => setLinks(prev => ({ ...prev, [key]: e.target.value }))} placeholder="Dán link" className="h-8 text-xs" />
             <Button size="sm" variant="primary" disabled={!links[key]?.trim() || busy !== null} onClick={() => submit(j)}>
               {busy === key ? 'Đang nộp…' : SUBMIT_LABEL[j.submitKind]}

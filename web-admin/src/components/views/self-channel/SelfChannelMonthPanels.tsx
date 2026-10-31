@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, DataTable, Field, Panel, Select, Status } from '../../ui';
+import { Button, DataTable, Field, Panel, PeriodPicker, Select, Status } from '../../ui';
 import type { Column } from '../../ui';
 import { formatNumber, formatVnd } from '../../../lib/format';
 import { BRAND_SCRIPT_SLA_HOURS, brandScriptWaitingHours, type SelfChannelJob } from '../../../lib/selfChannelBoardRules';
@@ -23,15 +23,7 @@ const isAired = (j: SelfChannelJob) => Boolean(j.airedAt || j.airLink?.trim());
 
 function MonthSelect({ months, value, onChange }: { months: string[]; value: string; onChange: (m: string) => void }) {
   return (
-    <Field label="Tháng" className="w-40">
-      <Select value={value} onChange={e => onChange(e.target.value)} aria-label="Chọn tháng">
-        {months.map(m => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
-      </Select>
-    </Field>
+    <PeriodPicker value={value} onChange={onChange} options={months} />
   );
 }
 

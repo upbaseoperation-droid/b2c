@@ -20,7 +20,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import { Button, ConfirmDialog, Field, Input, Modal, Progress, Select, Status, Textarea } from '../ui';
+import { BulkBar, Button, ConfirmDialog, Field, Input, Modal, PeriodPicker, Progress, Select, Status, StepBar, Textarea } from '../ui';
 import { getVietnamDateYmd } from '../../lib/format';
 import { executeOperationalReport } from '../../lib/operationalReportService';
 import { getEffectiveConfigForPurpose } from '../../lib/apiKeyConfig';
@@ -91,7 +91,7 @@ const saveLabel: Record<string, string> = {
 };
 
 const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2 py-2 text-left text-2xs font-medium text-ink-3';
-const TD = 'border-b border-line px-2 py-1.5 align-middle text-[13px] text-ink';
+const TD = 'border-b border-line px-2 py-2 align-middle text-xs text-ink';
 
 type PlanLite = InputPlanBreakdownState;
 
@@ -762,19 +762,8 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
     <div className="space-y-4">
       {/* 1. THANH CHỌN KẾ HOẠCH & CÔNG CỤ ĐẦU TRANG */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Select
-            value={activeMonth}
-            onChange={e => setMonth(e.target.value)}
-            className="w-32 font-medium"
-            aria-label="Chọn tháng kế hoạch"
-          >
-            {months.map(m => (
-              <option key={m} value={m}>
-                Tháng {m}
-              </option>
-            ))}
-          </Select>
+        <div className="flex flex-wrap items-center gap-3">
+          <PeriodPicker value={activeMonth} onChange={setMonth} options={months} label="Chọn tháng kế hoạch" />
 
           <div className="relative w-48">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
@@ -783,7 +772,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
               placeholder="Tìm gian hàng / Brand…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="h-9 w-full rounded-md border border-line-strong bg-surface pl-8 pr-3 text-[13px] text-ink focus:border-focus focus:outline-none"
+              className="h-9 w-full rounded-md border border-line-strong bg-surface pl-8 pr-3 text-xs text-ink focus:border-focus focus:outline-none"
             />
           </div>
 
@@ -834,9 +823,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
       {summary && (
         <div className="space-y-3">
           {summary.isOverbudget && (
-            <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            <div className="flex items-center justify-between rounded-lg border border-critical/30 bg-critical-soft p-3 text-sm text-critical">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
+                <AlertTriangle className="h-5 w-5 shrink-0 text-critical" />
                 <span>
                   Cảnh báo: Chi phí cam kết ({fmt(summary.committedBudget)} đ) đã vượt hạn mức Ngân sách Self-channel
                   Net ({fmt(summary.targetBudgetNet)} đ) của gian hàng.
@@ -846,9 +835,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
           )}
 
           {summary.isUnbudgeted && (
-            <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            <div className="flex items-center justify-between rounded-lg border border-critical/30 bg-critical-soft p-3 text-sm text-critical">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
+                <AlertTriangle className="h-5 w-5 shrink-0 text-critical" />
                 <span>
                   Báo động đỏ: Phát sinh chi phí Self-channel ({fmt(summary.committedBudget)} đ) trong khi hạn mức Ngân
                   sách được duyệt là 0đ.
@@ -874,7 +863,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
               <div className="mt-1 text-base font-semibold text-ink">
                 {summary.scriptApprovedCount} <span className="text-xs font-normal">kịch bản</span>
               </div>
-              <div className="mt-1 text-2xs text-emerald-600">{summary.qaPassedCount} đạt QA nội bộ</div>
+              <div className="mt-1 text-2xs text-positive">{summary.qaPassedCount} đạt QA nội bộ</div>
             </div>
 
             <div className="rounded-lg border border-line bg-surface p-3">
@@ -890,7 +879,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
             <div className="rounded-lg border border-line bg-surface p-3">
               <div className="text-2xs font-medium text-ink-3">Đã nghiệm thu</div>
-              <div className="mt-1 text-base font-semibold text-emerald-700">
+              <div className="mt-1 text-base font-semibold text-positive">
                 {summary.acceptedCount} <span className="text-xs font-normal">video</span>
               </div>
               <div className="mt-1 text-2xs text-ink-3">
@@ -908,69 +897,36 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
             <div className="rounded-lg border border-line bg-surface p-3">
               <div className="text-2xs font-medium text-ink-3">Đã giải ngân</div>
-              <div className="mt-1 text-base font-semibold text-blue-700">
+              <div className="mt-1 text-base font-semibold text-accent-hover">
                 {fmt(summary.paidBudget)} <span className="text-xs font-normal">đ</span>
               </div>
-              <div className="mt-1 text-2xs text-amber-600">Chờ chi: {fmt(summary.requestedBudget)} đ</div>
+              <div className="mt-1 text-2xs text-warning">Chờ chi: {fmt(summary.requestedBudget)} đ</div>
             </div>
           </div>
 
-          {/* Thanh tiến độ trực quan 6 bước quy trình (Pipeline Stepper Bar) */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            {[
-              { stage: 'BRIEF' as const, step: 1, label: '1. Nhận Brief & SP' },
-              { stage: 'SCRIPT' as const, step: 2, label: '2. Soạn & Duyệt KB' },
-              { stage: 'PRODUCTION' as const, step: 3, label: '3. Quay & QA video' },
-              { stage: 'BRAND_AIR' as const, step: 4, label: '4. Duyệt Brand & Đăng' },
-              { stage: 'ACCEPTANCE' as const, step: 5, label: '5. Nghiệm thu' },
-              { stage: 'SETTLEMENT' as const, step: 6, label: '6. Quyết toán & Chi' },
-            ].map(item => {
-              const count = stageCounts[item.stage] || 0;
-              const isSelected = stageFilter === item.stage;
-              return (
-                <button
-                  key={item.stage}
-                  type="button"
-                  onClick={() => setStageFilter(prev => (prev === item.stage ? 'ALL' : item.stage))}
-                  className={`flex flex-col justify-between rounded-lg border p-2.5 text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                      : 'border-line bg-surface hover:border-line-strong hover:bg-sunken/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1 w-full">
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-2xs font-semibold ${
-                        isSelected
-                          ? 'bg-primary text-white'
-                          : 'bg-sunken text-ink-2'
-                      }`}
-                    >
-                      Bước {item.step}
-                    </span>
-                    <span
-                      className={`text-xs font-semibold tabular-nums ${
-                        isSelected ? 'text-primary' : count > 0 ? 'text-ink' : 'text-ink-3'
-                      }`}
-                    >
-                      {count} video
-                    </span>
-                  </div>
-                  <div className={`mt-2 text-xs font-medium truncate ${isSelected ? 'text-primary font-semibold' : 'text-ink'}`}>
-                    {item.label}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          {/* Thanh 6 bước quy trình: bấm để lọc theo bước */}
+          <StepBar
+            label="Bước quy trình"
+            unit="video"
+            value={stageFilter === 'ALL' ? null : stageFilter}
+            onChange={(k) => setStageFilter(k ?? 'ALL')}
+            steps={[
+              { key: 'BRIEF' as const, label: 'Nhận Brief & SP', count: stageCounts.BRIEF || 0 },
+              { key: 'SCRIPT' as const, label: 'Soạn & Duyệt KB', count: stageCounts.SCRIPT || 0 },
+              { key: 'PRODUCTION' as const, label: 'Quay & QA video', count: stageCounts.PRODUCTION || 0 },
+              { key: 'BRAND_AIR' as const, label: 'Duyệt Brand & Đăng', count: stageCounts.BRAND_AIR || 0 },
+              { key: 'ACCEPTANCE' as const, label: 'Nghiệm thu', count: stageCounts.ACCEPTANCE || 0 },
+              { key: 'SETTLEMENT' as const, label: 'Quyết toán & Chi', count: stageCounts.SETTLEMENT || 0 },
+            ]}
+          />
 
           {/* Dải lọc theo Định dạng, Hình thức & Bước quy trình */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-lg border border-line bg-surface px-3 py-2">
-            <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setFormatFilter('ALL')}
-                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                   formatFilter === 'ALL'
                     ? 'bg-primary text-white'
                     : 'bg-sunken text-ink-2 hover:bg-line'
@@ -983,7 +939,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                   key={f.key}
                   type="button"
                   onClick={() => setFormatFilter(f.key)}
-                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                     formatFilter === f.key
                       ? 'bg-primary text-white'
                       : 'bg-sunken text-ink-2 hover:bg-line'
@@ -1037,21 +993,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
       )}
 
       {/* THANH CÔNG CỤ THAO TÁC HÀNG LOẠT (BULK ACTIONS) KHI TÍCH CHỌN NHIỀU JOB */}
-      {selectedJobIds.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2">
-          <div className="flex items-center gap-2 text-xs font-medium text-ink">
-            <span className="rounded bg-primary px-2 py-0.5 text-2xs font-semibold text-white">
-              Đã chọn {selectedJobIds.length} video
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedJobIds([])}
-              className="text-2xs text-ink-3 hover:text-ink underline"
-            >
-              Bỏ chọn tất cả
-            </button>
-          </div>
-
+      <BulkBar count={selectedJobIds.length} unit="video" onClear={() => setSelectedJobIds([])}>
           <div className="flex flex-wrap items-center gap-2">
             {/* Gán CTV hàng loạt kèm tự động áp đơn giá */}
             <div className="flex items-center gap-1">
@@ -1090,8 +1032,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
               Nghiệm thu Đạt & Cấp BBNT ({selectedJobIds.length})
             </Button>
           </div>
-        </div>
-      )}
+      </BulkBar>
 
       {/* 3. BẢNG DANH SÁCH JOB VIDEO SELF-CHANNEL */}
       <div className="overflow-x-auto rounded-lg border border-line bg-surface">
@@ -1168,10 +1109,10 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
                     {/* Cột 1: Mã & Tuần */}
                     <td className={TD}>
-                      <div className="flex items-center gap-1.5 font-semibold text-primary">
+                      <div className="flex items-center gap-2 font-semibold text-primary">
                         <span>{job.code}</span>
                         {job.week && (
-                          <span className="rounded bg-sunken px-1.5 py-0.5 text-2xs font-normal text-ink-2">
+                          <span className="rounded bg-sunken px-2 py-0.5 text-2xs font-normal text-ink-2">
                             {job.week}
                           </span>
                         )}
@@ -1196,10 +1137,10 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     <td className={TD}>
                       <div className="flex items-center gap-1">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-2xs font-medium ${
+                          className={`rounded px-2 py-0.5 text-2xs font-medium ${
                             job.productionMode === 'CTV_OUTSOURCE'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                              ? 'bg-warning-soft text-warning border border-warning/30'
+                              : 'bg-sunken text-ink-2 border border-line'
                           }`}
                         >
                           {job.productionMode === 'CTV_OUTSOURCE' ? 'Thuê CTV' : 'Nội bộ'}
@@ -1210,9 +1151,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                             <span
                               className={`rounded px-1 py-0.5 text-2xs font-medium ${
                                 job.contractNo
-                                  ? 'bg-emerald-50 text-emerald-700'
+                                  ? 'bg-positive-soft text-positive'
                                   : needContract
-                                  ? 'bg-rose-50 text-rose-700'
+                                  ? 'bg-critical-soft text-critical'
                                   : 'bg-sunken text-ink-3'
                               }`}
                             >
@@ -1310,9 +1251,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     <td className={TD}>
                       <div className="flex items-center gap-1">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-2xs font-medium ${
+                          className={`rounded px-2 py-0.5 text-2xs font-medium ${
                             job.videoQaStatus === 'INTERNAL_QA_PASSED' || job.videoQaStatus === 'BRAND_APPROVED'
-                              ? 'bg-emerald-50 text-emerald-700'
+                              ? 'bg-positive-soft text-positive'
                               : 'bg-sunken text-ink-2'
                           }`}
                         >
@@ -1347,7 +1288,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     <td className={TD}>
                       <div className="text-2xs text-ink-2">{SELF_PLATFORM_LABEL[job.publishPlatform]}</div>
                       {inlineAirJobId === job.id ? (
-                        <div className="mt-1 space-y-1 bg-sunken/60 p-1.5 rounded border border-line-strong">
+                        <div className="mt-1 space-y-1 bg-sunken/60 p-2 rounded border border-line-strong">
                           <input
                             type="url"
                             placeholder="Dán link video kênh..."
@@ -1357,7 +1298,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                               if (e.key === 'Enter') handleSaveInlineAir(job.id);
                               if (e.key === 'Escape') setInlineAirJobId(null);
                             }}
-                            className="h-6 w-36 rounded border border-line-strong bg-surface px-1.5 text-2xs text-ink focus:border-focus focus:outline-none"
+                            className="h-6 w-36 rounded border border-line-strong bg-surface px-2 text-2xs text-ink focus:border-focus focus:outline-none"
                             autoFocus
                           />
                           <div className="flex items-center gap-1">
@@ -1370,7 +1311,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                             <button
                               type="button"
                               onClick={() => handleSaveInlineAir(job.id)}
-                              className="rounded bg-primary px-1.5 py-0.5 text-2xs font-medium text-white"
+                              className="rounded bg-primary px-2 py-0.5 text-2xs font-medium text-white"
                             >
                               Lưu
                             </button>
@@ -1393,7 +1334,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                           >
                             {job.airLink}
                           </a>
-                          <ExternalLink className="h-3 w-3 text-ink-3 shrink-0" />
+                          <ExternalLink className="h-3.5 w-3.5 text-ink-3 shrink-0" />
                           <button
                             type="button"
                             onClick={() => {
@@ -1427,10 +1368,10 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     <td className={TD}>
                       <div className="flex items-center gap-1">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-2xs font-medium ${
+                          className={`rounded px-2 py-0.5 text-2xs font-medium ${
                             job.acceptanceStatus === 'PASSED'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              ? 'bg-positive-soft text-positive border border-positive/30'
+                              : 'bg-warning-soft text-warning border border-warning/30'
                           }`}
                         >
                           {SELF_ACCEPTANCE_LABEL[job.acceptanceStatus]}
@@ -1442,7 +1383,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                         <button
                           type="button"
                           onClick={() => handleQuickAcceptance(job)}
-                          className="mt-1 text-2xs text-emerald-700 hover:underline font-medium"
+                          className="mt-1 text-2xs text-positive hover:underline font-medium"
                         >
                           Nghiệm thu Đạt
                         </button>
@@ -1463,9 +1404,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                             <span
                               className={`rounded px-1 py-0.5 text-2xs font-medium ${
                                 job.paymentStatus === 'PAID'
-                                  ? 'bg-emerald-50 text-emerald-700'
+                                  ? 'bg-positive-soft text-positive'
                                   : job.paymentStatus === 'REQUESTED'
-                                  ? 'bg-blue-50 text-blue-700'
+                                  ? 'bg-accent-soft text-accent-hover'
                                   : 'bg-sunken text-ink-3'
                               }`}
                             >
@@ -1486,7 +1427,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
                     {/* Cột 9: Thao tác */}
                     <td className={`${TD} text-right`}>
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setActiveJobId(job.id)}>
                           Chi tiết
                         </Button>
@@ -1501,7 +1442,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteJob(job.id, job.code)}
-                            className="p-1 text-ink-3 hover:text-red-600 transition-colors"
+                            className="p-1 text-ink-3 hover:text-critical transition-colors"
                             title="Xóa công việc"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1701,12 +1642,12 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
               {/* Thông tin hồ sơ CTV khi chọn CTV_OUTSOURCE */}
               {activeJobDraft.productionMode === 'CTV_OUTSOURCE' && (
-                <div className="rounded border border-amber-200 bg-amber-50/50 p-3 space-y-3">
+                <div className="rounded border border-warning/30 bg-warning-soft/50 p-3 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-amber-900">
+                    <span className="text-xs font-semibold text-warning">
                       Hồ sơ & Thông tin giải ngân CTV ngoài
                     </span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <span className="text-2xs text-ink-3">Chọn nhanh từ danh bạ:</span>
                       <Select
                         className="h-7 text-xs py-0 w-52"
@@ -1804,7 +1745,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     </Field>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 border-t border-amber-200">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 border-t border-warning/30">
                     <Field label="Trạng thái hàng mẫu">
                       <Select
                         value={activeJobDraft.sampleStatus}
@@ -1926,8 +1867,8 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
               {/* Cảnh báo Từ khóa cấm của Brand để người chấm QA đối chiếu */}
               {activeJobDraft.forbiddenClaims && (
-                <div className="rounded border border-rose-200 bg-rose-50/70 p-2.5 text-xs text-rose-900 flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                <div className="rounded border border-critical/30 bg-critical-soft/70 p-3 text-xs text-critical flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-critical mt-0.5" />
                   <div>
                     <span className="font-semibold">Từ khóa cấm / Lưu ý bắt buộc của Brand: </span>
                     <span>{activeJobDraft.forbiddenClaims}</span>
@@ -2100,7 +2041,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 const savedLink = board.jobs.find(j => j.id === activeJobDraft.id)?.airLink.trim() || '';
                 const linkSaved = Boolean(activeJobDraft.airLink.trim()) && savedLink === activeJobDraft.airLink.trim();
                 return (
-                  <div className="flex flex-wrap items-start justify-between gap-3 rounded border border-line bg-sunken/40 p-2.5">
+                  <div className="flex flex-wrap items-start justify-between gap-3 rounded border border-line bg-sunken/40 p-3">
                     <AirCheckResult check={activeJobDraft.airCheck} currentLink={activeJobDraft.airLink} />
                     <div className="text-right space-y-1">
                       <Button
@@ -2127,10 +2068,10 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 const tone = (s: 'PASS' | 'WARN' | 'FAIL') => (s === 'PASS' ? 'positive' : s === 'WARN' ? 'warning' : 'critical');
                 const label = (s: 'PASS' | 'WARN' | 'FAIL') => (s === 'PASS' ? 'Khớp' : s === 'WARN' ? 'Cần xem' : 'Không đạt');
                 return (
-                  <div className="rounded border border-line bg-sunken/40 p-2.5 space-y-2">
+                  <div className="rounded border border-line bg-sunken/40 p-3 space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-xs font-semibold text-ink">Đối chiếu nội dung với brief</span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Button size="sm" variant="secondary" disabled={!linkSaved || busyContent} onClick={() => handleContentCheck(activeJobDraft, false)}>
                           {checkingContentJobId === activeJobDraft.id ? 'Đang đối chiếu…' : 'Đối chiếu từ khóa'}
                         </Button>
@@ -2148,7 +2089,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     {!linkSaved && activeJobDraft.airLink.trim() && <div className="text-2xs text-ink-3">Lưu thay đổi trước khi đối chiếu.</div>}
                     {cc && !current && <div className="text-2xs text-warning">Kết quả cũ, link đăng đã đổi. Đối chiếu lại.</div>}
                     {cc && current && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <div className="flex items-center gap-2 text-2xs text-ink-3">
                           <Status tone={cc.verdict === 'PASS' ? 'positive' : cc.verdict === 'REVIEW' ? 'warning' : 'critical'}>
                             {cc.verdict === 'PASS' ? 'Khớp brief' : cc.verdict === 'REVIEW' ? 'Cần xem lại' : 'Không đạt'}
@@ -2272,8 +2213,8 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 </Field>
 
                 {selfJobAcceptanceBlocker(activeJobDraft) && (
-                  <div className="rounded border border-amber-200 bg-amber-50 p-2 text-2xs text-amber-800 flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                  <div className="rounded border border-warning/30 bg-warning-soft p-2 text-2xs text-warning flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                     <span>Điều kiện nghiệm thu chưa hoàn tất: {selfJobAcceptanceBlocker(activeJobDraft)}</span>
                   </div>
                 )}
@@ -2322,8 +2263,8 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
               </div>
 
               {(activeJobDraft.paymentStatus === 'REQUESTED' || activeJobDraft.paymentStatus === 'PAID') && (
-                <div className="rounded border border-blue-200 bg-blue-50/70 p-2 text-2xs text-blue-900 flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+                <div className="rounded border border-accent/30 bg-accent-soft/70 p-2 text-2xs text-accent-hover flex items-center gap-2">
+                  <Lock className="h-3.5 w-3.5 shrink-0 text-accent" />
                   <span>
                     Công việc đã lập phiếu ĐNTT ({activeJobDraft.dnttSlipCode || 'Lark'}) nên đơn giá và thuế TNCN được
                     khóa để bảo toàn số liệu đối soát Kế toán.
@@ -2359,7 +2300,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                   />
                 </Field>
 
-                <div className="flex flex-col justify-end pb-1.5">
+                <div className="flex flex-col justify-end pb-2">
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-ink">
                     <input
                       type="checkbox"
@@ -2398,20 +2339,20 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
               </div>
 
               {/* Bảng tính thù lao Net & Thuế */}
-              <div className="grid grid-cols-3 gap-2 rounded border border-line bg-sunken/40 p-2.5 text-center text-xs">
+              <div className="grid grid-cols-3 gap-2 rounded border border-line bg-sunken/40 p-3 text-center text-xs">
                 <div>
                   <div className="text-2xs text-ink-3">Thù lao Gross</div>
                   <div className="text-sm font-semibold text-ink">{fmt(activeJobDraft.feeGross)} đ</div>
                 </div>
                 <div>
                   <div className="text-2xs text-ink-3">Thuế TNCN khấu trừ (10%)</div>
-                  <div className="text-sm font-semibold text-rose-600">
+                  <div className="text-sm font-semibold text-critical">
                     - {fmt(activeJobDraft.pitTaxAmount)} đ
                   </div>
                 </div>
                 <div>
                   <div className="text-2xs text-ink-3">Thực nhận chuyển khoản (Net)</div>
-                  <div className="text-sm font-semibold text-emerald-700">
+                  <div className="text-sm font-semibold text-positive">
                     {fmt(activeJobDraft.netPayout)} đ
                   </div>
                 </div>
@@ -2420,8 +2361,8 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
               {(() => {
                 const payBlocker = selfJobPaymentBlocker(activeJobDraft);
                 return payBlocker ? (
-                  <div className="rounded border border-amber-200 bg-amber-50 p-2 text-2xs text-amber-800 flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                  <div className="rounded border border-warning/30 bg-warning-soft p-2 text-2xs text-warning flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                     <span>Điều kiện lập ĐNTT chưa đạt: {payBlocker}</span>
                   </div>
                 ) : null;
