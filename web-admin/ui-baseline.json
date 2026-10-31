@@ -3,9 +3,6 @@
     "button-tu-viet": 12,
     "chu-nho": 1
   },
-  "src/app/page.tsx": {
-    "dinh-dang-so": 3
-  },
   "src/components/CampaignCreateModal.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 10,
@@ -68,6 +65,25 @@
   "src/components/UserProfileModal.tsx": {
     "button-tu-viet": 5,
     "font-mono": 4
+  },
+  "src/components/booking/ApprovedBookingLarkGrid.tsx": {
+    "bang-tu-viet": 1,
+    "button-tu-viet": 9,
+    "dinh-dang-so": 1,
+    "input-tu-viet": 22,
+    "nhan-danh-so": 3,
+    "select-tu-viet": 4
+  },
+  "src/components/booking/ApprovedBookingModals.tsx": {
+    "bang-tu-viet": 1,
+    "button-tu-viet": 3,
+    "chua-ro": 1,
+    "dinh-dang-so": 2,
+    "font-mono": 7,
+    "icon-12": 1,
+    "input-tu-viet": 9,
+    "khoang-cach-nua-bac": 7,
+    "select-tu-viet": 2
   },
   "src/components/booking/DealDetailDrawer.tsx": {
     "button-tu-viet": 19,
@@ -176,6 +192,9 @@
     "input-tu-viet": 1,
     "nhan-danh-so": 4
   },
+  "src/components/crawler/CrawlerChannelBriefModal.tsx": {
+    "button-tu-viet": 1
+  },
   "src/components/crawler/LinkAirCheckerPanel.tsx": {
     "font-mono": 2
   },
@@ -243,6 +262,22 @@
     "bang-tu-viet": 3,
     "input-tu-viet": 4
   },
+  "src/components/planning/PlanCreateEditModal.tsx": {
+    "bang-tu-viet": 1,
+    "button-tu-viet": 10,
+    "dinh-dang-so": 2,
+    "font-mono": 3,
+    "input-tu-viet": 1,
+    "nhan-danh-so": 9,
+    "select-tu-viet": 2
+  },
+  "src/components/planning/PlanDiscussionDrawer.tsx": {
+    "bang-tu-viet": 1,
+    "button-tu-viet": 9,
+    "dinh-dang-so": 1,
+    "font-mono": 10,
+    "nhan-danh-so": 8
+  },
   "src/components/shortlist/AddToBrandListingSheetModal.tsx": {
     "button-tu-viet": 1,
     "dinh-dang-so": 1
@@ -263,6 +298,21 @@
     "bang-tu-viet": 1,
     "button-tu-viet": 1,
     "font-mono": 8
+  },
+  "src/components/shortlist/ListingSheetModals.tsx": {
+    "bang-tu-viet": 2,
+    "button-tu-viet": 15,
+    "dinh-dang-so": 2,
+    "font-mono": 3,
+    "input-tu-viet": 12,
+    "nhan-danh-so": 13,
+    "textarea-tu-viet": 1
+  },
+  "src/components/shortlist/ListingSheetSummaryHeader.tsx": {
+    "button-tu-viet": 9,
+    "font-mono": 1,
+    "input-tu-viet": 4,
+    "select-tu-viet": 7
   },
   "src/components/shortlist/LivestreamListingWorkspace.tsx": {
     "dinh-dang-so": 10,
@@ -285,14 +335,13 @@
     "input-tu-viet": 1
   },
   "src/components/shortlist/StaffBrandListingSheetWorkspace.tsx": {
-    "bang-tu-viet": 3,
-    "button-tu-viet": 30,
-    "dinh-dang-so": 5,
-    "font-mono": 23,
-    "input-tu-viet": 18,
-    "nhan-danh-so": 14,
-    "select-tu-viet": 13,
-    "textarea-tu-viet": 1
+    "bang-tu-viet": 1,
+    "button-tu-viet": 6,
+    "dinh-dang-so": 3,
+    "font-mono": 19,
+    "input-tu-viet": 2,
+    "nhan-danh-so": 1,
+    "select-tu-viet": 6
   },
   "src/components/shortlist/StoreShortlistFilterModal.tsx": {
     "button-tu-viet": 7,
@@ -329,16 +378,11 @@
     "textarea-tu-viet": 2
   },
   "src/components/views/ApprovedBookingListView.tsx": {
-    "bang-tu-viet": 2,
-    "button-tu-viet": 12,
-    "chua-ro": 3,
-    "dinh-dang-so": 7,
-    "font-mono": 8,
-    "icon-12": 1,
-    "input-tu-viet": 32,
-    "khoang-cach-nua-bac": 12,
-    "nhan-danh-so": 3,
-    "select-tu-viet": 6
+    "chua-ro": 2,
+    "dinh-dang-so": 4,
+    "font-mono": 1,
+    "input-tu-viet": 1,
+    "khoang-cach-nua-bac": 5
   },
   "src/components/views/BrandMarketResearchHubView.tsx": {
     "bang-tu-viet": 1,
@@ -426,7 +470,7 @@
     "dinh-dang-so": 8,
     "font-mono": 80,
     "input-tu-viet": 17,
-    "mau-cu": 5,
+    "mau-cu": 4,
     "nhan-danh-so": 24,
     "select-tu-viet": 8,
     "textarea-tu-viet": 1
@@ -484,14 +528,11 @@
     "textarea-tu-viet": 2
   },
   "src/components/views/MonthlyPlanHub.tsx": {
-    "bang-tu-viet": 4,
-    "button-tu-viet": 25,
-    "dinh-dang-so": 4,
-    "font-mono": 14,
-    "input-tu-viet": 1,
-    "mau-cu": 1,
-    "nhan-danh-so": 23,
-    "select-tu-viet": 2
+    "bang-tu-viet": 2,
+    "button-tu-viet": 6,
+    "dinh-dang-so": 1,
+    "font-mono": 1,
+    "nhan-danh-so": 6
   },
   "src/components/views/PlanActualReportView.tsx": {
     "button-tu-viet": 1,
@@ -582,7 +623,7 @@
     "select-tu-viet": 2
   },
   "src/components/views/TikTokCrawlerHubView.tsx": {
-    "button-tu-viet": 15,
+    "button-tu-viet": 14,
     "dinh-dang-so": 2,
     "input-tu-viet": 7
   },

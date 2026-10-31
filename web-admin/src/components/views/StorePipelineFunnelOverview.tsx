@@ -11,7 +11,6 @@ import {
 } from '../../lib/types';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
 import { filterScopedStores } from '../../lib/rbacScope';
-import { REAL_MONTHLY_PLANS_OCT_2026 } from '../../lib/realLarkPlans202610';
 import {
   evaluatePlanValiditySummary,
   type PlanValidityEvaluation,
@@ -163,7 +162,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
 
   // Tải danh sách kế hoạch 4.1.1 từ server (fallback dữ liệu gốc tháng 10/2026)
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>(
-    () => getCachedClientMonthlyPlans() || REAL_MONTHLY_PLANS_OCT_2026
+    () => getCachedClientMonthlyPlans() || []
   );
 
   useEffect(() => {
