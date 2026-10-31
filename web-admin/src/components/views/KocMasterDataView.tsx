@@ -398,38 +398,48 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     [activeDataset],
   );
 
-  // Lọc theo điều kiện tìm kiếm và dropdowns
+  // Lọc theo điều kiện tìm kiếm và dropdowns (hỗ trợ tìm có dấu và không dấu)
   const baseFiltered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const qDigits = q.replace(/\D/g, '');
+    const norm = (s?: string) =>
+      (s || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/gi, 'd')
+        .toLowerCase();
+    const rawQ = search.trim();
+    const q = norm(rawQ).replace(/^@+/, '');
+    const qTerms = q ? q.split(/\s+/).filter(Boolean) : [];
+    const qDigits = rawQ.replace(/\D/g, '');
+
     return activeDataset.filter((k) => {
-      if (q) {
+      if (qTerms.length > 0) {
         const profiles = getKocLegalProfiles(k);
-        const matchLegalHolder = profiles.some(
-          (p) =>
-            p.holderName.toLowerCase().includes(q) ||
-            (p.cccd || '').toLowerCase().includes(q) ||
-            (p.taxCode || '').toLowerCase().includes(q) ||
-            (p.bankAccount || '').toLowerCase().includes(q),
+        const profileBlob = profiles
+          .map((p) => `${p.holderName || ''} ${p.cccd || ''} ${p.taxCode || ''} ${p.bankAccount || ''}`)
+          .join(' ');
+        const haystack = norm(
+          [
+            k.stageName,
+            k.realName,
+            k.channelId,
+            k.email,
+            k.brandName,
+            k.latestBoCode,
+            k.proposedStores,
+            k.shopeeChannel,
+            k.facebookChannel,
+            k.instagramChannel,
+            k.threadsChannel,
+            profileBlob,
+          ].join(' '),
         );
-        const hit =
-          k.stageName.toLowerCase().includes(q) ||
-          (k.realName || '').toLowerCase().includes(q) ||
-          k.channelId.toLowerCase().includes(q) ||
-          (k.email || '').toLowerCase().includes(q) ||
-          (k.brandName || '').toLowerCase().includes(q) ||
-          (k.latestBoCode || '').toLowerCase().includes(q) ||
-          (k.proposedStores || '').toLowerCase().includes(q) ||
-          (k.shopeeChannel || '').toLowerCase().includes(q) ||
-          (k.facebookChannel || '').toLowerCase().includes(q) ||
-          (k.instagramChannel || '').toLowerCase().includes(q) ||
-          (k.threadsChannel || '').toLowerCase().includes(q) ||
-          matchLegalHolder ||
-          (qDigits.length >= 4 &&
-            [k.phone, k.cccd, k.taxCode, k.bankAccount].some((v) =>
-              (v || '').replace(/\D/g, '').includes(qDigits),
-            ));
-        if (!hit) return false;
+        const matchTerms = qTerms.every((t) => haystack.includes(t));
+        const matchDigits =
+          qDigits.length >= 4 &&
+          [k.phone, k.cccd, k.taxCode, k.bankAccount].some((v) =>
+            (v || '').replace(/\D/g, '').includes(qDigits),
+          );
+        if (!matchTerms && !matchDigits) return false;
       }
       if (category !== ALL && k.kocCategory !== category) return false;
       if (tepKenh !== ALL && (k.tepKenh || k.creatorCategory) !== tepKenh) return false;
@@ -439,7 +449,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       if (platform !== ALL && !hasKocPlatform(k, platform)) return false;
       return true;
     });
-  }, [activeDataset, search, category, tepKenh, salaryGrade, picFilter, platform]);
+  }, [localKocs, activeDataset, search, category, tepKenh, salaryGrade, picFilter, platform]);
 
   const isKocMarkedSuitable = (k: KocItem): boolean => {
     const sum = getChannelSummary(k.channelId || k.channelLink);
@@ -873,7 +883,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       header: 'KOC',
       width: 230,
       render: (k) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[240px]">
+        <div className="flex items-center gap-3 min-w-0 max-w-[240px]">
           <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
             <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
           </span>
@@ -1018,7 +1028,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       // "Thêm vào Sheet" là mục đầu tiên trong menu; bỏ nút riêng để bảng vừa khung, không phải cuộn ngang
       render: (k) => (
         <div
-          className="flex items-center justify-end gap-1.5"
+          className="flex items-center justify-end gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <ActionMenu items={rowActions(k)} />
@@ -1035,7 +1045,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       header: 'KOC & nguồn',
       width: 200,
       render: (k) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[190px]">
+        <div className="flex items-center gap-3 min-w-0 max-w-[190px]">
           <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
             <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
           </span>
@@ -1130,7 +1140,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             <div className="flex flex-wrap items-center gap-1">
               <Status tone={rInfo.tone}>{rInfo.label}</Status>
               <span
-                className={`px-1.5 py-0.5 rounded text-3xs font-semibold border ${
+                className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
                   isContacted
                     ? 'bg-positive-soft text-positive border-positive/30'
                     : 'bg-sunken text-ink-3 border-line'
@@ -1163,7 +1173,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       width: 120,
       render: (k) => (
         <div
-          className="flex items-center justify-end gap-1.5"
+          className="flex items-center justify-end gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -1421,7 +1431,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                   datasetTab === 'COOPERATED' ? 'Danh bạ Master KOC B2C 2026' : 'Sheet KOC_Tiem_Nang, TikTok Seller, Kalodata'
                 }`}
               >
-                <div className="px-4 pb-3 border-b border-line grid gap-2.5">
+                <div className="px-4 pb-3 border-b border-line grid gap-3">
                   <FilterBar
                     search={{
                       value: search,
@@ -2014,7 +2024,7 @@ function KocOutreachModal({
         {history.length > 0 && (
           <div className="pt-2 border-t border-line space-y-2">
             <div className="font-semibold text-ink">Lịch sử liên hệ trước đó ({history.length})</div>
-            <div className="max-h-36 overflow-y-auto space-y-1.5">
+            <div className="max-h-36 overflow-y-auto space-y-2">
               {history.map((h) => (
                 <div key={h.id} className="p-2 rounded-lg border border-line bg-sunken/40 text-2xs space-y-0.5">
                   <div className="flex items-center justify-between font-medium text-ink">

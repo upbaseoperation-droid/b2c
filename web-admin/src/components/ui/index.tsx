@@ -16,6 +16,8 @@ export { Avatar, Person, initialsOf, CHANNELS, channelOf, ChannelTag, ChannelBar
 export { TrendChart, ScatterPlot, CorrelationMatrix, BarList, StackBar, HeatGrid, GROUP_COLORS, autoScale, spearman, pearson, describeCorrelation, formatCorr } from './charts';
 export type { ChannelKey } from './data';
 export type { TrendPoint, ScatterPoint, AxisScale, BarItem, StackPart } from './charts';
+export { Combobox } from './Combobox';
+export type { ComboboxOption, ComboboxProps } from './Combobox';
 export { BrandAvatar } from './BrandAvatar';
 export type { BrandAvatarProps } from './BrandAvatar';
 export { PlatformLogo, FacebookLogo, ThreadsLogo, InstagramLogo, ShopeeLogo, TikTokLogo, LazadaLogo, LiveLogo, SelfChannelLogo, PlatformBadge, getPlatformShortLabel } from './PlatformLogos';

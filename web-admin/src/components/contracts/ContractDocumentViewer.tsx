@@ -119,14 +119,27 @@ export function ContractDocumentViewer({
     return map;
   }, [fields]);
 
-  // Cuộn tới trường đang chọn trên mặt giấy A4
+  // Cuộn tới trường đang chọn trên mặt giấy A4 (chỉ cuộn bên trong khung A4, không cuộn cả trang)
+  const scrollSheetToField = (target: HTMLElement) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const nextTop =
+      container.scrollTop +
+      (targetRect.top - containerRect.top) -
+      container.clientHeight / 2 +
+      targetRect.height / 2;
+    container.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+  };
+
   useEffect(() => {
     if (!activeFieldKey || !containerRef.current) return;
     const target = containerRef.current.querySelector<HTMLElement>(
       `[data-field-key="${CSS.escape(activeFieldKey)}"]`,
     );
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollSheetToField(target);
     }
   }, [activeFieldKey]);
 
@@ -140,7 +153,9 @@ export function ContractDocumentViewer({
       const el = containerRef.current.querySelector<HTMLElement>(
         `[data-field-key="${CSS.escape(nextField.key)}"]`,
       );
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (el) {
+        scrollSheetToField(el);
+      }
     }
     onSelectField?.(nextField.key);
   };
@@ -340,7 +355,7 @@ export function ContractDocumentViewer({
         onClick={onSelectField ? () => onSelectField(f.key) : undefined}
         onKeyDown={onSelectField ? e => (e.key === 'Enter' || e.key === ' ') && onSelectField(f.key) : undefined}
         title={`${fieldTitle}${f.required ? ' (Bắt buộc điền)' : ' (Tùy chọn)'}${onSelectField ? ' · Bấm để nhập' : ''}`}
-        className={`field-mark inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-sans text-2xs leading-snug transition-colors ${
+        className={`field-mark inline-flex items-center gap-1 rounded px-2 py-0.5 font-sans text-2xs leading-snug transition-colors ${
           f.required
             ? 'bg-warning-soft/75 text-warning-strong border border-dashed border-warning font-medium'
             : 'bg-sunken text-ink-2 border border-dashed border-line-strong'
@@ -377,7 +392,7 @@ export function ContractDocumentViewer({
           <p
             className={`${alignClass} ${block.bold ? 'font-semibold' : ''} ${block.italic ? 'italic' : ''} ${
               isMainTitle
-                ? 'text-lg uppercase tracking-wide font-semibold mt-4 mb-1 text-black'
+                ? 'text-lg font-semibold mt-4 mb-1 text-black'
                 : isClause
                   ? 'mt-4 mb-1 text-base font-semibold text-black'
                   : 'my-1 text-black'
@@ -417,7 +432,7 @@ export function ContractDocumentViewer({
                         {cell.blocks.map((b, bIdx) => renderBlock(b, `${idx}-r${rIdx}-c${cIdx}-${bIdx}`))}
                         {signer ? (
                           <div
-                            className={`mt-4 mx-auto max-w-[260px] rounded-lg border px-3.5 py-2.5 font-sans text-left text-2xs space-y-1 ${
+                            className={`mt-4 mx-auto max-w-[260px] rounded-lg border px-4 py-3 font-sans text-left text-2xs space-y-1 ${
                               signer.action === 2
                                 ? 'border-positive/50 bg-positive-soft/75 text-ink'
                                 : signer.action === 3
@@ -426,7 +441,7 @@ export function ContractDocumentViewer({
                             }`}
                           >
                             <div
-                              className={`flex items-center justify-between gap-1.5 font-semibold ${
+                              className={`flex items-center justify-between gap-2 font-semibold ${
                                 signer.action === 2
                                   ? 'text-positive'
                                   : signer.action === 3
@@ -457,7 +472,7 @@ export function ContractDocumentViewer({
                           </div>
                         ) : (
                           !isTemplatePreview && (
-                            <div className="mt-4 mx-auto max-w-[240px] rounded-lg border border-dashed border-line-strong bg-sunken/40 px-3 py-2.5 font-sans text-center text-2xs text-ink-3 space-y-0.5">
+                            <div className="mt-4 mx-auto max-w-[240px] rounded-lg border border-dashed border-line-strong bg-sunken/40 px-3 py-3 font-sans text-center text-2xs text-ink-3 space-y-0.5">
                               <div className="font-medium text-ink-2">{defaultPartyRole}</div>
                               <div>Vị trí đóng dấu &amp; chữ ký số weSign</div>
                             </div>
@@ -578,7 +593,7 @@ export function ContractDocumentViewer({
                         key={cIdx}
                         colSpan={cell.colSpan}
                         rowSpan={rowSpan && rowSpan > 1 ? rowSpan : undefined}
-                        className={`border border-[#333] px-2.5 py-1.5 align-top ${
+                        className={`border border-[#333] px-3 py-2 align-top ${
                           cIdx === 0 && row.length >= 2
                             ? isSttCol
                               ? 'w-12 text-center'
@@ -622,7 +637,7 @@ export function ContractDocumentViewer({
 
     return (
       <div className="my-5 pt-3 border-t border-[#333] space-y-4">
-        <p className="font-semibold text-[14px] uppercase text-[#111]">
+        <p className="font-semibold text-sm text-[#111]">
           CHI TIẾT BẢNG CÔNG VIỆC THEO TỪNG JOB TRONG PHỤ LỤC ({savedJobTables.length} JOB · {savedJobTables.length} BẢNG CÔNG VIỆC)
         </p>
 
@@ -636,8 +651,8 @@ export function ContractDocumentViewer({
           const jobSubtotal = videoTotal + addonsTotal;
 
           return (
-            <div key={job.id || jIdx} className="space-y-1.5">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] font-semibold text-[#111]">
+            <div key={job.id || jIdx} className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[#111]">
                 <span>
                   Bảng công việc #{jIdx + 1} · Mã Job: {job.jobCode} — {job.productName || 'Sản phẩm chiến dịch'} ({job.mediaChannel || 'TikTok'})
                 </span>
@@ -646,50 +661,50 @@ export function ContractDocumentViewer({
                 </span>
               </div>
 
-              <table className="doc-grid w-full border-collapse border border-[#333] text-[13px]">
+              <table className="doc-grid w-full border-collapse border border-[#333] text-xs">
                 <thead>
                   <tr className="bg-[#f4f3ef] font-semibold">
-                    <th className="border border-[#333] px-2 py-1.5 w-10 text-center">STT</th>
-                    <th className="border border-[#333] px-2.5 py-1.5 text-left">Hạng mục công việc trong Job #{jIdx + 1}</th>
-                    <th className="border border-[#333] px-2.5 py-1.5 text-left">Đầu việc bàn giao / Thời hạn</th>
-                    <th className="border border-[#333] px-2 py-1.5 w-16 text-center">SL</th>
-                    <th className="border border-[#333] px-2.5 py-1.5 w-32 text-right">Thành tiền Net (VNĐ)</th>
+                    <th className="border border-[#333] px-2 py-2 w-10 text-center">STT</th>
+                    <th className="border border-[#333] px-3 py-2 text-left">Hạng mục công việc trong Job #{jIdx + 1}</th>
+                    <th className="border border-[#333] px-3 py-2 text-left">Đầu việc bàn giao / Thời hạn</th>
+                    <th className="border border-[#333] px-2 py-2 w-16 text-center">SL</th>
+                    <th className="border border-[#333] px-3 py-2 w-32 text-right">Thành tiền Net (VNĐ)</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-[#333] px-2 py-1.5 text-center">1</td>
-                    <td className="border border-[#333] px-2.5 py-1.5">
+                    <td className="border border-[#333] px-2 py-2 text-center">1</td>
+                    <td className="border border-[#333] px-3 py-2">
                       <span className="font-semibold">Sản xuất &amp; đăng tải Video ({job.productName || 'Sản phẩm'})</span>
                       <div className="text-2xs text-[#444]">
                         Kênh: {job.mediaChannel || 'TikTok'}
                         {job.videoUrl ? ` · Link Air: ${job.videoUrl}` : ''}
                       </div>
                     </td>
-                    <td className="border border-[#333] px-2.5 py-1.5">
+                    <td className="border border-[#333] px-3 py-2">
                       Đăng tải dự kiến: {job.airDate || '—'}
                     </td>
-                    <td className="border border-[#333] px-2 py-1.5 text-center">{qty}</td>
-                    <td className="border border-[#333] px-2.5 py-1.5 text-right font-semibold">
+                    <td className="border border-[#333] px-2 py-2 text-center">{qty}</td>
+                    <td className="border border-[#333] px-3 py-2 text-right font-semibold">
                       {formatNumber(videoTotal)}
                     </td>
                   </tr>
 
                   {activeAddons.map((addon, aIdx) => (
                     <tr key={addon.id || aIdx}>
-                      <td className="border border-[#333] px-2 py-1.5 text-center">{aIdx + 2}</td>
-                      <td className="border border-[#333] px-2.5 py-1.5">
+                      <td className="border border-[#333] px-2 py-2 text-center">{aIdx + 2}</td>
+                      <td className="border border-[#333] px-3 py-2">
                         <span>{addon.termLabel}</span>
                         {addon.evidenceCodeOrUrl && (
                           <div className="text-2xs text-[#444]">Mã / Link: {addon.evidenceCodeOrUrl}</div>
                         )}
                       </td>
-                      <td className="border border-[#333] px-2.5 py-1.5">
+                      <td className="border border-[#333] px-3 py-2">
                         Thời hạn: {addon.durationDays || 30} ngày
                         {addon.acceptanceStatus === 'DROPPED' ? ' (Hủy / Khấu trừ)' : ''}
                       </td>
-                      <td className="border border-[#333] px-2 py-1.5 text-center">1</td>
-                      <td className="border border-[#333] px-2.5 py-1.5 text-right">
+                      <td className="border border-[#333] px-2 py-2 text-center">1</td>
+                      <td className="border border-[#333] px-3 py-2 text-right">
                         {addon.acceptanceStatus === 'DROPPED'
                           ? '0 (Hủy)'
                           : addon.allocatedCostVnd > 0
@@ -700,10 +715,10 @@ export function ContractDocumentViewer({
                   ))}
 
                   <tr className="bg-[#faf9f5] font-semibold">
-                    <td colSpan={4} className="border border-[#333] px-2.5 py-1.5 text-right">
+                    <td colSpan={4} className="border border-[#333] px-3 py-2 text-right">
                       Cộng Bảng công việc #{jIdx + 1} ({job.jobCode}) — Tiền Net:
                     </td>
-                    <td className="border border-[#333] px-2.5 py-1.5 text-right">
+                    <td className="border border-[#333] px-3 py-2 text-right">
                       {formatNumber(jobSubtotal)} đ
                     </td>
                   </tr>
@@ -730,7 +745,7 @@ export function ContractDocumentViewer({
     return (
       <div className="doc-screenshot-section my-5 pt-3 border-t border-[#333] space-y-3">
         {inspectionMeta && (
-          <div className="border border-[#333] p-3 bg-[#faf9f5] rounded-xs text-xs leading-snug space-y-1.5">
+          <div className="border border-[#333] p-3 bg-[#faf9f5] rounded-xs text-xs leading-snug space-y-2">
             <p className="font-semibold text-xs text-[#111]">
               Thông tin Link Air, chỉ số tương tác &amp; đối soát kịch bản nghiệm thu
             </p>
@@ -766,11 +781,11 @@ export function ContractDocumentViewer({
           <p className="font-semibold text-xs text-[#111] mb-2">
             Hình ảnh chụp màn hình video lúc sản phẩm xuất hiện (Minh chứng nghiệm thu)
           </p>
-          <div className="doc-screenshot-grid grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
+          <div className="doc-screenshot-grid grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
             {acceptanceScreenshots.map((shot, sIdx) => (
               <div
                 key={shot.id || sIdx}
-                className="doc-screenshot-card border border-[#333] p-2.5 bg-[#faf9f5] rounded-xs text-xs leading-snug"
+                className="doc-screenshot-card border border-[#333] p-3 bg-[#faf9f5] rounded-xs text-xs leading-snug"
               >
                 <div className="bg-black rounded-xs overflow-hidden mb-2 flex items-center justify-center max-h-[240px]">
                   <img
@@ -808,7 +823,7 @@ export function ContractDocumentViewer({
       <div
         ref={inModal ? undefined : containerRef}
         style={inModal ? undefined : { maxHeight }}
-        className="overflow-auto bg-sunken p-3 sm:p-5 lg:p-6 rounded-b-xl"
+        className="overflow-auto overscroll-contain bg-sunken p-3 sm:p-5 lg:p-6 rounded-b-xl"
       >
         <div
           ref={inModal ? undefined : printRef}
@@ -821,7 +836,7 @@ export function ContractDocumentViewer({
         >
           {/* Header biểu mẫu chuẩn Microsoft Word */}
           <div className="doc-header mb-6 pb-2 border-b border-[#d8d8d8] text-2xs text-[#555] flex items-center justify-between gap-2">
-            <span className="font-sans font-medium tracking-wide text-[#666]">Phòng Pháp chế · UpBase B2C</span>
+            <span className="font-sans font-medium text-[#666]">Phòng Pháp chế · UpBase B2C</span>
             <div className="text-right font-code text-[#333]">
               {headerBlocks.length > 0 ? (
                 headerBlocks.map((b, i) => renderBlock(b, `hdr-${i}`))
@@ -866,12 +881,14 @@ export function ContractDocumentViewer({
   return (
     <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
       {/* Thanh công cụ kiểm tra hợp đồng */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 border-b border-line bg-surface">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-line bg-surface">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink">
-            <FileText className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />
-            <span className="truncate">{templateName || 'Bản xem văn bản hợp đồng (A4)'}</span>
-          </span>
+          {(!compactToolbar || uniqueFields.length === 0 || isTemplatePreview) && (
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-ink min-w-0">
+              <FileText className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />
+              <span className="truncate">{templateName || 'Bản xem văn bản hợp đồng (A4)'}</span>
+            </span>
+          )}
 
           {uniqueFields.length > 0 && (
             isTemplatePreview ? (
@@ -889,12 +906,16 @@ export function ContractDocumentViewer({
                 {missingRequired.length === 0 ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
-                    Đủ {requiredFields.length}/{requiredFields.length} mục bắt buộc · Đã điền {filledCount}/{uniqueFields.length} ô
+                    {compactToolbar
+                      ? `Đủ ${requiredFields.length}/${requiredFields.length} mục bắt buộc`
+                      : `Đủ ${requiredFields.length}/${requiredFields.length} mục bắt buộc · Đã điền ${filledCount}/${uniqueFields.length} ô`}
                   </>
                 ) : (
                   <>
                     <AlertCircle className="w-3.5 h-3.5 text-warning-strong" />
-                    Còn {missingRequired.length} mục bắt buộc chưa điền ({requiredFields.length - missingRequired.length}/{requiredFields.length})
+                    {compactToolbar
+                      ? `Đã điền ${requiredFields.length - missingRequired.length}/${requiredFields.length} mục bắt buộc`
+                      : `Còn ${missingRequired.length} mục bắt buộc chưa điền (${requiredFields.length - missingRequired.length}/${requiredFields.length})`}
                   </>
                 )}
               </span>
@@ -907,18 +928,18 @@ export function ContractDocumentViewer({
               onClick={jumpToNextMissing}
               className="text-2xs font-medium text-accent hover:underline"
             >
-              Tới mục trống tiếp theo →
+              {compactToolbar ? 'Tới mục trống →' : 'Tới mục trống tiếp theo →'}
             </button>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           {versionSelector}
 
           <button
             type="button"
             onClick={() => setHighlight(v => !v)}
-            className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-2xs font-medium border transition-colors ${
+            className={`inline-flex items-center gap-2 h-7 px-3 rounded-md text-2xs font-medium border transition-colors ${
               highlight
                 ? 'bg-accent-soft/50 border-accent/40 text-accent'
                 : 'bg-surface border-line text-ink-2 hover:bg-sunken'
@@ -934,16 +955,16 @@ export function ContractDocumentViewer({
               <button
                 type="button"
                 onClick={() => setZoom(z => Math.max(80, z - 10))}
-                className="h-7 px-1.5 text-ink-2 hover:bg-sunken"
+                className="h-7 px-2 text-ink-2 hover:bg-sunken"
                 title="Thu nhỏ"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="px-1.5 text-2xs tabular-nums text-ink-2">{zoom}%</span>
+              <span className="px-2 text-2xs tabular-nums text-ink-2">{zoom}%</span>
               <button
                 type="button"
                 onClick={() => setZoom(z => Math.min(130, z + 10))}
-                className="h-7 px-1.5 text-ink-2 hover:bg-sunken"
+                className="h-7 px-2 text-ink-2 hover:bg-sunken"
                 title="Phóng to"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
@@ -954,7 +975,7 @@ export function ContractDocumentViewer({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:bg-sunken"
+            className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:bg-sunken"
             title="In hoặc xuất PDF chuẩn trang A4"
           >
             <Printer className="w-3.5 h-3.5" />
@@ -964,7 +985,7 @@ export function ContractDocumentViewer({
           {downloadHref && (
             <a
               href={downloadHref}
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:bg-sunken"
+              className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:bg-sunken"
               title="Tải file Word (.docx)"
             >
               <Download className="w-3.5 h-3.5" />

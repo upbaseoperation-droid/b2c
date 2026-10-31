@@ -6,10 +6,11 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Building2, Camera, CheckCircle2, Columns2, Copy, CreditCard, FileScan, FileUp, Scale, Search, ShieldCheck, Trash2, Upload, UserCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Building2, Calendar, Camera, CheckCircle2, Columns2, Copy, CreditCard, FileScan, FileUp, Scale, Search, ShieldCheck, Trash2, Upload, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, LegalDocAttachment, OcrExtractedFields } from '../../lib/types';
 import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate, VideoAcceptanceInspectionMeta } from '../../lib/contracts/types';
-import { Button, Field, Input, Modal, Panel, Person, Segmented, Select, Status, Textarea } from '../ui';
+import { Button, Combobox, Field, Input, Modal, Panel, Person, Segmented, Select, Status, Textarea } from '../ui';
+import type { ComboboxOption } from '../ui/Combobox';
 import { formatNumber } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
@@ -39,7 +40,6 @@ import {
   aggregateMultiJobAcceptanceBreakdown,
   buildDealSowJobTables,
   buildJobAcceptanceBreakdown,
-  describeFieldDataSource,
   formatMoneyInput,
   inferAcceptanceTemplateId,
   isAcceptance,
@@ -95,11 +95,6 @@ export interface ContractFormPayload {
   /** Tạo mới theo luồng Google Doc: lưu và trình draft luôn. */
   submitGoogleDocsDraft?: boolean;
 }
-
-/** Một câu hướng dẫn ngắn đầu mỗi bước của form. */
-const StepHint = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-xs text-ink-2">{children}</p>
-);
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
   deal ? kocs.find(k => k.id === deal.kocId) || kocs.find(k => k.channelId.replace(/^@/, '').toLowerCase() === (deal.kocChannelId || '').replace(/^@/, '').toLowerCase()) : undefined;
@@ -300,7 +295,6 @@ export function ContractForm({
   const [selectedLegalProfileId, setSelectedLegalProfileId] = useState<string>(
     init?.legalProfileId || initialDeal?.legalProfileId || initialResolvedProfile?.id || '',
   );
-  const [kocSearchQuery, setKocSearchQuery] = useState<string>('');
   const [docStage, setDocStage] = useState<ContractDocStage>(initialDocStage);
   const [kind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
     initialDocStage === 'BBNT'
@@ -656,9 +650,12 @@ export function ContractForm({
   };
   const required = activeFields.filter(f => f.required);
   const requiredDone = required.filter(f => values[f.key]?.trim()).length;
-  const filledTotalCount = activeFields.filter(f => values[f.key]?.trim()).length;
-  const missingTotalCount = activeFields.length - filledTotalCount;
-  const needsAttentionCount = activeFields.filter(isFieldNeedsAttention).length;
+  const dateGroupFields = activeFields.filter(f => f.group === 'DATE');
+  const nonDateActiveFields = activeFields.filter(f => f.group !== 'DATE');
+  const uiTotalFieldsCount = nonDateActiveFields.length + (dateGroupFields.length > 0 ? 1 : 0);
+  const needsAttentionCount =
+    nonDateActiveFields.filter(isFieldNeedsAttention).length +
+    (dateGroupFields.some(isFieldNeedsAttention) ? 1 : 0);
 
   const refreshSystemPrefill = () => {
     if (!fields.length) return;
@@ -1181,25 +1178,80 @@ export function ContractForm({
     reader.readAsDataURL(file);
   };
 
+  const [signDateText, setSignDateText] = useState<string | null>(null);
+  const signDatePickerRef = useRef<HTMLInputElement | null>(null);
+
+  const applySignDateParts = (dd: string, mm: string, yyyy: string) => {
+    const cleanDd = dd.padStart(2, '0');
+    const cleanMm = mm.padStart(2, '0');
+    const yearLastDigit = yyyy.slice(-1);
+    const yearLast2 = yyyy.slice(-2);
+    setValues(prev => {
+      const next = { ...prev };
+      for (const f of fields) {
+        if (f.source === 'signDay') next[f.key] = cleanDd;
+        else if (f.source === 'signMonth') next[f.key] = cleanMm;
+        else if (f.source === 'signYearDigit') next[f.key] = yearLastDigit;
+        else if (f.source === 'docDate' && prefilled.has(f.key)) {
+          next[f.key] = `${cleanDd}.${cleanMm}.${yearLast2}`;
+        }
+      }
+      return next;
+    });
+    setPrefilled(prev => {
+      const n = new Set(prev);
+      for (const f of fields) {
+        if (f.source === 'signDay' || f.source === 'signMonth' || f.source === 'signYearDigit') {
+          n.delete(f.key);
+        }
+      }
+      return n;
+    });
+  };
+
   const setValue = (f: ContractField, raw: string) => {
     const v = f.kind === 'money' ? formatMoneyInput(raw) : raw;
     setValues(prev => ({ ...prev, [f.key]: v }));
     if (prefilled.has(f.key)) setPrefilled(prev => { const n = new Set(prev); n.delete(f.key); return n; });
   };
 
+  const leftScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollLeftPaneToInput = (el: HTMLElement) => {
+    const pane = leftScrollRef.current;
+    if (pane && pane.scrollHeight > pane.clientHeight + 4) {
+      const paneRect = pane.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const nextTop =
+        pane.scrollTop +
+        (elRect.top - paneRect.top) -
+        pane.clientHeight / 2 +
+        elRect.height / 2;
+      pane.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
   const focusFieldInput = (fieldKey: string) => {
     setActiveFieldKey(fieldKey);
-    const input = document.getElementById(`ct-f-${fieldKey}`);
+    const matchedField = fields.find(f => f.key === fieldKey);
+    const isCombinedDateField =
+      matchedField &&
+      (matchedField.source === 'signDay' ||
+        matchedField.source === 'signMonth' ||
+        matchedField.source === 'signYearDigit');
+    const targetDomId = isCombinedDateField ? 'ct-f-sign-date' : `ct-f-${fieldKey}`;
+    const input = document.getElementById(targetDomId);
     if (input) {
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      input.focus();
+      scrollLeftPaneToInput(input);
+      input.focus({ preventScroll: true });
     } else {
       setFieldFilterMode('ALL');
       setTimeout(() => {
-        const revealed = document.getElementById(`ct-f-${fieldKey}`);
+        const revealed = document.getElementById(targetDomId);
         if (revealed) {
-          revealed.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          revealed.focus();
+          scrollLeftPaneToInput(revealed);
+          revealed.focus({ preventScroll: true });
         }
       }, 60);
     }
@@ -1330,34 +1382,43 @@ export function ContractForm({
       ? r.templateId.endsWith('-HDNT') && (!targetKocId || !r.kocId || r.kocId === targetKocId)
       : !dealId || !r.dealId || r.dealId === dealId || (targetKocId && r.kocId === targetKocId)),
   );
-  const filteredKocs = useMemo(() => {
-    const q = kocSearchQuery.trim().toLowerCase();
-    if (!q) return kocs;
-    const matched = kocs.filter(k => {
-      const profiles = getKocLegalProfiles(k);
-      const profileText = profiles
-        .map(p => `${p.holderName || ''} ${p.taxCode || ''} ${p.cccd || ''} ${p.bankAccount || ''} ${p.bankName || ''}`)
-        .join(' ')
-        .toLowerCase();
-      const hay = `${k.stageName} ${k.channelId} ${k.realName || ''} ${k.companyName || ''} ${k.cccd || ''} ${k.taxCode || ''} ${k.phone || ''} ${profileText}`.toLowerCase();
-      return hay.includes(q);
-    });
-    if (koc && !matched.some(x => x.id === koc.id)) {
-      return [koc, ...matched];
-    }
-    return matched;
-  }, [kocs, kocSearchQuery, koc]);
+  const kocsWithLegalProfiles = useMemo(
+    () =>
+      kocs.filter(
+        k =>
+          getKocLegalProfiles(k).length > 0 ||
+          k.id === selectedKocId ||
+          k.id === record?.kocId ||
+          k.id === init?.kocId,
+      ),
+    [kocs, selectedKocId, record?.kocId, init?.kocId],
+  );
+
+  const kocComboOptions = useMemo<ComboboxOption[]>(
+    () =>
+      kocsWithLegalProfiles.map(k => {
+        const profiles = getKocLegalProfiles(k);
+        const profileText = profiles.map(p => `${p.holderName || ''} ${p.taxCode || ''} ${p.cccd || ''}`).join(' ');
+        const name = k.realName || k.companyName;
+        return {
+          value: k.id,
+          label: `${k.stageName} (${k.channelId})`,
+          hint: [name, profiles.length > 0 ? `${profiles.length} hồ sơ` : ''].filter(Boolean).join(' · ') || undefined,
+          searchText: `${k.phone || ''} ${k.cccd || ''} ${k.taxCode || ''} ${profileText}`,
+        };
+      }),
+    [kocsWithLegalProfiles],
+  );
 
   const quickPickKocs = useMemo(() => {
-    const sourceList = kocSearchQuery.trim() ? filteredKocs : kocs;
-    const sorted = [...sourceList].sort((a, b) => {
+    const sorted = [...kocsWithLegalProfiles].sort((a, b) => {
       const aProfs = getKocLegalProfiles(a).length;
       const bProfs = getKocLegalProfiles(b).length;
       if (bProfs !== aProfs) return bProfs - aProfs;
       return (b.totalPastDeals || 0) - (a.totalPastDeals || 0);
     });
     return sorted.slice(0, 6);
-  }, [kocs, filteredKocs, kocSearchQuery]);
+  }, [kocsWithLegalProfiles]);
 
   const kocScopedDeals = useMemo(() => {
     if (!koc) return [];
@@ -1781,7 +1842,7 @@ export function ContractForm({
               Quay về Quản lý Deal &amp; Booking
             </Button>
           )}
-          <Button variant="ghost" size="sm" icon={!onBackToBooking ? ArrowLeft : undefined} onClick={onCancel} className={!onBackToBooking ? '-ml-2.5' : ''}>
+          <Button variant="ghost" size="sm" icon={!onBackToBooking ? ArrowLeft : undefined} onClick={onCancel} className={!onBackToBooking ? '-ml-3' : ''}>
             Danh sách hợp đồng
           </Button>
           <span className="text-ink-3">/</span>
@@ -1807,7 +1868,7 @@ export function ContractForm({
               {customFile ? `Tệp KOC: ${customFile.filename}` : 'Chưa chọn tệp .docx KOC'}
             </span>
           ) : (
-            template && (
+            template && !showSplitPreview && (
               <Status tone={requiredDone === required.length ? 'positive' : 'warning'}>
                 Đã điền {requiredDone}/{required.length} mục bắt buộc
               </Status>
@@ -1815,11 +1876,6 @@ export function ContractForm({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {usesTemplateFields && (
-            <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
-              Đọc ảnh CCCD / ĐKKD
-            </Button>
-          )}
           {template && !isKocGoogleDoc && (
             <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
               {showSplitPreview ? 'Ẩn bản xem A4' : 'Xem bản A4 song song'}
@@ -1853,8 +1909,8 @@ export function ContractForm({
       )}
 
       {duplicateRecord && (
-        <div className="rounded-xl border border-warning/40 bg-warning-soft px-3.5 py-2.5 text-xs text-ink flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
+        <div className="rounded-xl border border-warning/40 bg-warning-soft px-4 py-3 text-xs text-ink flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-warning-strong shrink-0" />
             <span><span className="text-warning-strong font-semibold">Trùng số hợp đồng:</span> Đã tồn tại hồ sơ {docDateVal}/{kocIdVal} (&ldquo;{duplicateRecord.title}&rdquo;).</span>
           </div>
@@ -1867,11 +1923,18 @@ export function ContractForm({
       {loadError && <p role="alert" className="text-xs text-critical">{loadError}</p>}
 
       <div className={`grid grid-cols-1 gap-5 items-start ${template && showSplitPreview && !isKocGoogleDoc ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
-        <div className="grid gap-4 min-w-0">
+        <div
+          ref={leftScrollRef}
+          className={`grid gap-4 min-w-0 ${
+            template && showSplitPreview && !isKocGoogleDoc
+              ? 'xl:max-h-[calc(100dvh-136px)] xl:overflow-y-auto xl:overscroll-contain xl:pr-2 pb-2'
+              : ''
+          }`}
+        >
           {usesTemplateFields && (kocLegalNotes || primaryKocTemplate) && (
-            <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3 space-y-1.5 text-xs">
+            <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3 space-y-2 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-semibold text-warning-strong flex items-center gap-1.5">
+                <span className="font-semibold text-warning-strong flex items-center gap-2">
                   <Scale className="w-3.5 h-3.5 shrink-0" />
                   Lưu ý Pháp chế ({koc?.stageName || partner || 'KOC'}):
                 </span>
@@ -1898,48 +1961,21 @@ export function ContractForm({
             title="Bước 1 · Chọn Bên B ký"
           >
             <div className="space-y-4">
-              <StepHint>
-                {isSow || kind === 'ACCEPTANCE'
-                  ? 'Chọn KOC, hồ sơ pháp lý và deal mà văn bản này thuộc về.'
-                  : 'Chọn KOC rồi chọn hồ sơ pháp lý dùng để ký: cá nhân, hộ kinh doanh hoặc công ty.'}
-              </StepHint>
               {/* 1. Chủ thể Bên B: KOC & Hồ sơ pháp lý */}
-              <div className="grid gap-3.5 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="KOC / Nhà sáng tạo *" htmlFor="ct-koc">
-                  <div className="space-y-1.5">
-                    {!(editing && !!record?.kocId) && (
-                      <div className="relative">
-                        <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <Input
-                          value={kocSearchQuery}
-                          onChange={e => setKocSearchQuery(e.target.value)}
-                          placeholder="Tìm theo tên KOC, kênh, CCCD, MST, SĐT..."
-                          className="pl-8 text-xs"
-                        />
-                      </div>
-                    )}
-                    <Select
-                      id="ct-koc"
-                      value={koc?.id || selectedKocId}
-                      onChange={e => chooseKocDirectly(e.target.value)}
-                      disabled={editing && !!record?.kocId}
-                    >
-                      <option value="">Chọn KOC ({filteredKocs.length} KOC)...</option>
-                      {filteredKocs.slice(0, 300).map(k => {
-                        const profCount = getKocLegalProfiles(k).length;
-                        return (
-                          <option key={k.id} value={k.id}>
-                            {k.stageName} ({k.channelId}) · {k.realName || k.companyName || 'Chưa rõ tên'}
-                            {profCount > 0 ? ` · [${profCount} hồ sơ]` : ''}
-                          </option>
-                        );
-                      })}
-                    </Select>
-                  </div>
+                  <Combobox
+                    id="ct-koc"
+                    value={koc?.id || selectedKocId}
+                    onChange={v => chooseKocDirectly(v)}
+                    disabled={editing && !!record?.kocId}
+                    placeholder={`Tìm theo tên KOC, kênh, SĐT… (${kocComboOptions.length} KOC có hồ sơ pháp lý)`}
+                    options={kocComboOptions}
+                  />
                 </Field>
 
                 <Field label="Hồ sơ pháp lý Bên B *" htmlFor="ct-legal-profile">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Select
                       id="ct-legal-profile"
                       value={activeLegalProfile?.id || selectedLegalProfileId}
@@ -1956,8 +1992,8 @@ export function ContractForm({
                           return (
                             <option key={prof.id} value={prof.id}>
                               [{LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
-                              {prof.taxCode ? ` · MST: ${prof.taxCode}` : prof.cccd ? ` · CCCD: ${prof.cccd}` : ''}
-                              {bankAcc ? ` · STK: ${bankAcc}` : ''}
+                              {prof.taxCode ? ` · MST ••••${prof.taxCode.slice(-4)}` : prof.cccd ? ` · CCCD ••••${prof.cccd.slice(-4)}` : ''}
+                              {bankAcc ? ` · STK ••••${bankAcc.slice(-4)}` : ''}
                             </option>
                           );
                         })
@@ -1965,7 +2001,7 @@ export function ContractForm({
                     </Select>
 
                     {activeLegalProfile && (
-                      <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-2 bg-sunken/60 px-2.5 py-1.5 rounded-lg border border-line">
+                      <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-2 bg-sunken/60 px-3 py-2 rounded-lg border border-line">
                         <span className="font-semibold text-ink">{activeLegalProfile.holderName}</span>
                         <span>·</span>
                         <Status
@@ -2005,7 +2041,7 @@ export function ContractForm({
 
               {/* 2. Gắn kết Booking / Job & HĐNT gốc (cho SOW hoặc BBNT) */}
               {(isSow || kind === 'ACCEPTANCE') && (
-                <div className="grid gap-3.5 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Booking / Job thực thi *" htmlFor="ct-deal">
                     <Select
                       id="ct-deal"
@@ -2044,7 +2080,7 @@ export function ContractForm({
                   </Field>
 
                   <Field label={isSow ? 'Hợp đồng nguyên tắc gốc' : 'Phụ lục SOW gốc'} htmlFor="ct-parent">
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Select
                         id="ct-parent"
                         value={parentId}
@@ -2104,7 +2140,7 @@ export function ContractForm({
                       </Select>
 
                       {isSow && !parentId && !(activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()) && koc && (
-                        <div className="flex items-center justify-between gap-2 text-2xs text-warning bg-warning-soft/30 px-2.5 py-1.5 rounded-lg border border-warning/30">
+                        <div className="flex items-center justify-between gap-2 text-2xs text-warning bg-warning-soft/30 px-3 py-2 rounded-lg border border-warning/30">
                           <span>KOC chưa có HĐNT gốc trong danh sách</span>
                           <Button
                             size="sm"
@@ -2122,7 +2158,7 @@ export function ContractForm({
               )}
 
               {(!isHdnt || !activeLegalProfile) && (
-                <div className="grid gap-3.5 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {!isHdnt && (
                     <Field label="Nhãn hàng *" htmlFor="ct-brand">
                       <Input
@@ -2159,12 +2195,9 @@ export function ContractForm({
               title="Bước 2 · Dán link Google Doc của KOC"
             >
               <div className="space-y-4">
-                <StepHint>
-                  Chia sẻ file cho email bên dưới (quyền Người nhận xét) rồi dán link. Mẫu của KOC không so với mẫu Upbase.
-                </StepHint>
                 {renderGoogleDocLink()}
 
-                <div className="grid gap-3.5 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Tên hồ sơ *" htmlFor="ct-title">
                     <Input
                       id="ct-title"
@@ -2193,12 +2226,7 @@ export function ContractForm({
               title="Bước 2 · Nội dung hợp đồng"
             >
               <div className="space-y-4">
-                <StepHint>
-                  {isKocOwnForm
-                    ? 'Hồ sơ cũ theo file Word của KOC. Đổi file nếu KOC gửi bản mới.'
-                    : 'Mẫu chọn theo hồ sơ pháp lý của KOC và đã tự điền từ hồ sơ. Chỉ cần xem các ô còn trống bên dưới hoặc bấm vào chữ trên bản A4.'}
-                </StepHint>
-                <div className="grid gap-3.5 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {!isKocOwnForm && (
                     <Field label="Mẫu hợp đồng" htmlFor="ct-template">
                       <div
@@ -2234,7 +2262,7 @@ export function ContractForm({
                     />
                   </Field>
 
-                  <div className="rounded-xl border-2 border-dashed border-accent/40 bg-accent-soft/20 p-4 space-y-2.5">
+                  <div className="rounded-xl border-2 border-dashed border-accent/40 bg-accent-soft/20 p-4 space-y-3">
                     <input
                       ref={kocDocxInputRef}
                       type="file"
@@ -2243,25 +2271,15 @@ export function ContractForm({
                       className="hidden"
                     />
                     {customFile ? (
-                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface border border-line px-3.5 py-2.5 text-xs">
-                        <div className="min-w-0">
-                          <span className="font-semibold text-ink block truncate">{customFile.filename}</span>
-                          <span className="text-2xs text-ink-3">
-                            Đã đọc {customFile.paragraphs.filter(p => p.trim()).length} đoạn văn bản · Xem trực tiếp bên phải
-                          </span>
-                        </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface border border-line px-4 py-3 text-xs">
+                        <span className="font-semibold text-ink truncate">{customFile.filename}</span>
                         <Button size="sm" variant="secondary" icon={FileUp} onClick={() => kocDocxInputRef.current?.click()}>
                           Đổi file .docx khác
                         </Button>
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-xs">
-                          <span className="font-semibold text-ink block">Tải lên hợp đồng theo mẫu riêng của KOC / Agency (.docx)</span>
-                          <span className="text-2xs text-ink-3">
-                            Hệ thống hiển thị nguyên văn trên khung A4 để Pháp chế &amp; Kế toán rà soát.
-                          </span>
-                        </div>
+                        <span className="font-semibold text-ink text-xs">Tải file hợp đồng của KOC (.docx)</span>
                         <Button size="sm" variant="primary" icon={Upload} onClick={() => kocDocxInputRef.current?.click()}>
                           Chọn file .docx của KOC
                         </Button>
@@ -2275,7 +2293,7 @@ export function ContractForm({
                 <div className="p-3 rounded-xl border border-line bg-sunken/40 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-2xs font-semibold text-ink">
-                      Tài khoản kênh của KOC kết nối với hợp đồng ({getKocConnectedChannels(koc).length} kênh — bấm để chọn 1 kênh hoặc đa kênh):
+                      Kênh mạng xã hội của KOC ({getKocConnectedChannels(koc).length} kênh)
                     </span>
                     {getKocConnectedChannels(koc).length > 1 && (
                       <button
@@ -2296,11 +2314,11 @@ export function ContractForm({
                         }}
                         className="text-2xs font-medium text-accent hover:underline"
                       >
-                        Đưa tất cả kênh vào hợp đồng
+                        Chọn tất cả kênh
                       </button>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {getKocConnectedChannels(koc).map(ch => {
                       const chUrl =
                         ch.url ||
@@ -2336,7 +2354,7 @@ export function ContractForm({
                             }
                             setValue(channelField, nextParts.join(' ; '));
                           }}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-2xs font-mono transition-colors ${
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg border text-2xs font-mono transition-colors ${
                             isIncluded
                               ? 'border-primary bg-surface text-ink font-semibold'
                               : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
@@ -2373,7 +2391,7 @@ export function ContractForm({
                 legalType={activeLegalProfile?.legalType || 'INDIVIDUAL'}
                 editable
                 onExtractOcrFields={(extracted, docLabel) => applyOcrFields(extracted, docLabel)}
-                title="Đính kèm CCCD & Giấy phép ĐKKD vào Hồ sơ pháp lý (Cloudflare R2)"
+                title="Giấy tờ pháp lý (CCCD / ĐKKD)"
               />
 
               </div>
@@ -2393,7 +2411,7 @@ export function ContractForm({
                     <>
                       {availableDealsToAdd.length > 0 && (
                         <select
-                          className="text-xs py-1.5 px-2.5 rounded-lg border border-line bg-surface text-ink font-medium focus:ring-1 focus:ring-accent cursor-pointer"
+                          className="text-xs py-2 px-3 rounded-lg border border-line bg-surface text-ink font-medium focus:ring-1 focus:ring-accent cursor-pointer"
                           value=""
                           onChange={e => {
                             const d = availableDealsToAdd.find(x => x.id === e.target.value);
@@ -2425,7 +2443,7 @@ export function ContractForm({
             >
               <div className="space-y-4 text-xs">
                 {/* Thanh tóm tắt tiến độ & số lượng Job */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-line bg-sunken/40">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-line bg-sunken/40">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="font-semibold text-ink">
                       {draftJobTables.length} Bảng công việc trong {isSow ? 'Phụ lục SOW' : 'Biên bản nghiệm thu'}
@@ -2451,15 +2469,15 @@ export function ContractForm({
                   <table className="w-full text-left text-xs">
                     <thead className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
                       <tr>
-                        <th className="py-2.5 px-3 w-10 text-center">#</th>
-                        <th className="py-2.5 px-3">Mã Job</th>
-                        <th className="py-2.5 px-3">Sản phẩm / Dịch vụ</th>
-                        <th className="py-2.5 px-3">Kênh</th>
-                        <th className="py-2.5 px-3">Ngày Air</th>
-                        <th className="py-2.5 px-3 text-right">Thù lao Video</th>
-                        <th className="py-2.5 px-3">Dịch vụ đi kèm</th>
-                        <th className="py-2.5 px-3 text-right">Tổng Net</th>
-                        <th className="py-2.5 px-3 text-right w-24">Thao tác</th>
+                        <th className="py-3 px-3 w-10 text-center">#</th>
+                        <th className="py-3 px-3">Mã Job</th>
+                        <th className="py-3 px-3">Sản phẩm / Dịch vụ</th>
+                        <th className="py-3 px-3">Kênh</th>
+                        <th className="py-3 px-3">Ngày Air</th>
+                        <th className="py-3 px-3 text-right">Thù lao Video</th>
+                        <th className="py-3 px-3">Dịch vụ đi kèm</th>
+                        <th className="py-3 px-3 text-right">Tổng Net</th>
+                        <th className="py-3 px-3 text-right w-24">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
@@ -2487,43 +2505,43 @@ export function ContractForm({
                                 : 'hover:bg-sunken/40'
                             }`}
                           >
-                            <td className="py-2.5 px-3 text-center text-ink-3 font-code">
+                            <td className="py-3 px-3 text-center text-ink-3 font-code">
                               {jIdx + 1}
                             </td>
-                            <td className="py-2.5 px-3 font-code font-semibold text-ink">
+                            <td className="py-3 px-3 font-code font-semibold text-ink">
                               {jTab.jobCode}
                             </td>
-                            <td className="py-2.5 px-3 text-ink">
+                            <td className="py-3 px-3 text-ink">
                               <div className="font-medium truncate max-w-[200px]">{jTab.productName || 'Sản phẩm chiến dịch'}</div>
                             </td>
-                            <td className="py-2.5 px-3 text-ink-2">
-                              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs">
+                            <td className="py-3 px-3 text-ink-2">
+                              <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs">
                                 {jTab.mediaChannel || 'TikTok'}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 font-code text-ink-2">
+                            <td className="py-3 px-3 font-code text-ink-2">
                               {jTab.airDate || '—'}
                             </td>
-                            <td className="py-2.5 px-3 text-right font-code font-medium text-ink">
+                            <td className="py-3 px-3 text-right font-code font-medium text-ink">
                               {formatNumber(jVideoNet)}đ
                             </td>
-                            <td className="py-2.5 px-3">
+                            <td className="py-3 px-3">
                               <div className="flex flex-wrap items-center gap-1">
                                 {activeAddons.length === 0 ? (
                                   <span className="text-2xs text-ink-3">Chỉ video</span>
                                 ) : (
                                   activeAddons.map(a => (
-                                    <span key={a.id || a.termType} className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2">
+                                    <span key={a.id || a.termType} className="px-2 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2">
                                       {a.termType === 'ADS_CODE' ? 'Spark Ads' : a.termType === 'LINK_BIO_CART' ? 'Giỏ hàng' : a.termType === 'IMAGE_USAGE' ? 'Hình ảnh' : 'Độc quyền'}
                                     </span>
                                   ))
                                 )}
                               </div>
                             </td>
-                            <td className="py-2.5 px-3 text-right font-code font-semibold text-accent">
+                            <td className="py-3 px-3 text-right font-code font-semibold text-accent">
                               {formatNumber(jSubtotal)}đ
                             </td>
-                            <td className="py-2.5 px-3 text-right">
+                            <td className="py-3 px-3 text-right">
                               <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                                 <button
                                   type="button"
@@ -2560,8 +2578,8 @@ export function ContractForm({
                 </div>
 
                 {/* Khối chỉnh sửa chi tiết cho Job đang chọn */}
-                <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+                <div className="p-4 rounded-lg border border-line bg-surface space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-accent text-white font-code text-2xs font-semibold">
                         Bảng công việc #{activeJobTableIdx + 1}
@@ -2667,17 +2685,17 @@ export function ContractForm({
                   </div>
 
                   {/* Task #2..N: Dịch vụ bổ sung đi kèm (4 gói chuẩn) */}
-                  <div className="pt-2.5 border-t border-line space-y-2">
+                  <div className="pt-3 border-t border-line space-y-2">
                     <span className="font-semibold text-2xs text-ink-2">
                       Dịch vụ bổ sung đi kèm theo Job này
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       {draftAddons.slice(0, 4).map((addon, aIdx) => {
                         const isInc = addon.includedInSow !== false;
                         return (
                           <div
                             key={addon.id || aIdx}
-                            className={`p-2.5 rounded-lg border transition-colors ${
+                            className={`p-3 rounded-lg border transition-colors ${
                               isInc ? 'border-accent bg-accent-soft/20' : 'border-line bg-sunken/30 opacity-70'
                             }`}
                           >
@@ -2698,7 +2716,7 @@ export function ContractForm({
                                 <span className="font-semibold text-ink text-xs block leading-tight">
                                   {addon.termLabel}
                                 </span>
-                                <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+                                <div className="flex items-center gap-2 text-2xs text-ink-3">
                                   <span>Thời hạn:</span>
                                   <input
                                     type="number"
@@ -2744,15 +2762,15 @@ export function ContractForm({
                   </div>
                 </div>
 
-                {/* Mục 1.3: Phương án thanh toán phí dịch vụ (Lựa chọn 1 trong 2) */}
+                {/* Mục 1.3: Phương án thanh toán phí dịch vụ */}
                 {isSow && (
-                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
+                  <div className="p-4 rounded-lg border border-line bg-surface space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-semibold text-ink text-xs">
-                        Mục 1.3. Phương án thanh toán phí dịch vụ (Lựa chọn 1 trong 2)
+                        Phương án thanh toán
                       </span>
                       <Status tone={paymentScheduleOption === 'TWO_TIMES' ? 'info' : 'positive'}>
-                        {paymentScheduleOption === 'TWO_TIMES' ? 'Thanh toán 2 lần (Có tạm ứng)' : 'Thanh toán 1 lần (100%)'}
+                        {paymentScheduleOption === 'TWO_TIMES' ? 'Thanh toán 2 lần' : 'Thanh toán 1 lần (100%)'}
                       </Status>
                     </div>
 
@@ -2768,12 +2786,9 @@ export function ContractForm({
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-ink text-xs">Phương án 1: Thanh toán 1 lần</span>
+                          <span className="font-semibold text-ink text-xs">Phương án 1: Thanh toán 1 lần (100%)</span>
                           {paymentScheduleOption !== 'TWO_TIMES' && <Status tone="positive">Đang áp dụng</Status>}
                         </div>
-                        <p className="text-2xs text-ink-2 mt-1">
-                          Thanh toán 01 lần 100% trong vòng 07 - 10 ngày làm việc sau khi hoàn tất dịch vụ theo SOW, ký Biên bản nghiệm thu (BBNT) và cung cấp hóa đơn hợp lệ.
-                        </p>
                       </button>
 
                       {/* Phương án 2 */}
@@ -2787,12 +2802,9 @@ export function ContractForm({
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-ink text-xs">Phương án 2: Thanh toán 2 lần</span>
+                          <span className="font-semibold text-ink text-xs">Phương án 2: Thanh toán 2 lần (Tạm ứng + Tất toán)</span>
                           {paymentScheduleOption === 'TWO_TIMES' && <Status tone="positive">Đang áp dụng</Status>}
                         </div>
-                        <p className="text-2xs text-ink-2 mt-1">
-                          Lần 1: Tạm ứng sau khi hoàn tất ký kết Phụ lục SOW. Lần 2: Thanh toán phần giá trị còn lại sau khi ký BBNT và cung cấp hóa đơn hợp lệ.
-                        </p>
                       </button>
                     </div>
 
@@ -2855,7 +2867,7 @@ export function ContractForm({
                                 );
                                 setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
                               }}
-                              className="px-2.5 py-1 rounded-lg border border-line bg-surface hover:bg-sunken text-ink text-2xs font-medium transition"
+                              className="px-3 py-1 rounded-lg border border-line bg-surface hover:bg-sunken text-ink text-2xs font-medium transition"
                             >
                               {chip.label} ({formatNumber(chip.val)}đ)
                             </button>
@@ -2916,30 +2928,18 @@ export function ContractForm({
           )}
 
           {usesTemplateFields && template && (
-            <div className="rounded-xl border border-line bg-surface p-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-              <div className="flex flex-wrap items-center gap-2">
-                <Status tone={missingTotalCount === 0 ? 'positive' : 'warning'}>
-                  Hệ thống tự điền: {filledTotalCount}/{activeFields.length} trường
-                </Status>
-                <span className="text-ink-2">
-                  {missingTotalCount === 0
-                    ? 'Đã điền đủ trường dữ liệu'
-                    : `Còn ${missingTotalCount} trường trống`}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Segmented
-                  value={fieldFilterMode}
-                  onChange={v => setFieldFilterMode(v as 'ALL' | 'NEEDS_ATTENTION')}
-                  items={[
-                    { key: 'ALL', label: `Tất cả trường (${activeFields.length})` },
-                    { key: 'NEEDS_ATTENTION', label: `Cần kiểm tra / Chỉnh tay (${needsAttentionCount})` },
-                  ]}
-                />
-                <Button size="sm" variant="secondary" onClick={refreshSystemPrefill}>
-                  Đồng bộ lại từ KOC &amp; Job
-                </Button>
-              </div>
+            <div className="rounded-xl border border-line bg-surface p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <Segmented
+                value={fieldFilterMode}
+                onChange={v => setFieldFilterMode(v as 'ALL' | 'NEEDS_ATTENTION')}
+                items={[
+                  { key: 'ALL', label: `Tất cả trường (${uiTotalFieldsCount})` },
+                  { key: 'NEEDS_ATTENTION', label: `Cần kiểm tra / Chỉnh tay (${needsAttentionCount})` },
+                ]}
+              />
+              <Button size="sm" variant="secondary" onClick={refreshSystemPrefill}>
+                Đồng bộ lại từ KOC &amp; Job
+              </Button>
             </div>
           )}
 
@@ -2977,14 +2977,119 @@ export function ContractForm({
                 ? g.fields.filter(isFieldNeedsAttention)
                 : g.fields;
             if (visibleFields.length === 0) return null;
+
+            if (g.key === 'DATE') {
+              const dayField = g.fields.find(f => f.source === 'signDay');
+              const monthField = g.fields.find(f => f.source === 'signMonth');
+              const yearField = g.fields.find(f => f.source === 'signYearDigit');
+              const rawDay = (dayField ? values[dayField.key] : '')?.trim() || '';
+              const rawMonth = (monthField ? values[monthField.key] : '')?.trim() || '';
+              const rawYear = (yearField ? values[yearField.key] : '')?.trim() || '';
+              const fullYear =
+                rawYear.length === 4
+                  ? rawYear
+                  : rawYear.length === 2
+                    ? `20${rawYear}`
+                    : rawYear.length === 1
+                      ? `202${rawYear}`
+                      : String(new Date().getFullYear());
+              const pad2 = (s: string) => (s && /^\d+$/.test(s) ? s.padStart(2, '0') : s);
+              const derivedVnDate =
+                rawDay && rawMonth
+                  ? `${pad2(rawDay)}/${pad2(rawMonth)}/${fullYear}`
+                  : rawMonth
+                    ? `01/${pad2(rawMonth)}/${fullYear}`
+                    : '';
+              const derivedIsoDate =
+                rawDay && rawMonth && /^\d{1,2}$/.test(rawDay) && /^\d{1,2}$/.test(rawMonth) && /^\d{4}$/.test(fullYear)
+                  ? `${fullYear}-${pad2(rawMonth)}-${pad2(rawDay)}`
+                  : '';
+              const primaryDateField = dayField || monthField || yearField || g.fields[0];
+
+              return (
+                <Panel key={g.key} title={g.title}>
+                  <div className="grid gap-4 md:grid-cols-2 items-end">
+                    <Field label="Ngày ký hợp đồng *" htmlFor="ct-f-sign-date">
+                      <div className="relative flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id="ct-f-sign-date"
+                            placeholder="DD/MM/YYYY"
+                            className="font-code tabular-nums pr-9"
+                            value={signDateText !== null ? signDateText : derivedVnDate}
+                            onFocus={() => setActiveFieldKey(primaryDateField.key)}
+                            onBlur={() => setSignDateText(null)}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setSignDateText(val);
+                              const m = val.trim().match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2}|\d{4})$/);
+                              if (m) {
+                                const yyyy = m[3].length === 2 ? `20${m[3]}` : m[3];
+                                applySignDateParts(m[1], m[2], yyyy);
+                              }
+                            }}
+                          />
+                          <input
+                            ref={signDatePickerRef}
+                            type="date"
+                            tabIndex={-1}
+                            aria-label="Chọn ngày ký từ lịch"
+                            value={derivedIsoDate}
+                            onChange={e => {
+                              const iso = e.target.value;
+                              const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                              if (m) {
+                                setSignDateText(null);
+                                applySignDateParts(m[3], m[2], m[1]);
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = signDatePickerRef.current;
+                              if (!el) return;
+                              if (typeof el.showPicker === 'function') {
+                                el.showPicker();
+                              } else {
+                                el.click();
+                              }
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+                            title="Chọn từ lịch"
+                          >
+                            <Calendar className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            const now = new Date();
+                            setSignDateText(null);
+                            applySignDateParts(
+                              String(now.getDate()).padStart(2, '0'),
+                              String(now.getMonth() + 1).padStart(2, '0'),
+                              String(now.getFullYear()),
+                            );
+                          }}
+                        >
+                          Hôm nay
+                        </Button>
+                      </div>
+                    </Field>
+                  </div>
+                </Panel>
+              );
+            }
+
             return (
               <Panel key={g.key} title={g.title}>
-                <div className="grid gap-3.5 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   {visibleFields.map(f => {
                     const id = `ct-f-${f.key}`;
-                    const hasVal = Boolean(values[f.key]?.trim());
-                    const srcInfo = describeFieldDataSource(f, prefilled.has(f.key), hasVal, Boolean(parentRecord));
-                    const label = `${f.title || f.label}${f.required ? ' *' : ''} (${srcInfo.badgeLabel})`;
+                    const label = `${f.title || f.label}${f.required ? ' *' : ''}`;
                     return (
                       <Field key={f.key} label={label} htmlFor={id} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
                         {f.kind === 'long' ? (
@@ -3018,22 +3123,8 @@ export function ContractForm({
 
           <Panel
             title={isKocForm ? 'Bước 3 · Ghi chú cho Pháp chế' : hasCustomTerms || isAmendedGoogleDoc ? 'Bước 3 · Bản đã chỉnh sửa' : 'Bước 3 · Ghi chú'}
-            actions={
-              <Status tone={hasCustomTerms || isKocForm || isAmendedGoogleDoc ? 'warning' : 'positive'}>
-                {hasCustomTerms || isKocForm || isAmendedGoogleDoc ? 'Cần Pháp chế duyệt' : 'Không cần Pháp chế duyệt'}
-              </Status>
-            }
           >
             <div className="space-y-3">
-              <StepHint>
-                {isKocForm
-                  ? 'Mẫu của KOC luôn qua Pháp chế. Tóm tắt các điểm cần xem: thanh toán, phạt, bản quyền hình ảnh.'
-                  : isAmendedGoogleDoc
-                    ? 'Tải bản Word ở khung A4, mở bằng Google Docs, chia sẻ cho email bên dưới rồi dán link. Khi trình final, hệ thống so với mẫu và chỉ ra điều khoản bị sửa.'
-                    : hasCustomTerms
-                      ? 'Ghi rõ điều khoản đã sửa so với mẫu. Hồ sơ sẽ qua Pháp chế.'
-                      : 'Mẫu giữ nguyên nên không cần Pháp chế duyệt.'}
-              </StepHint>
               {isAmendedGoogleDoc && renderGoogleDocLink()}
               {!(hasCustomTerms || isKocForm || isAmendedGoogleDoc) && (
                 <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
@@ -3071,19 +3162,6 @@ export function ContractForm({
                   </Field>
                 </div>
               )}
-              {(isKocGoogleDoc || isAmendedGoogleDoc) && !editing && (
-                <ol className="text-2xs text-ink-2 list-decimal pl-4 space-y-0.5">
-                  <li>Lưu &amp; trình draft: Pháp chế, Kế toán được báo để vào Google Doc góp ý và sửa trực tiếp.</li>
-                  <li>Sửa xong, mở hồ sơ bấm Trình final: hệ thống chốt nội dung, bình luận và lịch sử sửa để lưu audit.</li>
-                  <li>Pháp chế duyệt, rồi Kế toán duyệt: hệ thống xuất DOCX, PDF từ Google Doc để đẩy WeSign.</li>
-                </ol>
-              )}
-              <p className="text-2xs text-ink-3">
-                {ruleEval.reviewStream.streamName && (
-                  <>Luồng duyệt: <span className="text-ink-2 font-medium">{ruleEval.reviewStream.streamName}</span>. </>
-                )}
-                {isKocGoogleDoc || isAmendedGoogleDoc ? '' : 'Lưu nháp xong, mở hồ sơ để gửi duyệt và trình ký.'}
-              </p>
             </div>
           </Panel>
 
@@ -3161,17 +3239,15 @@ export function ContractForm({
                     )}
 
                     {acceptanceScreenshots.length === 0 ? (
-                      <div className="p-4 rounded-xl border border-dashed border-line bg-surface-2/40 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-2">
-                        <span>
-                          Chưa có thông tin kiểm tra Link Air và ảnh chụp sản phẩm. Bấm nút bên phải để lấy thông tin bài đăng, kiểm tra chỉ số, đối soát kịch bản và cắt ảnh KOC cầm sản phẩm đưa vào Biên bản nghiệm thu.
-                        </span>
+                      <div className="p-3 rounded-xl border border-dashed border-line bg-surface-2/40 text-xs text-ink-2">
+                        Chưa có thông tin Link Air và ảnh nghiệm thu.
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {acceptanceScreenshots.map((shot, idx) => (
                           <div
                             key={shot.id || idx}
-                            className="flex items-start gap-2.5 p-2.5 rounded-xl border border-line bg-surface-2/50"
+                            className="flex items-start gap-3 p-3 rounded-xl border border-line bg-surface-2/50"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -3181,7 +3257,7 @@ export function ContractForm({
                             />
                             <div className="min-w-0 flex-1 space-y-1">
                               <div className="flex items-center justify-between gap-1">
-                                <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-code text-2xs font-semibold">
+                                <span className="px-2 py-0.5 rounded bg-positive-soft text-positive font-code text-2xs font-semibold">
                                   Ảnh #{idx + 1} · Mốc {shot.timeLabel}
                                 </span>
                                 <button
@@ -3211,10 +3287,24 @@ export function ContractForm({
               })()}
             </Panel>
           )}
+          {template && (
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+              <Button variant="primary" type="submit" disabled={!canSubmitForm}>
+                {editing
+                  ? 'Lưu phiên bản mới'
+                  : isKocGoogleDoc || isAmendedGoogleDoc
+                    ? 'Lưu & trình draft'
+                    : isSow
+                      ? 'Lưu Phụ lục SOW & Chuyển bước ký'
+                      : 'Lưu nháp'}
+              </Button>
+            </div>
+          )}
         </div>
 
         {template && showSplitPreview && !isKocGoogleDoc && (
-          <div className="xl:sticky xl:top-4 min-w-0">
+          <div className="xl:sticky xl:top-16 min-w-0">
             <ContractDocumentViewer
               title={title || (isKocOwnForm && customFile ? customFile.filename : template.name)}
               templateName={isKocOwnForm && customFile ? `Tệp KOC: ${customFile.filename}` : template.name}
@@ -3227,7 +3317,7 @@ export function ContractForm({
               onSelectField={focusFieldInput}
               downloadHref={isKocOwnForm ? undefined : `/api/contracts/templates/${template.id}?download=1`}
               partnerName={partner}
-              maxHeight="calc(100vh - 140px)"
+              maxHeight="calc(100dvh - 192px)"
               compactToolbar
               isTemplatePreview={isKocOwnForm}
               acceptanceScreenshots={acceptanceScreenshots}
@@ -3236,86 +3326,32 @@ export function ContractForm({
         )}
       </div>
 
-      {template && (
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCancel}>Hủy</Button>
-          <Button variant="primary" type="submit" disabled={!canSubmitForm}>
-            {editing
-              ? 'Lưu phiên bản mới'
-              : isKocGoogleDoc || isAmendedGoogleDoc
-                ? 'Lưu & trình draft'
-                : isSow
-                  ? 'Lưu Phụ lục SOW & Chuyển bước ký'
-                  : 'Lưu nháp'}
-          </Button>
-        </div>
-      )}
-
       <Modal
         open={ocrOpen}
         onClose={() => setOcrOpen(false)}
-        title="Đọc ảnh CCCD / Giấy phép ĐKKD"
+        title="Tải CCCD / Giấy phép ĐKKD"
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setOcrOpen(false)}>Đóng</Button>
           </div>
         }
       >
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-line-strong rounded-xl p-5 text-center bg-canvas/50 space-y-2">
-            <input
-              ref={ocrInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleOcrFileChange}
-              className="hidden"
-            />
-            <Button
-              variant="primary"
-              icon={Upload}
-              disabled={ocrBusy}
-              onClick={() => ocrInputRef.current?.click()}
-            >
-              {ocrBusy ? 'Đang đọc ảnh giấy tờ…' : 'Tải ảnh CCCD / ĐKKD từ máy'}
-            </Button>
-            <p className="text-2xs text-ink-3">
-              Hỗ trợ ảnh JPG, PNG chụp rõ nét mặt trước CCCD gắn chip hoặc trang thông tin ĐKKD.
-            </p>
-          </div>
-
-          <div className="space-y-2 pt-2 border-t border-line">
-            <p className="text-xs font-medium text-ink">Hoặc chọn nhanh mẫu giấy tờ có sẵn để điền thử:</p>
-            <div className="grid gap-2">
-              <button
-                type="button"
-                disabled={ocrBusy}
-                onClick={() => runOcrRequest({ presetKey: 'CCCD_INDIVIDUAL' })}
-                className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
-              >
-                <span className="font-semibold text-ink block">CCCD Cá nhân · Nguyễn Thu Trang</span>
-                <span className="text-2xs text-ink-3">Số CCCD: 001201019876 · Nơi cấp: Cục Cảnh sát QLHC về TTXH</span>
-              </button>
-              <button
-                type="button"
-                disabled={ocrBusy}
-                onClick={() => runOcrRequest({ presetKey: 'BUSINESS_HOUSEHOLD' })}
-                className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
-              >
-                <span className="font-semibold text-ink block">ĐKKD Hộ kinh doanh · Studio Sáng Tạo Hoàng Gia</span>
-                <span className="text-2xs text-ink-3">MST: 8129481023 · Chủ hộ: Trần Văn Nam</span>
-              </button>
-              <button
-                type="button"
-                disabled={ocrBusy}
-                onClick={() => runOcrRequest({ presetKey: 'BUSINESS_COMPANY' })}
-                className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
-              >
-                <span className="font-semibold text-ink block">ĐKKD Công ty · Công ty TNHH Truyền thông &amp; Quảng cáo Creator Việt</span>
-                <span className="text-2xs text-ink-3">MST: 0109876543 · Đại diện: Lê Quang Huy (Giám đốc)</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <LegalAttachmentsPanel
+          attachments={legalAttachments}
+          onChange={nextAttachments => {
+            setLegalAttachments(nextAttachments);
+            if (koc?.id) {
+              const targetProfId = activeLegalProfile?.id || selectedLegalProfileId;
+              saveSyncedKocLegalAttachments(koc.id, targetProfId, nextAttachments);
+              onSyncKocLegalAttachments?.(koc.id, targetProfId, nextAttachments);
+            }
+          }}
+          entitySlug={koc?.channelId || koc?.id || partner || 'koc-legal'}
+          legalType={activeLegalProfile?.legalType || 'INDIVIDUAL'}
+          editable
+          onExtractOcrFields={(extracted, docLabel) => applyOcrFields(extracted, docLabel)}
+          title="Giấy tờ pháp lý (CCCD / ĐKKD)"
+        />
       </Modal>
 
       <VideoProductScreenshotModal

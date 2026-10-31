@@ -251,7 +251,7 @@ export function DataTable<T>({
                 style={!fitContainer && c.width ? { minWidth: c.width } : c.width ? { width: `${c.width}px` } : undefined}
                 className={cx(
                   compact
-                    ? 'px-2.5 sm:px-3 py-2 text-3xs font-semibold text-ink-3 bg-sunken/40 border-b border-line'
+                    ? 'px-2.5 sm:px-3 py-2 text-2xs font-semibold text-ink-3 bg-sunken/40 border-b border-line'
                     : 'px-3.5 sm:px-4 py-2.5 text-2xs font-semibold text-ink-3 bg-sunken/40 border-b border-line',
                   align(c.align),
                   stickyLast && i === last && 'sm:sticky sm:right-0 sm:z-10 bg-sunken border-l border-line',
@@ -472,7 +472,7 @@ export function ConfirmDialog({
 export function Field({ label, error, htmlFor, children, className, labelClassName, noWrap }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string; labelClassName?: string; noWrap?: boolean }) {
   const parenMatch = !noWrap ? label.match(/^(.*?\s)(\([^()]+\)(?:\s*\*)?)$/) : null;
   return (
-    <div className={cx('grid grid-cols-[minmax(0,1fr)] gap-1.5 min-w-0 [&>select]:w-full [&>[data-select-root]]:w-full', className)}>
+    <div className={cx('grid grid-cols-[minmax(0,1fr)] content-start gap-1.5 min-w-0 [&>select]:w-full [&_[data-select-root]]:w-full', className)}>
       <label htmlFor={htmlFor} className={cx('text-ctl font-medium text-ink text-pretty', noWrap && 'whitespace-nowrap', labelClassName)}>
         {parenMatch ? <>{parenMatch[1]}<span className="whitespace-nowrap">{parenMatch[2]}</span></> : label}
       </label>
@@ -727,7 +727,7 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
                   return (
                     <React.Fragment key={`${opt.value}-${idx}`}>
                       {showGroupHeader && (
-                        <div className="px-2.5 py-1 text-3xs font-semibold text-ink-3 bg-sunken/60">
+                        <div className="px-2.5 py-1 text-2xs font-semibold text-ink-3 bg-sunken/60">
                           {opt.group}
                         </div>
                       )}

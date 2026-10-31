@@ -153,7 +153,9 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
       ];
       onChange(nextList);
       setSelectedDocId(uploaded.id);
-      setInlinePreviewOpen(true);
+      if (defaultExpandPreview) {
+        setInlinePreviewOpen(true);
+      }
       setNoticeMsg(`Đã lưu "${uploaded.label}".`);
 
       if (autoReadOnUpload && onExtractOcrFields && file.type.startsWith('image/')) {
@@ -213,26 +215,38 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
     }
   };
 
-  const uploadSlots: Array<{ cat: LegalDocCategory; shortLabel: string }> =
-    legalType === 'INDIVIDUAL'
-      ? [
-          { cat: 'CCCD_FRONT', shortLabel: 'CCCD trước' },
-          { cat: 'CCCD_BACK', shortLabel: 'CCCD sau' },
-          { cat: 'DKKD', shortLabel: 'ĐKKD' },
-        ]
-      : [
-          { cat: 'DKKD', shortLabel: 'Giấy ĐKKD' },
-          { cat: 'CCCD_FRONT', shortLabel: 'CCCD trước' },
-          { cat: 'CCCD_BACK', shortLabel: 'CCCD sau' },
-          { cat: 'AUTHORIZATION', shortLabel: 'Ủy quyền' },
-        ];
+  const uploadSlots: Array<{
+    cat: LegalDocCategory;
+    title: string;
+    buttonLabel: string;
+  }> = [
+    {
+      cat: 'CCCD_FRONT',
+      title: 'CCCD mặt trước',
+      buttonLabel: 'Tải ảnh mặt trước',
+    },
+    {
+      cat: 'CCCD_BACK',
+      title: 'CCCD mặt sau',
+      buttonLabel: 'Tải ảnh mặt sau',
+    },
+    {
+      cat: 'DKKD',
+      title: 'Ảnh / File ĐKKD',
+      buttonLabel: 'Tải ảnh / file ĐKKD',
+    },
+  ];
+
+  const extraAttachments = attachments.filter(
+    (a) => !uploadSlots.some((s) => s.cat === a.docType),
+  );
 
   return (
     <div
       className={
         flush
-          ? 'border-t border-line bg-sunken/20 px-4 py-3 space-y-2.5 text-xs'
-          : 'rounded-xl border border-line bg-surface p-3.5 space-y-3 text-xs'
+          ? 'border-t border-line bg-sunken/20 px-4 py-3 space-y-3 text-xs'
+          : 'rounded-xl border border-line bg-surface p-4 space-y-3 text-xs'
       }
     >
       <input
@@ -243,57 +257,92 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
         className="hidden"
       />
 
-      {/* Thanh tiêu đề & nút tải giấy tờ */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-ink">{title}</span>
-          <span className="text-2xs text-ink-3">
-            ({attachments.length > 0 ? `${attachments.length} tệp` : 'Chưa đính kèm'})
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {editable &&
-            onChange &&
-            uploadSlots.map((slot) => {
-              const isBusy = uploadingCategory === slot.cat;
-              const exists = attachments.some((a) => a.docType === slot.cat);
-              return (
-                <button
-                  key={slot.cat}
-                  type="button"
-                  disabled={uploadingCategory !== null}
-                  onClick={() => triggerUploadForCategory(slot.cat, false)}
-                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
-                >
-                  <Upload className="w-3 h-3 text-ink-3 shrink-0" />
-                  {isBusy ? 'Đang tải...' : exists ? `Đổi ${slot.shortLabel}` : `Tải ${slot.shortLabel}`}
-                </button>
-              );
-            })}
-
-          {editable && onChange && onExtractOcrFields && (
-            <button
-              type="button"
-              disabled={uploadingCategory !== null}
-              onClick={() =>
-                triggerUploadForCategory(
-                  legalType === 'INDIVIDUAL' ? 'CCCD_FRONT' : 'DKKD',
-                  true,
-                )
-              }
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-surface text-2xs font-medium text-accent hover:bg-sunken transition-colors"
-            >
-              <FileScan className="w-3 h-3 shrink-0" />
-              Đọc ảnh CCCD
-            </button>
-          )}
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold text-ink">{title}</span>
+        {attachments.length > 0 && (
+          <span className="text-2xs text-ink-3">{attachments.length} tệp đã tải</span>
+        )}
       </div>
 
+      {editable && onChange && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {uploadSlots.map((slot) => {
+            const isBusy = uploadingCategory === slot.cat;
+            const doc = attachments.find((a) => a.docType === slot.cat);
+            return (
+              <div
+                key={slot.cat}
+                className={`rounded-lg border p-3 flex flex-col justify-between gap-2 ${
+                  doc
+                    ? 'border-line-strong bg-sunken/30'
+                    : 'border-dashed border-line-strong bg-canvas/40'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink text-xs">{slot.title}</span>
+                  {doc && (
+                    <span className="text-2xs font-medium text-positive">Đã tải</span>
+                  )}
+                </div>
+
+                {doc ? (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDoc(doc)}
+                      className="w-full text-left text-2xs font-code text-ink-2 truncate hover:text-accent hover:underline"
+                      title={doc.fileName}
+                    >
+                      {doc.fileName}
+                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc(doc)}
+                        className="inline-flex items-center gap-1 h-6 px-2 rounded border border-line bg-surface text-2xs font-medium text-ink hover:bg-sunken"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-ink-3" />
+                        Xem
+                      </button>
+                      <button
+                        type="button"
+                        disabled={uploadingCategory !== null}
+                        onClick={() => triggerUploadForCategory(slot.cat, true)}
+                        className="inline-flex items-center gap-1 h-6 px-2 rounded border border-line bg-surface text-2xs font-medium text-ink-2 hover:text-ink hover:bg-sunken"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-ink-3" />
+                        {isBusy ? 'Đang tải...' : 'Đổi'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteAttachment(doc)}
+                        className="inline-flex items-center justify-center h-6 w-6 rounded text-ink-3 hover:text-critical hover:bg-critical-soft/40 ml-auto"
+                        title="Xóa tệp"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={uploadingCategory !== null}
+                    onClick={() => triggerUploadForCategory(slot.cat, true)}
+                    className="inline-flex items-center justify-center gap-2 h-8 px-3 rounded-md border border-line bg-surface text-2xs font-medium text-ink hover:bg-sunken transition-colors w-full"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                    {isBusy ? 'Đang tải...' : slot.buttonLabel}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {noticeMsg && (
-        <div className="rounded-md bg-positive-soft px-2.5 py-1.5 text-2xs text-positive font-medium flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5">
+        <div className="rounded-md bg-positive-soft px-3 py-2 text-2xs text-positive font-medium flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-2">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             {noticeMsg}
           </span>
@@ -308,35 +357,58 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
       )}
 
       {errorMsg && (
-        <div className="rounded-md bg-critical-soft px-2.5 py-1.5 text-2xs text-critical font-medium">
+        <div className="rounded-md bg-critical-soft px-3 py-2 text-2xs text-critical font-medium">
           {errorMsg}
         </div>
       )}
 
-      {attachments.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-line bg-sunken/30 px-3 py-3 text-2xs text-ink-3 flex flex-wrap items-center justify-between gap-2">
-          <span>Chưa có tệp CCCD hoặc Giấy phép ĐKKD đính kèm.</span>
-          {editable && onChange && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Upload}
-              onClick={() =>
-                triggerUploadForCategory(
-                  legalType === 'INDIVIDUAL' ? 'CCCD_FRONT' : 'DKKD',
-                  false,
-                )
-              }
-            >
-              Tải ảnh giấy tờ
-            </Button>
-          )}
+      {editable && onChange && !defaultExpandPreview ? (
+        extraAttachments.length > 0 && (
+          <div className="divide-y divide-line rounded-lg border border-line bg-surface">
+            {extraAttachments.map((doc) => (
+              <div
+                key={doc.id}
+                onClick={() => setPreviewDoc(doc)}
+                className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-canvas cursor-pointer"
+              >
+                <div className="min-w-0">
+                  <span className="font-medium text-ink block truncate">
+                    {doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType]}
+                  </span>
+                  <span className="text-2xs text-ink-3 font-code block truncate">
+                    {doc.fileName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-accent">
+                    <Eye className="w-3.5 h-3.5" />
+                    Xem
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleDeleteAttachment(doc);
+                    }}
+                    className="inline-flex items-center justify-center h-6 w-6 rounded text-ink-3 hover:text-critical"
+                    title="Xóa tệp"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : attachments.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-line bg-sunken/30 px-3 py-3 text-2xs text-ink-3">
+          Chưa có tệp CCCD hoặc Giấy phép ĐKKD đính kèm.
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {/* Danh sách tệp gọn trên một hàng chọn */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {attachments.map((doc) => {
                 const isSelected = activeDoc?.id === doc.id;
                 const isDkkd = doc.docType === 'DKKD';
@@ -352,16 +424,16 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                         setPreviewDoc(doc);
                       }
                     }}
-                    className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-2xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-2 h-7 px-3 rounded-md border text-2xs font-medium transition-colors ${
                       isSelected && inlinePreviewOpen
                         ? 'border-primary bg-primary text-white'
                         : 'border-line bg-surface text-ink hover:bg-sunken'
                     }`}
                   >
                     {isDkkd ? (
-                      <Building2 className="w-3 h-3 shrink-0" />
+                      <Building2 className="w-3.5 h-3.5 shrink-0" />
                     ) : (
-                      <FileText className="w-3 h-3 shrink-0" />
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
                     )}
                     <span>{doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType]}</span>
                   </button>
@@ -370,13 +442,13 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
             </div>
 
             {activeDoc && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPreviewDoc(activeDoc)}
                   className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:text-ink hover:bg-sunken"
                 >
-                  <Maximize2 className="w-3 h-3" />
+                  <Maximize2 className="w-3.5 h-3.5" />
                   Phóng to
                 </button>
                 {editable && onExtractOcrFields && (
@@ -387,7 +459,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                     className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-line bg-surface text-2xs font-medium text-ink-2 hover:text-ink hover:bg-sunken"
                     title="Đọc thông tin từ giấy tờ này"
                   >
-                    <FileScan className="w-3 h-3" />
+                    <FileScan className="w-3.5 h-3.5" />
                     Đọc ảnh
                   </button>
                 )}
@@ -398,7 +470,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                   className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-2 hover:text-ink hover:bg-sunken"
                   title="Tải tệp gốc"
                 >
-                  <Download className="w-3 h-3" />
+                  <Download className="w-3.5 h-3.5" />
                 </a>
                 {editable && onChange && (
                   <button
@@ -407,7 +479,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                     className="inline-flex items-center justify-center h-7 w-7 rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft/40"
                     title="Xóa tệp"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -440,7 +512,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                   />
                 )}
               </div>
-              <div className="px-3 py-1.5 border-t border-line bg-surface flex items-center justify-between gap-2 text-2xs text-ink-3">
+              <div className="px-3 py-2 border-t border-line bg-surface flex items-center justify-between gap-2 text-2xs text-ink-3">
                 <span className="truncate font-code text-ink-2">
                   {activeDoc.fileName} · {formatFileSize(activeDoc.fileSize)} · {formatUploadDate(activeDoc.uploadedAt)}
                 </span>
@@ -449,7 +521,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                   onClick={() => setPreviewDoc(activeDoc)}
                   className="inline-flex items-center gap-1 text-accent hover:underline font-medium shrink-0"
                 >
-                  <Eye className="w-3 h-3" />
+                  <Eye className="w-3.5 h-3.5" />
                   Xem toàn màn hình
                 </button>
               </div>
@@ -471,7 +543,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
                     </span>
                   </div>
                   <span className="inline-flex items-center gap-1 text-2xs font-medium text-accent shrink-0">
-                    <Eye className="w-3 h-3" />
+                    <Eye className="w-3.5 h-3.5" />
                     Xem
                   </span>
                 </div>
@@ -532,7 +604,7 @@ export function LegalDocPreviewModal({
               href={activeDoc.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-ink font-medium text-2xs hover:bg-sunken"
+              className="inline-flex items-center gap-2 h-7 px-3 rounded-md border border-line-strong bg-surface text-ink font-medium text-2xs hover:bg-sunken"
             >
               <ExternalLink className="w-3.5 h-3.5 text-ink-3" />
               Mở tab mới
@@ -541,7 +613,7 @@ export function LegalDocPreviewModal({
               href={`${activeDoc.url}${activeDoc.url.includes('?') ? '&' : '?'}download=1`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-ink font-medium text-2xs hover:bg-sunken"
+              className="inline-flex items-center gap-2 h-7 px-3 rounded-md border border-line-strong bg-surface text-ink font-medium text-2xs hover:bg-sunken"
             >
               <Download className="w-3.5 h-3.5 text-ink-3" />
               Tải tệp gốc
@@ -556,7 +628,7 @@ export function LegalDocPreviewModal({
       <div className="space-y-3">
         {docList.length > 1 && onSelectDoc && (
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {docList.map((doc) => {
                 const isSelected = doc.id === activeDoc.id;
                 return (
@@ -564,7 +636,7 @@ export function LegalDocPreviewModal({
                     key={doc.id}
                     type="button"
                     onClick={() => onSelectDoc(doc)}
-                    className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-2xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-2 h-7 px-3 rounded-md border text-2xs font-medium transition-colors ${
                       isSelected
                         ? 'border-primary bg-primary text-white'
                         : 'border-line bg-surface text-ink hover:bg-sunken'
