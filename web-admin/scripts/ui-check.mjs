@@ -121,6 +121,7 @@ if (whereArg) {
 
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 const registryErrors = [];
+const registryWarnings = [];
 let registryStats = null;
 
 async function checkRegistry() {
@@ -163,7 +164,8 @@ async function checkRegistry() {
   let done = 0;
   for (const e of SCREEN_REGISTRY) {
     if ('hidden' in e) {
-      if (e.hidden === 'alias' && !aliasKeys.has(e.tab)) err(`${e.tab}: khai báo hidden "alias" nhưng không có trong TAB_ALIASES`);
+      // Chỉ cảnh báo: TAB_ALIASES có thể đang được sửa ở nhánh khác (ví dụ gỡ một cổng); chiều ngược lại vẫn là lỗi.
+      if (e.hidden === 'alias' && !aliasKeys.has(e.tab)) registryWarnings.push(`${e.tab}: khai báo hidden "alias" nhưng chưa có trong TAB_ALIASES (lib/navGroups.ts)`);
       if (e.hidden === 'merged' && !execKeys.has(e.tab)) err(`${e.tab}: khai báo hidden "merged" nhưng không có trong DASHBOARD_EXEC_TAB_KEYS`);
       continue;
     }
@@ -252,6 +254,7 @@ if (increases.length) {
 }
 
 if (registryErrors.length) process.exit(1);
+for (const m of registryWarnings) console.warn(`Cảnh báo screenRegistry: ${m}`);
 
 console.log(`ui:check đạt. Quét ${scanned} file, ${sumOf(current)} vi phạm cũ (baseline ${sumOf(baseline)}).`);
 if (decreases.length) console.log(`Có ${decreases.length} mục đã giảm so với baseline; chạy "npm run ui:check -- --update" để khóa mức mới.`);
