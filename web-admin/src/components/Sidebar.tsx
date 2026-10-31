@@ -508,6 +508,12 @@ const NAV = {
       },
     ],
   },
+  apiSettings: {
+    id: 'nav-api-settings',
+    key: 'api-settings' as TabKey,
+    label: 'Tích hợp & Cấu hình API',
+    icon: Sliders,
+  },
 
   // Mục dùng riêng cho đối tác bên ngoài
   kocHubPartnerOnly: {
@@ -612,7 +618,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Hệ thống',
-      items: [NAV.masterDataGroup, NAV.rbacGroup],
+      items: [NAV.masterDataGroup, NAV.rbacGroup, NAV.apiSettings],
     },
   ];
 }

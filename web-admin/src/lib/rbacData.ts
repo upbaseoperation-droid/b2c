@@ -1855,6 +1855,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'master-data',
     'brand-knowledge',
+    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
