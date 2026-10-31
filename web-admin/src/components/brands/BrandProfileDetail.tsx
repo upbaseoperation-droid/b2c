@@ -488,7 +488,7 @@ export function BrandProfileDetail({
       render: r => {
         const isSelected = r.month === activeMonth;
         return (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className={`font-semibold tabular-nums ${isSelected ? 'text-accent' : 'text-ink'}`}>{r.monthLabel}</span>
             {isSelected && <span className="text-2xs font-medium text-accent">· Đang xem</span>}
           </div>
@@ -570,7 +570,7 @@ export function BrandProfileDetail({
       width: 195,
       align: 'right',
       render: r => (
-        <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+        <div className="inline-flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
           <Button
             size="sm"
             variant={r.month === activeMonth ? 'secondary' : 'ghost'}
@@ -608,7 +608,7 @@ export function BrandProfileDetail({
       width: 225,
       render: b => (
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-ink truncate">{b.kocName}</span>
             <span className="text-2xs font-code text-ink-3">
               · {b.tierCode}
@@ -683,7 +683,7 @@ export function BrandProfileDetail({
       align: 'right',
       width: 155,
       render: b => (
-        <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+        <div className="inline-flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
           {b.videoLink ? (
             <a
               href={b.videoLink}
@@ -692,7 +692,7 @@ export function BrandProfileDetail({
               className="h-7 px-2 rounded border border-line bg-surface hover:bg-sunken text-2xs font-medium text-accent inline-flex items-center gap-1"
             >
               <span>Clip</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           ) : null}
           <Button size="sm" variant="secondary" onClick={() => setInspectingBooking(b)}>
@@ -709,12 +709,12 @@ export function BrandProfileDetail({
   const activeMonthOption = PROFILE_MONTH_OPTIONS.find(o => o.value === activeMonth);
 
   const navControl = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-1">
         {embedded ? 'Quay lại' : 'Danh bạ'}
       </Button>
       {(nav?.onPrev || nav?.onNext) && (
-        <div className="flex items-center gap-0.5 pl-1.5 border-l border-line text-2xs text-ink-3">
+        <div className="flex items-center gap-0.5 pl-2 border-l border-line text-2xs text-ink-3">
           <button
             type="button"
             disabled={!nav?.onPrev}
@@ -747,14 +747,14 @@ export function BrandProfileDetail({
     ...(can.DOCUMENTS
       ? [{ label: quickUploading ? 'Đang tải tệp…' : 'Tải tệp lên', icon: Upload, disabled: busy || quickUploading, onSelect: () => quickFileInputRef.current?.click() }]
       : []),
-    { label: 'Đọc tài liệu quy chuẩn', icon: FileText, onSelect: () => setExtractGuidelineOpen(true) },
+    { label: 'Tách quy chuẩn từ tài liệu', icon: FileText, onSelect: () => setExtractGuidelineOpen(true) },
     ...(onDrilldownToPlan
       ? [{ label: `Mở kế hoạch ${activeMonth}`, icon: FileSpreadsheet, onSelect: () => onDrilldownToPlan({ brandName: row.name, month: activeMonth }) }]
       : []),
   ];
 
   const actionControls = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <input
         ref={quickFileInputRef}
         type="file"
@@ -805,7 +805,7 @@ export function BrandProfileDetail({
 
       {/* 2. ĐỊNH DANH → KỲ SỐ LIỆU → 4 CHỈ SỐ */}
       <section className="bg-surface border border-line rounded-xl overflow-hidden">
-        <div className="px-4 pt-3.5 pb-3 flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
+        <div className="px-4 pt-4 pb-3 flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
           <div className="flex items-start gap-3 min-w-0">
             <span className="shrink-0 inline-flex mt-0.5" style={sharedTo('brand-avatar')}>
               <BrandAvatar name={row.name} id={row.master?.id} code={row.master?.code} size={40} rounded="lg" />
@@ -827,26 +827,26 @@ export function BrandProfileDetail({
           </div>
 
           <dl className="flex flex-wrap items-center gap-x-5 gap-y-2 text-2xs">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <dt className="text-ink-3">Account</dt>
               <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 {accountPics.length > 0 ? accountPics.map(n => <Person key={n} name={n} size={18} />) : <span className="text-ink-2">Chưa gán</span>}
               </dd>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <dt className="text-ink-3">Booking</dt>
               <dd><Person name={primarySpecialist} size={18} /></dd>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <dt className="text-ink-3">Trưởng phòng</dt>
               <dd><Person name={leadB2c} size={18} /></dd>
             </div>
           </dl>
         </div>
 
-        <div className="px-4 py-2 border-t border-line flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+        <div className="px-4 py-2 border-t border-line flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center gap-1.5 text-2xs text-ink-3">
+            <label className="inline-flex items-center gap-2 text-2xs text-ink-3">
               <Calendar className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
               <span>Số liệu</span>
               <select
@@ -954,12 +954,12 @@ export function BrandProfileDetail({
       {/* ===================================================================== */}
       {activeTab === 'OVERVIEW' && (
         <div className="grid gap-4 items-start xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="grid gap-3.5 min-w-0">
+          <div className="grid gap-4 min-w-0">
             {/* Định vị & thông điệp 4P / Insight */}
             <Panel
               title={SECTION_LABEL.POSITIONING}
               actions={
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <Button size="sm" variant="secondary" icon={FileText} onClick={() => setShowStandardBrief(true)}>
                     Xuất Brief 5 phần
                   </Button>
@@ -967,58 +967,47 @@ export function BrandProfileDetail({
                 </div>
               }
             >
-              {pos && (pos.slogan || pos.toneOfVoice || pos.story) ? (
+              {pos && (pos.slogan || pos.toneOfVoice || pos.story || pos.keyVisualDirection) ? (
                 <div className="grid">
-                  <PosGroup title="Thông điệp">
-                    <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-3">
-                      <Info label="Khẩu hiệu">{pos.slogan && <span className="font-medium">“{pos.slogan}”</span>}</Info>
-                      <Info label="Big Idea">{pos.bigIdea}</Info>
-                      <Info label="Key Message">{pos.keyMessage}</Info>
-                    </dl>
-                    {pos.keyVisualDirection && (
-                      <dl><Info label="Định hướng Key Visual">{pos.keyVisualDirection}</Info></dl>
-                    )}
-                  </PosGroup>
-
-                  {(pos.brandSays || pos.consumerSays || pos.communicationGap) && (
-                    <PosGroup title="Insight">
-                      <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-3">
-                        <Info label="Brand says">{pos.brandSays}</Info>
-                        <Info label="Consumer says">{pos.consumerSays}</Info>
-                        <Info label="Khoảng trống cần lấp">{pos.communicationGap}</Info>
-                      </dl>
-                    </PosGroup>
-                  )}
-
-                  <PosGroup title="Khách hàng và giọng văn">
+                  <PosGroup title="Nhận diện & giọng văn">
                     <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                      <Info label="Khẩu hiệu (Slogan)">{pos.slogan && <span className="font-medium">“{pos.slogan}”</span>}</Info>
                       <Info label="Giọng văn KOC">
                         {[pos.toneTag && TONE_LABEL[pos.toneTag], pos.toneOfVoice].filter(Boolean).join(' · ')}
                       </Info>
+                    </dl>
+                    {pos.keyVisualDirection && (
+                      <dl>
+                        <Info label="Quy chuẩn nhận diện (Bảng màu, font chữ, phong cách ảnh/video)">
+                          {pos.keyVisualDirection}
+                        </Info>
+                      </dl>
+                    )}
+                  </PosGroup>
+
+                  <PosGroup title="Chân dung khách hàng & rào cản mua hàng">
+                    <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
                       <Info label="Khách hàng mục tiêu">{pos.targetAudience}</Info>
                       {(pos.painPoints?.length || 0) > 0 && (
-                        <Info label="Nỗi đau (dùng ở 3 giây đầu)"><Bullets items={pos.painPoints!} /></Info>
+                        <Info label="Vấn đề khách hàng thường gặp"><Bullets items={pos.painPoints!} /></Info>
                       )}
                       {(pos.barriersToTrial?.length || 0) > 0 && (
-                        <Info label="Rào cản mua hàng cần hóa giải"><Bullets items={pos.barriersToTrial!} /></Info>
+                        <Info label="Rào cản khi mua hàng"><Bullets items={pos.barriersToTrial!} /></Info>
                       )}
                     </dl>
                   </PosGroup>
 
-                  {(pos.story || (pos.achievements?.length || 0) > 0 || (pos.rtbs?.length || 0) > 0 || (pos.contentPillars?.length || 0) > 0) && (
-                    <PosGroup title="Câu chuyện và bằng chứng">
+                  {(pos.story || (pos.achievements?.length || 0) > 0 || (pos.rtbs?.length || 0) > 0) && (
+                    <PosGroup title="Câu chuyện & bằng chứng tin cậy">
                       {pos.story && (
-                        <dl><Info label="Câu chuyện thương hiệu (slide 3 brief)"><span className="whitespace-pre-line">{pos.story}</span></Info></dl>
+                        <dl><Info label="Câu chuyện thương hiệu"><span className="whitespace-pre-line">{pos.story}</span></Info></dl>
                       )}
                       <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                        {(pos.achievements?.length || 0) > 0 && (
-                          <Info label="Giải thưởng, thành tựu, báo chí"><Bullets items={pos.achievements!} /></Info>
-                        )}
                         {(pos.rtbs?.length || 0) > 0 && (
-                          <Info label="Bằng chứng tin cậy, kiểm nghiệm"><Bullets items={pos.rtbs!} /></Info>
+                          <Info label="Chứng nhận & kiểm nghiệm"><Bullets items={pos.rtbs!} /></Info>
                         )}
-                        {(pos.contentPillars?.length || 0) > 0 && (
-                          <Info label="Trụ cột nội dung theo phễu"><Bullets items={pos.contentPillars!} /></Info>
+                        {(pos.achievements?.length || 0) > 0 && (
+                          <Info label="Giải thưởng & thành tựu"><Bullets items={pos.achievements!} /></Info>
                         )}
                       </dl>
                     </PosGroup>
@@ -1029,20 +1018,20 @@ export function BrandProfileDetail({
                       (pos.competitorTiers.tierB?.length || 0) > 0 ||
                       (pos.competitorTiers.tierC?.length || 0) > 0)) ||
                     (pos.competitors?.length || 0) > 0) && (
-                    <PosGroup title="Đối thủ">
+                    <PosGroup title="Đối thủ cạnh tranh">
                       <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-3">
-                        <Info label="Trực tiếp, cần thắng">{(pos.competitorTiers?.tierA || []).join('; ')}</Info>
-                        <Info label="Giao thoa, cần theo dõi">{(pos.competitorTiers?.tierB || []).join('; ')}</Info>
-                        <Info label="Hình mẫu học hỏi">{(pos.competitorTiers?.tierC || []).join('; ')}</Info>
+                        <Info label="Đối thủ trực tiếp">{(pos.competitorTiers?.tierA || []).join('; ')}</Info>
+                        <Info label="Đối thủ cùng tệp khách">{(pos.competitorTiers?.tierB || []).join('; ')}</Info>
+                        <Info label="Thương hiệu tham khảo">{(pos.competitorTiers?.tierC || []).join('; ')}</Info>
                       </dl>
                       {(pos.competitors?.length || 0) > 0 && (
-                        <dl><Info label="Nhãn cùng phân khúc (không nhắc tên trong clip)">{pos.competitors!.join(', ')}</Info></dl>
+                        <dl><Info label="Nhãn không được nhắc tên trong clip KOC">{pos.competitors!.join(', ')}</Info></dl>
                       )}
                     </PosGroup>
                   )}
                 </div>
               ) : (
-                <EmptyState title="Chưa có định vị thương hiệu" description="Thêm khẩu hiệu, giọng văn và chân dung khách hàng để KOC viết kịch bản." />
+                <EmptyState title="Chưa có định vị thương hiệu" />
               )}
             </Panel>
           </div>
@@ -1078,7 +1067,7 @@ export function BrandProfileDetail({
 
             {/* Đội ngũ phụ trách theo cơ cấu 2 tầng B2C + 3 vị trí cấp Brand */}
             <Aside
-              title="Cơ cấu nhân sự phụ trách B2C"
+              title="Nhân sự phụ trách"
               action={
                 onDrilldownToPlan && (
                   <Button
@@ -1107,24 +1096,24 @@ export function BrandProfileDetail({
                 </Info>
                 {currentBrandReport.brandPlan && (
                   <Info label="3 vị trí phụ trách cấp Brand">
-                    <div className="grid gap-1.5 text-2xs">
+                    <div className="grid gap-2 text-2xs">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-ink-3">1. Plan / Strategy:</span>
+                        <span className="text-ink-3">Kế hoạch:</span>
                         <Person name={m?.planStrategyPic || currentBrandReport.brandPlan.planStrategyPic} size={18} />
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-ink-3">2. Content / Brand Main:</span>
+                        <span className="text-ink-3">Nội dung:</span>
                         <Person name={m?.contentBrandMainPic || currentBrandReport.brandPlan.contentBrandMainPic} size={18} />
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-ink-3">3. Key Visual / SIS:</span>
+                        <span className="text-ink-3">Hình ảnh:</span>
                         <Person name={m?.keyVisualSisPic || currentBrandReport.brandPlan.keyVisualSisPic} size={18} />
                       </div>
                     </div>
                   </Info>
                 )}
                 <Info label="Chuyên viên thực thi Booking (PIC)">
-                  <div className="grid gap-1.5">
+                  <div className="grid gap-2">
                     {(specialistPics.length > 0 ? specialistPics : [primarySpecialist]).map(sp => (
                       <Person key={sp} name={sp} size={20} />
                     ))}
@@ -1132,7 +1121,7 @@ export function BrandProfileDetail({
                 </Info>
                 {accountPics.length > 0 && (
                   <Info label="Account (theo gian hàng)">
-                    <div className="grid gap-1.5">
+                    <div className="grid gap-2">
                       {accountPics.map(n => <Person key={n} name={n} size={20} />)}
                     </div>
                   </Info>
@@ -1152,28 +1141,28 @@ export function BrandProfileDetail({
       {/* TAB 1B: QUY TẮC VẬN HÀNH & PHÊ DUYỆT (ĐIỀU KHIỂN LUỒNG LÀM VIỆC)       */}
       {/* ===================================================================== */}
       {activeTab === 'WORKFLOW' && (
-        <div className="space-y-3.5">
+        <div className="space-y-4">
           <Panel
             title={`${SECTION_LABEL.WORKFLOW_RULES} — ${row.name}`}
             actions={editBtn('WORKFLOW_RULES', () => setDialog('WORKFLOW_RULES'), 'Chỉnh sửa quy tắc vận hành')}
           >
             {p.workflowRules ? (
-              <div className="grid gap-3.5 md:grid-cols-2 text-xs">
+              <div className="grid gap-4 md:grid-cols-2 text-xs">
                 {/* Nhóm 1: Phân hạng dự án & Mô hình vận hành */}
-                <div className="rounded-xl border border-line bg-canvas/50 p-3.5 space-y-2.5">
+                <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
                   <h4 className="text-xs font-semibold text-ink">
-                    Phân hạng dự án và mô hình phối hợp
+                    1. Nhóm nhãn hàng &amp; phân công phụ trách
                   </h4>
                   <dl className="grid gap-3">
-                    <Info label="Phân hạng dự án B2C">
+                    <Info label="Nhóm nhãn hàng">
                       <Status className="whitespace-normal" tone={p.workflowRules.projectTier === 'TIER_A_STRATEGIC' ? 'info' : p.workflowRules.projectTier === 'TIER_B_GROWTH' ? 'positive' : 'neutral'}>
                         {PROJECT_TIER_LABEL[p.workflowRules.projectTier]}
                       </Status>
                     </Info>
-                    <Info label="Mô hình phân công nhân sự (theo định hướng B2C)">
+                    <Info label="Cách phân công nhân sự">
                       <span className="font-medium text-ink">{OPERATING_MODEL_LABEL[p.workflowRules.operatingModel]}</span>
                     </Info>
-                    <Info label="Đơn vị chủ trì chiến lược nội dung (Key Message)">
+                    <Info label="Bộ phận phụ trách kế hoạch nội dung">
                       <span>{STRATEGY_OWNER_LABEL[p.workflowRules.strategyOwnerTeam]}</span>
                     </Info>
                     <Info label="Đầu mối phê duyệt phía nhãn hàng">
@@ -1185,10 +1174,10 @@ export function BrandProfileDetail({
                 {/* Nhóm 2: Chốt chặn phê duyệt KOC & Kịch bản */}
                 <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
                   <h4 className="text-xs font-semibold text-ink">
-                    Duyệt danh sách KOC và SLA kịch bản
+                    2. Quy định duyệt KOC &amp; thời hạn phản hồi
                   </h4>
                   <dl className="grid gap-3">
-                    <Info label="Quy tắc duyệt danh sách KOC (tác động khi tạo deal)">
+                    <Info label="Quy định duyệt danh sách KOC">
                       <span className="font-semibold text-accent">{KOC_APPROVAL_MODE_LABEL[p.workflowRules.kocApprovalMode]}</span>
                     </Info>
                     <Info label="Các bước bắt buộc trình nhãn duyệt">
@@ -1199,9 +1188,9 @@ export function BrandProfileDetail({
                         ].join(' · ')}
                       </span>
                     </Info>
-                    <Info label="Thời hạn tự động cho phép đăng bài (Auto-air SLA)">
+                    <Info label="Thời hạn phản hồi duyệt bài">
                       <span>
-                        Sau <strong>{p.workflowRules.autoAirAfterHours} giờ</strong> kể từ khi gửi kịch bản/video nháp mà nhãn chưa phản hồi, chuyên viên được phép cho KOC lên bài để kịp tiến độ chiến dịch.
+                        Quá <strong>{p.workflowRules.autoAirAfterHours} giờ</strong> nhãn chưa phản hồi thì được phép cho KOC đăng bài.
                       </span>
                     </Info>
                     <Info label="Giới hạn số lần chỉnh sửa miễn phí">
@@ -1254,7 +1243,7 @@ export function BrandProfileDetail({
                 {/* Nhóm 4: Chân dung KOC ưu tiên & Bàn giao tài liệu */}
                 <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
                   <h4 className="text-xs font-semibold text-ink">
-                    4. Tiêu chí chọn KOC &amp; Liên kết điều hành (Bảng 3.5)
+                    4. Tiêu chí chọn KOC &amp; tài liệu bàn giao
                   </h4>
                   <dl className="grid gap-3">
                     <Info label="Nhóm KOC ưu tiên của nhãn">
@@ -1279,7 +1268,7 @@ export function BrandProfileDetail({
                       </Info>
                     )}
                     {(p.workflowRules.handoverFrom || p.workflowRules.handoverTo) && (
-                      <Info label="Nhân sự bàn giao &amp; tiếp nhận (Bảng 3.5)">
+                      <Info label="Nhân sự bàn giao &amp; tiếp nhận">
                         <span>
                           Bàn giao: <strong>{p.workflowRules.handoverFrom || '—'}</strong> → Tiếp nhận: <strong>{p.workflowRules.handoverTo || primarySpecialist}</strong>
                         </span>
@@ -1292,10 +1281,10 @@ export function BrandProfileDetail({
                             href={p.workflowRules.bookingSheetUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
+                            className="px-3 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
                           >
                             <span>Link Google Sheet</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                         {p.workflowRules.canvaBriefUrl && (
@@ -1303,10 +1292,10 @@ export function BrandProfileDetail({
                             href={p.workflowRules.canvaBriefUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
+                            className="px-3 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
                           >
                             <span>Canva Brief</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                         {!p.workflowRules.bookingSheetUrl &&
@@ -1329,7 +1318,7 @@ export function BrandProfileDetail({
       {/* TAB 2: KHO TÀI LIỆU & HỢP ĐỒNG THƯƠNG HIỆU                            */}
       {/* ===================================================================== */}
       {activeTab === 'FILES' && (
-        <div className="space-y-3.5">
+        <div className="space-y-4">
           {/* Khu vực tải tệp thương hiệu */}
           {can.DOCUMENTS && (
             <div
@@ -1341,7 +1330,7 @@ export function BrandProfileDetail({
               }}
               className="bg-surface border border-dashed border-line-strong rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
             >
-              <div className="flex items-center gap-2.5 flex-1 min-w-[220px]">
+              <div className="flex items-center gap-3 flex-1 min-w-[220px]">
                 <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                   <Upload className="w-4 h-4" />
                 </div>
@@ -1351,7 +1340,7 @@ export function BrandProfileDetail({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 text-xs text-ink-2">
+                <div className="flex items-center gap-2 text-xs text-ink-2">
                   <span>Loại tệp</span>
                   <Select
                     value={uploadCategory}
@@ -1411,14 +1400,7 @@ export function BrandProfileDetail({
             </div>
 
             {filteredDocs.length === 0 ? (
-              <EmptyState
-                title="Chưa có tệp tài liệu phù hợp"
-                description={
-                  can.DOCUMENTS
-                    ? 'Nhấn “Chọn tệp từ máy” phía trên để tải tệp thương hiệu lên hệ thống.'
-                    : 'Nhãn hàng hiện chưa có tài liệu trong danh mục này.'
-                }
-              />
+              <EmptyState title="Chưa có tệp tài liệu phù hợp" />
             ) : (
               <div className="divide-y divide-line">
                 {filteredDocs.map(d => {
@@ -1431,14 +1413,14 @@ export function BrandProfileDetail({
                   );
 
                   return (
-                    <div key={d.id} className="px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas/50 transition-colors">
+                    <div key={d.id} className="px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas/50 transition-colors">
                       <div className="flex items-start gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-lg bg-sunken border border-line flex items-center justify-center text-2xs font-code font-semibold text-ink-2 shrink-0 mt-0.5">
                           {ext.slice(0, 4)}
                         </div>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <a href={d.url} target="_blank" rel="noreferrer" className="text-[13.5px] font-medium text-ink hover:text-accent hover:underline break-words">
+                            <a href={d.url} target="_blank" rel="noreferrer" className="text-xs font-medium text-ink hover:text-accent hover:underline break-words">
                               {d.title}
                             </a>
                             <span className="text-2xs text-ink-3">
@@ -1453,14 +1435,14 @@ export function BrandProfileDetail({
                           </div>
                           {d.note && <p className="text-xs text-ink-2 mt-1">{d.note}</p>}
                           {d.extractedContent && (
-                            <p className="text-xs text-ink mt-1 rounded bg-canvas border border-line px-2.5 py-1.5 whitespace-pre-line">
+                            <p className="text-xs text-ink mt-1 rounded bg-canvas border border-line px-3 py-2 whitespace-pre-line">
                               {d.extractedContent}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                         {canPreviewInline && (
                           <Button size="sm" variant="secondary" icon={Eye} onClick={() => setPreviewDoc(d)}>
                             Xem tệp
@@ -1470,7 +1452,7 @@ export function BrandProfileDetail({
                           href={d.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="h-7 px-2.5 rounded-md border border-line-strong bg-surface hover:bg-sunken text-[13px] font-medium text-ink inline-flex items-center gap-1.5"
+                          className="h-7 px-3 rounded-md border border-line-strong bg-surface hover:bg-sunken text-xs font-medium text-ink inline-flex items-center gap-2"
                         >
                           <ExternalLink className="w-3.5 h-3.5 text-ink-3" />
                           <span>Mở</span>
@@ -1478,7 +1460,7 @@ export function BrandProfileDetail({
                         {downloadUrl && (
                           <a
                             href={downloadUrl}
-                            className="h-7 px-2.5 rounded-md border border-line-strong bg-surface hover:bg-sunken text-[13px] font-medium text-ink inline-flex items-center gap-1.5"
+                            className="h-7 px-3 rounded-md border border-line-strong bg-surface hover:bg-sunken text-xs font-medium text-ink inline-flex items-center gap-2"
                           >
                             <Download className="w-3.5 h-3.5 text-ink-3" />
                             <span>Tải xuống</span>
@@ -1499,10 +1481,10 @@ export function BrandProfileDetail({
       {/* TAB 3: HỒ SƠ THÁNG: PLAN & REPORT CỦA THƯƠNG HIỆU & CÁC GIAN HÀNG     */}
       {/* ===================================================================== */}
       {activeTab === 'STORES' && (
-        <div className="space-y-3.5">
+        <div className="space-y-4">
           {/* 1. THANH CHUYỂN KỲ THÁNG NHANH & ĐỐI SOÁT GỌN */}
           <div className="bg-surface border border-line rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
               <span className="text-2xs text-ink-3 mr-1">Kỳ tháng</span>
               {monthlyBrandLedger.map(r => {
                 const isSelected = r.month === activeMonth;
@@ -1512,7 +1494,7 @@ export function BrandProfileDetail({
                     key={r.month}
                     type="button"
                     onClick={() => handleMonthChange(r.month)}
-                    className={`px-2.5 py-1 rounded-lg border text-left transition-colors inline-flex items-center gap-2 text-xs ${
+                    className={`px-3 py-1 rounded-lg border text-left transition-colors inline-flex items-center gap-2 text-xs ${
                       isSelected
                         ? 'bg-accent-soft/70 border-accent text-ink font-semibold'
                         : 'bg-canvas/60 border-line text-ink-2 hover:bg-sunken hover:text-ink'
@@ -1532,7 +1514,7 @@ export function BrandProfileDetail({
                 );
               })}
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 size="sm"
                 variant="ghost"
@@ -1555,7 +1537,7 @@ export function BrandProfileDetail({
 
           {showLedgerTable && (
             <Panel
-              title={`Hồ sơ Tháng (Plan & Report) — ${row.name}`}
+              title={`So sánh 4 tháng — ${row.name}`}
               flush
             >
               <DataTable
@@ -1570,10 +1552,7 @@ export function BrandProfileDetail({
           {/* 2. TỪNG GIAN HÀNG: ĐỊNH DANH, NHÂN SỰ, KẾ HOẠCH, CHỈ TIÊU, THỰC TẾ */}
           <Panel title={`Gian hàng (${brandStores.length})`} flush>
             {currentBrandReport.storeReports.length === 0 ? (
-              <EmptyState
-                title="Chưa gắn gian hàng"
-                description="Thương hiệu này chưa có gian hàng trong Dữ liệu gốc."
-              />
+              <EmptyState title="Chưa gắn gian hàng" />
             ) : (
               <StoreRoster
                 reports={currentBrandReport.storeReports}
@@ -1590,7 +1569,7 @@ export function BrandProfileDetail({
 
           {/* 3. THỰC TẾ DEAL BOOKING & BÁO CÁO VIDEO CỦA THƯƠNG HIỆU TRONG KỲ */}
           <Panel
-            title={`Thực tế Deal Booking & Báo cáo Video (${currentBrandReport.monthLabel} · ${currentBrandReport.bookings.length} deal)`}
+            title={`Booking trong tháng (${currentBrandReport.monthLabel} · ${currentBrandReport.bookings.length} deal)`}
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 {onDrilldownToListing && (
@@ -1624,10 +1603,7 @@ export function BrandProfileDetail({
             flush
           >
             {currentBrandReport.bookings.length === 0 ? (
-              <EmptyState
-                title={`Chưa có deal booking trong ${currentBrandReport.monthLabel}`}
-                description="Chưa có booking KOC nào được ghi nhận cho thương hiệu này trong kỳ đang chọn."
-              />
+              <EmptyState title={`Chưa có deal booking trong ${currentBrandReport.monthLabel}`} />
             ) : (
               <>
               <DataTable
@@ -1652,8 +1628,8 @@ export function BrandProfileDetail({
       {/* TAB 4: SẢN PHẨM & COMBO 2 TẦNG, GÓC NỘI DUNG & TRẦN THÙ LAO KOC       */}
       {/* ===================================================================== */}
       {activeTab === 'PRODUCTS' && (
-        <div className="space-y-3.5">
-          <Panel title={`Danh mục Nhóm Sản phẩm & Combo 2 tầng — ${row.name}`}>
+        <div className="space-y-4">
+          <Panel title="Sản phẩm & Combo" flush>
             <ProductCatalogView
               brandNames={[row.name]}
               initialBrand={row.name}
@@ -1672,35 +1648,24 @@ export function BrandProfileDetail({
               actions={editBtn('RATECARD', () => setDialog('RATECARD'))}
             >
               {p.ratecard.some(r => r.maxBudget) ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {(() => {
-                    const maxVal = Math.max(...p.ratecard.map(r => r.maxBudget || 0), 1);
-                    return p.ratecard.map(r => {
-                      const pct = r.maxBudget ? Math.max(6, Math.round((r.maxBudget / maxVal) * 100)) : 0;
-                      return (
-                        <div key={r.grade} className="rounded-lg border border-line bg-canvas/50 p-3 space-y-1.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-code font-semibold text-ink">{r.grade}</span>
-                            <span className="tabular-nums font-medium text-ink">
-                              {r.maxBudget ? formatVnd(r.maxBudget) : <span className="text-ink-3">Không đặt trần</span>}
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-sunken overflow-hidden">
-                            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+                  {p.ratecard.map(r => (
+                    <div key={r.grade} className="rounded-lg border border-line bg-canvas/50 px-3 py-2 text-xs">
+                      <span className="block font-code font-semibold text-ink-3 text-2xs">{r.grade}</span>
+                      <span className="mt-0.5 block tabular-nums font-semibold text-ink">
+                        {r.maxBudget ? formatVndShort(r.maxBudget) : <span className="text-ink-3 font-normal">Tự do</span>}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <EmptyState title="Chưa đặt trần thù lao" description="Trưởng phòng B2C có thể cấu hình mức trần thù lao KOC cho nhãn hàng này." />
+                <EmptyState title="Chưa đặt khung giá KOC" />
               )}
             </Panel>
           )}
 
           <Panel
-            title={`Góc nội dung & Ma trận kịch bản theo SKU — ${row.name}`}
+            title="Thư viện góc kịch bản theo sản phẩm"
             actions={
               selectedAngleProductId !== 'ALL' ? (
                 <Button size="sm" variant="ghost" onClick={() => setSelectedAngleProductId('ALL')}>
@@ -1708,6 +1673,7 @@ export function BrandProfileDetail({
                 </Button>
               ) : undefined
             }
+            flush
           >
             <ContentAngleSetupView
               currentUser={currentUser}
@@ -1730,13 +1696,13 @@ export function BrandProfileDetail({
       {/* TAB 5: TỪ CẤM, PHÁP LÝ & CÂU HỎI KHÓ                                  */}
       {/* ===================================================================== */}
       {activeTab === 'COMPLIANCE' && (
-        <div className="space-y-3.5">
+        <div className="space-y-4">
           <Panel
             title={SECTION_LABEL.CONTENT_RULES}
             actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), 'Sửa toàn bộ quy chuẩn')}
             flush
           >
-            <div className="divide-y divide-line text-[13px]">
+            <div className="divide-y divide-line text-xs">
               <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line">
                 {/* CỘT TRÁI: TỪ KHÓA CẤM & HÌNH ẢNH KHÔNG ĐƯỢC DÙNG */}
                 <div className="p-4 grid gap-3 content-start">
@@ -1759,7 +1725,7 @@ export function BrandProfileDetail({
                   </div>
 
                   {editingBannedIdx === -1 && (
-                    <div className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 grid gap-2">
+                    <div className="rounded-lg bg-accent-soft/25 border border-accent p-3 grid gap-2">
                       <div className="grid sm:grid-cols-2 gap-2">
                         <Input
                           value={bannedPhraseDraft}
@@ -1772,7 +1738,7 @@ export function BrandProfileDetail({
                           placeholder="Thay bằng (VD: Hỗ trợ làm dịu)"
                         />
                       </div>
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex justify-end gap-2">
                         <Button size="sm" variant="ghost" onClick={() => setEditingBannedIdx(null)}>
                           Hủy
                         </Button>
@@ -1803,7 +1769,7 @@ export function BrandProfileDetail({
 
                   {baseRules.banned.map((b, idx) =>
                     editingBannedIdx === idx ? (
-                      <div key={b.id || idx} className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 grid gap-2">
+                      <div key={b.id || idx} className="rounded-lg bg-accent-soft/25 border border-accent p-3 grid gap-2">
                         <div className="grid sm:grid-cols-2 gap-2">
                           <Input
                             value={bannedPhraseDraft}
@@ -1816,7 +1782,7 @@ export function BrandProfileDetail({
                             placeholder="Cụm từ thay thế"
                           />
                         </div>
-                        <div className="flex justify-end gap-1.5">
+                        <div className="flex justify-end gap-2">
                           <Button size="sm" variant="ghost" onClick={() => setEditingBannedIdx(null)}>
                             Hủy
                           </Button>
@@ -1900,7 +1866,7 @@ export function BrandProfileDetail({
                       )}
                     </div>
                     {editingDontIdx === -1 && (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Input
                           value={dontDraft}
                           onChange={e => setDontDraft(e.target.value)}
@@ -1924,10 +1890,10 @@ export function BrandProfileDetail({
                         </Button>
                       </div>
                     )}
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
                       {baseRules.visualDont.map((x, k) =>
                         editingDontIdx === k ? (
-                          <li key={k} className="flex items-center gap-1.5">
+                          <li key={k} className="flex items-center gap-2">
                             <Input value={dontDraft} onChange={e => setDontDraft(e.target.value)} />
                             <Button
                               size="sm"
@@ -1947,7 +1913,7 @@ export function BrandProfileDetail({
                             </Button>
                           </li>
                         ) : (
-                          <li key={k} className="flex items-center justify-between gap-2 rounded-md bg-canvas/70 border border-line px-2.5 py-1.5 text-ink">
+                          <li key={k} className="flex items-center justify-between gap-2 rounded-md bg-canvas/70 border border-line px-3 py-2 text-ink">
                             <span>• {x}</span>
                             {can.CONTENT_RULES && (
                               <div className="inline-flex items-center gap-1 shrink-0">
@@ -2003,7 +1969,7 @@ export function BrandProfileDetail({
                   </div>
 
                   {editingPrefIdx === -1 && (
-                    <div className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 flex items-center gap-1.5">
+                    <div className="rounded-lg bg-accent-soft/25 border border-accent p-3 flex items-center gap-2">
                       <Input
                         value={prefPhraseDraft}
                         onChange={e => setPrefPhraseDraft(e.target.value)}
@@ -2033,7 +1999,7 @@ export function BrandProfileDetail({
 
                   {baseRules.preferred.map((x, idx) =>
                     editingPrefIdx === idx ? (
-                      <div key={x.id || idx} className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 flex items-center gap-1.5">
+                      <div key={x.id || idx} className="rounded-lg bg-accent-soft/25 border border-accent p-3 flex items-center gap-2">
                         <Input
                           value={prefPhraseDraft}
                           onChange={e => setPrefPhraseDraft(e.target.value)}
@@ -2111,7 +2077,7 @@ export function BrandProfileDetail({
                       )}
                     </div>
                     {editingDoIdx === -1 && (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Input
                           value={doDraft}
                           onChange={e => setDoDraft(e.target.value)}
@@ -2135,10 +2101,10 @@ export function BrandProfileDetail({
                         </Button>
                       </div>
                     )}
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
                       {baseRules.visualDo.map((x, k) =>
                         editingDoIdx === k ? (
-                          <li key={k} className="flex items-center gap-1.5">
+                          <li key={k} className="flex items-center gap-2">
                             <Input value={doDraft} onChange={e => setDoDraft(e.target.value)} />
                             <Button
                               size="sm"
@@ -2158,7 +2124,7 @@ export function BrandProfileDetail({
                             </Button>
                           </li>
                         ) : (
-                          <li key={k} className="flex items-center justify-between gap-2 rounded-md bg-canvas/70 border border-line px-2.5 py-1.5 text-ink">
+                          <li key={k} className="flex items-center justify-between gap-2 rounded-md bg-canvas/70 border border-line px-3 py-2 text-ink">
                             <span>• {x}</span>
                             {can.CONTENT_RULES && (
                               <div className="inline-flex items-center gap-1 shrink-0">
@@ -2196,21 +2162,18 @@ export function BrandProfileDetail({
               </div>
 
               <div className="p-4 bg-canvas/40 flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 flex-1">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 flex-1">
                   <Info label="Hashtag & gắn thẻ bắt buộc">
                     {[...(baseRules.mandatoryHashtags || []), ...(baseRules.mandatoryMentions || [])].join(' ') || '—'}
                   </Info>
                   <Info label="Thời lượng & cấu trúc clip">
                     {baseRules.videoDurationRule || '—'}
                   </Info>
-                  <Info label="Câu điều hướng mua hàng (CTA)">
+                  <Info label="Câu kêu gọi mua hàng">
                     {baseRules.defaultCta || '—'}
                   </Info>
                   <Info label="Quy định giá sàn truyền thông & từ cấm về giá">
                     {baseRules.minAdvertisedPriceRule || '—'}
-                  </Info>
-                  <Info label="Cơ chế khuyến mãi, voucher & quà tặng chủ đạo">
-                    {baseRules.keyPromotionMechanic || '—'}
                   </Info>
                 </div>
                 {can.CONTENT_RULES && (
@@ -2236,7 +2199,7 @@ export function BrandProfileDetail({
                   const size = formatFileSize(l.fileSize);
                   const downloadUrl = l.fileKey ? `/api/brands/files?key=${encodeURIComponent(l.fileKey)}&download=1` : undefined;
                   return (
-                    <li key={l.id} className="px-4 py-3 grid gap-1 text-[13px]">
+                    <li key={l.id} className="px-4 py-3 grid gap-1 text-xs">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-ink">{l.title}</span>
@@ -2253,14 +2216,14 @@ export function BrandProfileDetail({
                         </div>
                         {itemMenu('legal', i)}
                       </div>
-                      <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                      <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span>{[l.docNumber && `Số văn bản: ${l.docNumber}`, l.authority && `Cơ quan cấp: ${l.authority}`, l.issueDate && `Ngày cấp: ${l.issueDate}`, l.validUntil && `Hiệu lực đến: ${l.validUntil}`].filter(Boolean).join(' · ')}</span>
                         {l.url && (
                           <>
                             <span>·</span>
                             <a href={l.url} target="_blank" rel="noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">
                               <span>Xem bản scan</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           </>
                         )}
@@ -2269,7 +2232,7 @@ export function BrandProfileDetail({
                             <span>·</span>
                             <a href={downloadUrl} className="text-accent hover:underline inline-flex items-center gap-1">
                               <span>Tải xuống</span>
-                              <Download className="w-3 h-3" />
+                              <Download className="w-3.5 h-3.5" />
                             </a>
                           </>
                         )}
@@ -2288,11 +2251,11 @@ export function BrandProfileDetail({
             flush
           >
             {p.faqs.length === 0 ? (
-              <EmptyState title="Chưa có câu hỏi khó" />
+              <EmptyState title="Chưa có câu hỏi thường gặp" />
             ) : (
               <ul className="divide-y divide-line">
                 {p.faqs.map((f, i) => (
-                  <li key={f.id} className="px-4 py-3 grid gap-1 text-[13px]">
+                  <li key={f.id} className="px-4 py-3 grid gap-1 text-xs">
                     <div className="flex items-start justify-between gap-3">
                       <p className="font-semibold text-ink">{f.question}</p>
                       {itemMenu('faqs', i)}
@@ -2406,8 +2369,8 @@ export function BrandProfileDetail({
               </div>
             </div>
 
-            <div className="rounded-lg border border-line bg-surface p-3.5 space-y-2.5">
-              <div className="grid sm:grid-cols-2 gap-2.5">
+            <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
+              <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <span className="text-2xs text-ink-3 block">Creator / KOC & Hạng</span>
                   <span className="font-semibold text-ink">
@@ -2467,7 +2430,7 @@ export function BrandProfileDetail({
               {previewDoc.fileKey && (
                 <a
                   href={`/api/brands/files?key=${encodeURIComponent(previewDoc.fileKey)}&download=1`}
-                  className="h-[34px] px-3.5 rounded-md bg-primary text-white hover:bg-primary-hover text-[13.5px] font-medium inline-flex items-center gap-1.5"
+                  className="h-[34px] px-4 rounded-md bg-primary text-white hover:bg-primary-hover text-xs font-medium inline-flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
                   <span>Tải xuống</span>
@@ -2628,7 +2591,7 @@ function Kpi({
   return (
     <div className="bg-surface px-4 py-3 grid gap-1 content-start min-w-0">
       <span className="text-2xs text-ink-3">{label}</span>
-      <div className="flex items-baseline gap-1.5 min-w-0">
+      <div className="flex items-baseline gap-2 min-w-0">
         <span className={`text-stat-sm font-semibold tabular-nums leading-none ${tone === 'critical' ? 'text-critical' : 'text-ink'}`}>{value}</span>
         {target && <span className="text-xs text-ink-3 tabular-nums truncate">/ {target}</span>}
       </div>
@@ -2682,17 +2645,17 @@ function History({ profile }: { profile: BrandProfile }) {
   const items = all ? profile.history : profile.history.slice(0, 5);
   return (
     <Aside title="Lịch sử cập nhật">
-      {profile.history.length === 0 ? <p className="text-[13px] text-ink-3">Chưa có thay đổi.</p> : (
-        <ol className="grid gap-2.5">
+      {profile.history.length === 0 ? <p className="text-xs text-ink-3">Chưa có thay đổi.</p> : (
+        <ol className="grid gap-3">
           {items.map((h, i) => (
             <li key={i} className="grid gap-0.5">
-              <span className="text-[13px] text-ink">{h.summary}</span>
+              <span className="text-xs text-ink">{h.summary}</span>
               <span className="text-2xs text-ink-3">{h.actorName} · {dateTime(h.at)}</span>
             </li>
           ))}
           {profile.history.length > 5 && (
             <li>
-              <button type="button" className="text-[13px] text-accent hover:underline" onClick={() => setAll(v => !v)}>
+              <button type="button" className="text-xs text-accent hover:underline" onClick={() => setAll(v => !v)}>
                 {all ? 'Thu gọn' : `Xem thêm ${profile.history.length - 5}`}
               </button>
             </li>

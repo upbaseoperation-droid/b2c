@@ -58,7 +58,6 @@ export function PositioningDialog({ open, value, busy, onClose, onSave }: { open
   const [painPointsText, setPainPointsText] = useState((value?.painPoints || []).join('\n'));
   const [barriersText, setBarriersText] = useState((value?.barriersToTrial || []).join('\n'));
   const [rtbsText, setRtbsText] = useState((value?.rtbs || []).join('\n'));
-  const [pillarsText, setPillarsText] = useState((value?.contentPillars || []).join('\n'));
   const [competitorsText, setCompetitorsText] = useState((value?.competitors || []).join('\n'));
   const [tierAText, setTierAText] = useState((value?.competitorTiers?.tierA || []).join('\n'));
   const [tierBText, setTierBText] = useState((value?.competitorTiers?.tierB || []).join('\n'));
@@ -72,7 +71,6 @@ export function PositioningDialog({ open, value, busy, onClose, onSave }: { open
       painPoints: toLines(painPointsText),
       barriersToTrial: toLines(barriersText),
       rtbs: toLines(rtbsText),
-      contentPillars: toLines(pillarsText),
       competitors: toLines(competitorsText),
       competitorTiers: {
         tierA: toLines(tierAText),
@@ -83,25 +81,14 @@ export function PositioningDialog({ open, value, busy, onClose, onSave }: { open
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Sửa định vị & chiến lược nội dung" size="xl" footer={<Footer busy={busy} onClose={onClose} onSave={handleSave} />}>
+    <Modal open={open} onClose={onClose} title="Sửa định vị thương hiệu" size="xl" footer={<Footer busy={busy} onClose={onClose} onSave={handleSave} />}>
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Khẩu hiệu chủ đạo (Slogan)" htmlFor="bp-slogan"><Input id="bp-slogan" maxLength={200} value={v.slogan} onChange={e => set('slogan', e.target.value)} /></Field>
-          <Field label="Ý tưởng lớn xuyên suốt (Master Big Idea)" htmlFor="bp-bigidea"><Input id="bp-bigidea" maxLength={300} value={v.bigIdea || ''} onChange={e => set('bigIdea', e.target.value)} /></Field>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Thông điệp trọng tâm (Key Message)" htmlFor="bp-keymsg"><Input id="bp-keymsg" maxLength={300} value={v.keyMessage || ''} onChange={e => set('keyMessage', e.target.value)} /></Field>
-          <Field label="Định hướng hình ảnh chủ đạo (Key Visual Direction)" htmlFor="bp-kv"><Input id="bp-kv" maxLength={500} value={v.keyVisualDirection || ''} onChange={e => set('keyVisualDirection', e.target.value)} /></Field>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <Field label="Brand Says (Định vị theo Brand Guideline)" htmlFor="bp-brandsays">
-            <Textarea id="bp-brandsays" rows={2} value={v.brandSays || ''} onChange={e => set('brandSays', e.target.value)} />
+          <Field label="Khẩu hiệu (Slogan)" htmlFor="bp-slogan">
+            <Input id="bp-slogan" maxLength={200} value={v.slogan} onChange={e => set('slogan', e.target.value)} />
           </Field>
-          <Field label="Consumer Says (Nhận thức thực tế trên sàn)" htmlFor="bp-consumersays">
-            <Textarea id="bp-consumersays" rows={2} value={v.consumerSays || ''} onChange={e => set('consumerSays', e.target.value)} />
-          </Field>
-          <Field label="Communication Objective (Dịch chuyển nhận thức)" htmlFor="bp-commgap">
-            <Textarea id="bp-commgap" rows={2} value={v.communicationGap || ''} onChange={e => set('communicationGap', e.target.value)} />
+          <Field label="Quy chuẩn nhận diện (Bảng màu, font chữ, phong cách ảnh/video)" htmlFor="bp-kv">
+            <Input id="bp-kv" maxLength={500} value={v.keyVisualDirection || ''} onChange={e => set('keyVisualDirection', e.target.value)} placeholder="VD: Tông trắng - xanh lá, font không chân hiện đại, ảnh chụp sáng tự nhiên..." />
           </Field>
         </div>
         <div className="grid gap-4 md:grid-cols-[200px_1fr]">
@@ -111,45 +98,46 @@ export function PositioningDialog({ open, value, busy, onClose, onSave }: { open
               {(Object.keys(TONE_LABEL) as ToneTag[]).map(t => <option key={t} value={t}>{TONE_LABEL[t]}</option>)}
             </Select>
           </Field>
-          <Field label="Giọng văn (Tone & Voice)" htmlFor="bp-voice">
+          <Field label="Giọng văn KOC" htmlFor="bp-voice">
             <Textarea id="bp-voice" rows={2} maxLength={1000} value={v.toneOfVoice} onChange={e => set('toneOfVoice', e.target.value)} />
           </Field>
         </div>
-        <Field label="Khách hàng mục tiêu (Target Audience)" htmlFor="bp-aud"><Textarea id="bp-aud" rows={2} maxLength={1500} value={v.targetAudience} onChange={e => set('targetAudience', e.target.value)} /></Field>
+        <Field label="Chân dung khách hàng mục tiêu" htmlFor="bp-aud">
+          <Textarea id="bp-aud" rows={2} maxLength={1500} value={v.targetAudience} onChange={e => set('targetAudience', e.target.value)} />
+        </Field>
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Nỗi đau khách hàng (Pain Points)" htmlFor="bp-pains">
+          <Field label="Vấn đề khách hàng thường gặp" htmlFor="bp-pains">
             <Textarea id="bp-pains" rows={3} value={painPointsText} onChange={e => setPainPointsText(e.target.value)} />
           </Field>
-          <Field label="Rào cản mua hàng (Barriers to Trial)" htmlFor="bp-barriers">
+          <Field label="Rào cản khi mua hàng" htmlFor="bp-barriers">
             <Textarea id="bp-barriers" rows={3} value={barriersText} onChange={e => setBarriersText(e.target.value)} />
           </Field>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Bằng chứng tin cậy (RTB — Reason to Believe)" htmlFor="bp-rtbs">
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Câu chuyện thương hiệu" htmlFor="bp-story">
+            <Textarea id="bp-story" rows={3} maxLength={3000} value={v.story} onChange={e => set('story', e.target.value)} />
+          </Field>
+          <Field label="Chứng nhận & kiểm nghiệm" htmlFor="bp-rtbs">
             <Textarea id="bp-rtbs" rows={3} value={rtbsText} onChange={e => setRtbsText(e.target.value)} />
           </Field>
-          <Field label="Tuyến nội dung chủ đạo theo Phễu (Content Pillars)" htmlFor="bp-pillars">
-            <Textarea id="bp-pillars" rows={3} value={pillarsText} onChange={e => setPillarsText(e.target.value)} />
+          <Field label="Giải thưởng & thành tựu nổi bật" htmlFor="bp-ach">
+            <Textarea id="bp-ach" rows={3} value={achievementsText} onChange={e => setAchievementsText(e.target.value)} />
           </Field>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
-          <Field label="Đối thủ Tier A (Trực tiếp — cần thắng)" htmlFor="bp-tiera">
+          <Field label="Đối thủ trực tiếp" htmlFor="bp-tiera">
             <Textarea id="bp-tiera" rows={2} value={tierAText} onChange={e => setTierAText(e.target.value)} />
           </Field>
-          <Field label="Đối thủ Tier B (Giao thoa — cần theo dõi)" htmlFor="bp-tierb">
+          <Field label="Đối thủ cùng tệp khách" htmlFor="bp-tierb">
             <Textarea id="bp-tierb" rows={2} value={tierBText} onChange={e => setTierBText(e.target.value)} />
           </Field>
-          <Field label="Đối thủ Tier C (Hình mẫu học hỏi — Benchmark)" htmlFor="bp-tierc">
+          <Field label="Thương hiệu hình mẫu tham khảo" htmlFor="bp-tierc">
             <Textarea id="bp-tierc" rows={2} value={tierCText} onChange={e => setTierCText(e.target.value)} />
           </Field>
         </div>
         <Field label="Đối thủ cạnh tranh không được nhắc tên trong video KOC" htmlFor="bp-comp">
           <Textarea id="bp-comp" rows={2} value={competitorsText} onChange={e => setCompetitorsText(e.target.value)} />
         </Field>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Câu chuyện thương hiệu (200–300 từ cho Slide 3 Brief)" htmlFor="bp-story"><Textarea id="bp-story" rows={3} maxLength={3000} value={v.story} onChange={e => set('story', e.target.value)} /></Field>
-          <Field label="Giải thưởng, thành tựu & báo chí/KOL tiêu biểu (Mỗi dòng 1 ý)" htmlFor="bp-ach"><Textarea id="bp-ach" rows={3} value={achievementsText} onChange={e => setAchievementsText(e.target.value)} /></Field>
-        </div>
       </div>
     </Modal>
   );
@@ -235,24 +223,24 @@ export function WorkflowRulesDialog({
     >
       <div className="space-y-5">
         {/* Nhóm 1: Phân tầng dự án & Mô hình nguồn lực */}
-        <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
-          <h4 className="text-xs font-semibold text-ink">1. Phân tầng dự án &amp; Mô hình nguồn lực B2C</h4>
+        <div className="rounded-lg border border-line bg-canvas/50 p-4 space-y-3">
+          <h4 className="text-xs font-semibold text-ink">1. Nhóm nhãn hàng &amp; phân công phụ trách</h4>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Phân hạng dự án (Tier)" htmlFor="wf-tier">
+            <Field label="Nhóm nhãn hàng" htmlFor="wf-tier">
               <Select id="wf-tier" value={v.projectTier} onChange={e => set('projectTier', e.target.value as BrandProjectTier)}>
                 {(Object.keys(PROJECT_TIER_LABEL) as BrandProjectTier[]).map(k => (
                   <option key={k} value={k}>{PROJECT_TIER_LABEL[k]}</option>
                 ))}
               </Select>
             </Field>
-            <Field label="Mô hình phối hợp nguồn lực" htmlFor="wf-model">
+            <Field label="Cách phân công nhân sự" htmlFor="wf-model">
               <Select id="wf-model" value={v.operatingModel} onChange={e => set('operatingModel', e.target.value as BrandOperatingModel)}>
                 {(Object.keys(OPERATING_MODEL_LABEL) as BrandOperatingModel[]).map(k => (
                   <option key={k} value={k}>{OPERATING_MODEL_LABEL[k]}</option>
                 ))}
               </Select>
             </Field>
-            <Field label="Đơn vị giữ quyền Strategy Owner" htmlFor="wf-owner">
+            <Field label="Bộ phận phụ trách kế hoạch nội dung" htmlFor="wf-owner">
               <Select id="wf-owner" value={v.strategyOwnerTeam} onChange={e => set('strategyOwnerTeam', e.target.value as StrategyOwnerTeam)}>
                 {(Object.keys(STRATEGY_OWNER_LABEL) as StrategyOwnerTeam[]).map(k => (
                   <option key={k} value={k}>{STRATEGY_OWNER_LABEL[k]}</option>
@@ -266,9 +254,9 @@ export function WorkflowRulesDialog({
         </div>
 
         {/* Nhóm 2: Quy trình duyệt của Nhãn & SLA */}
-        <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
-          <h4 className="text-xs font-semibold text-ink">2. Cổng phê duyệt của Nhãn hàng &amp; SLA (Tác động Pipeline Booking &amp; Duyệt kịch bản)</h4>
-          <Field label="Quy tắc duyệt danh sách KOC (Shortlist)" htmlFor="wf-koc-mode">
+        <div className="rounded-lg border border-line bg-canvas/50 p-4 space-y-3">
+          <h4 className="text-xs font-semibold text-ink">2. Quy định duyệt KOC &amp; thời hạn phản hồi</h4>
+          <Field label="Quy định duyệt danh sách KOC" htmlFor="wf-koc-mode">
             <Select id="wf-koc-mode" value={v.kocApprovalMode} onChange={e => set('kocApprovalMode', e.target.value as KocApprovalMode)}>
               {(Object.keys(KOC_APPROVAL_MODE_LABEL) as KocApprovalMode[]).map(k => (
                 <option key={k} value={k}>{KOC_APPROVAL_MODE_LABEL[k]}</option>
@@ -276,7 +264,7 @@ export function WorkflowRulesDialog({
             </Select>
           </Field>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
+            <label className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
               <input
                 type="checkbox"
                 checked={v.requireScriptApproval}
@@ -285,7 +273,7 @@ export function WorkflowRulesDialog({
               />
               <span>Bắt buộc duyệt Kịch bản chữ (Script/Outline) trước khi quay</span>
             </label>
-            <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
+            <label className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
               <input
                 type="checkbox"
                 checked={v.requireDemoApproval}
@@ -320,8 +308,8 @@ export function WorkflowRulesDialog({
         </div>
 
         {/* Nhóm 3: Chính sách Hàng mẫu & Kho vận */}
-        <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
-          <h4 className="text-xs font-semibold text-ink">3. Chính sách Hàng mẫu &amp; Kho vận (Tác động bước Gửi hàng &amp; Nghiệm thu)</h4>
+        <div className="rounded-lg border border-line bg-canvas/50 p-4 space-y-3">
+          <h4 className="text-xs font-semibold text-ink">3. Gửi hàng mẫu &amp; kho vận</h4>
           <div className="grid gap-3 md:grid-cols-3">
             <Field label="Đơn vị xuất hàng mẫu" htmlFor="wf-sender" className="md:col-span-2">
               <Select id="wf-sender" value={v.sampleSender} onChange={e => set('sampleSender', e.target.value as SampleSenderType)}>
@@ -351,10 +339,10 @@ export function WorkflowRulesDialog({
         </div>
 
         {/* Nhóm 4: Quyền sử dụng hình ảnh, Mã quảng cáo & Hợp đồng */}
-        <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-canvas/50 p-4 space-y-3">
           <h4 className="text-xs font-semibold text-ink">4. Bản quyền hình ảnh, Mã quảng cáo (Spark Ads) &amp; Hợp đồng</h4>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
+            <label className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
               <input
                 type="checkbox"
                 checked={v.requiresAdsCode}
@@ -363,7 +351,7 @@ export function WorkflowRulesDialog({
               />
               <span>Bắt buộc KOC cấp mã quảng cáo (Spark Ads / Partnership Ads)</span>
             </label>
-            <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
+            <label className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
               <input
                 type="checkbox"
                 checked={v.requireRawVideoHandover}
@@ -405,14 +393,14 @@ export function WorkflowRulesDialog({
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
+          <label className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink cursor-pointer">
             <input
               type="checkbox"
               checked={v.allowExtraFeeForAdsOrCrosspost}
               onChange={e => set('allowExtraFeeForAdsOrCrosspost', e.target.checked)}
               className="rounded border-line-strong"
             />
-            <span>Cho phép tính phụ phí riêng khi mua thêm Mã Ads / Đăng chéo đa nền tảng (Bỏ chọn = Bắt buộc đàm phán trọn gói All-in trong giá cast)</span>
+            <span>Cho phép tính phụ phí riêng khi mua thêm mã quảng cáo hoặc đăng chéo đa kênh (bỏ chọn = gộp trọn gói trong giá booking)</span>
           </label>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Các kênh Nhãn được phép đăng lại (Repost)" htmlFor="wf-repost">
@@ -455,7 +443,7 @@ export function WorkflowRulesDialog({
         </div>
 
         {/* Nhóm 5: Thông tin bàn giao & Bộ file gốc (Bảng 3.5 Danh sách file brand) */}
-        <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-canvas/50 p-4 space-y-3">
           <h4 className="text-xs font-semibold text-ink">5. Thông tin bàn giao &amp; Link Google Sheet</h4>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Người bàn giao" htmlFor="wf-h-from">
@@ -485,7 +473,7 @@ export function RatecardDialog({ open, value, busy, onClose, onSave }: { open: b
     <Modal
       open={open}
       onClose={onClose}
-      title="Sửa trần thù lao KOC"
+      title="Sửa khung giá booking KOC"
       footer={<Footer busy={busy} onClose={onClose} onSave={() => onSave(GRADES.map(grade => ({ grade, maxBudget: toNumber(v[grade]) })))} />}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -521,7 +509,6 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
   const [defaultCta, setDefaultCta] = useState(v.defaultCta || '');
   const [durationRule, setDurationRule] = useState(v.videoDurationRule || '');
   const [minPriceRule, setMinPriceRule] = useState(v.minAdvertisedPriceRule || '');
-  const [promoMechanic, setPromoMechanic] = useState(v.keyPromotionMechanic || '');
 
   const splitTokens = (s: string) => s.split(/[\s,\n]+/).map(x => x.trim()).filter(Boolean);
 
@@ -548,7 +535,7 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
     defaultCta: defaultCta.trim(),
     videoDurationRule: durationRule.trim(),
     minAdvertisedPriceRule: minPriceRule.trim(),
-    keyPromotionMechanic: promoMechanic.trim(),
+    keyPromotionMechanic: v.keyPromotionMechanic,
   });
 
   return (
@@ -567,7 +554,7 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
               Thêm từ cấm
             </Button>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {bannedRows.map((row, idx) => (
               <div key={row.id || `b-${idx}`} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
                 <Input
@@ -606,7 +593,7 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
               Thêm cụm từ
             </Button>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {preferredRows.map((row, idx) => (
               <div key={row.id || `p-${idx}`} className="grid grid-cols-[1fr_auto] gap-2 items-center">
                 <Input
@@ -636,9 +623,9 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
                 Thêm
               </Button>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {dontRows.map((val, idx) => (
-                <div key={`dont-${idx}`} className="grid grid-cols-[1fr_auto] gap-1.5 items-center">
+                <div key={`dont-${idx}`} className="grid grid-cols-[1fr_auto] gap-2 items-center">
                   <Input
                     value={val}
                     onChange={e => setDontRows(prev => prev.map((it, i) => (i === idx ? e.target.value : it)))}
@@ -659,9 +646,9 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
                 Thêm
               </Button>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {doRows.map((val, idx) => (
-                <div key={`do-${idx}`} className="grid grid-cols-[1fr_auto] gap-1.5 items-center">
+                <div key={`do-${idx}`} className="grid grid-cols-[1fr_auto] gap-2 items-center">
                   <Input
                     value={val}
                     onChange={e => setDoRows(prev => prev.map((it, i) => (i === idx ? e.target.value : it)))}
@@ -688,18 +675,13 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
           <Field label="Thời lượng & cấu trúc clip" htmlFor="cr-dur">
             <Input id="cr-dur" value={durationRule} onChange={e => setDurationRule(e.target.value)} placeholder="45–90 giây, sản phẩm xuất hiện 3s đầu" />
           </Field>
-          <Field label="Câu điều hướng mua hàng (CTA)" htmlFor="cr-cta">
+          <Field label="Câu kêu gọi mua hàng" htmlFor="cr-cta">
             <Input id="cr-cta" value={defaultCta} onChange={e => setDefaultCta(e.target.value)} placeholder="Bấm giỏ hàng góc trái nhận ưu đãi" />
           </Field>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Quy định giá sàn truyền thông & từ cấm về giá" htmlFor="cr-map">
-            <Input id="cr-map" value={minPriceRule} onChange={e => setMinPriceRule(e.target.value)} placeholder="VD: Không báo giá dưới 195k, không nói từ xả kho/thanh lý" />
-          </Field>
-          <Field label="Cơ chế khuyến mãi, voucher & quà tặng chủ đạo" htmlFor="cr-promo">
-            <Input id="cr-promo" value={promoMechanic} onChange={e => setPromoMechanic(e.target.value)} placeholder="VD: Mua 1 tặng 1 mini size + Voucher 15% ngày đôi" />
-          </Field>
-        </div>
+        <Field label="Quy định giá sàn truyền thông & từ cấm về giá" htmlFor="cr-map">
+          <Input id="cr-map" value={minPriceRule} onChange={e => setMinPriceRule(e.target.value)} placeholder="VD: Không báo giá thấp hơn giá niêm yết khi chưa có đợt sale, không nói từ xả kho/thanh lý" />
+        </Field>
       </div>
     </Modal>
   );
@@ -845,7 +827,7 @@ export function ItemDialog({
           return (
             <Field key={f.key} label={`${f.label}${f.required ? ' *' : ''}`} htmlFor={id} className={f.wide || f.kind === 'long' || f.kind === 'lines' || f.kind === 'file' ? 'md:col-span-2' : undefined}>
               {f.kind === 'file' ? (
-                <div className="grid gap-2.5">
+                <div className="grid gap-3">
                   {uploadContext && (
                     <div
                       onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
@@ -855,7 +837,7 @@ export function ItemDialog({
                         const dropped = e.dataTransfer.files?.[0];
                         if (dropped) void handleSelectFile(dropped, f.key);
                       }}
-                      className="rounded-lg border border-dashed border-line-strong bg-canvas/60 px-3.5 py-3 flex flex-wrap items-center justify-between gap-3"
+                      className="rounded-lg border border-dashed border-line-strong bg-canvas/60 px-4 py-3 flex flex-wrap items-center justify-between gap-3"
                     >
                       <input
                         ref={fileInputRef}
@@ -865,10 +847,10 @@ export function ItemDialog({
                         onChange={e => void handleSelectFile(e.target.files?.[0], f.key)}
                       />
                       {uploadedFile ? (
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <FileText className="w-4 h-4 text-accent shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[13px] font-medium text-ink truncate">{uploadedFile.fileName}</p>
+                            <p className="text-xs font-medium text-ink truncate">{uploadedFile.fileName}</p>
                             <p className="text-2xs text-ink-3">
                               {[
                                 formatFileSize(uploadedFile.fileSize),
@@ -879,10 +861,10 @@ export function ItemDialog({
                         </div>
                       ) : (
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-ink">Tải tệp tài liệu lên hệ thống</p>
+                          <p className="text-xs font-medium text-ink">Tải tệp tài liệu lên hệ thống</p>
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <Button
                           size="sm"
                           variant="secondary"

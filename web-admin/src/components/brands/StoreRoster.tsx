@@ -86,7 +86,7 @@ export function StoreRoster({
                   )}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {onOpenPlan && (
                   <Button size="sm" variant="secondary" icon={FileSpreadsheet} onClick={() => onOpenPlan(sr)}>
                     Kế hoạch
@@ -166,9 +166,9 @@ export function StoreRoster({
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="grid content-start gap-1.5 min-w-0">
+    <section className="grid content-start gap-2 min-w-0">
       <h4 className="text-2xs font-medium text-ink-3">{title}</h4>
-      <dl className="grid gap-1.5">{children}</dl>
+      <dl className="grid gap-2">{children}</dl>
     </section>
   );
 }

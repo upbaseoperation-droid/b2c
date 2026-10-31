@@ -214,7 +214,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
                 href={canvaUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink hover:bg-canvas"
+                className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs font-medium text-ink hover:bg-canvas"
               >
                 <ExternalLink className="h-3.5 w-3.5 text-primary" />
                 Mở Canva Brief gốc
@@ -248,7 +248,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
         {/* SLIDE 1 & 2: TÊN BRIEF, OUTLINE & MỤC TIÊU CHIẾN DỊCH */}
         {showSlide12 && (
           <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
               <span className="text-xs font-semibold text-primary">
                 Slide 1 &amp; 2 · Tên chiến dịch, Outline &amp; định hướng kế hoạch
               </span>
@@ -272,19 +272,19 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
 
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-lg border border-primary/20 bg-primary-soft/20 p-3">
-                <div className="text-2xs font-medium text-primary">Big Idea xuyên suốt</div>
+                <div className="text-2xs font-medium text-primary">Ý tưởng chủ đạo</div>
                 <div className="mt-1 text-xs font-semibold text-ink">
                   {pos?.bigIdea || pos?.slogan || `Trải nghiệm chính hãng cùng ${profile.brandName}`}
                 </div>
               </div>
               <div className="rounded-lg border border-primary/20 bg-primary-soft/20 p-3">
-                <div className="text-2xs font-medium text-primary">Key Message trọng tâm</div>
+                <div className="text-2xs font-medium text-primary">Thông điệp chính</div>
                 <div className="mt-1 text-xs font-semibold text-ink">
                   {pos?.keyMessage || pos?.slogan || '—'}
                 </div>
               </div>
               <div className="rounded-lg border border-line bg-canvas/60 p-3">
-                <div className="text-2xs font-medium text-ink-3">Key Visual Direction</div>
+                <div className="text-2xs font-medium text-ink-3">Hình ảnh chủ đạo</div>
                 <div className="mt-1 text-xs text-ink">
                   {pos?.keyVisualDirection || 'Quay không gian sáng sạch, cận cảnh chất sản phẩm trên da thật.'}
                 </div>
@@ -293,15 +293,15 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
 
             <div className="grid gap-3 md:grid-cols-3 pt-1">
               <div className="rounded-lg border border-line bg-canvas/40 p-3">
-                <div className="text-2xs font-medium text-ink-2">Brand Says (Định vị theo Brand Guideline)</div>
+                <div className="text-2xs font-medium text-ink-2">Định vị của nhãn</div>
                 <div className="mt-1 text-xs text-ink">{pos?.brandSays || pos?.story || '—'}</div>
               </div>
               <div className="rounded-lg border border-line bg-canvas/40 p-3">
-                <div className="text-2xs font-medium text-ink-2">Consumer Says (Nhận thức thực tế trên sàn)</div>
+                <div className="text-2xs font-medium text-ink-2">Góc nhìn người mua thực tế</div>
                 <div className="mt-1 text-xs text-ink">{pos?.consumerSays || '—'}</div>
               </div>
               <div className="rounded-lg border border-warning/30 bg-warning-soft/20 p-3">
-                <div className="text-2xs font-medium text-warning">Communication Objective (Dịch chuyển nhận thức)</div>
+                <div className="text-2xs font-medium text-warning">Mục tiêu truyền thông</div>
                 <div className="mt-1 text-xs text-ink">{pos?.communicationGap || '—'}</div>
               </div>
             </div>
@@ -311,7 +311,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
         {/* SLIDE 3: THÔNG TIN THƯƠNG HIỆU, THÀNH TỰU & SẢN PHẨM */}
         {showSlide3 && (
           <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
               <span className="text-xs font-semibold text-primary">
                 Slide 3 · Thông tin thương hiệu, thành tựu &amp; hồ sơ sản phẩm
               </span>
@@ -319,7 +319,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-1.5">
+              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-2">
                 <div className="text-xs font-semibold text-ink">Lịch sử phát triển, Giải thưởng &amp; Thành tựu (Giới hạn 200–300 từ)</div>
                 <div className="text-xs text-ink-2 leading-relaxed">{pos?.story || '—'}</div>
                 {pos?.achievements && pos.achievements.length > 0 && (
@@ -335,19 +335,19 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
               </div>
 
               <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-2">
-                <div className="text-xs font-semibold text-ink">Chân dung Khách hàng mục tiêu (Target Audience) &amp; Bằng chứng</div>
+                <div className="text-xs font-semibold text-ink">Chân dung khách hàng mục tiêu &amp; bằng chứng</div>
                 <div className="text-xs text-ink"><span className="font-medium text-ink-2">Tệp khách:</span> {pos?.targetAudience || '—'}</div>
-                <div className="text-xs text-ink"><span className="font-medium text-ink-2">Nỗi đau (Pain points):</span> {(pos?.painPoints || []).join(' · ') || '—'}</div>
-                <div className="text-xs text-ink"><span className="font-medium text-ink-2">Rào cản (Barriers):</span> {(pos?.barriersToTrial || []).join(' · ') || '—'}</div>
-                <div className="text-xs text-ink"><span className="font-medium text-ink-2">Bằng chứng (RTB):</span> {(pos?.rtbs || []).join(' · ') || '—'}</div>
+                <div className="text-xs text-ink"><span className="font-medium text-ink-2">Vấn đề gặp phải:</span> {(pos?.painPoints || []).join(' · ') || '—'}</div>
+                <div className="text-xs text-ink"><span className="font-medium text-ink-2">Rào cản mua hàng:</span> {(pos?.barriersToTrial || []).join(' · ') || '—'}</div>
+                <div className="text-xs text-ink"><span className="font-medium text-ink-2">Chứng nhận &amp; kiểm nghiệm:</span> {(pos?.rtbs || []).join(' · ') || '—'}</div>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="text-xs font-semibold text-ink">Danh mục Sản phẩm chủ lực, Thành phần &amp; Điểm nổi bật (USP)</div>
-              <div className="grid gap-2.5 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 {profile.products.map(p => (
-                  <div key={p.id} className="rounded-lg border border-line bg-canvas/30 p-3 space-y-1.5">
+                  <div key={p.id} className="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="text-xs font-semibold text-ink">{p.name}</div>
@@ -379,10 +379,10 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
 
             {profile.legal.length > 0 && (
               <div className="rounded-lg border border-line bg-canvas/40 p-3">
-                <div className="text-xs font-semibold text-ink mb-1.5">Giấy công bố sản phẩm &amp; Văn bản pháp lý</div>
+                <div className="text-xs font-semibold text-ink mb-2">Giấy công bố sản phẩm &amp; Văn bản pháp lý</div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {profile.legal.map(l => (
-                    <div key={l.id} className="flex items-start justify-between gap-2 rounded border border-line bg-surface px-2.5 py-2 text-xs">
+                    <div key={l.id} className="flex items-start justify-between gap-2 rounded border border-line bg-surface px-3 py-2 text-xs">
                       <div>
                         <div className="font-medium text-ink">{l.title}</div>
                         <div className="text-2xs text-ink-3">Số: {l.docNumber || '—'} · {l.authority || 'Cơ quan cấp phép'}</div>
@@ -403,7 +403,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
         {/* SLIDE 4: CONTENT PILLAR, QUY CHUẨN QUAY DỰNG, TỪ CẤM & BAREM CHECK */}
         {showSlide4 && (
           <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
               <span className="text-xs font-semibold text-primary">
                 Slide 4 · Yêu cầu nội dung (Pillar / Funnel), từ khóa cấm &amp; barem duyệt kịch bản
               </span>
@@ -475,7 +475,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
                 />
               </div>
             ) : (
-              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-1.5">
+              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-2">
                 <div className="text-xs font-semibold text-ink">Định hướng Tuyến nội dung theo Phễu (Content Pillars)</div>
                 <ul className="space-y-1 text-xs text-ink">
                   {(pos?.contentPillars || []).map((p, i) => (
@@ -489,7 +489,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
             )}
 
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-1.5">
+              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-2">
                 <div className="text-xs font-semibold text-ink">Quy chuẩn Bối cảnh, Ánh sáng &amp; Góc quay (Moodboard)</div>
                 <div className="text-xs text-positive">
                   <span className="font-semibold">Bắt buộc có (Do):</span> {(rules?.visualDo || []).join(' · ') || 'Đủ sáng tự nhiên, quay cận cảnh chất sản phẩm và trước/sau khi dùng.'}
@@ -502,11 +502,11 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-1.5">
+              <div className="rounded-lg border border-line bg-canvas/40 p-3 space-y-2">
                 <div className="text-xs font-semibold text-ink">Bảng Từ khóa Vi phạm &amp; Cách nói Thay thế</div>
                 <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
                   {(rules?.banned || []).map(b => (
-                    <div key={b.id} className="flex items-start justify-between gap-2 rounded border border-line bg-surface px-2.5 py-1.5 text-xs">
+                    <div key={b.id} className="flex items-start justify-between gap-2 rounded border border-line bg-surface px-3 py-2 text-xs">
                       <span className="font-semibold text-critical line-through">{b.phrase}</span>
                       <span className="text-positive font-medium">→ {b.replacement || 'Mô tả theo giấy công bố'}</span>
                     </div>
@@ -516,7 +516,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
             </div>
 
             <div className="rounded-lg border border-line bg-canvas/30 p-3">
-              <div className="text-xs font-semibold text-ink mb-2">Barem Check Kịch bản / Video Demo chuẩn B2C (7 Hạng mục)</div>
+              <div className="text-xs font-semibold text-ink mb-2">Tiêu chuẩn duyệt kịch bản &amp; video nháp (7 mục)</div>
               <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4 text-xs">
                 <div className="rounded border border-line bg-surface p-2">
                   <div className="font-semibold text-ink">1. Hình ảnh &amp; Chất sản phẩm</div>
@@ -542,7 +542,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
         {/* SLIDE 5: QUY TRÌNH HỢP TÁC 8 BƯỚC & QUY ĐỊNH HỢP ĐỒNG / THUẾ */}
         {showSlide5 && (
           <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
               <span className="text-xs font-semibold text-primary">
                 Slide 5 · Quy trình hợp tác 8 bước, bản quyền Ads &amp; quy định hợp đồng
               </span>
@@ -560,7 +560,7 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
                 { step: 'Bước 7 · Thanh toán', desc: 'Thanh toán trong 3–10 ngày làm việc sau khi hoàn tất nghiệm thu hợp đồng.' },
                 { step: 'Bước 8 · Chứng từ TNCN', desc: 'UpBase hỗ trợ khấu trừ, kê khai và cấp chứng từ thuế TNCN theo quy định.' },
               ].map((item, i) => (
-                <div key={i} className="rounded-lg border border-line bg-canvas/40 p-2.5">
+                <div key={i} className="rounded-lg border border-line bg-canvas/40 p-3">
                   <div className="font-semibold text-ink">{item.step}</div>
                   <div className="mt-1 text-2xs text-ink-2 leading-relaxed">{item.desc}</div>
                 </div>

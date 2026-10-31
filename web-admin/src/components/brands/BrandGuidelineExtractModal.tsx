@@ -541,8 +541,8 @@ export function BrandGuidelineExtractModal({
     >
       <div className="space-y-4">
         {/* Nguồn tài liệu & Nhập văn bản */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-2.5">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
             <div className="flex-1 min-w-0">
               <Field label="Nguồn tài liệu nhãn hàng">
                 <Select
@@ -588,7 +588,7 @@ export function BrandGuidelineExtractModal({
         </div>
 
         {/* Khối 1: Định vị & Khách hàng */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
           <div className="flex items-center gap-2 border-b border-line pb-2">
             <input
               type="checkbox"
@@ -605,7 +605,7 @@ export function BrandGuidelineExtractModal({
 
           {applyPositioning && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              <Field label="Slogan">
+              <Field label="Khẩu hiệu">
                 <Input
                   value={extractedData.slogan}
                   onChange={(e) =>
@@ -637,13 +637,13 @@ export function BrandGuidelineExtractModal({
                 </Field>
               </div>
 
-              <Field label="Ý tưởng lớn">
+              <Field label="Ý tưởng chủ đạo">
                 <Input
                   value={extractedData.bigIdea}
                   onChange={(e) =>
                     setExtractedData((prev) => ({ ...prev, bigIdea: e.target.value }))
                   }
-                  placeholder="Master Big Idea"
+                  placeholder="Ý tưởng chủ đạo của thương hiệu"
                 />
               </Field>
 
@@ -653,11 +653,11 @@ export function BrandGuidelineExtractModal({
                   onChange={(e) =>
                     setExtractedData((prev) => ({ ...prev, keyMessage: e.target.value }))
                   }
-                  placeholder="Key Message"
+                  placeholder="Thông điệp trọng tâm"
                 />
               </Field>
 
-              <Field label="Nỗi đau khách hàng (mỗi dòng 1 ý)">
+              <Field label="Vấn đề khách hàng gặp phải (mỗi dòng 1 ý)">
                 <Textarea
                   rows={3}
                   value={extractedData.painPoints.join('\n')}
@@ -671,7 +671,7 @@ export function BrandGuidelineExtractModal({
                 />
               </Field>
 
-              <Field label="Lý do tin tưởng (mỗi dòng 1 ý)">
+              <Field label="Chứng nhận & kiểm nghiệm (mỗi dòng 1 ý)">
                 <Textarea
                   rows={3}
                   value={extractedData.rtbs.join('\n')}
@@ -689,7 +689,7 @@ export function BrandGuidelineExtractModal({
         </div>
 
         {/* Khối 2: Từ cấm & Quy định quay */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
           <div className="flex items-center gap-2 border-b border-line pb-2">
             <input
               type="checkbox"
@@ -752,7 +752,7 @@ export function BrandGuidelineExtractModal({
                         <button
                           type="button"
                           onClick={() => handleRemoveBannedPhrase(idx)}
-                          className="p-1.5 text-ink-3 hover:text-critical rounded hover:bg-sunken"
+                          className="p-2 text-ink-3 hover:text-critical rounded hover:bg-sunken"
                           title="Xóa dòng"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -820,7 +820,7 @@ export function BrandGuidelineExtractModal({
         </div>
 
         {/* Khối 3: Câu cảnh báo pháp lý bắt buộc */}
-        <div className="rounded-lg border border-line bg-surface p-3.5 space-y-3">
+        <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
           <div className="flex items-center gap-2 border-b border-line pb-2">
             <input
               type="checkbox"

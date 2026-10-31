@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar, Cloud, FileSpreadsheet, HardDrive, Layers, Loader2, Video } from 'lucide-react';
+import { Cloud, FileSpreadsheet, HardDrive, Layers, Loader2, Video } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
@@ -30,6 +30,7 @@ import {
   PageActions,
   PageHeaderNav,
   Pagination,
+  PeriodPicker,
   Panel,
   Stat,
   StatRow,
@@ -307,7 +308,7 @@ export function BrandProfilesView({
       <Panel>
         <EmptyState
           title={loadError.status === 401 ? 'Cần đăng nhập để xem hồ sơ thương hiệu' : 'Chưa tải được hồ sơ thương hiệu'}
-          description={loadError.message}
+
           action={<Button onClick={() => load().catch(() => undefined)}>Thử lại</Button>}
         />
       </Panel>
@@ -382,12 +383,12 @@ export function BrandProfilesView({
         const count = rep?.storeCount || r.master?.storeCount || 0;
         const category = real(r.master?.category);
         return (
-          <div className="min-w-0 leading-tight flex items-start gap-2.5">
+          <div className="min-w-0 leading-tight flex items-start gap-3">
             <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 mt-0.5">
               <BrandAvatar name={r.name} id={r.master?.id} code={r.master?.code} size={32} />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink text-xs" title={r.name}>
                   {r.name}
                 </span>
@@ -395,7 +396,7 @@ export function BrandProfilesView({
                   ({count} gian)
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {category && (
                   <span className="truncate text-2xs text-ink-3 max-w-[130px]" title={category}>
                     {category}
@@ -550,11 +551,11 @@ export function BrandProfilesView({
         return (
           <div className="leading-tight">
             <div className="text-xs font-medium text-ink flex items-center gap-1">
-              <HardDrive className="w-3 h-3 text-ink-3/70" />
+              <HardDrive className="w-3.5 h-3.5 text-ink-3/70" />
               <span>{r.profile.products.length} SKU · {r.profile.documents.length} tệp</span>
             </div>
             {!isComplete && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-warning-soft text-warning mt-0.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-medium bg-warning-soft text-warning mt-0.5">
                 {r.done}/{r.total} mục
               </span>
             )}
@@ -568,15 +569,15 @@ export function BrandProfilesView({
       width: 175,
       align: 'right',
       render: r => (
-        <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+        <div className="inline-flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
           <button
             type="button"
             className="inline-flex items-center gap-1 h-6 px-2 rounded text-2xs font-medium text-ink bg-surface hover:bg-sunken border border-line-strong transition-colors shadow-2xs"
             title={`Mở Sản phẩm & Góc nội dung của ${r.name}`}
             onClick={() => openBrand(r.key, 'PRODUCTS')}
           >
-            <Layers className="w-3 h-3 text-accent" />
-            <span>Góc SP</span>
+            <Layers className="w-3.5 h-3.5 text-accent" />
+            <span>Sản phẩm</span>
           </button>
           {onDrilldownToPlan && (
             <button
@@ -585,7 +586,7 @@ export function BrandProfilesView({
               title={`Mở Kế hoạch tháng của ${r.name}`}
               onClick={() => onDrilldownToPlan({ brandName: r.name, month: selectedMonth })}
             >
-              <FileSpreadsheet className="w-3 h-3 text-accent" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-accent" />
               <span>Plan</span>
             </button>
           )}
@@ -602,7 +603,7 @@ export function BrandProfilesView({
                 }
               }}
             >
-              <Video className="w-3 h-3 text-positive" />
+              <Video className="w-3.5 h-3.5 text-positive" />
               <span>Booking</span>
             </button>
           )}
@@ -616,22 +617,12 @@ export function BrandProfilesView({
   return (
     <div className="space-y-3">
       <PageHeaderNav>
-        <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
-          <Calendar className="w-3.5 h-3.5 text-accent" />
-          <span className="text-ink-3">Kỳ hồ sơ:</span>
-          <select
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
-            aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
-          >
-            {PROFILE_MONTH_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <PeriodPicker
+          value={selectedMonth}
+          onChange={setSelectedMonth}
+          options={PROFILE_MONTH_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
+          label="Chọn kỳ hồ sơ tháng của thương hiệu"
+        />
       </PageHeaderNav>
 
       <PageActions>
@@ -687,7 +678,7 @@ export function BrandProfilesView({
       </StatRow>
 
       <Panel flush>
-        <div className="px-3.5 py-2.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="px-4 py-3 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex-1">
             <FilterBar
               search={{ value: search, onChange: setSearch, placeholder: 'Tìm tên nhãn, mã brand, ngành hàng, Account/Booking PIC…' }}
@@ -696,7 +687,7 @@ export function BrandProfilesView({
             />
           </div>
           {isSyncing && (
-            <div className="flex items-center gap-1.5 text-xs text-ink-3 shrink-0 self-end sm:self-auto py-1">
+            <div className="flex items-center gap-2 text-xs text-ink-3 shrink-0 self-end sm:self-auto py-1">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-ink-3" />
               <span>Đang đồng bộ hồ sơ…</span>
             </div>

@@ -3479,7 +3479,7 @@ export interface ContentAngleItem {
   dontList?: string[];
 
   // Thống kê & Trạng thái
-  status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
+  status: 'WINNING' | 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
   usageCount: number; // Số lượt booking KOC đã áp dụng
   avgViewsEstimate?: number; // Lượt xem ước tính
   createdBy?: string;

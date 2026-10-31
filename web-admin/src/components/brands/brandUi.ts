@@ -55,25 +55,25 @@ export const DOC_CATEGORY_LABEL: Record<BrandDocCategory, string> = {
 };
 
 export const PROJECT_TIER_LABEL: Record<BrandProjectTier, string> = {
-  TIER_A_STRATEGIC: 'Tier A — Nhãn chiến lược (Ngân sách & quy mô lớn)',
-  TIER_B_GROWTH: 'Tier B — Tăng trưởng qua nội dung (Content-driven)',
-  TIER_C_FULLSTACK: 'Tier C — Gian hàng nhỏ (Full-stack tự triển khai)',
+  TIER_A_STRATEGIC: 'Nhóm A — Nhãn trọng điểm (Ngân sách lớn)',
+  TIER_B_GROWTH: 'Nhóm B — Nhãn tăng trưởng',
+  TIER_C_FULLSTACK: 'Nhóm C — Gian hàng nhỏ',
 };
 
 export const OPERATING_MODEL_LABEL: Record<BrandOperatingModel, string> = {
-  SPLIT_RESOURCE: 'Tách nguồn lực (Content & Booking chuyên biệt)',
-  FULLSTACK_CONTENT_BOOKING: 'Full-stack Content × Booking',
+  SPLIT_RESOURCE: 'Tách chuyên viên Content & Booking',
+  FULLSTACK_CONTENT_BOOKING: 'Một chuyên viên phụ trách trọn gói',
 };
 
 export const STRATEGY_OWNER_LABEL: Record<StrategyOwnerTeam, string> = {
-  BRAND_TEAM: 'Brand Team (Chịu trách nhiệm chiến lược tổng)',
-  CONTENT_TEAM: 'Content Team (Chịu trách nhiệm định hướng nội dung)',
+  BRAND_TEAM: 'Nhóm Brand',
+  CONTENT_TEAM: 'Nhóm Content',
 };
 
 export const KOC_APPROVAL_MODE_LABEL: Record<KocApprovalMode, string> = {
   ALL: 'Nhãn hàng duyệt toàn bộ danh sách KOC',
   KL4_PLUS_ONLY: 'Tự duyệt KL1–KL3 · Nhãn chỉ duyệt từ KL4 trở lên',
-  NONE_AUTO: 'Phòng B2C tự chủ duyệt danh sách KOC (Luồng tự động / FOC)',
+  NONE_AUTO: 'Phòng B2C tự duyệt danh sách KOC',
 };
 
 export const SAMPLE_SENDER_LABEL: Record<SampleSenderType, string> = {
@@ -107,7 +107,7 @@ function completenessChecks(p: BrandProfile): Array<[label: string, ok: boolean]
     ['từ cấm', (p.contentRules?.banned.length || 0) > 0],
     ['FAQ', p.faqs.length > 0],
     ['pháp lý', p.legal.length > 0],
-    ['trần thù lao', p.ratecard.some(r => r.maxBudget)],
+    ['khung giá KOC', p.ratecard.some(r => r.maxBudget)],
   ];
 }
 
