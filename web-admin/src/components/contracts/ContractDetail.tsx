@@ -165,7 +165,7 @@ export function ContractDetail({
   const gdocsLegalPending = record.steps.some(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED');
   const canApproveGDocsFinance =
     Boolean(record.googleDocsUrl) &&
-    (me.roles.includes('FINANCE') || me.roles.includes('LEAD')) &&
+    me.roles.includes('FINANCE') &&
     me.id !== record.ownerId &&
     record.approval === 'IN_REVIEW' &&
     record.googleDocsStage === 'FINAL' &&

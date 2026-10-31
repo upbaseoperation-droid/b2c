@@ -273,8 +273,8 @@ export function ContractApprovalPortalView({
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }) {
   const me = data.actor;
-  const isLegalActor = me.roles.includes('LEGAL') || me.roles.includes('LEAD');
-  const isFinanceActor = me.roles.includes('FINANCE') || me.roles.includes('LEAD');
+  const isLegalActor = me.roles.includes('LEGAL');
+  const isFinanceActor = me.roles.includes('FINANCE');
 
   const [search, setSearch] = useState('');
   const [legalFilter, setLegalFilter] = useState<LegalFilter>('ALL');

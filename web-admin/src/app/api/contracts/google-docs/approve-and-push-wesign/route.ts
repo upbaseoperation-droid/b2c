@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     requireCondition(canRead(record, actor), 'Không có quyền truy cập hồ sơ này.', 403);
     requireCondition(inScope(record.brand, actor), 'Không có quyền thao tác trên nhãn hàng này.', 403);
     requireCondition(
-      actor.roles.includes('FINANCE') || actor.roles.includes('LEAD'),
-      'Chỉ Kế toán hoặc Trưởng bộ phận được duyệt và đẩy WeSign.',
+      actor.roles.includes('FINANCE'),
+      'Chỉ Kế toán được duyệt chốt bản cuối và đẩy WeSign.',
       403,
     );
     requireCondition(Boolean(record.googleDocsUrl), 'Hồ sơ không theo luồng Google Doc.');
