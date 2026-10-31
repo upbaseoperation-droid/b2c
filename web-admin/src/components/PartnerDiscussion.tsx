@@ -194,7 +194,7 @@ function ThreadPane({ roomKey, onRead, onSaved }: { roomKey: string; onRead: (ke
           {data.thread.proposalVersion && <p className="text-xs text-ink-3">Không duyệt / cần bổ sung phải có lý do. Gửi ý kiến hoặc ghi nhận trao đổi bên ngoài không tự thay đổi quyết định.</p>}
         </fieldset>
         {sending && <p role="status" className="text-sm text-accent-hover">Đang lưu…</p>}
-        {pending && !sending && <div className="flex flex-wrap items-center gap-2"><span className="text-sm text-critical">Chưa xác nhận đã lưu.</span><button className={buttonClass} type="button" onClick={() => void send(pending.kind, pending)}>Thử gửi lại</button><button className={buttonClass} type="button" onClick={() => { setPending(null); busy.current = false; void refresh(); }}>Kiểm tra lịch sử / sửa nội dung</button>}</div>}
+        {pending && !sending && <div className="flex flex-wrap items-center gap-2"><span className="text-sm text-critical">Chưa xác nhận đã lưu.</span><button className={buttonClass} type="button" onClick={() => void send(pending.kind, pending)}>Thử gửi lại</button><button className={buttonClass} type="button" onClick={() => { setPending(null); busy.current = false; void refresh(); }}>Kiểm tra lịch sử / sửa nội dung</button></div>}
       </form>
     </>}
   </div>;
