@@ -445,8 +445,10 @@ export async function buildContractNegotiationReport(
   }
 
   const isSameHash = initialSnap && finalSnap && initialSnap.hash === finalSnap.hash;
+  const isFrameworkContract = record.templateId.endsWith('-HDNT') || record.brand === 'UPBASE';
+  const scopeLabel = isFrameworkContract ? `Ký khung với UpBase` : record.brand;
   let executiveSummary =
-    `Hồ sơ "${record.title}" (${record.partner} · ${record.brand}) theo luồng ${
+    `Hồ sơ "${record.title}" (${record.partner} · ${scopeLabel}) theo luồng ${
       record.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'Mẫu riêng của KOC' : `Mẫu chuẩn UpBase (${record.templateId}) có chỉnh sửa`
     }. ` +
     `Hệ thống đã lưu vết Bản ban đầu (${initialSnap ? `${initialSnap.paragraphs.length} đoạn văn, mã băm ${initialSnap.hash.slice(0, 10)}…` : 'chưa chụp'}), ` +
@@ -465,7 +467,7 @@ export async function buildContractNegotiationReport(
     try {
       const prompt = [
         `Hãy viết đoạn tóm tắt điều hành (3-4 câu ngắn gọn, chuẩn nghiệp vụ Pháp chế & Kế toán Việt Nam, không dùng từ ngữ quảng cáo) cho báo cáo lưu vết đàm phán hợp đồng sau:`,
-        `- Hợp đồng: ${record.title} (Đối tác KOC: ${record.partner}, Nhãn hàng: ${record.brand})`,
+        `- Hợp đồng: ${record.title} (Đối tác KOC: ${record.partner}, Phạm vi: ${scopeLabel})`,
         `- Phân loại: ${record.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'Form riêng của KOC' : 'Mẫu UpBase có sửa đổi điều khoản'}`,
         `- Số điều khoản thay đổi giữa bản đầu và bản cuối: ${initialToFinalDiffs.length}`,
         `- Số điều khoản khác mẫu chuẩn UpBase: ${templateDiffs.length}`,
@@ -503,7 +505,7 @@ export async function buildContractNegotiationReport(
   const rawReportLines = [
     `BÁO CÁO LƯU VẾT ĐÀM PHÁN & CHỈNH SỬA HỢP ĐỒNG`,
     `Hồ sơ: ${record.title} (${record.id})`,
-    `Đối tác: ${record.partner} | Nhãn hàng: ${record.brand}`,
+    `Đối tác: ${record.partner} | Phạm vi: ${scopeLabel}`,
     `Thời điểm xuất báo cáo: ${new Date().toISOString()} bởi ${actorName}`,
     ``,
     `1. TÓM TẮT ĐIỀU HÀNH`,

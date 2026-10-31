@@ -564,24 +564,42 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'partner',
-      header: 'KOC & nhãn hàng',
+      header: 'Đối tác KOC (Bên B)',
       width: 190,
-      render: r => (
-        <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
-          <span className="block truncate font-medium text-ink">{r.partner}</span>
-          <span className="block truncate text-2xs text-ink-3">
-            {r.brand}
-            {r.dealCode ? (
-              <>
-                {' · '}
-                <span className="font-code text-ink-2">{r.dealCode}</span>
-              </>
-            ) : (
-              ' · HĐ khung'
-            )}
-          </span>
-        </div>
-      ),
+      render: r => {
+        const docStage = documentOfTemplate(r.templateId);
+        const kocHandle = r.values['token:[ID KOC]'] ? `@${r.values['token:[ID KOC]'].replace(/^@/, '')}` : '';
+        return (
+          <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
+            <span className="block truncate font-medium text-ink">{r.partner}</span>
+            <span className="block truncate text-2xs text-ink-3">
+              {docStage === 'HDNT' || r.brand === 'UPBASE' ? (
+                <>
+                  HĐ nguyên tắc KOC
+                  {kocHandle && (
+                    <>
+                      {' · '}
+                      <span className="font-code text-ink-2">{kocHandle}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {r.brand}
+                  {r.dealCode ? (
+                    <>
+                      {' · '}
+                      <span className="font-code text-ink-2">{r.dealCode}</span>
+                    </>
+                  ) : (
+                    ' · HĐ khung'
+                  )}
+                </>
+              )}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'clauses',
@@ -725,15 +743,16 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'partner',
-      header: 'KOC & nhãn hàng',
+      header: 'Đối tác KOC & ngân hàng',
       width: 195,
       render: r => {
         const fin = financialMap.get(r.id);
+        const docStage = documentOfTemplate(r.templateId);
         return (
           <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
             <span className="block truncate font-medium text-ink">{r.partner}</span>
             <span className="block truncate text-2xs text-ink-3">
-              {r.brand} · {fin?.bankName || 'Chưa rõ NH'}
+              {docStage === 'HDNT' || r.brand === 'UPBASE' ? 'HĐ nguyên tắc' : r.brand} · {fin?.bankName || 'Chưa rõ NH'}
             </span>
           </div>
         );
@@ -1503,10 +1522,20 @@ export function ContractApprovalPortalView({
                       <dd className="font-medium text-ink text-right">{inspectRecord.partner}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-ink-3">Nhãn hàng · Deal</dt>
+                      <dt className="text-ink-3">
+                        {documentOfTemplate(inspectRecord.templateId) === 'HDNT' || inspectRecord.brand === 'UPBASE'
+                          ? 'Phạm vi hợp đồng'
+                          : 'Nhãn hàng · Deal'}
+                      </dt>
                       <dd className="text-ink text-right">
-                        {inspectRecord.brand} ·{' '}
-                        <span className="font-code">{inspectRecord.dealCode || 'HĐ khung'}</span>
+                        {documentOfTemplate(inspectRecord.templateId) === 'HDNT' || inspectRecord.brand === 'UPBASE' ? (
+                          'Hợp đồng nguyên tắc (UpBase ↔ KOC)'
+                        ) : (
+                          <>
+                            {inspectRecord.brand} ·{' '}
+                            <span className="font-code">{inspectRecord.dealCode || 'HĐ khung'}</span>
+                          </>
+                        )}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2">

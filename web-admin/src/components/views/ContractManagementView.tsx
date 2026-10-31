@@ -464,24 +464,50 @@ export function ContractManagementView({
     },
     {
       key: 'partner',
-      header: 'KOC & nhãn hàng',
+      header: showDealDocs ? 'KOC & nhãn hàng' : 'Đối tác KOC (Bên B)',
       width: 190,
-      render: r => (
-        <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
-          <span className="block truncate font-medium text-ink">{r.partner}</span>
-          <span className="block truncate text-2xs text-ink-3">
-            {r.brand}
-            {r.dealCode ? (
-              <>
-                {' · '}
-                <span className="font-code text-ink-2">{r.dealCode}</span>
-              </>
-            ) : (
-              ' · HĐ khung'
-            )}
-          </span>
-        </div>
-      ),
+      render: r => {
+        const docStage = documentOfTemplate(r.templateId);
+        const rawHandle = r.values['token:[ID KOC]'] || '';
+        const kocHandle = rawHandle ? `@${rawHandle.replace(/^@/, '')}` : '';
+        const legalSubject = r.templateId.startsWith('COM-')
+          ? 'Công ty'
+          : r.templateId.startsWith('HKD-')
+            ? 'Hộ kinh doanh'
+            : 'Cá nhân';
+        return (
+          <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
+            <span className="block truncate font-medium text-ink">{r.partner}</span>
+            <span className="block truncate text-2xs text-ink-3">
+              {docStage === 'HDNT' || !showDealDocs ? (
+                <>
+                  {legalSubject}
+                  {kocHandle ? (
+                    <>
+                      {' · '}
+                      <span className="font-code text-ink-2">{kocHandle}</span>
+                    </>
+                  ) : (
+                    ' · Ký khung với UpBase'
+                  )}
+                </>
+              ) : (
+                <>
+                  {r.brand}
+                  {r.dealCode ? (
+                    <>
+                      {' · '}
+                      <span className="font-code text-ink-2">{r.dealCode}</span>
+                    </>
+                  ) : (
+                    ' · HĐ khung'
+                  )}
+                </>
+              )}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'links',
@@ -1059,7 +1085,7 @@ export function ContractManagementView({
           <Panel flush>
             <div className="p-4 border-b border-line">
               <FilterBar
-                search={{ value: search, onChange: setSearch, placeholder: 'Tên hồ sơ, đối tác, nhãn hàng, mã booking' }}
+                search={{ value: search, onChange: setSearch, placeholder: showDealDocs ? 'Tên phụ lục, đối tác, nhãn hàng, mã booking' : 'Tên hợp đồng, tên KOC, mã hợp đồng' }}
                 chips={<Chips items={chips} value={filter} onChange={setFilter} />}
                 resultCount={search.trim() ? rows.length : undefined}
               />

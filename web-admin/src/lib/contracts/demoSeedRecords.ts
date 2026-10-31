@@ -3,12 +3,11 @@ import type { ContractRecord } from './types';
 export const DEMO_SEED_RECORDS: ContractRecord[] = [
   {
     "id": "CTR-DEMO-2026-002",
-    "title": "HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio",
-    "brand": "ClubClio",
+    "title": "HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official)",
+    "brand": "UPBASE",
     "partner": "Võ Hà Linh (Hà Linh Official)",
     "templateId": "IND-HDNT",
     "templateHash": "ff0ed66e3068e80ff4d06fc035de5c7a1327bdb55b4098e66f5353bc5642cd0f",
-    "dealCode": "BO260889102",
     "kocId": "koc-2",
     "ownerId": "contract-demo-owner",
     "ownerName": "Chuyên viên Booking B2C",
@@ -56,16 +55,16 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
         "at": "2026-10-31T05:00:00.000Z",
         "by": "chientran64 (Chuyên viên B2C)",
         "title": "HĐ1 - Bản đẩy lên ban đầu (v0)",
-        "hash": "71f357affd1c771b8529843d8c6fdb3e225a62f83def4c034f23de67bc5fcad9",
+        "hash": "347c2fe04e1619a871a637e81f484698e89680fcfa24270e23decadede6a5c6a",
         "paragraphs": [
           "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
           "Độc lập - Tự do - Hạnh phúc",
           "HỢP ĐỒNG NGUYÊN TẮC CUNG CẤP DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU",
-          "Số: 311026/HDNT/UPBASE-CLUBCLIO-VOHALINH",
-          "BÊN A: CÔNG TY CỔ PHẦN UPBASE (Đại diện nhãn hàng ClubClio)",
+          "Số: 311026/HDNT/UPBASE-HALINHOFFICIAL",
+          "BÊN A: CÔNG TY CỔ PHẦN UPBASE",
           "BÊN B: BÀ VÕ HÀ LINH (Kênh TikTok: Hà Linh Official - ID: @halinhofficial)",
           "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC",
-          "1.1. Bên B thực hiện sáng tạo nội dung Video review sản Cushion ClubClio Kill Cover Mesh Glow trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.",
+          "1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.",
           "1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng trong suốt thời gian hợp tác.",
           "Điều 2. THỜI HẠN THỰC HIỆN HỢP ĐỒNG",
           "2.1. Hợp đồng có hiệu lực 12 tháng kể từ ngày ký kết (31/10/2026 - 31/10/2027).",
@@ -93,8 +92,8 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           "title": "NỘI DUNG DỊCH VỤ HỢP TÁC",
           "changeType": "MODIFIED",
           "targetRole": "LEGAL",
-          "originalText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản Cushion ClubClio Kill Cover Mesh Glow trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng trong suốt thời gian hợp tác.",
-          "modifiedText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm Cushion ClubClio Kill Cover Mesh Glow trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
+          "originalText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng trong suốt thời gian hợp tác.",
+          "modifiedText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
           "explanation": "Điều khoản được điều chỉnh trong quá trình đàm phán giữa bản ban đầu và bản chốt cuối (Pháp chế)."
         },
         {
@@ -145,17 +144,17 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
       "finalSnapshot": {
         "at": "2026-10-31T06:13:31.865Z",
         "by": "Người tạo (kiểm thử)",
-        "title": "HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio",
-        "hash": "82e16e34333f58ed33d5eeec29e1e3eadfc0f142650a4b5ac019e06e1fb0f012",
+        "title": "HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official)",
+        "hash": "40151351f908f8d1756a907eb633691cb661a6f3ac6e926f9184d83b349352cf",
         "paragraphs": [
           "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
           "Độc lập - Tự do - Hạnh phúc",
           "HỢP ĐỒNG NGUYÊN TẮC CUNG CẤP DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU",
-          "Số: 311026/HDNT/UPBASE-CLUBCLIO-VOHALINH",
-          "BÊN A: CÔNG TY CỔ PHẦN UPBASE (Đại diện nhãn hàng ClubClio)",
+          "Số: 311026/HDNT/UPBASE-HALINHOFFICIAL",
+          "BÊN A: CÔNG TY CỔ PHẦN UPBASE",
           "BÊN B: BÀ VÕ HÀ LINH (Kênh TikTok: Hà Linh Official - ID: @halinhofficial)",
           "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC",
-          "1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm Cushion ClubClio Kill Cover Mesh Glow trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.",
+          "1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.",
           "1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
           "Điều 2. THỜI HẠN THỰC HIỆN HỢP ĐỒNG",
           "2.1. Hợp đồng có hiệu lực 12 tháng kể từ ngày ký kết (31/10/2026 - 31/10/2027).",
@@ -184,9 +183,9 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
         "generatedBy": "Người tạo (kiểm thử)",
         "providerUsed": "INTERNAL",
         "modelUsed": "upbase-contract-audit-v1",
-        "initialHash": "71f357affd1c771b8529843d8c6fdb3e225a62f83def4c034f23de67bc5fcad9",
-        "finalHash": "82e16e34333f58ed33d5eeec29e1e3eadfc0f142650a4b5ac019e06e1fb0f012",
-        "executiveSummary": "Hồ sơ \"HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio\" (Võ Hà Linh (Hà Linh Official) · ClubClio) theo luồng Mẫu chuẩn UpBase (IND-HDNT) có chỉnh sửa. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm 71f357affd…), ghi nhận 5 bình luận và 4 phiên bản chỉnh sửa từ 7 tài khoản, đến Bản chốt cuối (26 đoạn văn, mã băm 82e16e3433…). Phát hiện 6 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.",
+        "initialHash": "347c2fe04e1619a871a637e81f484698e89680fcfa24270e23decadede6a5c6a",
+        "finalHash": "40151351f908f8d1756a907eb633691cb661a6f3ac6e926f9184d83b349352cf",
+        "executiveSummary": "Hồ sơ \"HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official)\" (Võ Hà Linh (Hà Linh Official) · Ký khung với UpBase) theo luồng Mẫu chuẩn UpBase (IND-HDNT) có chỉnh sửa. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm 71f357affd…), ghi nhận 5 bình luận và 4 phiên bản chỉnh sửa từ 7 tài khoản, đến Bản chốt cuối (26 đoạn văn, mã băm 82e16e3433…). Phát hiện 6 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.",
         "clauseEvolutionSummary": [
           "[So với Bản đẩy lên ban đầu] Điều 1 (NỘI DUNG DỊCH VỤ HỢP TÁC): Điều chỉnh nội dung — Phân luồng Pháp chế.",
           "[So với Bản đẩy lên ban đầu] Điều 3 (PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN): Điều chỉnh nội dung — Phân luồng Kế toán.",
@@ -229,7 +228,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
             "editCount": 0,
             "commentCount": 1,
             "replyCount": 1,
-            "summary": "Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá trị Phí dịch\"] [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức chiến dịch ClubClio. | Phản hồi: [Kế toán B2C - Lê Thị Thu Hà]: Đồng ý phương án tạm ứng 70% Net (34.650.000 VNĐ) trong 03 ngày làm việc và quyết toán 30% (14.850.000 VNĐ) trong 05 ngày sau nghiệm thu. Đã kiểm tra khớp hạn mức Net chiến dịch ClubClio."
+            "summary": "Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá trị Phí dịch\"] [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức theo từng Phụ lục SOW. | Phản hồi: [Kế toán B2C - Lê Thị Thu Hà]: Đồng ý phương án tạm ứng 70% Net (34.650.000 VNĐ) trong 03 ngày làm việc và quyết toán 30% (14.850.000 VNĐ) trong 05 ngày sau nghiệm thu. Đã kiểm tra khớp hạn mức Net theo từng Phụ lục SOW."
           },
           {
             "account": "Pháp chế - Nguyễn Thị Liên",
@@ -265,7 +264,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           }
         ],
         "riskAndFinanceNotes": [
-          "Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá tr\": [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức chiến dịch ClubClio. (Cần lưu ý khi nghiệm thu/thanh toán)",
+          "Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá tr\": [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức theo từng Phụ lục SOW. (Cần lưu ý khi nghiệm thu/thanh toán)",
           "Góp ý từ Pháp chế - Nguyễn Thị Liên tại \"chạy quảng cáo chuyển đổi (Spark Ads / Whitelistin\": [Pháp chế - Nguyễn Thị Liên]: Điều 4.2 giới hạn chạy Spark Ads tối đa 45 ngày và Điều 6.2 giới hạn trần phạt vi phạm 50% giá trị SOW. Đề nghị chấp thuận vì KOC cam kết giữ giỏ hàng đủ 60 ngày. (Cần lưu ý khi nghiệm thu/thanh toán)",
           "Góp ý từ Đề xuất từ Đại diện KOC Võ Hà Linh tại \"Bên A thanh toán 100% giá trị Phí dịch vụ (Net) tr\": [Đề xuất từ Đại diện KOC Võ Hà Linh]: Đề nghị sửa Điều 3.2 thành tạm ứng Đợt 1 (70% Net) trong 03 ngày làm việc sau khi ký SOW, quyết toán 30% trong 05 ngày sau BBNT; đồng thời tại Điều 4.1 giới hạn thời gian chạy Spark Ads tối đa 45 ngày. (Đã giải quyết)",
           "Góp ý từ Ẩn danh: (Bình luận đã bị xóa trên Google Docs) (Cần lưu ý khi nghiệm thu/thanh toán)",
@@ -274,24 +273,24 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           "Ý kiến phê duyệt Kế toán (Kế toán (kiểm thử)): Kế toán Lê Thị Thu Hà chốt bản cuối từ Google Docs: Tạm ứng 70% Net (34.650.000đ) trong 03 ngày làm việc, quyết toán 30% (14.850.000đ) trong 05 ngày, khấu trừ TNCN 10%. Đã xuất DOCX/PDF và đẩy WeSign.",
           "Tóm tắt điều khoản đặc thù của hồ sơ: Điều 3: Tạm ứng 70% trong 03 ngày làm việc, quyết toán 30% trong 05 ngày; Điều 4: Giới hạn chạy Spark Ads tối đa 45 ngày; Điều 6: Trần phạt vi phạm tối đa 50% giá trị SOW."
         ],
-        "rawReportText": "BÁO CÁO LƯU VẾT ĐÀM PHÁN & CHỈNH SỬA HỢP ĐỒNG\nHồ sơ: HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio (CTR-DEMO-2026-002)\nĐối tác: Võ Hà Linh (Hà Linh Official) | Nhãn hàng: ClubClio\nThời điểm xuất báo cáo: 2026-10-31T06:14:51.777Z bởi Người tạo (kiểm thử)\n\n1. TÓM TẮT ĐIỀU HÀNH\nHồ sơ \"HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio\" (Võ Hà Linh (Hà Linh Official) · ClubClio) theo luồng Mẫu chuẩn UpBase (IND-HDNT) có chỉnh sửa. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm 71f357affd…), ghi nhận 5 bình luận và 4 phiên bản chỉnh sửa từ 7 tài khoản, đến Bản chốt cuối (26 đoạn văn, mã băm 82e16e3433…). Phát hiện 6 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.\n\n2. ĐỐI CHIẾU BẢN ĐẦU & BẢN CHỐT CUỐI\n- Bản đẩy lên ban đầu: 2026-10-31T05:00:00.000Z (chientran64 (Chuyên viên B2C)) · SHA-256: 71f357affd1c771b8529843d8c6fdb3e225a62f83def4c034f23de67bc5fcad9\n- Bản chốt cuối: 2026-10-31T06:13:37.397Z (Kế toán (kiểm thử)) · SHA-256: 82e16e34333f58ed33d5eeec29e1e3eadfc0f142650a4b5ac019e06e1fb0f012\n  • [So với Bản đẩy lên ban đầu] Điều 1 (NỘI DUNG DỊCH VỤ HỢP TÁC): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 3 (PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN): Điều chỉnh nội dung — Phân luồng Kế toán.\n  • [So với Bản đẩy lên ban đầu] Điều 4 (QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 6 (PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 7 (CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 8 (ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC): Bổ sung mới — Phân luồng Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 1 (NỘI DUNG DỊCH VỤ HỢP TÁC): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT).\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 2 (THỜI HẠN THỰC HIỆN HỢP ĐỒNG): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế & Kế toán.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 3 (PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT).\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 4 (QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế & Kế toán.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 5 (BẢO MẬT THÔNG TIN): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 6 (PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 7 (CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 8 (ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 9 (BẤT KHẢ KHÁNG): Điều khoản trong mẫu chuẩn đã bị xóa bỏ trên Google Docs. Phân luồng: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 10 (ĐIỀU KHOẢN CHUNG): Điều khoản trong mẫu chuẩn đã bị xóa bỏ trên Google Docs. Phân luồng: Pháp chế.\n\n3. ĐÓNG GÓP & BÌNH LUẬN THEO TÀI KHOẢN (7 tài khoản)\n  • chientran64 (chientran64@gmail.com) [Nhân sự B2C / Đại diện KOC]: Thực hiện 1 phiên bản chỉnh sửa văn bản trực tiếp.\n  • testupbae@project-5db34c3f-ec11-4d30-8ad.iam.gserviceaccount.com [Tài khoản hệ thống / Đồng bộ Google Drive]: Thực hiện 3 phiên bản chỉnh sửa văn bản trực tiếp.\n  • Kế toán B2C - Lê Thị Thu Hà [Kế toán (TCKT)]: Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá trị Phí dịch\"] [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức chiến dịch ClubClio. | Phản hồi: [Kế toán B2C - Lê Thị Thu Hà]: Đồng ý phương án tạm ứng 70% Net (34.650.000 VNĐ) trong 03 ngày làm việc và quyết toán 30% (14.850.000 VNĐ) trong 05 ngày sau nghiệm thu. Đã kiểm tra khớp hạn mức Net chiến dịch ClubClio.\n  • Pháp chế - Nguyễn Thị Liên [Pháp chế]: Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"chạy quảng cáo chuyển đổi (Spark Ads / Whitelisting) trên nề\"] [Pháp chế - Nguyễn Thị Liên]: Điều 4.2 giới hạn chạy Spark Ads tối đa 45 ngày và Điều 6.2 giới hạn trần phạt vi phạm 50% giá trị SOW. Đề nghị chấp thuận vì KOC cam kết giữ giỏ hàng đủ 60 ngày. | Phản hồi: [Pháp chế - Nguyễn Thị Liên]: Chấp thuận giới hạn chạy Spark Ads 45 ngày tại Điều 4.1 và trần bồi thường 50% giá trị SOW tại Điều 6.1, với điều kiện KOC giữ link giỏ hàng tối thiểu 60 ngày. Tôi cập nhật thẳng vào văn bản và đóng bình luận này.\n  • Đề xuất từ Đại diện KOC Võ Hà Linh [Nhân sự B2C / Đại diện KOC]: Tạo 1 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"Bên A thanh toán 100% giá trị Phí dịch vụ (Net) trong vòng 1\"] [Đề xuất từ Đại diện KOC Võ Hà Linh]: Đề nghị sửa Điều 3.2 thành tạm ứng Đợt 1 (70% Net) trong 03 ngày làm việc sau khi ký SOW, quyết toán 30% trong 05 ngày sau BBNT; đồng thời tại Điều 4.1 giới hạn thời gian chạy Spark Ads tối đa 45 ngày. (đã giải quyết)\n  • Ẩn danh [Nhân sự B2C / Đại diện KOC]: Tạo 1 bình luận/đề xuất điều khoản. Nội dung chính: (Bình luận đã bị xóa trên Google Docs) (đã xóa trên file)\n  • Chuyên viên B2C - Nguyễn Thảo [Nhân sự B2C / Đại diện KOC]: Tạo 1 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"khấu trừ 10% thuế TNCN tại nguồn là 5.500.000 VNĐ\"] [Chuyên viên B2C - Nguyễn Thảo]: Đề xuất tạm thời chưa khấu trừ 10% TNCN ở đợt tạm ứng 1 (Sau đó đã xóa bình luận do Kế toán yêu cầu khấu trừ đủ 10% ở mọi đợt). (đã xóa trên file)\n\n4. LƯU Ý TÀI CHÍNH & PHÁP LÝ KHI THỰC THI\n  • Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá tr\": [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức chiến dịch ClubClio. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Pháp chế - Nguyễn Thị Liên tại \"chạy quảng cáo chuyển đổi (Spark Ads / Whitelistin\": [Pháp chế - Nguyễn Thị Liên]: Điều 4.2 giới hạn chạy Spark Ads tối đa 45 ngày và Điều 6.2 giới hạn trần phạt vi phạm 50% giá trị SOW. Đề nghị chấp thuận vì KOC cam kết giữ giỏ hàng đủ 60 ngày. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Đề xuất từ Đại diện KOC Võ Hà Linh tại \"Bên A thanh toán 100% giá trị Phí dịch vụ (Net) tr\": [Đề xuất từ Đại diện KOC Võ Hà Linh]: Đề nghị sửa Điều 3.2 thành tạm ứng Đợt 1 (70% Net) trong 03 ngày làm việc sau khi ký SOW, quyết toán 30% trong 05 ngày sau BBNT; đồng thời tại Điều 4.1 giới hạn thời gian chạy Spark Ads tối đa 45 ngày. (Đã giải quyết)\n  • Góp ý từ Ẩn danh: (Bình luận đã bị xóa trên Google Docs) (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Chuyên viên B2C - Nguyễn Thảo tại \"khấu trừ 10% thuế TNCN tại nguồn là 5.500.000 VNĐ\": [Chuyên viên B2C - Nguyễn Thảo]: Đề xuất tạm thời chưa khấu trừ 10% TNCN ở đợt tạm ứng 1 (Sau đó đã xóa bình luận do Kế toán yêu cầu khấu trừ đủ 10% ở mọi đợt). (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Ý kiến phê duyệt Pháp chế (Pháp chế (kiểm thử)): Pháp chế Nguyễn Thị Liên đã kiểm tra bản sửa trên Google Docs: Chấp thuận Điều 1.2 (giữ giỏ hàng 60 ngày), Điều 4.1 (Spark Ads 45 ngày), Điều 6.1 (Trần phạt 50% SOW) và Điều 8 bổ sung.\n  • Ý kiến phê duyệt Kế toán (Kế toán (kiểm thử)): Kế toán Lê Thị Thu Hà chốt bản cuối từ Google Docs: Tạm ứng 70% Net (34.650.000đ) trong 03 ngày làm việc, quyết toán 30% (14.850.000đ) trong 05 ngày, khấu trừ TNCN 10%. Đã xuất DOCX/PDF và đẩy WeSign.\n  • Tóm tắt điều khoản đặc thù của hồ sơ: Điều 3: Tạm ứng 70% trong 03 ngày làm việc, quyết toán 30% trong 05 ngày; Điều 4: Giới hạn chạy Spark Ads tối đa 45 ngày; Điều 6: Trần phạt vi phạm tối đa 50% giá trị SOW."
+        "rawReportText": "BÁO CÁO LƯU VẾT ĐÀM PHÁN & CHỈNH SỬA HỢP ĐỒNG\nHồ sơ: HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official) (CTR-DEMO-2026-002)\nĐối tác: Võ Hà Linh (Hà Linh Official) | Phạm vi: Hợp đồng nguyên tắc KOC (UpBase)\nThời điểm xuất báo cáo: 2026-10-31T06:14:51.777Z bởi Người tạo (kiểm thử)\n\n1. TÓM TẮT ĐIỀU HÀNH\nHồ sơ \"HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official)\" (Võ Hà Linh (Hà Linh Official) · Ký khung với UpBase) theo luồng Mẫu chuẩn UpBase (IND-HDNT) có chỉnh sửa. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm 71f357affd…), ghi nhận 5 bình luận và 4 phiên bản chỉnh sửa từ 7 tài khoản, đến Bản chốt cuối (26 đoạn văn, mã băm 82e16e3433…). Phát hiện 6 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.\n\n2. ĐỐI CHIẾU BẢN ĐẦU & BẢN CHỐT CUỐI\n- Bản đẩy lên ban đầu: 2026-10-31T05:00:00.000Z (chientran64 (Chuyên viên B2C)) · SHA-256: 71f357affd1c771b8529843d8c6fdb3e225a62f83def4c034f23de67bc5fcad9\n- Bản chốt cuối: 2026-10-31T06:13:37.397Z (Kế toán (kiểm thử)) · SHA-256: 82e16e34333f58ed33d5eeec29e1e3eadfc0f142650a4b5ac019e06e1fb0f012\n  • [So với Bản đẩy lên ban đầu] Điều 1 (NỘI DUNG DỊCH VỤ HỢP TÁC): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 3 (PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN): Điều chỉnh nội dung — Phân luồng Kế toán.\n  • [So với Bản đẩy lên ban đầu] Điều 4 (QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 6 (PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 7 (CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 8 (ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC): Bổ sung mới — Phân luồng Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 1 (NỘI DUNG DỊCH VỤ HỢP TÁC): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT).\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 2 (THỜI HẠN THỰC HIỆN HỢP ĐỒNG): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế & Kế toán.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 3 (PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT).\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 4 (QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế & Kế toán.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 5 (BẢO MẬT THÔNG TIN): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 6 (PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 7 (CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 8 (ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC): Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 9 (BẤT KHẢ KHÁNG): Điều khoản trong mẫu chuẩn đã bị xóa bỏ trên Google Docs. Phân luồng: Pháp chế.\n  • [So với Mẫu chuẩn UpBase IND-HDNT] Điều 10 (ĐIỀU KHOẢN CHUNG): Điều khoản trong mẫu chuẩn đã bị xóa bỏ trên Google Docs. Phân luồng: Pháp chế.\n\n3. ĐÓNG GÓP & BÌNH LUẬN THEO TÀI KHOẢN (7 tài khoản)\n  • chientran64 (chientran64@gmail.com) [Nhân sự B2C / Đại diện KOC]: Thực hiện 1 phiên bản chỉnh sửa văn bản trực tiếp.\n  • testupbae@project-5db34c3f-ec11-4d30-8ad.iam.gserviceaccount.com [Tài khoản hệ thống / Đồng bộ Google Drive]: Thực hiện 3 phiên bản chỉnh sửa văn bản trực tiếp.\n  • Kế toán B2C - Lê Thị Thu Hà [Kế toán (TCKT)]: Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá trị Phí dịch\"] [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức theo từng Phụ lục SOW. | Phản hồi: [Kế toán B2C - Lê Thị Thu Hà]: Đồng ý phương án tạm ứng 70% Net (34.650.000 VNĐ) trong 03 ngày làm việc và quyết toán 30% (14.850.000 VNĐ) trong 05 ngày sau nghiệm thu. Đã kiểm tra khớp hạn mức Net theo từng Phụ lục SOW.\n  • Pháp chế - Nguyễn Thị Liên [Pháp chế]: Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"chạy quảng cáo chuyển đổi (Spark Ads / Whitelisting) trên nề\"] [Pháp chế - Nguyễn Thị Liên]: Điều 4.2 giới hạn chạy Spark Ads tối đa 45 ngày và Điều 6.2 giới hạn trần phạt vi phạm 50% giá trị SOW. Đề nghị chấp thuận vì KOC cam kết giữ giỏ hàng đủ 60 ngày. | Phản hồi: [Pháp chế - Nguyễn Thị Liên]: Chấp thuận giới hạn chạy Spark Ads 45 ngày tại Điều 4.1 và trần bồi thường 50% giá trị SOW tại Điều 6.1, với điều kiện KOC giữ link giỏ hàng tối thiểu 60 ngày. Tôi cập nhật thẳng vào văn bản và đóng bình luận này.\n  • Đề xuất từ Đại diện KOC Võ Hà Linh [Nhân sự B2C / Đại diện KOC]: Tạo 1 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"Bên A thanh toán 100% giá trị Phí dịch vụ (Net) trong vòng 1\"] [Đề xuất từ Đại diện KOC Võ Hà Linh]: Đề nghị sửa Điều 3.2 thành tạm ứng Đợt 1 (70% Net) trong 03 ngày làm việc sau khi ký SOW, quyết toán 30% trong 05 ngày sau BBNT; đồng thời tại Điều 4.1 giới hạn thời gian chạy Spark Ads tối đa 45 ngày. (đã giải quyết)\n  • Ẩn danh [Nhân sự B2C / Đại diện KOC]: Tạo 1 bình luận/đề xuất điều khoản. Nội dung chính: (Bình luận đã bị xóa trên Google Docs) (đã xóa trên file)\n  • Chuyên viên B2C - Nguyễn Thảo [Nhân sự B2C / Đại diện KOC]: Tạo 1 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"khấu trừ 10% thuế TNCN tại nguồn là 5.500.000 VNĐ\"] [Chuyên viên B2C - Nguyễn Thảo]: Đề xuất tạm thời chưa khấu trừ 10% TNCN ở đợt tạm ứng 1 (Sau đó đã xóa bình luận do Kế toán yêu cầu khấu trừ đủ 10% ở mọi đợt). (đã xóa trên file)\n\n4. LƯU Ý TÀI CHÍNH & PHÁP LÝ KHI THỰC THI\n  • Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá tr\": [Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức theo từng Phụ lục SOW. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Pháp chế - Nguyễn Thị Liên tại \"chạy quảng cáo chuyển đổi (Spark Ads / Whitelistin\": [Pháp chế - Nguyễn Thị Liên]: Điều 4.2 giới hạn chạy Spark Ads tối đa 45 ngày và Điều 6.2 giới hạn trần phạt vi phạm 50% giá trị SOW. Đề nghị chấp thuận vì KOC cam kết giữ giỏ hàng đủ 60 ngày. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Đề xuất từ Đại diện KOC Võ Hà Linh tại \"Bên A thanh toán 100% giá trị Phí dịch vụ (Net) tr\": [Đề xuất từ Đại diện KOC Võ Hà Linh]: Đề nghị sửa Điều 3.2 thành tạm ứng Đợt 1 (70% Net) trong 03 ngày làm việc sau khi ký SOW, quyết toán 30% trong 05 ngày sau BBNT; đồng thời tại Điều 4.1 giới hạn thời gian chạy Spark Ads tối đa 45 ngày. (Đã giải quyết)\n  • Góp ý từ Ẩn danh: (Bình luận đã bị xóa trên Google Docs) (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Chuyên viên B2C - Nguyễn Thảo tại \"khấu trừ 10% thuế TNCN tại nguồn là 5.500.000 VNĐ\": [Chuyên viên B2C - Nguyễn Thảo]: Đề xuất tạm thời chưa khấu trừ 10% TNCN ở đợt tạm ứng 1 (Sau đó đã xóa bình luận do Kế toán yêu cầu khấu trừ đủ 10% ở mọi đợt). (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Ý kiến phê duyệt Pháp chế (Pháp chế (kiểm thử)): Pháp chế Nguyễn Thị Liên đã kiểm tra bản sửa trên Google Docs: Chấp thuận Điều 1.2 (giữ giỏ hàng 60 ngày), Điều 4.1 (Spark Ads 45 ngày), Điều 6.1 (Trần phạt 50% SOW) và Điều 8 bổ sung.\n  • Ý kiến phê duyệt Kế toán (Kế toán (kiểm thử)): Kế toán Lê Thị Thu Hà chốt bản cuối từ Google Docs: Tạm ứng 70% Net (34.650.000đ) trong 03 ngày làm việc, quyết toán 30% (14.850.000đ) trong 05 ngày, khấu trừ TNCN 10%. Đã xuất DOCX/PDF và đẩy WeSign.\n  • Tóm tắt điều khoản đặc thù của hồ sơ: Điều 3: Tạm ứng 70% trong 03 ngày làm việc, quyết toán 30% trong 05 ngày; Điều 4: Giới hạn chạy Spark Ads tối đa 45 ngày; Điều 6: Trần phạt vi phạm tối đa 50% giá trị SOW."
       },
       "approvedByFinance": "Kế toán (kiểm thử)",
       "approvedAtFinance": "2026-10-31T06:13:39.084Z",
       "approvedSnapshot": {
         "at": "2026-10-31T06:13:37.397Z",
         "by": "Kế toán (kiểm thử)",
-        "title": "HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio",
-        "hash": "82e16e34333f58ed33d5eeec29e1e3eadfc0f142650a4b5ac019e06e1fb0f012",
+        "title": "HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official)",
+        "hash": "40151351f908f8d1756a907eb633691cb661a6f3ac6e926f9184d83b349352cf",
         "paragraphs": [
           "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
           "Độc lập - Tự do - Hạnh phúc",
           "HỢP ĐỒNG NGUYÊN TẮC CUNG CẤP DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU",
-          "Số: 311026/HDNT/UPBASE-CLUBCLIO-VOHALINH",
-          "BÊN A: CÔNG TY CỔ PHẦN UPBASE (Đại diện nhãn hàng ClubClio)",
+          "Số: 311026/HDNT/UPBASE-HALINHOFFICIAL",
+          "BÊN A: CÔNG TY CỔ PHẦN UPBASE",
           "BÊN B: BÀ VÕ HÀ LINH (Kênh TikTok: Hà Linh Official - ID: @halinhofficial)",
           "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC",
-          "1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm Cushion ClubClio Kill Cover Mesh Glow trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.",
+          "1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.",
           "1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
           "Điều 2. THỜI HẠN THỰC HIỆN HỢP ĐỒNG",
           "2.1. Hợp đồng có hiệu lực 12 tháng kể từ ngày ký kết (31/10/2026 - 31/10/2027).",
@@ -315,9 +314,9 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
         "revisionCount": 4,
         "lastRevisionId": "14"
       },
-      "snapshotHash": "82e16e34333f58ed33d5eeec29e1e3eadfc0f142650a4b5ac019e06e1fb0f012",
-      "exportedDocxUrl": "/api/contracts/legal-docs?key=legal-docs%2Fhop-dong-ctr-demo-2026-002%2F2026-10%2Fcc72a0c7-311026-HDNT-UPBASE-CLUBCLIO-BO260889102-v2.docx",
-      "exportedPdfUrl": "/api/contracts/legal-docs?key=legal-docs%2Fhop-dong-ctr-demo-2026-002%2F2026-10%2F1a60286a-311026-HDNT-UPBASE-CLUBCLIO-BO260889102-v2.pdf",
+      "snapshotHash": "40151351f908f8d1756a907eb633691cb661a6f3ac6e926f9184d83b349352cf",
+      "exportedDocxUrl": "/api/contracts/legal-docs?key=legal-docs%2Fhop-dong-ctr-demo-2026-002%2F2026-10%2Fcc72a0c7-311026-HDNT-UPBASE-HALINHOFFICIAL-v2.docx",
+      "exportedPdfUrl": "/api/contracts/legal-docs?key=legal-docs%2Fhop-dong-ctr-demo-2026-002%2F2026-10%2F1a60286a-311026-HDNT-UPBASE-HALINHOFFICIAL-v2.pdf",
       "exportedAt": "2026-10-31T06:13:39.084Z"
     },
     "legalAttachments": [
@@ -374,7 +373,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           "changeType": "MODIFIED",
           "targetRole": "FINANCE",
           "originalText": "ĐIỀU 1: ĐỊNH NGHĨA\nKhái niệm\nĐịnh nghĩa\nTài khoản mạng xã hội\nLà tài khoản mạng xã hội có link: https://www.tiktok.com/@halinhofficial\nBên B là chủ sở hữu hợp pháp và có toàn quyền quản lý, vận hành tài khoản mạng xã hội trong suốt thời gian thực hiện Hợp đồng.\nHợp đồng dịch vụ khung\n(Hợp đồng)\nLà Hợp đồng này và quy định nguyên tắc hợp tác tổng thể giữa các Bên.\nTrường hợp có mâu thuẫn giữa Hợp đồng và Phụ lục phạm vi công việc (SOW): ưu tiên áp dụng theo thứ tự (i) SOW, (ii) Hợp đồng, trừ khi có quy định khác trong SOW.\nPhụ lục phạm vi công việc\n(SOW)\nLà phụ lục của Hợp đồng do hai bên cùng xác nhận, quy định chi tiết nội dung công việc, số lượng, thời gian, phí booking, hoa hồng (nếu có) và các yêu cầu, các dịch vụ đi kèm liên quan. SOW được hai bên xác nhận dưới dạng bản cứng hoặc bản ký điện tử.\nTiếp thị\nliên kết\n(Affiliate)\nLà việc Bên B quảng bá sản phẩm/dịch vụ thông qua cơ chế của nền tảng thương mại điện tử (sàn TMĐT) (bao gồm link, mã, giỏ hàng hoặc công cụ tương đương), trong đó doanh thu chỉ được ghi nhận khi được hệ thống nền tảng xác nhận. Hoa hồng và doanh thu được xác định theo dữ liệu cuối cùng từ nền tảng và có thể bị điều chỉnh trong trường hợp hoàn đơn, gian lận hoặc vi phạm chính sách.\nBooking video\nBooking video là việc Bên A thuê Bên B sản xuất và đăng tải Video theo các yêu cầu cụ thể của Bên A, có nội dung review, đánh giá, giới thiệu, quảng bá sản phẩm và thúc đẩy doanh số bán hàng (có thể bao gồm các cơ chế như gắn link, mã, giỏ hàng hoặc kêu gọi hành động theo chi tiết tại SOW nếu có).\nPhí dịch vụ booking\nPhí dịch vụ booking là khoản phí cố định Bên A thanh toán cho Bên B theo Hợp đồng.\nHoa hồng\nLà khoản thu nhập của Bên B dựa trên doanh thu Affiliate hợp lệ được nền tảng thương mại điện tử chi trả. Bên B tự chịu trách nhiệm kê khai, nộp thuế và các nghĩa vụ tài chính liên quan đến khoản hoa hồng này theo quy định pháp luật (nếu áp dụng).",
-          "modifiedText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm Cushion ClubClio Kill Cover Mesh Glow trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
+          "modifiedText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
           "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT)."
         },
         {
@@ -465,7 +464,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
         "id": "doco.IWQyn_Xy98nFQRNzrzgFxg",
         "author": "Kế toán B2C - Lê Thị Thu Hà",
         "avatar": "//lh3.googleusercontent.com/a/ACg8ocKkLataNaI1qw8TFZVox1OkdU3763ep2utBmhEvTcZmsu9pb0o=s50-c-k-no",
-        "content": "[Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức chiến dịch ClubClio.",
+        "content": "[Kế toán B2C - Lê Thị Thu Hà]: Điều 3.2 sửa tỷ lệ tạm ứng lên 70% trong 03 ngày làm việc và rút hạn thanh toán Đợt 2 xuống 05 ngày. Cần Lead Marketing xác nhận hạn mức theo từng Phụ lục SOW.",
         "quotedText": "Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá trị Phí dịch vụ (Net)",
         "createdAt": "2026-10-31T04:41:31.055Z",
         "resolved": false,
@@ -493,7 +492,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           {
             "id": "doco.npQgiobvKVBUCR6jM8unlw",
             "author": "Kế toán B2C - Lê Thị Thu Hà",
-            "content": "[Kế toán B2C - Lê Thị Thu Hà]: Đồng ý phương án tạm ứng 70% Net (34.650.000 VNĐ) trong 03 ngày làm việc và quyết toán 30% (14.850.000 VNĐ) trong 05 ngày sau nghiệm thu. Đã kiểm tra khớp hạn mức Net chiến dịch ClubClio.",
+            "content": "[Kế toán B2C - Lê Thị Thu Hà]: Đồng ý phương án tạm ứng 70% Net (34.650.000 VNĐ) trong 03 ngày làm việc và quyết toán 30% (14.850.000 VNĐ) trong 05 ngày sau nghiệm thu. Đã kiểm tra khớp hạn mức Net theo từng Phụ lục SOW.",
             "createdAt": "2026-10-31T06:10:05.521Z"
           },
           {
@@ -570,7 +569,8 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
       "token:[Tại Ngân hàng]": "Vietcombank - CN TP.HCM",
       "word/document.xml:p152:14": "34.650.000 VNĐ",
       "word/document.xml:p152:27": "03",
-      "word/document.xml:p153:44": "05"
+      "word/document.xml:p153:44": "05",
+      "token:[BRAND]": "UPBASE"
     },
     "versions": [
       {
@@ -626,13 +626,13 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
     "signing": [
       {
         "documentId": "0154f9ec-1b97-41c3-8974-b0ee576563db",
-        "name": "311026/HDNT/UPBASE-CLUBCLIO-BO260889102 · HĐ1 - Hợp đồng mẫu UpBase có chỉnh sửa điều khoản · Võ Hà Linh · ClubClio",
+        "name": "311026/HDNT/UPBASE-HALINHOFFICIAL · HĐ1 - Hợp đồng nguyên tắc (Mẫu UpBase có chỉnh sửa) · Võ Hà Linh (Hà Linh Official)",
         "version": 2,
         "linkedBy": "contract-demo-finance",
         "linkedAt": "2026-10-31T06:13:39.159Z",
         "syncedAt": "2026-10-31T06:13:39.159Z",
         "provider": "CONTRACT_SYSTEM",
-        "contractCode": "311026/HDNT/UPBASE-CLUBCLIO-BO260889102",
+        "contractCode": "311026/HDNT/UPBASE-HALINHOFFICIAL",
         "status": "WAITING",
         "sourceStatus": 1,
         "completedCount": 0,
@@ -754,7 +754,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
         "actorId": "contract-demo-finance",
         "actorName": "Kế toán (kiểm thử)",
         "action": "WESIGN_SUBMITTED",
-        "note": "Đã tạo lượt trình ký WeSign (311026/HDNT/UPBASE-CLUBCLIO-BO260889102).",
+        "note": "Đã tạo lượt trình ký WeSign (311026/HDNT/UPBASE-HALINHOFFICIAL).",
         "version": 2
       },
       {
@@ -776,13 +776,13 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
     ],
     "isKocOwnForm": false,
     "contractSystem": {
-      "contractCode": "311026/HDNT/UPBASE-CLUBCLIO-BO260889102",
+      "contractCode": "311026/HDNT/UPBASE-HALINHOFFICIAL",
       "contractSystemId": "cs-CTR-DEMO-202",
       "documentStage": "HDNT",
       "googleDocsId": "gdoc-CTR-DEMO-v2",
       "googleDocsUrl": "https://docs.google.com/document/d/gdoc-CTR-DEMO-v2/edit",
       "googleDocsSyncedAt": "2026-10-31T06:13:26.151Z",
-      "exportedDocxUrl": "/api/contracts/legal-docs?key=legal-docs%2Fhop-dong-ctr-demo-2026-002%2F2026-10%2Fcc72a0c7-311026-HDNT-UPBASE-CLUBCLIO-BO260889102-v2.docx",
+      "exportedDocxUrl": "/api/contracts/legal-docs?key=legal-docs%2Fhop-dong-ctr-demo-2026-002%2F2026-10%2Fcc72a0c7-311026-HDNT-UPBASE-HALINHOFFICIAL-v2.docx",
       "signedFileStatus": "IDLE",
       "templateSnapshot": {
         "templateId": "IND-HDNT",
@@ -800,11 +800,10 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
   {
     "id": "CTR-DEMO-2026-004",
     "title": "HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official)",
-    "brand": "ClubClio",
+    "brand": "UPBASE",
     "partner": "Võ Hà Linh (Hà Linh Official)",
     "templateId": "IND-HDNT",
     "templateHash": "ff0ed66e3068e80ff4d06fc035de5c7a1327bdb55b4098e66f5353bc5642cd0f",
-    "dealCode": "BO260889102",
     "kocId": "koc-2",
     "ownerId": "contract-demo-owner",
     "ownerName": "Chuyên viên Booking B2C",
@@ -984,7 +983,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
         "modelUsed": "upbase-contract-audit-v1",
         "initialHash": "bc95b8e5e287662dbe8cc4b9bef9fb5ab9298806f31ddb3df45c73cfa8efc148",
         "finalHash": "06ee129bf26050c6ed045fc341fcf316889ecb648267226c3205749b1a408dff",
-        "executiveSummary": "Hồ sơ \"HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official)\" (Võ Hà Linh (Hà Linh Official) · ClubClio) theo luồng Mẫu riêng của KOC. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm bc95b8e5e2…), ghi nhận 5 bình luận và 6 phiên bản chỉnh sửa từ 6 tài khoản, đến Bản chốt cuối (24 đoạn văn, mã băm 06ee129bf2…). Phát hiện 5 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.",
+        "executiveSummary": "Hồ sơ \"HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official)\" (Võ Hà Linh (Hà Linh Official) · Ký khung với UpBase) theo luồng Mẫu riêng của KOC. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm bc95b8e5e2…), ghi nhận 5 bình luận và 6 phiên bản chỉnh sửa từ 6 tài khoản, đến Bản chốt cuối (24 đoạn văn, mã băm 06ee129bf2…). Phát hiện 5 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.",
         "clauseEvolutionSummary": [
           "[So với Bản đẩy lên ban đầu] Điều 1 (PHẠM VI CÔNG VIỆC VÀ QUYỀN ĐỘC LẬP BIÊN TẬP CỦA KOC): Điều chỉnh nội dung — Phân luồng Pháp chế.",
           "[So với Bản đẩy lên ban đầu] Điều 2 (GIÁ TRỊ HỢP ĐỒNG, THUẾ TNCN VÀ ĐẶT CỌC): Điều chỉnh nội dung — Phân luồng Kế toán.",
@@ -1053,8 +1052,9 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           "Ý kiến phê duyệt Pháp chế (Pháp chế (kiểm thử)): Pháp chế Nguyễn Thị Liên đã rà soát toàn văn Form KOC: Đã mở rộng Spark Ads từ 30 lên 45 ngày tại Điều 4.2, độc quyền ngành hàng 07 ngày tại Điều 5.1 và gắn đủ thẻ chữ ký WeSign.",
           "Tóm tắt điều khoản đặc thù của hồ sơ: Mẫu hợp đồng riêng do KOC Võ Hà Linh cung cấp (8 điều khoản): Net 49.500.000đ, Gross 55.000.000đ, đặt cọc 70%, bản quyền thuộc KOC & cấp quyền Spark Ads 45 ngày."
         ],
-        "rawReportText": "BÁO CÁO LƯU VẾT ĐÀM PHÁN & CHỈNH SỬA HỢP ĐỒNG\nHồ sơ: HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official) (CTR-DEMO-2026-004)\nĐối tác: Võ Hà Linh (Hà Linh Official) | Nhãn hàng: ClubClio\nThời điểm xuất báo cáo: 2026-10-31T06:14:54.072Z bởi Người tạo (kiểm thử)\n\n1. TÓM TẮT ĐIỀU HÀNH\nHồ sơ \"HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official)\" (Võ Hà Linh (Hà Linh Official) · ClubClio) theo luồng Mẫu riêng của KOC. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm bc95b8e5e2…), ghi nhận 5 bình luận và 6 phiên bản chỉnh sửa từ 6 tài khoản, đến Bản chốt cuối (24 đoạn văn, mã băm 06ee129bf2…). Phát hiện 5 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.\n\n2. ĐỐI CHIẾU BẢN ĐẦU & BẢN CHỐT CUỐI\n- Bản đẩy lên ban đầu: 2026-10-31T05:00:00.000Z (chientran64 (Đại diện KOC Võ Hà Linh)) · SHA-256: bc95b8e5e287662dbe8cc4b9bef9fb5ab9298806f31ddb3df45c73cfa8efc148\n- Bản chốt cuối: 2026-10-31T06:13:44.699Z (Người tạo (kiểm thử)) · SHA-256: 06ee129bf26050c6ed045fc341fcf316889ecb648267226c3205749b1a408dff\n  • [So với Bản đẩy lên ban đầu] Điều 1 (PHẠM VI CÔNG VIỆC VÀ QUYỀN ĐỘC LẬP BIÊN TẬP CỦA KOC): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 2 (GIÁ TRỊ HỢP ĐỒNG, THUẾ TNCN VÀ ĐẶT CỌC): Điều chỉnh nội dung — Phân luồng Kế toán.\n  • [So với Bản đẩy lên ban đầu] Điều 3 (QUY TRÌNH DUYỆT KỊCH BẢN VÀ VIDEO NHÁP): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 4 (BẢN QUYỀN SỞ HỮU TRÍ TUỆ VÀ CẤP QUYỀN QUẢNG CÁO): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 5 (CAM KẾT ĐỘC QUYỀN NGÀNH HÀNG NGẮN HẠN): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • Hợp đồng theo mẫu riêng của KOC gồm 6 điều khoản (Điều 1, Điều 2, Điều 3, Điều 4, Điều 5, Điều 6). Pháp chế và Kế toán thẩm định toàn văn.\n\n3. ĐÓNG GÓP & BÌNH LUẬN THEO TÀI KHOẢN (6 tài khoản)\n  • chientran64 (chientran64@gmail.com) [Nhân sự B2C / Đại diện KOC]: Thực hiện 3 phiên bản chỉnh sửa văn bản trực tiếp.\n  • testupbae@project-5db34c3f-ec11-4d30-8ad.iam.gserviceaccount.com [Tài khoản hệ thống / Đồng bộ Google Drive]: Thực hiện 3 phiên bản chỉnh sửa văn bản trực tiếp.\n  • Pháp chế - Nguyễn Thị Liên [Pháp chế]: Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"Quyền tác giả và quyền sở hữu đối với Video gốc thuộc về Bên\"] [Pháp chế - Nguyễn Thị Liên]: Mẫu riêng của KOC (Điều 1.3 quyền từ chối tuyên bố phóng đại, Điều 4 bản quyền thuộc KOC & cấp quyền Ads 45 ngày, Điều 5 độc quyền 07 ngày trước/sau). Cần Pháp chế rà soát toàn văn. | Phản hồi: [Pháp chế - Nguyễn Thị Liên]: Tại Điều 4.2 và Điều 5.1: Đề nghị mở rộng thời hạn cấp quyền Spark Ads từ 30 ngày lên 45 ngày và tăng cam kết độc quyền Cushion từ 05 ngày lên 07 ngày trước/sau khi lên sóng. Hai bên đã chốt, tôi sửa trực tiếp lên file.\n  • Kế toán B2C - Lê Thị Thu Hà [Kế toán (TCKT)]: Tạo 2 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"Tổng giá trị dịch vụ thực nhận của Bên B (Chi phí Net): 49.5\"] [Kế toán B2C - Lê Thị Thu Hà]: Điều 2 quy định Net 49.500.000 VNĐ, Gross 55.000.000 VNĐ (Thuế TNCN 10% = 5.500.000 VNĐ), đặt cọc 70% trong 03 ngày và phạt chậm thanh toán 0,05%/ngày. | [Đoạn: \"Bên A thanh toán 80% giá trị Net (39.600.000 VNĐ) trong vòng\"] [Kế toán B2C - Lê Thị Thu Hà]: Tại Điều 2.2 và 2.3 Form KOC: Đề nghị hạ tỷ lệ đặt cọc Đợt 1 từ 80% xuống 70% trong 03 ngày làm việc (theo chuẩn hạn mức tạm ứng UpBase) và giảm lãi phạt chậm thanh toán từ 0,2%/ngày xuống 0,05%/ngày (tối đa 8%). (đã giải quyết)\n  • Chiến Trần [Nhân sự B2C / Đại diện KOC]: Tạo 2 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"3\"] abc | [Đoạn: \"lại\"] abc1231\n  • Đại diện KOC Võ Hà Linh [Nhân sự B2C / Đại diện KOC]: Có 1 phản hồi trao đổi. Nội dung chính: Phản hồi: [Đại diện KOC Võ Hà Linh]: Bên B đồng ý điều chỉnh cọc Đợt 1 xuống 70% (34.650.000 VNĐ) trong 03 ngày làm việc, Đợt 2 là 30% trong 05 ngày và mức phạt chậm thanh toán 0,05%/ngày.\n\n4. LƯU Ý TÀI CHÍNH & PHÁP LÝ KHI THỰC THI\n  • Góp ý từ Pháp chế - Nguyễn Thị Liên tại \"Quyền tác giả và quyền sở hữu đối với Video gốc th\": [Pháp chế - Nguyễn Thị Liên]: Mẫu riêng của KOC (Điều 1.3 quyền từ chối tuyên bố phóng đại, Điều 4 bản quyền thuộc KOC & cấp quyền Ads 45 ngày, Điều 5 độc quyền 07 ngày trước/sau). Cần Pháp chế rà soát toàn văn. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Tổng giá trị dịch vụ thực nhận của Bên B (Chi phí \": [Kế toán B2C - Lê Thị Thu Hà]: Điều 2 quy định Net 49.500.000 VNĐ, Gross 55.000.000 VNĐ (Thuế TNCN 10% = 5.500.000 VNĐ), đặt cọc 70% trong 03 ngày và phạt chậm thanh toán 0,05%/ngày. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Chiến Trần tại \"3\": abc (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Chiến Trần tại \"lại\": abc1231 (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Bên A thanh toán 80% giá trị Net (39.600.000 VNĐ) \": [Kế toán B2C - Lê Thị Thu Hà]: Tại Điều 2.2 và 2.3 Form KOC: Đề nghị hạ tỷ lệ đặt cọc Đợt 1 từ 80% xuống 70% trong 03 ngày làm việc (theo chuẩn hạn mức tạm ứng UpBase) và giảm lãi phạt chậm thanh toán từ 0,2%/ngày xuống 0,05%/ngày (tối đa 8%). (Đã giải quyết)\n  • Ý kiến phê duyệt Pháp chế (Pháp chế (kiểm thử)): Pháp chế Nguyễn Thị Liên đã rà soát toàn văn Form KOC: Đã mở rộng Spark Ads từ 30 lên 45 ngày tại Điều 4.2, độc quyền ngành hàng 07 ngày tại Điều 5.1 và gắn đủ thẻ chữ ký WeSign.\n  • Tóm tắt điều khoản đặc thù của hồ sơ: Mẫu hợp đồng riêng do KOC Võ Hà Linh cung cấp (8 điều khoản): Net 49.500.000đ, Gross 55.000.000đ, đặt cọc 70%, bản quyền thuộc KOC & cấp quyền Spark Ads 45 ngày."
-      }
+        "rawReportText": "BÁO CÁO LƯU VẾT ĐÀM PHÁN & CHỈNH SỬA HỢP ĐỒNG\nHồ sơ: HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official) (CTR-DEMO-2026-004)\nĐối tác: Võ Hà Linh (Hà Linh Official) | Phạm vi: Hợp đồng nguyên tắc KOC (UpBase)\nThời điểm xuất báo cáo: 2026-10-31T06:14:54.072Z bởi Người tạo (kiểm thử)\n\n1. TÓM TẮT ĐIỀU HÀNH\nHồ sơ \"HĐ2 - Hợp đồng theo Form riêng của KOC · Võ Hà Linh (Hà Linh Official)\" (Võ Hà Linh (Hà Linh Official) · Ký khung với UpBase) theo luồng Mẫu riêng của KOC. Hệ thống đã lưu vết Bản ban đầu (24 đoạn văn, mã băm bc95b8e5e2…), ghi nhận 5 bình luận và 6 phiên bản chỉnh sửa từ 6 tài khoản, đến Bản chốt cuối (24 đoạn văn, mã băm 06ee129bf2…). Phát hiện 5 điều khoản biến đổi từ bản ban đầu đến bản chốt cuối.\n\n2. ĐỐI CHIẾU BẢN ĐẦU & BẢN CHỐT CUỐI\n- Bản đẩy lên ban đầu: 2026-10-31T05:00:00.000Z (chientran64 (Đại diện KOC Võ Hà Linh)) · SHA-256: bc95b8e5e287662dbe8cc4b9bef9fb5ab9298806f31ddb3df45c73cfa8efc148\n- Bản chốt cuối: 2026-10-31T06:13:44.699Z (Người tạo (kiểm thử)) · SHA-256: 06ee129bf26050c6ed045fc341fcf316889ecb648267226c3205749b1a408dff\n  • [So với Bản đẩy lên ban đầu] Điều 1 (PHẠM VI CÔNG VIỆC VÀ QUYỀN ĐỘC LẬP BIÊN TẬP CỦA KOC): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 2 (GIÁ TRỊ HỢP ĐỒNG, THUẾ TNCN VÀ ĐẶT CỌC): Điều chỉnh nội dung — Phân luồng Kế toán.\n  • [So với Bản đẩy lên ban đầu] Điều 3 (QUY TRÌNH DUYỆT KỊCH BẢN VÀ VIDEO NHÁP): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 4 (BẢN QUYỀN SỞ HỮU TRÍ TUỆ VÀ CẤP QUYỀN QUẢNG CÁO): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • [So với Bản đẩy lên ban đầu] Điều 5 (CAM KẾT ĐỘC QUYỀN NGÀNH HÀNG NGẮN HẠN): Điều chỉnh nội dung — Phân luồng Pháp chế.\n  • Hợp đồng theo mẫu riêng của KOC gồm 6 điều khoản (Điều 1, Điều 2, Điều 3, Điều 4, Điều 5, Điều 6). Pháp chế và Kế toán thẩm định toàn văn.\n\n3. ĐÓNG GÓP & BÌNH LUẬN THEO TÀI KHOẢN (6 tài khoản)\n  • chientran64 (chientran64@gmail.com) [Nhân sự B2C / Đại diện KOC]: Thực hiện 3 phiên bản chỉnh sửa văn bản trực tiếp.\n  • testupbae@project-5db34c3f-ec11-4d30-8ad.iam.gserviceaccount.com [Tài khoản hệ thống / Đồng bộ Google Drive]: Thực hiện 3 phiên bản chỉnh sửa văn bản trực tiếp.\n  • Pháp chế - Nguyễn Thị Liên [Pháp chế]: Tạo 1 bình luận/đề xuất điều khoản. Có 1 phản hồi trao đổi. Nội dung chính: [Đoạn: \"Quyền tác giả và quyền sở hữu đối với Video gốc thuộc về Bên\"] [Pháp chế - Nguyễn Thị Liên]: Mẫu riêng của KOC (Điều 1.3 quyền từ chối tuyên bố phóng đại, Điều 4 bản quyền thuộc KOC & cấp quyền Ads 45 ngày, Điều 5 độc quyền 07 ngày trước/sau). Cần Pháp chế rà soát toàn văn. | Phản hồi: [Pháp chế - Nguyễn Thị Liên]: Tại Điều 4.2 và Điều 5.1: Đề nghị mở rộng thời hạn cấp quyền Spark Ads từ 30 ngày lên 45 ngày và tăng cam kết độc quyền Cushion từ 05 ngày lên 07 ngày trước/sau khi lên sóng. Hai bên đã chốt, tôi sửa trực tiếp lên file.\n  • Kế toán B2C - Lê Thị Thu Hà [Kế toán (TCKT)]: Tạo 2 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"Tổng giá trị dịch vụ thực nhận của Bên B (Chi phí Net): 49.5\"] [Kế toán B2C - Lê Thị Thu Hà]: Điều 2 quy định Net 49.500.000 VNĐ, Gross 55.000.000 VNĐ (Thuế TNCN 10% = 5.500.000 VNĐ), đặt cọc 70% trong 03 ngày và phạt chậm thanh toán 0,05%/ngày. | [Đoạn: \"Bên A thanh toán 80% giá trị Net (39.600.000 VNĐ) trong vòng\"] [Kế toán B2C - Lê Thị Thu Hà]: Tại Điều 2.2 và 2.3 Form KOC: Đề nghị hạ tỷ lệ đặt cọc Đợt 1 từ 80% xuống 70% trong 03 ngày làm việc (theo chuẩn hạn mức tạm ứng UpBase) và giảm lãi phạt chậm thanh toán từ 0,2%/ngày xuống 0,05%/ngày (tối đa 8%). (đã giải quyết)\n  • Chiến Trần [Nhân sự B2C / Đại diện KOC]: Tạo 2 bình luận/đề xuất điều khoản. Nội dung chính: [Đoạn: \"3\"] abc | [Đoạn: \"lại\"] abc1231\n  • Đại diện KOC Võ Hà Linh [Nhân sự B2C / Đại diện KOC]: Có 1 phản hồi trao đổi. Nội dung chính: Phản hồi: [Đại diện KOC Võ Hà Linh]: Bên B đồng ý điều chỉnh cọc Đợt 1 xuống 70% (34.650.000 VNĐ) trong 03 ngày làm việc, Đợt 2 là 30% trong 05 ngày và mức phạt chậm thanh toán 0,05%/ngày.\n\n4. LƯU Ý TÀI CHÍNH & PHÁP LÝ KHI THỰC THI\n  • Góp ý từ Pháp chế - Nguyễn Thị Liên tại \"Quyền tác giả và quyền sở hữu đối với Video gốc th\": [Pháp chế - Nguyễn Thị Liên]: Mẫu riêng của KOC (Điều 1.3 quyền từ chối tuyên bố phóng đại, Điều 4 bản quyền thuộc KOC & cấp quyền Ads 45 ngày, Điều 5 độc quyền 07 ngày trước/sau). Cần Pháp chế rà soát toàn văn. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Tổng giá trị dịch vụ thực nhận của Bên B (Chi phí \": [Kế toán B2C - Lê Thị Thu Hà]: Điều 2 quy định Net 49.500.000 VNĐ, Gross 55.000.000 VNĐ (Thuế TNCN 10% = 5.500.000 VNĐ), đặt cọc 70% trong 03 ngày và phạt chậm thanh toán 0,05%/ngày. (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Chiến Trần tại \"3\": abc (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Chiến Trần tại \"lại\": abc1231 (Cần lưu ý khi nghiệm thu/thanh toán)\n  • Góp ý từ Kế toán B2C - Lê Thị Thu Hà tại \"Bên A thanh toán 80% giá trị Net (39.600.000 VNĐ) \": [Kế toán B2C - Lê Thị Thu Hà]: Tại Điều 2.2 và 2.3 Form KOC: Đề nghị hạ tỷ lệ đặt cọc Đợt 1 từ 80% xuống 70% trong 03 ngày làm việc (theo chuẩn hạn mức tạm ứng UpBase) và giảm lãi phạt chậm thanh toán từ 0,2%/ngày xuống 0,05%/ngày (tối đa 8%). (Đã giải quyết)\n  • Ý kiến phê duyệt Pháp chế (Pháp chế (kiểm thử)): Pháp chế Nguyễn Thị Liên đã rà soát toàn văn Form KOC: Đã mở rộng Spark Ads từ 30 lên 45 ngày tại Điều 4.2, độc quyền ngành hàng 07 ngày tại Điều 5.1 và gắn đủ thẻ chữ ký WeSign.\n  • Tóm tắt điều khoản đặc thù của hồ sơ: Mẫu hợp đồng riêng do KOC Võ Hà Linh cung cấp (8 điều khoản): Net 49.500.000đ, Gross 55.000.000đ, đặt cọc 70%, bản quyền thuộc KOC & cấp quyền Spark Ads 45 ngày."
+      },
+      "snapshotHash": "06ee129bf26050c6ed045fc341fcf316889ecb648267226c3205749b1a408dff"
     },
     "legalAttachments": [
       {
@@ -1189,7 +1189,8 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
       "token:[Tại Ngân hàng]": "Vietcombank - CN TP.HCM",
       "word/document.xml:p152:14": "34.650.000 VNĐ",
       "word/document.xml:p152:27": "03",
-      "word/document.xml:p153:44": "05"
+      "word/document.xml:p153:44": "05",
+      "token:[BRAND]": "UPBASE"
     },
     "versions": [
       {
@@ -1330,7 +1331,7 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
     ],
     "isKocOwnForm": false,
     "contractSystem": {
-      "contractCode": "311026/HDNT/UPBASE-CLUBCLIO-BO260889102",
+      "contractCode": "311026/HDNT/UPBASE-HALINHOFFICIAL",
       "contractSystemId": "cs-CTR-DEMO-202",
       "documentStage": "HDNT",
       "googleDocsId": "gdoc-CTR-DEMO-v2",
@@ -1462,11 +1463,10 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
   {
     "id": "CTR-DEMO-2026-000",
     "title": "Hợp đồng nguyên tắc KOC · Chanh Beauty · Kutieskin",
-    "brand": "Kutieskin",
+    "brand": "UPBASE",
     "partner": "Đặng Mai Phương (Chanh Beauty)",
     "templateId": "IND-HDNT",
     "templateHash": "046fcd759e30775e8d0500d509440de6ae8ffef93ef5eab27fdc85011e74b48d",
-    "dealCode": "BO260511200",
     "kocId": "koc-1",
     "ownerId": "contract-demo-owner",
     "ownerName": "Chuyên viên Booking B2C",
@@ -1514,7 +1514,8 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
       "src:phone": "0988123456",
       "src:netAmount": "9000000",
       "src:grossAmount": "10000000",
-      "src:pitTax": "1000000"
+      "src:pitTax": "1000000",
+      "token:[BRAND]": "UPBASE"
     },
     "versions": [],
     "signing": [

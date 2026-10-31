@@ -12,7 +12,8 @@ import {
 import { isTwoTimePaymentField, resolvePaymentScheduleOption } from '../../lib/contracts/contractRules';
 
 // Kho thử riêng trên trình duyệt; đồng bộ 100% bộ biểu mẫu chuẩn từ Quản lý hợp đồng
-const KEY = 'b2c-contract-browser-demo-v3';
+const KEY = 'b2c-contract-browser-demo-v4';
+const LEGACY_KEYS = ['b2c-contract-browser-demo-v1', 'b2c-contract-browser-demo-v2', 'b2c-contract-browser-demo-v3'];
 const actors: ContractActor[] = [
   { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: ['Kutieskin', 'Royal Ausnz', 'Bye Bye Blemish', 'ClubClio', 'Cathy Doll', 'Rejuran'], allBrands: true },
   { id: 'demo-legal', name: 'Nguyễn Thị Liên (Pháp chế)', roles: ['LEGAL'], brands: [], allBrands: true },
@@ -104,6 +105,9 @@ let enabled = false;
 export function browserDemoEnabled(): boolean {
   if (enabled) return true;
   try {
+    if (typeof window !== 'undefined') {
+      for (const k of LEGACY_KEYS) localStorage.removeItem(k);
+    }
     const raw = typeof window !== 'undefined' ? localStorage.getItem(KEY) : null;
     if (raw) {
       enabled = true;

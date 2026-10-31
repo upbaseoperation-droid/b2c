@@ -841,8 +841,6 @@ export function ContractForm({
         templateId: fwTemplateId,
         values: fwPrefill.values,
         kocId: koc?.id,
-        dealId: deal?.id,
-        dealCode: deal?.dealCode,
       });
       setParentId(created.record.id);
       const fwDocDate = created.record.values['token:[dd.mm.yy]'] || '';
@@ -1807,13 +1805,13 @@ export function ContractForm({
           : baseValues;
         onSave({
           title: title.trim(),
-          brand: brand.trim() || 'UPBASE',
+          brand: isHdnt ? 'UPBASE' : brand.trim() || 'UPBASE',
           partner: partner.trim(),
           templateId,
           parentId,
           values: nextValues,
-          dealId: deal?.id,
-          dealCode: deal?.dealCode,
+          dealId: isHdnt ? undefined : deal?.id,
+          dealCode: isHdnt ? undefined : deal?.dealCode,
           kocId: koc?.id,
           hasCustomTerms: isKocForm || isAmendedGoogleDoc ? true : hasCustomTerms,
           customTermsSummary: customTermsSummary.trim() || undefined,

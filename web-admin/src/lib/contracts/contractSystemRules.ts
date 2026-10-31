@@ -58,12 +58,14 @@ export function buildStableContractCode(input: {
         : 'HDDV';
 
   const rawRef =
-    input.dealCode ||
-    values['token:[ID KOC]'] ||
-    input.kocId ||
-    input.partner ||
-    input.id?.slice(0, 8) ||
-    'KOC';
+    docType === 'HDNT'
+      ? values['token:[ID KOC]'] || input.kocId || input.partner || input.id?.slice(0, 8) || 'KOC'
+      : input.dealCode ||
+        values['token:[ID KOC]'] ||
+        input.kocId ||
+        input.partner ||
+        input.id?.slice(0, 8) ||
+        'KOC';
 
   const cleanRef = rawRef
     .normalize('NFD')
@@ -73,6 +75,10 @@ export function buildStableContractCode(input: {
     .toUpperCase()
     .slice(0, 24) || 'KOC';
 
+  if (docType === 'HDNT') {
+    return `${cleanDate}/${docType}/UPBASE-${cleanRef}`;
+  }
+
   const cleanBrand = (values['token:[BRAND]'] || input.brand || 'UPBASE')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -80,6 +86,10 @@ export function buildStableContractCode(input: {
     .replace(/[^a-zA-Z0-9]/g, '')
     .toUpperCase()
     .slice(0, 12) || 'UPBASE';
+
+  if (cleanBrand === 'UPBASE') {
+    return `${cleanDate}/${docType}/UPBASE-${cleanRef}`;
+  }
 
   return `${cleanDate}/${docType}/UPBASE-${cleanBrand}-${cleanRef}`;
 }

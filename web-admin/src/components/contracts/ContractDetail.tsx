@@ -570,8 +570,20 @@ export function ContractDetail({
             {status.note && <span className="text-xs text-ink-3">{status.note}</span>}
           </div>
           <p className="text-xs text-ink-2">
-            {[record.partner, record.brand, template?.name, `Phiên bản ${record.version}`].filter(Boolean).join(' · ')}
-            {record.dealCode && <span className="text-ink-3"> · Booking <span className="font-code">{record.dealCode}</span></span>}
+            {[
+              record.partner,
+              isFrameworkWithSow || record.brand === 'UPBASE' ? 'Ký khung với UpBase' : record.brand,
+              template?.name,
+              `Phiên bản ${record.version}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            {!isFrameworkWithSow && record.dealCode && (
+              <span className="text-ink-3">
+                {' '}
+                · Booking <span className="font-code">{record.dealCode}</span>
+              </span>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
