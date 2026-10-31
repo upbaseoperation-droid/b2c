@@ -329,7 +329,12 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   onNotify,
 }) => {
   const [grossMode, setGrossMode] = useState(false);
-  const [hideEmptyRows, setHideEmptyRows] = useState(readOnly);
+  const [hideEmptyRows, setHideEmptyRows] = useState(
+    () =>
+      readOnly ||
+      hasBreakdownData(resolveWeekRows(plan)) ||
+      (plan.staffWeeklySlices || []).some(s => hasBreakdownData(s.weeklyBreakdown))
+  );
   const [activeTab, setActiveTab] = useState<WorkstreamTab>('ALL');
   const [selectedStaffSlice, setSelectedStaffSlice] = useState<string>('ALL_STORE');
   const [pullModalOpen, setPullModalOpen] = useState(false);
@@ -725,13 +730,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     }));
   };
 
-  const subtotalRefs: Record<string, { qtyKey?: string; budgetKey?: string }> = {
-    'Video Cast trả phí': { qtyKey: 'cast', budgetKey: 'affBudget' },
-    'Suất FOC (0đ)': { qtyKey: 'foc' },
-    'Video self channel': { qtyKey: 'selfQty', budgetKey: 'selfBudget' },
-    Livestream: { qtyKey: 'live', budgetKey: 'liveBudget' },
-  };
-
   const getRowRef41Qty = (def: RowDef): number | null => {
     if (!ref41) return null;
     if (def.kind === 'tier' && def.tier && ref41.tiers) {
@@ -779,23 +777,26 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
   const weekHeader = (r: PlanWeekRow, wi: number) => {
     const { code, range } = formatWeekTitle(r.week);
+    const isAlt = wi % 2 === 0;
     return (
       <th
         key={r.week}
         colSpan={2}
-        className="group border-b border-l border-line bg-canvas px-2 py-1 text-center align-middle"
+        className={`group border-b border-l border-line-strong/80 px-2 py-1 text-center align-middle ${
+          isAlt ? 'bg-sunken/70' : 'bg-canvas/70'
+        }`}
       >
         <div className="flex items-center justify-center gap-1">
           <span className="text-xs font-semibold text-ink">{code}</span>
           {range && <span className="text-2xs font-normal text-ink-3">{range}</span>}
           {!effectiveReadOnly && (
-            <span className="ml-1 hidden items-center gap-0.5 group-hover:inline-flex">
+            <span className="ml-1 hidden items-center gap-1 group-hover:inline-flex">
               {wi > 0 && (
                 <button
                   type="button"
                   title="Sao chép tuần trước"
                   onClick={() => copyPrevious(wi)}
-                  className="rounded p-0.5 text-ink-3 hover:bg-accent-soft hover:text-accent cursor-pointer"
+                  className="rounded p-1 text-ink-3 hover:bg-accent-soft hover:text-accent cursor-pointer"
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
@@ -804,7 +805,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 type="button"
                 title="Xóa số tuần này"
                 onClick={() => clearWeek(wi)}
-                className="rounded p-0.5 text-ink-3 hover:bg-critical-soft hover:text-critical cursor-pointer"
+                className="rounded p-1 text-ink-3 hover:bg-critical-soft hover:text-critical cursor-pointer"
               >
                 <Eraser className="h-3.5 w-3.5" />
               </button>
@@ -835,14 +836,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     () => (['KL4', 'KL5', 'KL6', 'KL7'] as PlanTierKey[]).reduce((s, k) => s + (totals.tiers[k]?.qty || 0), 0),
     [totals]
   );
-
-  const visibleSections = useMemo(() => {
-    if (activeTab === 'CAST_KL') return ['Video Cast trả phí'];
-    if (activeTab === 'FOC_SAMPLE') return ['Suất FOC (0đ)'];
-    if (activeTab === 'SELF_CHANNEL') return ['Video self channel'];
-    if (activeTab === 'ALL') return ['Video Cast trả phí', 'Suất FOC (0đ)', 'Video self channel'];
-    return [];
-  }, [activeTab]);
 
   const rolePics = ref41?.rolePics;
 
@@ -1015,8 +1008,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
       detailAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   };
-
-  let flatIndex = -1;
 
   return (
     <div className="space-y-3">
@@ -1560,229 +1551,667 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
             </div>
           </div>
 
-          {visibleSections.length > 0 && (
-            <div className="overflow-x-auto touch-pan-x">
-              <table className="w-full min-w-[1100px] border-collapse text-xs">
-                <thead>
-                  <tr>
-                    <th
-                      rowSpan={2}
-                      className="sticky left-0 z-20 min-w-[105px] max-w-[115px] sm:min-w-[180px] sm:max-w-none border-b border-r border-line bg-canvas px-2 sm:px-3 py-1 text-left font-semibold text-ink"
-                    >
-                      Hạng mục
-                    </th>
-                    <th
-                      rowSpan={2}
-                      className="min-w-[84px] border-b border-r border-line bg-canvas px-2 py-1 text-right font-semibold text-ink-3 text-2xs"
-                    >
-                      Đơn giá TB
-                    </th>
-                    {rows.map((r, wi) => weekHeader(r, wi))}
-                    <th
-                      colSpan={2}
-                      className="border-b border-l border-line bg-accent-soft/60 px-2 py-1 text-center font-semibold text-accent-hover"
-                    >
-                      Tổng 4.1.1
-                    </th>
-                    {hasRef && (
-                      <th
-                        colSpan={2}
-                        className="border-b border-l border-line bg-sunken/80 px-2 py-1 text-center font-semibold text-ink-2"
-                      >
-                        Chỉ tiêu 4.1 / Tỷ trọng
-                      </th>
+          {/* 1. BẢNG VIDEO CAST TRẢ PHÍ (KL1–KL7): MA TRẬN 2 CỘT/TUẦN (SL + NET) CÓ SỌC PHÂN TÁCH TUẦN & THANH TỶ TRỌNG */}
+          {(activeTab === 'ALL' || activeTab === 'CAST_KL') && (() => {
+            const section = 'Video Cast trả phí';
+            const allSectionDefs = ROWS.filter(r => r.section === section);
+            const filteredDefs = allSectionDefs.filter(r => {
+              if (!hideEmptyRows) return true;
+              const t = totalCell(r);
+              return t.qty > 0 || t.budget > 0 || (getRowRef41Qty(r) || 0) > 0;
+            });
+            const defs = filteredDefs.length > 0 ? filteredDefs : allSectionDefs;
+            const hiddenCount = allSectionDefs.length - defs.length;
+            const sub = subtotal(section);
+            const qtyRef = cmp('cast');
+            const budgetRef = cmp('affBudget');
+            const secQty = sub.reduce((s, x) => s + x.qty, 0);
+            const secBudget = sub.reduce((s, x) => s + x.budget, 0);
+
+            return (
+              <div className="overflow-x-auto touch-pan-x">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-sunken/70 px-4 py-1 text-2xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-ink">Video Cast trả phí (KL1–KL7)</span>
+                    <span className="rounded bg-surface px-2 py-0 text-ink-3 border border-line/70">
+                      PIC: {rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—'}
+                    </span>
+                    {hiddenCount > 0 && (
+                      <span className="text-ink-3">· Đã ẩn {hiddenCount} bậc trống</span>
                     )}
-                    {hasRef && (
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 tabular-nums text-ink-2">
+                    <span>
+                      SL: <b className="text-ink">{fmt(secQty)}</b>
+                      {qtyRef ? ` / ${fmt(qtyRef.reference)} video` : ' video'}
+                    </span>
+                    <span>
+                      Net: <b className="text-accent-hover">{fmt(secBudget)}đ</b>
+                      {budgetRef ? ` / ${fmt(budgetRef.reference)}đ` : ''}
+                    </span>
+                    {secQty > 0 && secBudget > 0 && (
+                      <span className="text-ink-3">
+                        Đơn giá TB: <b className="text-ink-2">{fmt(Math.round(secBudget / secQty))}đ</b>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <table className="w-full table-fixed min-w-[1060px] border-collapse text-xs">
+                  <thead>
+                    <tr>
                       <th
                         rowSpan={2}
-                        className="min-w-[90px] border-b border-l border-line bg-canvas px-3 py-1 text-right font-semibold text-ink-2"
+                        className="sticky left-0 z-20 w-[210px] border-b border-r border-line bg-canvas px-3 py-1 text-left font-semibold text-ink"
                       >
-                        Đối soát
+                        Hạng mục &amp; Tỷ trọng SL
                       </th>
-                    )}
-                  </tr>
-                  <tr className="border-b border-line bg-canvas/70 text-2xs font-semibold text-ink-3">
-                    {rows.map(r => (
-                      <React.Fragment key={`sub-${r.week}`}>
-                        <th className="w-[50px] min-w-[50px] border-l border-line px-2 py-1 text-right">
-                          SL
+                      <th
+                        rowSpan={2}
+                        className="w-[100px] border-b border-r border-line bg-canvas px-2 py-1 text-right font-semibold text-ink-3 text-2xs"
+                      >
+                        Đơn giá TB
+                      </th>
+                      {rows.map((r, wi) => weekHeader(r, wi))}
+                      <th
+                        colSpan={2}
+                        className="w-[152px] border-b border-l border-line-strong/80 bg-accent-soft/60 px-2 py-1 text-center font-semibold text-accent-hover"
+                      >
+                        Tổng 4.1.1
+                      </th>
+                      {hasRef && (
+                        <th
+                          colSpan={2}
+                          className="w-[140px] border-b border-l border-line-strong/80 bg-sunken/80 px-2 py-1 text-center font-semibold text-ink-2"
+                        >
+                          Chỉ tiêu 4.1 / %
                         </th>
-                        <th className="w-[92px] min-w-[92px] border-l border-line px-2 py-1 text-right">
-                          {grossMode ? 'Gross' : 'Net'}
+                      )}
+                      {hasRef && (
+                        <th
+                          rowSpan={2}
+                          className="w-[92px] border-b border-l border-line-strong/80 bg-canvas px-2 py-1 text-center font-semibold text-ink-2"
+                        >
+                          Đối soát
                         </th>
-                      </React.Fragment>
-                    ))}
-                    <th className="w-[52px] min-w-[52px] border-l border-line bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
-                      SL
-                    </th>
-                    <th className="w-[100px] min-w-[100px] border-l border-accent-soft bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
-                      Net
-                    </th>
-                    {hasRef && (
-                      <>
-                        <th className="w-[52px] min-w-[52px] border-l border-line bg-sunken/50 px-2 py-1 text-right">
-                          SL
-                        </th>
-                        <th className="w-[100px] min-w-[100px] border-l border-line/60 bg-sunken/50 px-2 py-1 text-right">
-                          Net
-                        </th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleSections.map(section => {
-                    const defs = ROWS.filter(r => {
-                      if (r.section !== section) return false;
-                      if (!hideEmptyRows) return true;
-                      const t = totalCell(r);
-                      return t.qty > 0 || t.budget > 0 || (getRowRef41Qty(r) || 0) > 0;
-                    });
-                    const sub = subtotal(section);
-                    const refKeys = subtotalRefs[section] || {};
-                    const qtyRef = refKeys.qtyKey ? cmp(refKeys.qtyKey) : undefined;
-                    const budgetRef = refKeys.budgetKey ? cmp(refKeys.budgetKey) : undefined;
-                    const secQty = sub.reduce((s, x) => s + x.qty, 0);
-                    const secBudget = sub.reduce((s, x) => s + x.budget, 0);
-                    const totalColSpan = 2 + rows.length * 2 + 2 + (hasRef ? 3 : 0);
+                      )}
+                    </tr>
+                    <tr className="border-b border-line bg-canvas/70 text-2xs font-semibold text-ink-3">
+                      {rows.map((r, wi) => {
+                        const isAlt = wi % 2 === 0;
+                        return (
+                          <React.Fragment key={`sub-${r.week}`}>
+                            <th className={`w-[44px] border-l border-line-strong/80 px-2 py-1 text-right ${isAlt ? 'bg-sunken/50' : 'bg-canvas/60'}`}>
+                              SL
+                            </th>
+                            <th className={`w-[92px] border-l border-line/70 px-2 py-1 text-right ${isAlt ? 'bg-sunken/50' : 'bg-canvas/60'}`}>
+                              {grossMode ? 'Gross' : 'Net'}
+                            </th>
+                          </React.Fragment>
+                        );
+                      })}
+                      <th className="w-[48px] border-l border-line-strong/80 bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
+                        SL
+                      </th>
+                      <th className="w-[104px] border-l border-accent-soft bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
+                        Net
+                      </th>
+                      {hasRef && (
+                        <>
+                          <th className="w-[52px] border-l border-line-strong/80 bg-sunken/50 px-2 py-1 text-right">
+                            SL
+                          </th>
+                          <th className="w-[88px] border-l border-line/60 bg-sunken/50 px-2 py-1 text-right">
+                            Net
+                          </th>
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {defs.map(def => {
+                      const r = ROWS.indexOf(def);
+                      const t = totalCell(def);
+                      const rowRefQty = getRowRef41Qty(def);
+                      const avgUnit =
+                        def.hasQty && def.hasBudget && t.qty > 0 && t.budget > 0
+                          ? Math.round(t.budget / t.qty)
+                          : 0;
+                      const defaultUnit = def.tier ? getTierDefaultUnitCost(plan, def.tier) : 0;
+                      const qtySharePct = secQty > 0 && t.qty > 0 ? Math.round((t.qty / secQty) * 100) : 0;
+                      const budSharePct = secBudget > 0 && t.budget > 0 ? Math.round((t.budget / secBudget) * 100) : 0;
+                      const tierOutRange =
+                        def.kind === 'tier' && def.tier && avgUnit > 0
+                          ? avgUnit < TIER_RANGE[def.tier].min ||
+                            (TIER_RANGE[def.tier].max !== null && avgUnit > TIER_RANGE[def.tier].max!)
+                          : false;
 
-                    return (
-                      <React.Fragment key={section}>
-                        <tr className="bg-sunken/80 border-y border-line">
-                          <td
-                            colSpan={totalColSpan}
-                            className="sticky left-0 px-3 py-1 text-2xs font-semibold text-ink-2"
-                          >
-                            {section}
+                      return (
+                        <tr key={def.id} className="border-b border-line hover:bg-canvas/50">
+                          <td className="sticky left-0 z-10 border-r border-line bg-surface px-3 py-1 font-medium text-ink" title={def.label}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate">{def.label}</span>
+                              {qtySharePct > 0 && (
+                                <span className="inline-flex shrink-0 items-center gap-1 text-2xs tabular-nums text-ink-3">
+                                  <span className="h-1.5 w-8 overflow-hidden rounded-full bg-sunken">
+                                    <span
+                                      className="block h-full rounded-full bg-accent"
+                                      style={{ width: `${Math.min(100, qtySharePct)}%` }}
+                                    />
+                                  </span>
+                                  <span className="w-7 text-right font-medium text-ink-2">{qtySharePct}%</span>
+                                </span>
+                              )}
+                            </div>
                           </td>
+                          <td className="border-r border-line px-2 py-1 text-right tabular-nums text-2xs">
+                            {avgUnit > 0 ? (
+                              <span className="font-medium text-ink-2">{fmt(avgUnit)}đ</span>
+                            ) : defaultUnit > 0 ? (
+                              <span className="text-ink-3/50" title="Đơn giá định mức mặc định">
+                                ĐM {fmt(defaultUnit)}đ
+                              </span>
+                            ) : (
+                              <span className="text-ink-3/40">—</span>
+                            )}
+                          </td>
+                          {rows.map((row, wi) => {
+                            const isAlt = wi % 2 === 0;
+                            return (
+                              <React.Fragment key={row.week}>
+                                <td className={`border-l border-line-strong/80 p-0 align-middle ${isAlt ? 'bg-canvas/35' : 'bg-surface'}`}>
+                                  {renderInput(r, def, wi, 0)}
+                                </td>
+                                <td className={`border-l border-line/70 p-0 align-middle ${isAlt ? 'bg-canvas/35' : 'bg-surface'}`}>
+                                  {renderInput(r, def, wi, 1)}
+                                </td>
+                              </React.Fragment>
+                            );
+                          })}
+                          <td className="border-l border-line-strong/80 bg-accent-soft/20 px-2 py-1 text-right tabular-nums font-semibold text-ink">
+                            {t.qty > 0 ? fmt(t.qty) : <span className="text-ink-3/40 font-normal">—</span>}
+                          </td>
+                          <td className="border-l border-accent-soft/70 bg-accent-soft/20 px-2 py-1 text-right tabular-nums font-semibold text-accent-hover">
+                            {t.budget > 0 ? fmt(t.budget) : <span className="text-ink-3/40 font-normal">—</span>}
+                          </td>
+                          {hasRef && (
+                            <>
+                              <td className="border-l border-line-strong/80 bg-canvas/50 px-2 py-1 text-right tabular-nums text-ink-2">
+                                {rowRefQty !== null ? (
+                                  rowRefQty > 0 ? fmt(rowRefQty) : <span className="text-ink-3/40">—</span>
+                                ) : qtySharePct > 0 ? (
+                                  <span className="text-2xs text-ink-3" title="Tỷ trọng số lượng trong nhóm">{qtySharePct}%</span>
+                                ) : (
+                                  <span className="text-ink-3/40">—</span>
+                                )}
+                              </td>
+                              <td className="border-l border-line/60 bg-canvas/50 px-2 py-1 text-right tabular-nums text-ink-3">
+                                {budSharePct > 0 ? (
+                                  <span className="text-2xs text-ink-3" title="Tỷ trọng ngân sách trong nhóm">{budSharePct}%</span>
+                                ) : (
+                                  <span className="text-ink-3/40">—</span>
+                                )}
+                              </td>
+                              <td className="border-l border-line-strong/80 px-2 py-1 text-center tabular-nums">
+                                {rowRefQty !== null ? (
+                                  renderInlineDiff(t.qty, rowRefQty)
+                                ) : tierOutRange ? (
+                                  <span className="inline-flex rounded bg-warning-soft px-2 py-0 text-2xs font-semibold text-warning">
+                                    Lệch khung
+                                  </span>
+                                ) : t.qty > 0 || t.budget > 0 ? (
+                                  <span className="inline-flex rounded bg-positive-soft px-2 py-0 text-2xs font-medium text-positive">
+                                    Đạt khung
+                                  </span>
+                                ) : (
+                                  <span className="text-ink-3/40">—</span>
+                                )}
+                              </td>
+                            </>
+                          )}
                         </tr>
+                      );
+                    })}
+                    <tr className="border-b border-line bg-canvas/90 font-semibold text-ink">
+                      <td className="sticky left-0 z-10 border-r border-line bg-canvas px-3 py-1">
+                        Cộng video cast trả phí
+                      </td>
+                      <td className="border-r border-line px-2 py-1 text-right tabular-nums text-2xs font-medium text-ink-2">
+                        {secQty > 0 && secBudget > 0 ? `${fmt(Math.round(secBudget / secQty))}đ` : '—'}
+                      </td>
+                      {sub.map((x, wi) => {
+                        const isAlt = wi % 2 === 0;
+                        return (
+                          <React.Fragment key={rows[wi].week}>
+                            <td className={`border-l border-line-strong/80 px-2 py-1 text-right tabular-nums ${isAlt ? 'bg-sunken/50' : 'bg-canvas/80'}`}>
+                              {x.qty > 0 ? fmt(x.qty) : <span className="text-ink-3/40 font-normal">—</span>}
+                            </td>
+                            <td className={`border-l border-line/70 px-2 py-1 text-right tabular-nums ${isAlt ? 'bg-sunken/50' : 'bg-canvas/80'}`}>
+                              {x.budget > 0 ? fmt(x.budget) : <span className="text-ink-3/40 font-normal">—</span>}
+                            </td>
+                          </React.Fragment>
+                        );
+                      })}
+                      <td className="border-l border-line-strong/80 bg-accent-soft/50 px-2 py-1 text-right tabular-nums text-accent-hover">
+                        {fmt(secQty)}
+                      </td>
+                      <td className="border-l border-accent-soft bg-accent-soft/50 px-2 py-1 text-right tabular-nums text-accent-hover">
+                        {fmt(secBudget)}
+                      </td>
+                      {hasRef && (
+                        <>
+                          <td className="border-l border-line-strong/80 bg-sunken/60 px-2 py-1 text-right tabular-nums text-ink-2">
+                            {qtyRef ? fmt(qtyRef.reference) : '—'}
+                          </td>
+                          <td className="border-l border-line/60 bg-sunken/60 px-2 py-1 text-right tabular-nums text-ink-2">
+                            {budgetRef ? fmt(budgetRef.reference) : '—'}
+                          </td>
+                          <td className="border-l border-line-strong/80 px-2 py-1 text-center tabular-nums">
+                            {diffCell('cast')}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+
+          {/* 2 & 3. KHỐI BENTO 2 CỘT: SUẤT FOC (0Đ) & KÊNH BRAND (SELF CHANNEL) — 1 CỘT/TUẦN, TRIỆT TIÊU CỘT NET RỖNG */}
+          {(activeTab === 'ALL' || activeTab === 'FOC_SAMPLE' || activeTab === 'SELF_CHANNEL') && (
+            <div
+              className={`grid grid-cols-1 divide-y divide-line ${
+                activeTab === 'ALL' ? 'xl:grid-cols-2 xl:divide-y-0 xl:divide-x border-t border-line' : ''
+              }`}
+            >
+              {/* CỘT TRÁI: SUẤT FOC (0Đ) */}
+              {(activeTab === 'ALL' || activeTab === 'FOC_SAMPLE') && (() => {
+                const section = 'Suất FOC (0đ)';
+                const allSectionDefs = ROWS.filter(r => r.section === section);
+                const filteredDefs = allSectionDefs.filter(r => {
+                  if (!hideEmptyRows) return true;
+                  const t = totalCell(r);
+                  return t.qty > 0 || (getRowRef41Qty(r) || 0) > 0;
+                });
+                const defs = filteredDefs.length > 0 ? filteredDefs : allSectionDefs;
+                const hiddenCount = allSectionDefs.length - defs.length;
+                const sub = subtotal(section);
+                const qtyRef = cmp('foc');
+                const secQty = sub.reduce((s, x) => s + x.qty, 0);
+                const focPicsText =
+                  rolePics?.focPics?.length
+                    ? rolePics.focPics.join(', ')
+                    : staffSlices.filter(s => (s.roleLabel || '').includes('FOC')).map(s => s.staffName).join(', ') || '—';
+                const gridCols = hasRef
+                  ? `minmax(150px, 1.4fr) repeat(${rows.length}, minmax(52px, 1fr)) 64px 64px 76px`
+                  : `minmax(150px, 1.4fr) repeat(${rows.length}, minmax(52px, 1fr)) 64px`;
+
+                return (
+                  <div className="overflow-x-auto touch-pan-x flex flex-col justify-between">
+                    <div className="min-w-[520px]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-sunken/70 px-3 py-1 text-2xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-ink">Suất FOC (0đ)</span>
+                          <span className="rounded bg-surface px-2 py-0 text-ink-3 border border-line/70">
+                            PIC: {focPicsText}
+                          </span>
+                          {hiddenCount > 0 && (
+                            <span className="text-ink-3">· Ẩn {hiddenCount} dòng trống</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 tabular-nums text-ink-2">
+                          <span>
+                            Tổng: <b className="text-ink">{fmt(secQty)}</b>
+                            {qtyRef ? ` / ${fmt(qtyRef.reference)} mẫu` : ' mẫu'}
+                          </span>
+                          {hasRef && <span>{diffCell('foc')}</span>}
+                        </div>
+                      </div>
+
+                      <div className="text-xs">
+                        <div
+                          className="grid border-b border-line bg-canvas/80 text-2xs font-semibold text-ink-3"
+                          style={{ gridTemplateColumns: gridCols }}
+                        >
+                          <div className="border-r border-line px-3 py-1 text-left text-ink">
+                            Kênh gửi mẫu
+                          </div>
+                          {rows.map((r, wi) => {
+                            const { code } = formatWeekTitle(r.week);
+                            const isAlt = wi % 2 === 0;
+                            return (
+                              <div
+                                key={r.week}
+                                className={`border-l border-line px-2 py-1 text-right text-ink-2 ${isAlt ? 'bg-sunken/50' : 'bg-canvas/60'}`}
+                              >
+                                {code}
+                              </div>
+                            );
+                          })}
+                          <div className="border-l border-line-strong/80 bg-accent-soft/50 px-2 py-1 text-right text-accent-hover">
+                            Tổng
+                          </div>
+                          {hasRef && (
+                            <div className="border-l border-line bg-sunken/70 px-2 py-1 text-right text-ink-2">
+                              Tỷ trọng
+                            </div>
+                          )}
+                          {hasRef && (
+                            <div className="border-l border-line px-2 py-1 text-center text-ink-2">
+                              Đối soát
+                            </div>
+                          )}
+                        </div>
+
                         {defs.map(def => {
-                          flatIndex += 1;
-                          const r = flatIndex;
+                          const r = ROWS.indexOf(def);
                           const t = totalCell(def);
                           const rowRefQty = getRowRef41Qty(def);
-                          const avgUnit =
-                            def.hasQty && def.hasBudget && t.qty > 0 && t.budget > 0
-                              ? Math.round(t.budget / t.qty)
-                              : 0;
                           const qtySharePct = secQty > 0 && t.qty > 0 ? Math.round((t.qty / secQty) * 100) : 0;
-                          const budSharePct = secBudget > 0 && t.budget > 0 ? Math.round((t.budget / secBudget) * 100) : 0;
-                          const tierOutRange =
-                            def.kind === 'tier' && def.tier && avgUnit > 0
-                              ? avgUnit < TIER_RANGE[def.tier].min ||
-                                (TIER_RANGE[def.tier].max !== null && avgUnit > TIER_RANGE[def.tier].max!)
-                              : false;
-
                           return (
-                            <tr key={def.id} className="border-b border-line hover:bg-canvas/40">
-                              <td className="sticky left-0 z-10 max-w-[115px] sm:max-w-none truncate border-r border-line bg-surface px-2 sm:px-3 py-1 font-medium text-ink" title={def.label}>
-                                {def.label}
-                              </td>
-                              <td className="border-r border-line px-2 py-1 text-right tabular-nums text-2xs text-ink-3">
-                                {avgUnit > 0 ? `${fmt(avgUnit)}đ` : '—'}
-                              </td>
-                              {rows.map((row, wi) => (
-                                <React.Fragment key={row.week}>
-                                  <td className="border-l border-line p-0 align-middle">
-                                    {def.hasQty ? (
-                                      renderInput(r, def, wi, 0)
-                                    ) : (
-                                      <span className="block h-7 bg-canvas/40" />
-                                    )}
-                                  </td>
-                                  <td className="border-l border-line p-0 align-middle">
-                                    {def.hasBudget ? (
-                                      renderInput(r, def, wi, 1)
-                                    ) : (
-                                      <span className="block h-7 bg-canvas/40" />
-                                    )}
-                                  </td>
-                                </React.Fragment>
-                              ))}
-                              <td className="border-l border-line bg-accent-soft/20 px-2 py-1 text-right tabular-nums font-semibold text-ink">
-                                {def.hasQty ? (t.qty > 0 ? fmt(t.qty) : <span className="text-ink-3/40 font-normal">—</span>) : ''}
-                              </td>
-                              <td className="border-l border-accent-soft/70 bg-accent-soft/20 px-2 py-1 text-right tabular-nums font-semibold text-accent-hover">
-                                {def.hasBudget ? (t.budget > 0 ? fmt(t.budget) : <span className="text-ink-3/40 font-normal">—</span>) : ''}
-                              </td>
+                            <div
+                              key={def.id}
+                              className="grid border-b border-line hover:bg-canvas/50 items-center"
+                              style={{ gridTemplateColumns: gridCols }}
+                            >
+                              <div className="border-r border-line bg-surface px-3 py-1 font-medium text-ink truncate" title={def.label}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate">{def.label}</span>
+                                  {qtySharePct > 0 && (
+                                    <span className="text-2xs text-ink-3 tabular-nums">{qtySharePct}%</span>
+                                  )}
+                                </div>
+                              </div>
+                              {rows.map((row, wi) => {
+                                const isAlt = wi % 2 === 0;
+                                return (
+                                  <div
+                                    key={row.week}
+                                    className={`border-l border-line p-0 ${isAlt ? 'bg-canvas/35' : 'bg-surface'}`}
+                                  >
+                                    {renderInput(r, def, wi, 0)}
+                                  </div>
+                                );
+                              })}
+                              <div className="flex h-7 items-center justify-end border-l border-line-strong/80 bg-accent-soft/20 px-2 text-right tabular-nums font-semibold text-ink">
+                                {t.qty > 0 ? fmt(t.qty) : <span className="text-ink-3/40 font-normal">—</span>}
+                              </div>
                               {hasRef && (
                                 <>
-                                  <td className="border-l border-line bg-canvas/50 px-2 py-1 text-right tabular-nums text-ink-2">
+                                  <div className="flex h-7 items-center justify-end border-l border-line bg-canvas/50 px-2 text-right tabular-nums text-ink-2">
                                     {rowRefQty !== null ? (
                                       rowRefQty > 0 ? fmt(rowRefQty) : <span className="text-ink-3/40">—</span>
                                     ) : qtySharePct > 0 ? (
-                                      <span className="text-2xs text-ink-3" title="Tỷ trọng số lượng trong nhóm">{qtySharePct}%</span>
+                                      <span className="text-2xs text-ink-3">{qtySharePct}%</span>
                                     ) : (
                                       <span className="text-ink-3/40">—</span>
                                     )}
-                                  </td>
-                                  <td className="border-l border-line bg-canvas/50 px-2 py-1 text-right tabular-nums text-ink-3">
-                                    {budSharePct > 0 ? (
-                                      <span className="text-2xs text-ink-3" title="Tỷ trọng ngân sách trong nhóm">{budSharePct}%</span>
-                                    ) : (
-                                      <span className="text-ink-3/40">—</span>
-                                    )}
-                                  </td>
-                                  <td className="border-l border-line px-3 py-1 text-right tabular-nums">
+                                  </div>
+                                  <div className="flex h-7 items-center justify-center border-l border-line px-2 text-center tabular-nums">
                                     {rowRefQty !== null ? (
                                       renderInlineDiff(t.qty, rowRefQty)
-                                    ) : tierOutRange ? (
-                                      <span className="text-2xs font-medium text-warning">Lệch khung</span>
-                                    ) : t.qty > 0 || t.budget > 0 ? (
-                                      <span className="text-2xs text-positive">Đạt khung</span>
+                                    ) : t.qty > 0 ? (
+                                      <span className="inline-flex rounded bg-positive-soft px-2 py-0 text-2xs font-medium text-positive">
+                                        Đạt khung
+                                      </span>
                                     ) : (
                                       <span className="text-ink-3/40">—</span>
                                     )}
-                                  </td>
+                                  </div>
                                 </>
                               )}
-                            </tr>
+                            </div>
                           );
                         })}
-                        {defs.length > 1 ? (
-                          <tr className="border-b border-line bg-canvas/90 font-semibold text-ink">
-                            <td className="sticky left-0 z-10 border-r border-line bg-canvas px-3 py-1">
-                              Cộng {section.toLowerCase()}
-                            </td>
-                            <td className="border-r border-line px-2 py-1 text-right tabular-nums text-2xs font-normal text-ink-3">
-                              {secQty > 0 && secBudget > 0 ? `${fmt(Math.round(secBudget / secQty))}đ` : '—'}
-                            </td>
-                            {sub.map((x, wi) => (
-                              <React.Fragment key={rows[wi].week}>
-                                <td className="border-l border-line px-2 py-1 text-right tabular-nums">
-                                  {x.qty > 0 ? fmt(x.qty) : <span className="text-ink-3/40 font-normal">—</span>}
-                                </td>
-                                <td className="border-l border-line px-2 py-1 text-right tabular-nums">
-                                  {x.budget > 0 ? fmt(x.budget) : <span className="text-ink-3/40 font-normal">—</span>}
-                                </td>
-                              </React.Fragment>
-                            ))}
-                            <td className="border-l border-line bg-accent-soft/50 px-2 py-1 text-right tabular-nums text-accent-hover">
-                              {fmt(secQty)}
-                            </td>
-                            <td className="border-l border-accent-soft bg-accent-soft/50 px-2 py-1 text-right tabular-nums text-accent-hover">
-                              {section === 'Suất FOC (0đ)' ? '0' : fmt(secBudget)}
-                            </td>
-                            {hasRef && (
-                              <>
-                                <td className="border-l border-line bg-sunken/60 px-2 py-1 text-right tabular-nums text-ink-2">
-                                  {qtyRef ? fmt(qtyRef.reference) : '—'}
-                                </td>
-                                <td className="border-l border-line/60 bg-sunken/60 px-2 py-1 text-right tabular-nums text-ink-2">
-                                  {budgetRef ? fmt(budgetRef.reference) : '—'}
-                                </td>
-                                <td className="border-l border-line px-3 py-1 text-right tabular-nums">
-                                  {diffCell(refKeys.qtyKey || refKeys.budgetKey)}
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        ) : null}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
+
+                        <div
+                          className="grid bg-canvas/90 font-semibold text-ink items-center"
+                          style={{ gridTemplateColumns: gridCols }}
+                        >
+                          <div className="border-r border-line bg-canvas px-3 py-1">
+                            Cộng suất FOC (0đ)
+                          </div>
+                          {sub.map((x, wi) => {
+                            const isAlt = wi % 2 === 0;
+                            return (
+                              <div
+                                key={rows[wi].week}
+                                className={`border-l border-line px-2 py-1 text-right tabular-nums ${isAlt ? 'bg-sunken/50' : 'bg-canvas/80'}`}
+                              >
+                                {x.qty > 0 ? fmt(x.qty) : <span className="text-ink-3/40 font-normal">—</span>}
+                              </div>
+                            );
+                          })}
+                          <div className="border-l border-line-strong/80 bg-accent-soft/50 px-2 py-1 text-right tabular-nums text-accent-hover">
+                            {fmt(secQty)}
+                          </div>
+                          {hasRef && (
+                            <>
+                              <div className="border-l border-line bg-sunken/60 px-2 py-1 text-right tabular-nums text-ink-2">
+                                {qtyRef ? fmt(qtyRef.reference) : '—'}
+                              </div>
+                              <div className="border-l border-line px-2 py-1 text-center tabular-nums">
+                                {diffCell('foc')}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* CỘT PHẢI: KÊNH BRAND (VIDEO SELF CHANNEL) */}
+              {(activeTab === 'ALL' || activeTab === 'SELF_CHANNEL') && (() => {
+                const section = 'Video self channel';
+                const allVideoDefs = ROWS.filter(r => r.section === section && r.kind === 'self');
+                const filteredVideoDefs = allVideoDefs.filter(r => {
+                  if (!hideEmptyRows) return true;
+                  const t = totalCell(r);
+                  return t.qty > 0;
+                });
+                const videoDefs = filteredVideoDefs.length > 0 ? filteredVideoDefs : allVideoDefs;
+                const hiddenCount = allVideoDefs.length - videoDefs.length;
+                const budgetDef = ROWS.find(r => r.id === 'self-budget')!;
+                const budgetRowIndex = ROWS.indexOf(budgetDef);
+                const sub = subtotal(section);
+                const qtyRef = cmp('selfQty');
+                const budgetRef = cmp('selfBudget');
+                const secQty = sub.reduce((s, x) => s + x.qty, 0);
+                const secBudget = sub.reduce((s, x) => s + x.budget, 0);
+                const selfPicsText = rolePics?.contentPics?.length ? rolePics.contentPics.join(', ') : plan.primaryPic || '—';
+                const gridCols = hasRef
+                  ? `minmax(150px, 1.3fr) repeat(${rows.length}, minmax(56px, 1fr)) 78px 78px 76px`
+                  : `minmax(150px, 1.3fr) repeat(${rows.length}, minmax(56px, 1fr)) 78px`;
+
+                return (
+                  <div className="overflow-x-auto touch-pan-x flex flex-col justify-between">
+                    <div className="min-w-[540px]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-sunken/70 px-3 py-1 text-2xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-ink">Kênh Brand (Video self channel)</span>
+                          <span className="rounded bg-surface px-2 py-0 text-ink-3 border border-line/70">
+                            PIC: {selfPicsText}
+                          </span>
+                          {hiddenCount > 0 && (
+                            <span className="text-ink-3">· Ẩn {hiddenCount} dòng trống</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 tabular-nums text-ink-2">
+                          <span>
+                            SL: <b className="text-ink">{fmt(secQty)}</b>
+                            {qtyRef ? ` / ${fmt(qtyRef.reference)} video` : ' video'}
+                          </span>
+                          <span>
+                            Net: <b className="text-accent-hover">{fmt(secBudget)}đ</b>
+                            {budgetRef ? ` / ${fmt(budgetRef.reference)}đ` : ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-xs">
+                        <div
+                          className="grid border-b border-line bg-canvas/80 text-2xs font-semibold text-ink-3"
+                          style={{ gridTemplateColumns: gridCols }}
+                        >
+                          <div className="border-r border-line px-3 py-1 text-left text-ink">
+                            Định dạng video
+                          </div>
+                          {rows.map((r, wi) => {
+                            const { code } = formatWeekTitle(r.week);
+                            const isAlt = wi % 2 === 0;
+                            return (
+                              <div
+                                key={r.week}
+                                className={`border-l border-line px-2 py-1 text-right text-ink-2 ${isAlt ? 'bg-sunken/50' : 'bg-canvas/60'}`}
+                              >
+                                {code}
+                              </div>
+                            );
+                          })}
+                          <div className="border-l border-line-strong/80 bg-accent-soft/50 px-2 py-1 text-right text-accent-hover">
+                            Tổng
+                          </div>
+                          {hasRef && (
+                            <div className="border-l border-line bg-sunken/70 px-2 py-1 text-right text-ink-2">
+                              Chỉ tiêu / %
+                            </div>
+                          )}
+                          {hasRef && (
+                            <div className="border-l border-line px-2 py-1 text-center text-ink-2">
+                              Đối soát
+                            </div>
+                          )}
+                        </div>
+
+                        {videoDefs.map(def => {
+                          const r = ROWS.indexOf(def);
+                          const t = totalCell(def);
+                          const qtySharePct = secQty > 0 && t.qty > 0 ? Math.round((t.qty / secQty) * 100) : 0;
+                          return (
+                            <div
+                              key={def.id}
+                              className="grid border-b border-line hover:bg-canvas/50 items-center"
+                              style={{ gridTemplateColumns: gridCols }}
+                            >
+                              <div className="border-r border-line bg-surface px-3 py-1 font-medium text-ink truncate" title={def.label}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate">{def.label}</span>
+                                  {qtySharePct > 0 && (
+                                    <span className="text-2xs text-ink-3 tabular-nums">{qtySharePct}%</span>
+                                  )}
+                                </div>
+                              </div>
+                              {rows.map((row, wi) => {
+                                const isAlt = wi % 2 === 0;
+                                return (
+                                  <div
+                                    key={row.week}
+                                    className={`border-l border-line p-0 ${isAlt ? 'bg-canvas/35' : 'bg-surface'}`}
+                                  >
+                                    {renderInput(r, def, wi, 0)}
+                                  </div>
+                                );
+                              })}
+                              <div className="flex h-7 items-center justify-end border-l border-line-strong/80 bg-accent-soft/20 px-2 text-right tabular-nums font-semibold text-ink">
+                                {t.qty > 0 ? fmt(t.qty) : <span className="text-ink-3/40 font-normal">—</span>}
+                              </div>
+                              {hasRef && (
+                                <>
+                                  <div className="flex h-7 items-center justify-end border-l border-line bg-canvas/50 px-2 text-right tabular-nums text-ink-2">
+                                    {qtySharePct > 0 ? (
+                                      <span className="text-2xs text-ink-3">{qtySharePct}%</span>
+                                    ) : (
+                                      <span className="text-ink-3/40">—</span>
+                                    )}
+                                  </div>
+                                  <div className="flex h-7 items-center justify-center border-l border-line px-2 text-center tabular-nums">
+                                    {t.qty > 0 ? (
+                                      <span className="inline-flex rounded bg-positive-soft px-2 py-0 text-2xs font-medium text-positive">
+                                        Đạt khung
+                                      </span>
+                                    ) : (
+                                      <span className="text-ink-3/40">—</span>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        <div
+                          className="grid border-b border-line bg-canvas/90 font-semibold text-ink items-center"
+                          style={{ gridTemplateColumns: gridCols }}
+                        >
+                          <div className="border-r border-line bg-canvas px-3 py-1">
+                            Cộng video Kênh Brand
+                          </div>
+                          {sub.map((x, wi) => {
+                            const isAlt = wi % 2 === 0;
+                            return (
+                              <div
+                                key={rows[wi].week}
+                                className={`border-l border-line px-2 py-1 text-right tabular-nums ${isAlt ? 'bg-sunken/50' : 'bg-canvas/80'}`}
+                              >
+                                {x.qty > 0 ? fmt(x.qty) : <span className="text-ink-3/40 font-normal">—</span>}
+                              </div>
+                            );
+                          })}
+                          <div className="border-l border-line-strong/80 bg-accent-soft/50 px-2 py-1 text-right tabular-nums text-accent-hover">
+                            {fmt(secQty)}
+                          </div>
+                          {hasRef && (
+                            <>
+                              <div className="border-l border-line bg-sunken/60 px-2 py-1 text-right tabular-nums text-ink-2">
+                                {qtyRef ? fmt(qtyRef.reference) : '—'}
+                              </div>
+                              <div className="border-l border-line px-2 py-1 text-center tabular-nums">
+                                {diffCell('selfQty')}
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        <div
+                          className="grid bg-accent-soft/15 font-medium text-ink items-center"
+                          style={{ gridTemplateColumns: gridCols }}
+                        >
+                          <div className="border-r border-line bg-canvas px-3 py-1 font-semibold text-ink-2">
+                            Ngân sách ({grossMode ? 'Gross' : 'Net'})
+                          </div>
+                          {rows.map((row, wi) => {
+                            const isAlt = wi % 2 === 0;
+                            return (
+                              <div
+                                key={`self-bud-${row.week}`}
+                                className={`border-l border-line p-0 ${isAlt ? 'bg-canvas/40' : 'bg-surface'}`}
+                              >
+                                {renderInput(budgetRowIndex, budgetDef, wi, 1)}
+                              </div>
+                            );
+                          })}
+                          <div className="flex h-7 items-center justify-end border-l border-line-strong/80 bg-accent-soft/40 px-2 text-right tabular-nums font-semibold text-accent-hover">
+                            {secBudget > 0 ? fmt(secBudget) : '0'}
+                          </div>
+                          {hasRef && (
+                            <>
+                              <div className="flex h-7 items-center justify-end border-l border-line bg-sunken/60 px-2 text-right tabular-nums text-ink-2">
+                                {budgetRef ? fmt(budgetRef.reference) : '—'}
+                              </div>
+                              <div className="flex h-7 items-center justify-center border-l border-line px-2 text-center tabular-nums">
+                                {diffCell('selfBudget')}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
