@@ -727,8 +727,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'group-contracts': true,
     'group-lark-settlement': false,
     'group-ctv-directory': false,
-    'group-master-data': false,
-    'group-rbac': false,
+    'group-master-data': true,
+    'group-rbac': true,
   });
 
   React.useEffect(() => {
