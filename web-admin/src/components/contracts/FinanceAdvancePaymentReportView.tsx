@@ -2,6 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Download,
   ExternalLink,
@@ -23,10 +26,13 @@ import {
   resolveContractLegalAttachments,
   type LegalProfileSigningHistorySummary,
 } from '../../lib/contracts/legalProfileHistory';
+import { numberToVietnameseWords } from '../../lib/contracts/contractRules';
 import { formatVnd } from '../../lib/format';
 import { documentOfTemplate } from '../../lib/planDealLink';
 import {
+  hydrateApprovedBookingListFromServer,
   loadApprovedBookingList,
+  saveApprovedBookingList,
   type ApprovedBookingListItem,
 } from '../../lib/approvedBookingList';
 import {
@@ -43,12 +49,16 @@ import {
 import {
   Button,
   Chips,
+  ConfirmDialog,
   DataTable,
   EmptyState,
+  Field,
   FilterBar,
+  Input,
   Modal,
   Pagination,
   Panel,
+  Person,
   Segmented,
   Select,
   Stat,
@@ -59,6 +69,7 @@ import type { Column, StatusTone } from '../ui';
 
 type ReportSubTab = 'DEAL_LEDGER' | 'LARK_SLIPS' | 'BRAND_SUMMARY';
 type DealModalTab = 'DOSSIER_AND_PAYMENT' | 'LEGAL_ID_DOCS';
+type SlipModalTab = 'SLIP_DOSSIER' | 'SLIP_LEGAL_DOCS';
 
 type DealLedgerFilter =
   | 'ALL'
@@ -66,7 +77,8 @@ type DealLedgerFilter =
   | 'ADVANCE_UNSETTLED'
   | 'READY_SETTLEMENT'
   | 'IN_LARK_APPROVAL'
-  | 'PAID_COMPLETED';
+  | 'PAID_COMPLETED'
+  | 'UNLOCK_REQUESTED';
 
 type SlipFilter =
   | 'ALL'
@@ -91,6 +103,8 @@ export interface FinanceDealLedgerRow {
   lockedAcceptanceMonth: string;
   lockDate: string;
   isDataLocked: boolean;
+  unlockRequestBatch: NonNullable<ApprovedBookingListItem['unlockRequestBatch']>;
+  unlockRequestReason: string;
   kocId?: string;
   kocName: string;
   kocChannelId: string;
@@ -176,7 +190,7 @@ export function FinanceAdvancePaymentReportView({
   contractRecords = [],
   isFinanceActor = true,
   initialSearch = '',
-  initialSubTab = 'DEAL_LEDGER',
+  initialSubTab = 'LARK_SLIPS',
   onOpenContractRecord,
   onQuickViewRecord,
   onNotify,
@@ -215,6 +229,11 @@ export function FinanceAdvancePaymentReportView({
   const [selectedDealRow, setSelectedDealRow] = useState<FinanceDealLedgerRow | null>(null);
   const [dealModalTab, setDealModalTab] = useState<DealModalTab>('DOSSIER_AND_PAYMENT');
   const [selectedSlip, setSelectedSlip] = useState<LarkPaymentRequestSlip | null>(null);
+  const [slipModalTab, setSlipModalTab] = useState<SlipModalTab>('SLIP_DOSSIER');
+  const [selectedSlipDealCode, setSelectedSlipDealCode] = useState<string>('');
+  const [slipUncInput, setSlipUncInput] = useState<string>('');
+  const [slipActionBusy, setSlipActionBusy] = useState<boolean>(false);
+  const [rejectSlipTarget, setRejectSlipTarget] = useState<LarkPaymentRequestSlip | null>(null);
 
   const openDealModal = useCallback(
     (row: FinanceDealLedgerRow, defaultTab: DealModalTab = 'DOSSIER_AND_PAYMENT') => {
@@ -224,11 +243,32 @@ export function FinanceAdvancePaymentReportView({
     [],
   );
 
+  const openSlipModal = useCallback(
+    (
+      slip: LarkPaymentRequestSlip,
+      defaultTab: SlipModalTab = 'SLIP_DOSSIER',
+      preferredDealCode?: string,
+    ) => {
+      setSelectedSlip(slip);
+      setSlipModalTab(defaultTab);
+      setSelectedSlipDealCode(
+        preferredDealCode || slip.lineItems[0]?.dealCode || '',
+      );
+      setSlipUncInput(slip.larkSync.uncBillCode || `UNC-VCB-${slip.slipCode}`);
+    },
+    [],
+  );
+
   const reloadData = useCallback(async () => {
     setLoadingSync(true);
     try {
       const loadedApproved = loadApprovedBookingList(kocs, [], deals);
       setApprovedItems(loadedApproved);
+      void hydrateApprovedBookingListFromServer(kocs, [], deals).then((serverList) => {
+        if (Array.isArray(serverList) && serverList.length > 0) {
+          setApprovedItems(serverList);
+        }
+      });
 
       const localSlips = loadLarkPaymentSlipsFromStorage();
       setSlips(localSlips);
@@ -605,6 +645,8 @@ export function FinanceAdvancePaymentReportView({
           it?.thangNghiemThuChot || it?.thangPlan || '2026/10',
         lockDate: it?.ngayKhoaData || '—',
         isDataLocked: Boolean(it?.chotData),
+        unlockRequestBatch: it?.unlockRequestBatch || 'NONE',
+        unlockRequestReason: it?.unlockRequestReason || '',
         kocId: koc?.id || it?.kocId || d?.kocId,
         kocName: it?.tenKenh || d?.kocStageName || koc?.stageName || it?.idKenh || '—',
         kocChannelId: it?.idKenh || d?.kocChannelId || koc?.channelId || '—',
@@ -717,17 +759,484 @@ export function FinanceAdvancePaymentReportView({
     kocs,
   ]);
 
+  // Index O(1) tra cứu dòng Deal từ mã Deal (RULE-PERF-01 & RULE-SYNC-01)
+  const dealRowByCode = useMemo(() => {
+    const map = new Map<string, FinanceDealLedgerRow>();
+    for (const r of dealLedgerRows) {
+      map.set(r.dealCode.toUpperCase(), r);
+    }
+    return map;
+  }, [dealLedgerRows]);
+
+  // Hợp nhất phiếu thanh toán từ kho lưu trữ + tổng hợp tự động từ các Deal đã gắn mã phiếu (RULE-SYNC-01)
+  const allSlips = useMemo<LarkPaymentRequestSlip[]>(() => {
+    const bySlipCode = new Map<string, LarkPaymentRequestSlip>();
+    for (const s of slips) {
+      bySlipCode.set(s.slipCode.toUpperCase(), s);
+    }
+
+    const synthesizeSlip = (
+      r: FinanceDealLedgerRow,
+      requestType: 'ADVANCE' | 'SETTLEMENT',
+    ): LarkPaymentRequestSlip => {
+      const isAdv = requestType === 'ADVANCE';
+      const slipCode = isAdv ? r.advanceSlipCode : r.settlementSlipCode;
+      const instanceCode = isAdv
+        ? r.advanceLarkInstanceCode !== '—'
+          ? r.advanceLarkInstanceCode
+          : `LARK-TU-${r.dealCode}`
+        : r.settlementLarkInstanceCode !== '—'
+          ? r.settlementLarkInstanceCode
+          : `LARK-DNTT-${r.dealCode}`;
+
+      const subjectKind =
+        r.legalTypeLabel === 'Công ty'
+          ? 'COM'
+          : r.legalTypeLabel === 'Hộ kinh doanh'
+            ? 'HKD'
+            : 'IND';
+
+      const netTransfer = isAdv ? r.advanceAmount : r.remainingNetToPay;
+      const pitAmount = subjectKind === 'IND' ? r.taxAmount : 0;
+      const vatAmount = subjectKind !== 'IND' ? r.taxAmount : 0;
+      const grossForSlip = isAdv
+        ? subjectKind === 'IND' && netTransfer >= 2_000_000
+          ? Math.round(netTransfer / 0.9)
+          : netTransfer
+        : r.grossAmount;
+
+      let approvalStatus: LarkPaymentRequestSlip['larkSync']['approvalStatus'] =
+        'PENDING_FINANCE';
+      if (isAdv) {
+        if (r.advanceStatusLabel === 'Đã chi tạm ứng') approvalStatus = 'PAID';
+        else if (r.advanceStatusLabel === 'Đã duyệt Lark') approvalStatus = 'APPROVED';
+        else if (r.advanceStatusLabel === 'Từ chối') approvalStatus = 'REJECTED';
+        else approvalStatus = 'PENDING_FINANCE';
+      } else {
+        if (r.daDiTien) approvalStatus = 'PAID';
+        else if (r.settlementStatusLabel === 'Cần sửa') approvalStatus = 'REJECTED';
+        else if (r.settlementStatusLabel === 'Đã duyệt') approvalStatus = 'APPROVED';
+        else approvalStatus = 'PENDING_FINANCE';
+      }
+
+      const isContractMandatory =
+        subjectKind !== 'IND' || r.advanceAmount >= 2_000_000 || r.grossAmount >= 10_000_000;
+      const isBbntMandatory =
+        subjectKind !== 'IND' || r.grossAmount >= 20_000_000 || r.droppedDeductionAmount > 0;
+
+      return {
+        id: `SYNTH-${requestType}-${r.dealCode}`,
+        slipCode,
+        requestType,
+        requestTypeLabel: isAdv
+          ? 'Phiếu tạm ứng (Đợt 1)'
+          : 'Đề nghị thanh toán tất toán (Đợt 2 / 100%)',
+        larkPaymentCategory: isAdv
+          ? 'Tạm ứng trước Booking KOC'
+          : 'Thanh toán Booking KOC',
+        transferTitle: r.transferNote,
+        month: r.lockedAcceptanceMonth || r.month,
+        createdAt: r.rawApprovedItem?.updatedAt || new Date().toISOString(),
+        createdBy: r.picName,
+        note: `${isAdv ? 'Tạm ứng đợt 1' : 'Quyết toán'} Deal ${r.dealCode} (${r.kocName} · ${r.brandName})`,
+        payee: {
+          subjectKind,
+          subjectLabel: r.legalTypeLabel,
+          kocId: r.kocId || r.id,
+          kocStageName: r.kocName,
+          kocChannelId: r.kocChannelId,
+          legalEntityName: r.bankHolder || r.kocName,
+          legalId: r.taxCodeOrCccd,
+          hasIdCardScan: r.legalAttachments.length > 0,
+          bankName: r.bankName,
+          bankAccount: r.bankAccount,
+          bankHolder: r.bankHolder,
+          isMcnOrAlternatePayee: false,
+        },
+        approvalRoute: {
+          hasBookingLeader: r.leaderName !== '—' && Boolean(r.leaderName),
+          bookingLeaderName: r.leaderName !== '—' ? r.leaderName : undefined,
+          marketingDirectorName: 'Đặng Thị Yến Nhi',
+          financeApproverName: 'Phòng Tài chính - Kế toán (TCKT)',
+          routeSummary:
+            r.leaderName !== '—' && r.leaderName
+              ? `PIC (${r.picName}) → Leader (${r.leaderName}) → GĐ MKT (Đặng Thị Yến Nhi) → Kế toán (TCKT)`
+              : `PIC (${r.picName}) → GĐ MKT (Đặng Thị Yến Nhi) → Kế toán (TCKT)`,
+        },
+        lineItems: [
+          {
+            dealId: r.id,
+            dealCode: r.dealCode,
+            brandName: r.brandName,
+            storeName: r.storeName,
+            productName: r.productName,
+            salaryGrade: r.rawApprovedItem?.klGrade || 'KL3',
+            bookingPic: r.picName,
+            bookingLeader: r.leaderName !== '—' ? r.leaderName : undefined,
+            approverDirector: 'Đặng Thị Yến Nhi',
+            requestType,
+            larkPaymentCategory: isAdv
+              ? 'Tạm ứng trước Booking KOC'
+              : 'Thanh toán Booking KOC',
+            transferTitle: r.transferNote,
+            masterContractCode: r.masterContractCode,
+            contractAppendixCode: r.sowCode,
+            agreedNetAmount: r.sowNetAmount,
+            droppedDeductionAmount: r.droppedDeductionAmount,
+            effectiveSettledNetAmount: r.effectiveNetAmount,
+            advancePaidAmount: isAdv ? 0 : r.advanceAmount,
+            requestBaseNetAmount: netTransfer,
+            vatRate: vatAmount > 0 && r.effectiveNetAmount > 0 ? 0.08 : 0,
+            vatAmount,
+            pitDeductionRate: pitAmount > 0 ? 0.1 : 0,
+            pitDeductionAmount: pitAmount,
+            grossContractAmount: grossForSlip,
+            netTransferAmount: netTransfer,
+            linkAir: r.linkAir,
+            postedDate: r.actualAirDate || r.plannedAirDate,
+            sparkAdsCode: r.sparkAdsCode,
+            contractUrl: r.sowSignedUrl || r.masterContractSignedUrl || '',
+            bbntUrl: r.bbntSignedUrl || (isBbntMandatory ? '' : 'Tự động nghiệm thu (<20tr & khớp SOW)'),
+            invoiceNumber: r.invoiceNumber !== '—' ? r.invoiceNumber : '',
+            isContractMandatory,
+            contractMandatoryReason: isContractMandatory
+              ? 'Bắt buộc ký HĐNT + Phụ lục SOW theo ngưỡng BR-03'
+              : 'Dưới ngưỡng 10tr Gross & không tạm ứng ≥ 2tr: Miễn ký HĐ theo BR-03',
+            isBbntMandatory,
+            bbntMandatoryReason: isBbntMandatory
+              ? 'Bắt buộc ký BBNT (Gross ≥ 20tr hoặc lệch SOW / HKD / Công ty theo BR-04)'
+              : 'Tự động nghiệm thu (< 20tr & khớp 100% SOW theo BR-04)',
+            isEligible: true,
+            issues: [],
+          },
+        ],
+        totals: {
+          dealsCount: 1,
+          agreedNetTotal: r.sowNetAmount,
+          droppedDeductionTotal: r.droppedDeductionAmount,
+          advancePaidTotal: isAdv ? 0 : r.advanceAmount,
+          requestBaseNetTotal: netTransfer,
+          vatTotal: vatAmount,
+          pitTax10PctTotal: pitAmount,
+          grossTotal: grossForSlip,
+          netTransferTotal: netTransfer,
+          amountInWords: numberToVietnameseWords(netTransfer),
+        },
+        larkSync: {
+          approvalInstanceCode: instanceCode,
+          larkbaseRecordId: `rec_${r.dealCode}`,
+          larkAppToken: 'W6vRbbuOVar3qtsV18dlan1xgXb',
+          larkTableId: 'tbl517FtC9TEWRXA',
+          anycrossWebhookDelivered: true,
+          syncMode: 'SANDBOX_SIMULATED',
+          approvalStatus,
+          syncedAt: r.rawApprovedItem?.updatedAt || new Date().toISOString(),
+          daDiTien: approvalStatus === 'PAID',
+          uncBillCode: isAdv ? undefined : r.uncBillCode || undefined,
+        },
+      };
+    };
+
+    for (const r of dealLedgerRows) {
+      if (
+        r.advanceSlipCode !== '—' &&
+        !bySlipCode.has(r.advanceSlipCode.toUpperCase())
+      ) {
+        bySlipCode.set(
+          r.advanceSlipCode.toUpperCase(),
+          synthesizeSlip(r, 'ADVANCE'),
+        );
+      }
+      if (
+        r.settlementSlipCode !== '—' &&
+        !bySlipCode.has(r.settlementSlipCode.toUpperCase())
+      ) {
+        bySlipCode.set(
+          r.settlementSlipCode.toUpperCase(),
+          synthesizeSlip(r, 'SETTLEMENT'),
+        );
+      }
+    }
+
+    return Array.from(bySlipCode.values()).sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+  }, [slips, dealLedgerRows]);
+
+  const handleSlipDecision = async (
+    targetSlip: LarkPaymentRequestSlip,
+    action: 'ADVANCE_STEP' | 'REJECT_SLIP',
+    extra?: { uncBillCode?: string; rejectedReason?: string },
+  ) => {
+    setSlipActionBusy(true);
+    try {
+      const nowIso = new Date().toISOString();
+      let updatedSlip: LarkPaymentRequestSlip | null = null;
+
+      let serverRejectedRequest = false;
+      try {
+        const res = await fetch('/api/integrations/larkbase/payment-requests', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slipId: targetSlip.id,
+            approvalInstanceCode: targetSlip.larkSync.approvalInstanceCode,
+            action,
+            uncBillCode: extra?.uncBillCode,
+            rejectedReason: extra?.rejectedReason,
+          }),
+        });
+        const json = (await res.json().catch(() => null)) as {
+          slip?: LarkPaymentRequestSlip;
+          message?: string;
+          error?: string;
+        } | null;
+        if (res.ok && json?.slip) {
+          updatedSlip = json.slip;
+        } else if (res.status === 400 || res.status === 401 || res.status === 403) {
+          serverRejectedRequest = true;
+          onNotify?.(
+            json?.message || json?.error || 'Không đủ thẩm quyền hoặc thiếu thông tin duyệt phiếu.',
+            'warning',
+          );
+        }
+      } catch {
+        // Fallback xử lý cục bộ khi chạy độc lập (offline)
+      }
+
+      if (serverRejectedRequest) {
+        return;
+      }
+
+      if (!updatedSlip) {
+        if (action === 'REJECT_SLIP') {
+          updatedSlip = {
+            ...targetSlip,
+            larkSync: {
+              ...targetSlip.larkSync,
+              approvalStatus: 'REJECTED',
+              lastLarkStatus: 'REJECTED',
+              rejectedReason: (
+                extra?.rejectedReason || 'Cần bổ sung chứng từ / kiểm tra lại STK'
+              ).trim(),
+              syncedAt: nowIso,
+            },
+          };
+        } else {
+          const cur = targetSlip.larkSync.approvalStatus;
+          const nextStatus: LarkPaymentRequestSlip['larkSync']['approvalStatus'] =
+            cur === 'PENDING_LEADER'
+              ? 'PENDING_DIRECTOR'
+              : cur === 'PENDING_DIRECTOR'
+                ? 'PENDING_FINANCE'
+                : cur === 'PENDING_FINANCE'
+                  ? 'APPROVED'
+                  : 'PAID';
+          const isMovingToPaid = nextStatus === 'PAID';
+          const resolvedUnc =
+            (extra?.uncBillCode || targetSlip.larkSync.uncBillCode || '').trim() ||
+            (isMovingToPaid ? `UNC-VCB-${targetSlip.slipCode}` : undefined);
+          updatedSlip = {
+            ...targetSlip,
+            larkSync: {
+              ...targetSlip.larkSync,
+              approvalStatus: nextStatus,
+              syncedAt: nowIso,
+              ...(isMovingToPaid
+                ? {
+                    daDiTien: true,
+                    uncBillCode: resolvedUnc,
+                    uncSentToKocAt: nowIso,
+                  }
+                : {}),
+            },
+          };
+        }
+      }
+
+      const finalSlip = updatedSlip;
+      setSlips((prev) => {
+        const exists = prev.some(
+          (x) =>
+            x.id === finalSlip.id ||
+            x.slipCode.toUpperCase() === finalSlip.slipCode.toUpperCase(),
+        );
+        const nextList = exists
+          ? prev.map((x) =>
+              x.id === finalSlip.id ||
+              x.slipCode.toUpperCase() === finalSlip.slipCode.toUpperCase()
+                ? finalSlip
+                : x,
+            )
+          : [finalSlip, ...prev];
+        saveLarkPaymentSlipsToStorage(nextList);
+        return nextList;
+      });
+      setSelectedSlip(finalSlip);
+      setRejectSlipTarget(null);
+      setApprovedItems((prev) => {
+        const lineByCode = new Map<string, LarkPaymentRequestSlip['lineItems'][number]>();
+        for (const li of finalSlip.lineItems || []) {
+          if (li.dealCode) lineByCode.set(li.dealCode.trim().toUpperCase(), li);
+        }
+        const st = finalSlip.larkSync.approvalStatus;
+        const isPaid = Boolean(finalSlip.larkSync.daDiTien || st === 'PAID');
+        const isRejected = st === 'REJECTED';
+        const isApproved = st === 'APPROVED' || isPaid;
+        const nextApproved = prev.map((row) => {
+          const matchedLine = lineByCode.get((row.maBooking || '').trim().toUpperCase());
+          if (!matchedLine) return row;
+          if (finalSlip.requestType === 'ADVANCE') {
+            return {
+              ...row,
+              larkAdvanceSlipCode: finalSlip.slipCode,
+              larkAdvanceInstanceCode: finalSlip.larkSync.approvalInstanceCode,
+              larkAdvanceStatus: (isRejected
+                ? 'TỪ_CHỐI_TẠM_ỨNG'
+                : isPaid
+                  ? 'ĐÃ_CHI_TẠM_ỨNG'
+                  : isApproved
+                    ? 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                    : 'CHỜ_DUYỆT_TẠM_ỨNG') as ApprovedBookingListItem['larkAdvanceStatus'],
+              larkApprovalStatus: st,
+              trangThaiPhieuThanhToan: (isRejected
+                ? 'Từ chối duyệt'
+                : isPaid || isApproved
+                  ? 'Đã tạm ứng'
+                  : 'Đang duyệt Lark') as ApprovedBookingListItem['trangThaiPhieuThanhToan'],
+            };
+          }
+          return {
+            ...row,
+            larkSlipCode: finalSlip.slipCode,
+            larkApprovalInstanceCode: finalSlip.larkSync.approvalInstanceCode,
+            larkApprovalStatus: st,
+            trangThaiPhieuThanhToan: (isRejected
+              ? 'Từ chối duyệt'
+              : isPaid
+                ? 'Đã thanh toán'
+                : isApproved
+                  ? 'Đã duyệt chờ chi'
+                  : 'Đang duyệt Lark') as ApprovedBookingListItem['trangThaiPhieuThanhToan'],
+            daDiTien: isPaid ? true : isRejected ? false : row.daDiTien,
+            uncBillCode: finalSlip.larkSync.uncBillCode || row.uncBillCode,
+            uncSentToKocAt: finalSlip.larkSync.uncSentToKocAt || row.uncSentToKocAt,
+          };
+        });
+        saveApprovedBookingList(nextApproved);
+        return nextApproved;
+      });
+      onNotify?.(
+        action === 'REJECT_SLIP'
+          ? `Đã từ chối phiếu ${finalSlip.slipCode} và trả về bổ sung hồ sơ.`
+          : finalSlip.larkSync.approvalStatus === 'PAID'
+            ? `Đã xác nhận đi tiền và lưu mã UNC (${finalSlip.larkSync.uncBillCode}) cho phiếu ${finalSlip.slipCode}.`
+            : `Đã duyệt phiếu ${finalSlip.slipCode} sang bước tiếp theo.`,
+        action === 'REJECT_SLIP' ? 'warning' : 'success',
+      );
+    } finally {
+      setSlipActionBusy(false);
+    }
+  };
+
+  const handleUpdateDealDataLock = useCallback(
+    (
+      dealCodes: string[],
+      mode: 'LOCK_DATA' | 'APPROVE_S40_UNLOCK' | 'REJECT_S40_UNLOCK',
+    ) => {
+      if (!isFinanceActor) {
+        onNotify?.(
+          'Chỉ Kế toán (FINANCE), Giám đốc hoặc Quản trị viên mới có quyền khóa sổ / duyệt mở khóa S40.',
+          'warning',
+        );
+        return;
+      }
+      const targetCodes = new Set(
+        dealCodes.map((c) => c.trim().toUpperCase()).filter(Boolean),
+      );
+      if (targetCodes.size === 0) return;
+
+      const todayIso = new Date().toISOString().slice(0, 10);
+      setApprovedItems((prev) => {
+        const nextList = prev.map((row) => {
+          const code = (row.maBooking || '').trim().toUpperCase();
+          if (!targetCodes.has(code)) return row;
+          if (mode === 'LOCK_DATA') {
+            return {
+              ...row,
+              chotData: true,
+              ngayKhoaData: todayIso,
+              thangNghiemThuChot:
+                row.thangNghiemThuChot ||
+                row.thangPlan ||
+                (monthFilter !== 'ALL' ? monthFilter : '2026/10'),
+              unlockRequestBatch: 'NONE' as const,
+            };
+          }
+          if (mode === 'APPROVE_S40_UNLOCK') {
+            return {
+              ...row,
+              chotData: true,
+              unlockRequestBatch: 'UNLOCKED' as const,
+            };
+          }
+          return {
+            ...row,
+            chotData: true,
+            unlockRequestBatch: 'NONE' as const,
+          };
+        });
+        saveApprovedBookingList(nextList, true);
+        return nextList;
+      });
+
+      setSelectedDealRow((prev) => {
+        if (!prev || !targetCodes.has(prev.dealCode.trim().toUpperCase())) return prev;
+        if (mode === 'LOCK_DATA') {
+          return {
+            ...prev,
+            isDataLocked: true,
+            lockDate: todayIso,
+            unlockRequestBatch: 'NONE',
+          };
+        }
+        if (mode === 'APPROVE_S40_UNLOCK') {
+          return {
+            ...prev,
+            isDataLocked: true,
+            unlockRequestBatch: 'UNLOCKED',
+          };
+        }
+        return {
+          ...prev,
+          isDataLocked: true,
+          unlockRequestBatch: 'NONE',
+        };
+      });
+
+      onNotify?.(
+        mode === 'LOCK_DATA'
+          ? `Đã khóa sổ nghiệm thu (${targetCodes.size} deal) và đồng bộ về bảng thực thi.`
+          : mode === 'APPROVE_S40_UNLOCK'
+            ? `Đã duyệt mở khóa sửa S40 (${targetCodes.size} deal) cho chuyên viên cập nhật số liệu.`
+            : `Đã từ chối yêu cầu mở khóa S40 và giữ nguyên khóa sổ (${targetCodes.size} deal).`,
+        mode === 'REJECT_S40_UNLOCK' ? 'warning' : 'success',
+      );
+    },
+    [isFinanceActor, monthFilter, onNotify],
+  );
+
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
     dealLedgerRows.forEach((r) => {
       if (r.lockedAcceptanceMonth) set.add(r.lockedAcceptanceMonth);
       if (r.month) set.add(r.month);
     });
-    slips.forEach((s) => {
+    allSlips.forEach((s) => {
       if (s.month) set.add(s.month);
     });
     return Array.from(set).sort().reverse();
-  }, [dealLedgerRows, slips]);
+  }, [dealLedgerRows, allSlips]);
 
   const availableBrands = useMemo(() => {
     const set = new Set<string>();
@@ -775,6 +1284,9 @@ export function FinanceAdvancePaymentReportView({
       (r.settlementSlipCode !== '—' ||
         (r.advanceSlipCode !== '—' && r.advanceStatusLabel === 'Đang duyệt Lark')),
     PAID_COMPLETED: (r) => r.daDiTien,
+    UNLOCK_REQUESTED: (r) =>
+      r.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+      r.unlockRequestBatch === 'DOT_2_LV10_LV11',
   };
 
   const filteredDealRows = useMemo(
@@ -784,7 +1296,7 @@ export function FinanceAdvancePaymentReportView({
 
   const searchedSlips = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return slips.filter((s) => {
+    return allSlips.filter((s) => {
       if (monthFilter !== 'ALL' && s.month !== monthFilter) return false;
       if (
         brandFilter !== 'ALL' &&
@@ -799,7 +1311,7 @@ export function FinanceAdvancePaymentReportView({
         .toLowerCase()
         .includes(q);
     });
-  }, [slips, search, monthFilter, brandFilter]);
+  }, [allSlips, search, monthFilter, brandFilter]);
 
   const slipFilterMatchers: Record<SlipFilter, (s: LarkPaymentRequestSlip) => boolean> = {
     ALL: () => true,
@@ -984,6 +1496,17 @@ export function FinanceAdvancePaymentReportView({
           </div>
           <span className="block truncate text-2xs text-ink-3">
             {r.productName} · Kỳ {r.lockedAcceptanceMonth}
+            {r.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+            r.unlockRequestBatch === 'DOT_2_LV10_LV11' ? (
+              <span className="font-medium text-warning">
+                {' '}
+                · Xin mở S40 ({r.unlockRequestBatch === 'DOT_1_LV4_LV5' ? 'Đợt 1' : 'Đợt 2'})
+              </span>
+            ) : r.unlockRequestBatch === 'UNLOCKED' ? (
+              <span className="font-medium text-accent"> · Đã mở S40</span>
+            ) : r.isDataLocked ? (
+              <span className="text-positive"> · Đã khóa sổ</span>
+            ) : null}
           </span>
         </div>
       ),
@@ -1022,8 +1545,9 @@ export function FinanceAdvancePaymentReportView({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-wrap items-center gap-1 text-xs">
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   if (r.frameworkRecord && onQuickViewRecord) {
                     onQuickViewRecord(r.frameworkRecord);
@@ -1031,15 +1555,26 @@ export function FinanceAdvancePaymentReportView({
                     openDealModal(r, 'DOSSIER_AND_PAYMENT');
                   }
                 }}
-                className={`hover:text-accent hover:underline ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (r.frameworkRecord && onQuickViewRecord) {
+                      onQuickViewRecord(r.frameworkRecord);
+                    } else {
+                      openDealModal(r, 'DOSSIER_AND_PAYMENT');
+                    }
+                  }
+                }}
+                className={`cursor-pointer hover:text-accent hover:underline ${
                   r.masterContractSigned ? 'font-medium text-ink' : 'text-ink-3'
                 }`}
               >
                 HĐNT {r.masterContractSigned ? '✓' : '—'}
-              </button>
+              </span>
               <span className="text-ink-3">·</span>
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   if (r.sowRecords[0] && onQuickViewRecord) {
                     onQuickViewRecord(r.sowRecords[0]);
@@ -1047,16 +1582,27 @@ export function FinanceAdvancePaymentReportView({
                     openDealModal(r, 'DOSSIER_AND_PAYMENT');
                   }
                 }}
-                className={`hover:text-accent hover:underline ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (r.sowRecords[0] && onQuickViewRecord) {
+                      onQuickViewRecord(r.sowRecords[0]);
+                    } else {
+                      openDealModal(r, 'DOSSIER_AND_PAYMENT');
+                    }
+                  }
+                }}
+                className={`cursor-pointer hover:text-accent hover:underline ${
                   r.sowSigned ? 'font-medium text-ink' : 'font-medium text-warning'
                 }`}
               >
                 {sowCount > 1 ? `${sowCount} Phụ lục` : 'Phụ lục SOW'}{' '}
                 {r.sowSigned ? '✓' : '…'}
-              </button>
+              </span>
               <span className="text-ink-3">·</span>
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   if (r.bbntRecords[0] && onQuickViewRecord) {
                     onQuickViewRecord(r.bbntRecords[0]);
@@ -1064,12 +1610,22 @@ export function FinanceAdvancePaymentReportView({
                     openDealModal(r, 'DOSSIER_AND_PAYMENT');
                   }
                 }}
-                className={`hover:text-accent hover:underline ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (r.bbntRecords[0] && onQuickViewRecord) {
+                      onQuickViewRecord(r.bbntRecords[0]);
+                    } else {
+                      openDealModal(r, 'DOSSIER_AND_PAYMENT');
+                    }
+                  }
+                }}
+                className={`cursor-pointer hover:text-accent hover:underline ${
                   r.bbntSigned ? 'font-medium text-ink' : 'text-ink-3'
                 }`}
               >
                 BBNT {r.bbntSigned ? '✓' : '—'}
-              </button>
+              </span>
             </div>
             <span className="block truncate text-2xs text-ink-3 font-code">
               {r.sowCode} · HĐơn: {r.invoiceNumber}
@@ -1120,9 +1676,48 @@ export function FinanceAdvancePaymentReportView({
     {
       key: 'status',
       header: 'Trạng thái',
-      width: 145,
+      width: 135,
       align: 'right',
       render: (r) => <Status tone={r.settlementStatusTone}>{r.settlementStatusLabel}</Status>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      width: 110,
+      align: 'right',
+      render: (r) => {
+        const linkedSlipCode =
+          r.settlementSlipCode !== '—'
+            ? r.settlementSlipCode
+            : r.advanceSlipCode !== '—'
+              ? r.advanceSlipCode
+              : '';
+        return (
+          <div
+            className="inline-flex items-center justify-end"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                if (linkedSlipCode) {
+                  const found = allSlips.find(
+                    (s) => s.slipCode.toUpperCase() === linkedSlipCode.toUpperCase(),
+                  );
+                  if (found) {
+                    openSlipModal(found, 'SLIP_DOSSIER', r.dealCode);
+                    return;
+                  }
+                }
+                openDealModal(r, 'DOSSIER_AND_PAYMENT');
+              }}
+            >
+              Đối chiếu
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -1131,9 +1726,9 @@ export function FinanceAdvancePaymentReportView({
     {
       key: 'slipCode',
       header: 'Mã phiếu & kỳ tháng',
-      width: 210,
+      width: 195,
       render: (s) => (
-        <div className="min-w-0 max-w-[225px] leading-snug space-y-0.5">
+        <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
           <div className="truncate">
             <span className="font-code font-semibold text-ink">{s.slipCode}</span>
             <span className="text-ink-3"> · </span>
@@ -1150,9 +1745,9 @@ export function FinanceAdvancePaymentReportView({
     {
       key: 'payee',
       header: 'KOC & ngân hàng',
-      width: 205,
+      width: 190,
       render: (s) => (
-        <div className="min-w-0 max-w-[220px] leading-snug space-y-0.5">
+        <div className="min-w-0 max-w-[205px] leading-snug space-y-0.5">
           <span className="block truncate font-medium text-ink">
             {s.payee.kocStageName} ({s.payee.kocChannelId})
           </span>
@@ -1163,25 +1758,127 @@ export function FinanceAdvancePaymentReportView({
       ),
     },
     {
-      key: 'deals',
-      header: 'Các deal trong phiếu',
-      width: 210,
-      render: (s) => (
-        <div className="min-w-0 max-w-[225px] leading-snug space-y-0.5">
-          <div className="font-code font-medium text-ink truncate">
-            {s.lineItems.map((l) => l.dealCode).join(', ')}
+      key: 'dealsAndDocs',
+      header: 'Deal & bộ chứng từ (HĐNT · SOW · BBNT)',
+      width: 255,
+      render: (s) => {
+        const firstLine = s.lineItems[0];
+        const matchedRow = firstLine
+          ? dealRowByCode.get(firstLine.dealCode.toUpperCase())
+          : undefined;
+        const isBbntExempt =
+          firstLine &&
+          !firstLine.isBbntMandatory &&
+          (!matchedRow || matchedRow.bbntCode === '—');
+        return (
+          <div
+            className="min-w-0 max-w-[270px] leading-snug space-y-0.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-wrap items-center gap-1 text-xs">
+              <span className="font-code font-semibold text-ink">
+                {s.lineItems.map((l) => l.dealCode).join(', ')}
+              </span>
+              <span className="text-ink-3">·</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (matchedRow?.frameworkRecord && onQuickViewRecord) {
+                    onQuickViewRecord(matchedRow.frameworkRecord);
+                  } else {
+                    openSlipModal(s, 'SLIP_DOSSIER');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (matchedRow?.frameworkRecord && onQuickViewRecord) {
+                      onQuickViewRecord(matchedRow.frameworkRecord);
+                    } else {
+                      openSlipModal(s, 'SLIP_DOSSIER');
+                    }
+                  }
+                }}
+                className={`cursor-pointer hover:text-accent hover:underline ${
+                  matchedRow?.masterContractSigned ? 'font-medium text-ink' : 'text-ink-3'
+                }`}
+              >
+                HĐNT {matchedRow?.masterContractSigned ? '✓' : '—'}
+              </span>
+              <span className="text-ink-3">·</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (matchedRow?.sowRecords[0] && onQuickViewRecord) {
+                    onQuickViewRecord(matchedRow.sowRecords[0]);
+                  } else {
+                    openSlipModal(s, 'SLIP_DOSSIER');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (matchedRow?.sowRecords[0] && onQuickViewRecord) {
+                      onQuickViewRecord(matchedRow.sowRecords[0]);
+                    } else {
+                      openSlipModal(s, 'SLIP_DOSSIER');
+                    }
+                  }
+                }}
+                className={`cursor-pointer hover:text-accent hover:underline ${
+                  matchedRow?.sowSigned ? 'font-medium text-ink' : 'font-medium text-warning'
+                }`}
+              >
+                SOW {matchedRow?.sowSigned ? '✓' : '…'}
+              </span>
+              <span className="text-ink-3">·</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (matchedRow?.bbntRecords[0] && onQuickViewRecord) {
+                    onQuickViewRecord(matchedRow.bbntRecords[0]);
+                  } else {
+                    openSlipModal(s, 'SLIP_DOSSIER');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (matchedRow?.bbntRecords[0] && onQuickViewRecord) {
+                      onQuickViewRecord(matchedRow.bbntRecords[0]);
+                    } else {
+                      openSlipModal(s, 'SLIP_DOSSIER');
+                    }
+                  }
+                }}
+                className={`cursor-pointer hover:text-accent hover:underline ${
+                  matchedRow?.bbntSigned
+                    ? 'font-medium text-ink'
+                    : isBbntExempt
+                      ? 'text-positive'
+                      : 'text-ink-3'
+                }`}
+              >
+                BBNT {matchedRow?.bbntSigned ? '✓' : isBbntExempt ? 'Miễn' : '—'}
+              </span>
+            </div>
+            <div className="text-2xs text-ink-3 truncate">
+              {s.lineItems.map((l) => l.brandName).filter(Boolean).join(', ')} ·{' '}
+              <span className="font-code">
+                {matchedRow?.sowCode || firstLine?.contractAppendixCode || '—'}
+              </span>
+            </div>
           </div>
-          <div className="text-2xs text-ink-3 truncate">
-            {s.lineItems.map((l) => l.brandName).filter(Boolean).join(', ')} ·{' '}
-            {new Date(s.createdAt).toLocaleDateString('vi-VN')}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'amounts',
       header: 'Thực chuyển',
-      width: 195,
+      width: 185,
       align: 'right',
       render: (s) => (
         <div className="leading-snug space-y-0.5 tabular-nums text-right">
@@ -1189,8 +1886,9 @@ export function FinanceAdvancePaymentReportView({
             {formatVnd(s.totals.netTransferTotal)}
           </div>
           <div className="text-2xs text-ink-3">
-            Gross {formatVnd(s.totals.grossTotal)} · Thuế{' '}
-            {formatVnd(s.totals.pitTax10PctTotal + s.totals.vatTotal)}
+            {s.totals.advancePaidTotal > 0
+              ? `Trừ ứng ${formatVnd(s.totals.advancePaidTotal)}`
+              : `Gross ${formatVnd(s.totals.grossTotal)}`}
           </div>
         </div>
       ),
@@ -1198,7 +1896,7 @@ export function FinanceAdvancePaymentReportView({
     {
       key: 'status',
       header: 'Trạng thái',
-      width: 155,
+      width: 135,
       align: 'right',
       render: (s) => {
         const st = s.larkSync.approvalStatus;
@@ -1216,6 +1914,26 @@ export function FinanceAdvancePaymentReportView({
         }
         return <Status tone={tone}>{label}</Status>;
       },
+    },
+    {
+      key: 'actions',
+      header: '',
+      width: 110,
+      align: 'right',
+      render: (s) => (
+        <div
+          className="inline-flex items-center justify-end"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => openSlipModal(s, 'SLIP_DOSSIER')}
+          >
+            Đối chiếu
+          </Button>
+        </div>
+      ),
     },
   ];
 
@@ -1300,6 +2018,18 @@ export function FinanceAdvancePaymentReportView({
     },
   ];
 
+  const unlockRequestedDealRows = useMemo(
+    () => searchedDealRows.filter(dealFilterMatchers.UNLOCK_REQUESTED),
+    [searchedDealRows],
+  );
+  const lockableAcceptedDealRows = useMemo(
+    () =>
+      searchedDealRows.filter(
+        (r) => r.isAcceptedAll && (!r.isDataLocked || r.unlockRequestBatch === 'UNLOCKED'),
+      ),
+    [searchedDealRows],
+  );
+
   const dealChipItems: { key: DealLedgerFilter; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: searchedDealRows.length },
     {
@@ -1326,6 +2056,11 @@ export function FinanceAdvancePaymentReportView({
       key: 'PAID_COMPLETED',
       label: 'Đã đi tiền',
       count: searchedDealRows.filter(dealFilterMatchers.PAID_COMPLETED).length,
+    },
+    {
+      key: 'UNLOCK_REQUESTED',
+      label: 'Xin mở khóa S40',
+      count: unlockRequestedDealRows.length,
     },
   ];
 
@@ -1360,31 +2095,6 @@ export function FinanceAdvancePaymentReportView({
 
   return (
     <div className="space-y-4">
-      <StatRow size="sm">
-        <Stat
-          label="Đã tạm ứng đợt 1"
-          value={formatVnd(stats.totalAdvanceVnd)}
-          note={`${stats.advanceDealsCount} deal có tạm ứng`}
-        />
-        <Stat
-          label="Tạm ứng chờ tất toán"
-          value={formatVnd(stats.unsettledAdvanceVnd)}
-          tone={stats.unsettledAdvanceCount > 0 ? 'warning' : 'positive'}
-          note={`${stats.unsettledAdvanceCount} deal chưa quyết toán`}
-        />
-        <Stat
-          label="Đã tất toán"
-          value={formatVnd(stats.totalSettledPaidVnd)}
-          tone="positive"
-          note={`Tổng thuế khấu trừ: ${formatVnd(stats.totalTaxVnd)}`}
-        />
-        <Stat
-          label="Còn phải chi đợt 2"
-          value={formatVnd(stats.totalRemainingToPayVnd)}
-          note={`Tổng ngân sách Gross: ${formatVnd(stats.totalGrossVnd)}`}
-        />
-      </StatRow>
-
       <Panel flush>
         <div className="p-4 border-b border-line space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1396,12 +2106,12 @@ export function FinanceAdvancePaymentReportView({
               }}
               items={[
                 {
-                  key: 'DEAL_LEDGER',
-                  label: `Theo deal (${searchedDealRows.length})`,
+                  key: 'LARK_SLIPS',
+                  label: `Phiếu thanh toán (${searchedSlips.length})`,
                 },
                 {
-                  key: 'LARK_SLIPS',
-                  label: `Phiếu thanh toán Lark (${searchedSlips.length})`,
+                  key: 'DEAL_LEDGER',
+                  label: `Theo deal (${searchedDealRows.length})`,
                 },
                 {
                   key: 'BRAND_SUMMARY',
@@ -1442,6 +2152,39 @@ export function FinanceAdvancePaymentReportView({
                   </option>
                 ))}
               </Select>
+
+              {isFinanceActor && subTab === 'DEAL_LEDGER' && unlockRequestedDealRows.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={CheckCircle2}
+                  onClick={() =>
+                    handleUpdateDealDataLock(
+                      unlockRequestedDealRows.map((r) => r.dealCode),
+                      'APPROVE_S40_UNLOCK',
+                    )
+                  }
+                >
+                  Duyệt mở S40 ({unlockRequestedDealRows.length})
+                </Button>
+              )}
+
+              {isFinanceActor &&
+                subTab === 'DEAL_LEDGER' &&
+                lockableAcceptedDealRows.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      handleUpdateDealDataLock(
+                        lockableAcceptedDealRows.map((r) => r.dealCode),
+                        'LOCK_DATA',
+                      )
+                    }
+                  >
+                    Khóa sổ nghiệm thu ({lockableAcceptedDealRows.length})
+                  </Button>
+                )}
 
               <Button
                 size="sm"
@@ -1531,7 +2274,7 @@ export function FinanceAdvancePaymentReportView({
               columns={slipColumns}
               rows={pagedSlips}
               rowKey={(s) => s.id}
-              onRowClick={(s) => setSelectedSlip(s)}
+              onRowClick={(s) => openSlipModal(s, 'SLIP_DOSSIER')}
               empty={
                 <EmptyState title="Chưa có phiếu tạm ứng hoặc thanh toán nào khớp bộ lọc" />
               }
@@ -1861,9 +2604,11 @@ export function FinanceAdvancePaymentReportView({
                           {selectedDealRow.productName}
                         </dd>
                       </div>
-                      <div className="flex justify-between gap-2">
+                      <div className="flex justify-between gap-2 items-center">
                         <dt className="text-ink-3">Chuyên viên PIC</dt>
-                        <dd className="text-ink text-right">{selectedDealRow.picName}</dd>
+                        <dd className="text-ink text-right">
+                          <Person name={selectedDealRow.picName} size={20} />
+                        </dd>
                       </div>
                       <div className="flex justify-between gap-2">
                         <dt className="text-ink-3">Ngày lên sóng</dt>
@@ -1881,7 +2626,7 @@ export function FinanceAdvancePaymentReportView({
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
                             >
-                              Mở link video <ExternalLink className="w-3 h-3" />
+                              Mở link video <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           ) : (
                             <span className="text-ink-3">Chưa cập nhật</span>
@@ -1898,13 +2643,123 @@ export function FinanceAdvancePaymentReportView({
                         <dt className="text-ink-3">Kỳ nghiệm thu chốt</dt>
                         <dd className="font-code text-ink text-right">
                           {selectedDealRow.lockedAcceptanceMonth}{' '}
-                          {selectedDealRow.isDataLocked ? '(Đã khóa sổ)' : ''}
+                          {selectedDealRow.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+                          selectedDealRow.unlockRequestBatch === 'DOT_2_LV10_LV11'
+                            ? '(Đang xin mở S40)'
+                            : selectedDealRow.unlockRequestBatch === 'UNLOCKED'
+                              ? '(Đã mở S40 cho sửa)'
+                              : selectedDealRow.isDataLocked
+                                ? `(Đã khóa sổ ${selectedDealRow.lockDate})`
+                                : '(Chưa khóa sổ)'}
                         </dd>
                       </div>
                     </dl>
 
+                    {(selectedDealRow.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+                      selectedDealRow.unlockRequestBatch === 'DOT_2_LV10_LV11' ||
+                      selectedDealRow.unlockRequestReason ||
+                      isFinanceActor) && (
+                      <div className="pt-3 border-t border-line space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-2xs font-semibold text-ink-2">
+                            Kiểm soát khóa sổ tháng (WORKDAY 3) &amp; Mở khóa sửa (S40)
+                          </span>
+                          {isFinanceActor && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {(selectedDealRow.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+                                selectedDealRow.unlockRequestBatch === 'DOT_2_LV10_LV11') && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={CheckCircle2}
+                                    onClick={() =>
+                                      handleUpdateDealDataLock(
+                                        [selectedDealRow.dealCode],
+                                        'APPROVE_S40_UNLOCK',
+                                      )
+                                    }
+                                  >
+                                    Duyệt mở khóa S40
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="danger"
+                                    onClick={() =>
+                                      handleUpdateDealDataLock(
+                                        [selectedDealRow.dealCode],
+                                        'REJECT_S40_UNLOCK',
+                                      )
+                                    }
+                                  >
+                                    Từ chối mở S40
+                                  </Button>
+                                </>
+                              )}
+                              {(!selectedDealRow.isDataLocked ||
+                                selectedDealRow.unlockRequestBatch === 'UNLOCKED') && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() =>
+                                    handleUpdateDealDataLock(
+                                      [selectedDealRow.dealCode],
+                                      'LOCK_DATA',
+                                    )
+                                  }
+                                >
+                                  {selectedDealRow.unlockRequestBatch === 'UNLOCKED'
+                                    ? 'Khóa lại sổ Deal'
+                                    : 'Khóa sổ Deal'}
+                                </Button>
+                              )}
+                              {selectedDealRow.isDataLocked &&
+                                selectedDealRow.unlockRequestBatch === 'NONE' && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleUpdateDealDataLock(
+                                        [selectedDealRow.dealCode],
+                                        'APPROVE_S40_UNLOCK',
+                                      )
+                                    }
+                                  >
+                                    Mở khóa S40 cho sửa
+                                  </Button>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                        {(selectedDealRow.unlockRequestBatch === 'DOT_1_LV4_LV5' ||
+                          selectedDealRow.unlockRequestBatch === 'DOT_2_LV10_LV11' ||
+                          selectedDealRow.unlockRequestReason) && (
+                          <div className="rounded-lg border border-line bg-sunken px-3 py-2 text-2xs text-ink-2 space-y-1">
+                            <div>
+                              <span className="text-ink-3">Đợt xin mở khóa: </span>
+                              <span className="font-medium text-warning">
+                                {selectedDealRow.unlockRequestBatch === 'DOT_1_LV4_LV5'
+                                  ? 'Đợt 1 (Ngày làm việc 4–5)'
+                                  : selectedDealRow.unlockRequestBatch === 'DOT_2_LV10_LV11'
+                                    ? 'Đợt 2 (Ngày làm việc 10–11)'
+                                    : 'Đã mở khóa sửa'}
+                              </span>
+                            </div>
+                            {selectedDealRow.unlockRequestReason && (
+                              <div>
+                                <span className="text-ink-3">Lý do chuyên viên trình: </span>
+                                <span className="text-ink">
+                                  {selectedDealRow.unlockRequestReason}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {selectedDealRow.dealJobs.length > 0 && (
-                      <div className="pt-2.5 border-t border-line space-y-1.5">
+                      <div className="pt-3 border-t border-line space-y-2">
                         <span className="text-2xs font-semibold text-ink-3 block">
                           Hạng mục trong SOW ({selectedDealRow.dealJobs.length})
                         </span>
@@ -1915,7 +2770,7 @@ export function FinanceAdvancePaymentReportView({
                               className="px-3 py-2 flex items-center justify-between gap-2"
                             >
                               <span className="truncate text-ink">
-                                {idx + 1}. {job.jobTitle || job.productName || selectedDealRow.productName}
+                                {job.jobTitle || job.productName || selectedDealRow.productName}
                               </span>
                               <span className="font-code text-ink-2 tabular-nums shrink-0">
                                 {formatVnd((job.videoAssetNetCost || 0) + (job.addonServicesNetCost || 0))}
@@ -1942,31 +2797,24 @@ export function FinanceAdvancePaymentReportView({
                 {/* CỘT PHỤ 340PX: Chung một khung, ngăn bằng đường kẻ mảnh (DESIGN_SYSTEM.md §7 Rule 14) */}
                 <div className="rounded-xl border border-line bg-surface divide-y divide-line">
                   {/* Khối 1: Thụ hưởng */}
-                  <div className="p-4 space-y-2.5">
+                  <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-ink">
                         Thụ hưởng ({selectedDealRow.legalProfileCode})
                       </span>
                       {isFinanceActor && (
-                        <button
-                          type="button"
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={revealSensitive ? EyeOff : Eye}
                           onClick={() => setRevealSensitive((v) => !v)}
-                          className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
                         >
-                          {revealSensitive ? (
-                            <>
-                              <EyeOff className="w-3 h-3" /> Ẩn số
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="w-3 h-3" /> Hiện số
-                            </>
-                          )}
-                        </button>
+                          {revealSensitive ? 'Ẩn số' : 'Hiện số'}
+                        </Button>
                       )}
                     </div>
 
-                    <dl className="space-y-1.5">
+                    <dl className="space-y-2">
                       <div className="flex justify-between gap-2">
                         <dt className="text-ink-3">Loại hình</dt>
                         <dd className="text-ink text-right">{selectedDealRow.legalTypeLabel}</dd>
@@ -1995,16 +2843,18 @@ export function FinanceAdvancePaymentReportView({
                       </div>
                     </dl>
 
-                    <div className="pt-1 flex items-center justify-between gap-2">
-                      <button
-                        type="button"
+                    <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => setDealModalTab('LEGAL_ID_DOCS')}
-                        className="text-2xs font-medium text-accent hover:underline"
                       >
-                        Xem CCCD / ĐKKD ({selectedDealRow.legalAttachments.length} tệp) →
-                      </button>
-                      <button
-                        type="button"
+                        Xem CCCD / ĐKKD ({selectedDealRow.legalAttachments.length})
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={Copy}
                         onClick={async () => {
                           try {
                             await navigator.clipboard.writeText(selectedDealRow.transferNote);
@@ -2013,17 +2863,16 @@ export function FinanceAdvancePaymentReportView({
                             onNotify?.('Không thể sao chép.', 'error');
                           }
                         }}
-                        className="inline-flex items-center gap-1 text-2xs font-medium text-ink-2 hover:text-ink"
                       >
-                        <Copy className="w-3 h-3" /> Sao chép ND CK
-                      </button>
+                        Chép ND CK
+                      </Button>
                     </div>
                   </div>
 
                   {/* Khối 2: Đối soát thanh toán */}
                   <div className="p-4 space-y-2">
                     <span className="font-semibold text-ink block">Đối soát thanh toán</span>
-                    <dl className="space-y-1.5 tabular-nums">
+                    <dl className="space-y-2 tabular-nums">
                       <div className="flex justify-between gap-2">
                         <dt className="text-ink-3">Tổng ngân sách Gross</dt>
                         <dd className="font-code text-ink">
@@ -2048,7 +2897,7 @@ export function FinanceAdvancePaymentReportView({
                           -{formatVnd(selectedDealRow.advanceAmount)}
                         </dd>
                       </div>
-                      <div className="flex justify-between gap-2 pt-1.5 border-t border-line">
+                      <div className="flex justify-between gap-2 pt-2 border-t border-line">
                         <dt className="font-semibold text-ink">Còn phải chi đợt 2</dt>
                         <dd className="font-code font-semibold text-accent">
                           {formatVnd(selectedDealRow.remainingNetToPay)}
@@ -2066,17 +2915,61 @@ export function FinanceAdvancePaymentReportView({
                       </Status>
                     </div>
 
-                    <dl className="space-y-1.5">
-                      <div className="flex justify-between gap-2">
+                    <dl className="space-y-2">
+                      <div className="flex justify-between gap-2 items-center">
                         <dt className="text-ink-3">Phiếu tạm ứng</dt>
                         <dd className="font-code text-ink text-right">
-                          {selectedDealRow.advanceSlipCode} ({selectedDealRow.advanceStatusLabel})
+                          {selectedDealRow.advanceSlipCode !== '—' ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const found = allSlips.find(
+                                  (s) =>
+                                    s.slipCode.toUpperCase() ===
+                                    selectedDealRow.advanceSlipCode.toUpperCase(),
+                                );
+                                if (found) {
+                                  const dealCode = selectedDealRow.dealCode;
+                                  setSelectedDealRow(null);
+                                  openSlipModal(found, 'SLIP_DOSSIER', dealCode);
+                                }
+                              }}
+                            >
+                              {selectedDealRow.advanceSlipCode} ({selectedDealRow.advanceStatusLabel}) →
+                            </Button>
+                          ) : (
+                            <span>
+                              {selectedDealRow.advanceSlipCode} ({selectedDealRow.advanceStatusLabel})
+                            </span>
+                          )}
                         </dd>
                       </div>
-                      <div className="flex justify-between gap-2">
+                      <div className="flex justify-between gap-2 items-center">
                         <dt className="text-ink-3">Phiếu thanh toán</dt>
                         <dd className="font-code text-ink text-right">
-                          {selectedDealRow.settlementSlipCode}
+                          {selectedDealRow.settlementSlipCode !== '—' ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const found = allSlips.find(
+                                  (s) =>
+                                    s.slipCode.toUpperCase() ===
+                                    selectedDealRow.settlementSlipCode.toUpperCase(),
+                                );
+                                if (found) {
+                                  const dealCode = selectedDealRow.dealCode;
+                                  setSelectedDealRow(null);
+                                  openSlipModal(found, 'SLIP_DOSSIER', dealCode);
+                                }
+                              }}
+                            >
+                              {selectedDealRow.settlementSlipCode} →
+                            </Button>
+                          ) : (
+                            <span>{selectedDealRow.settlementSlipCode}</span>
+                          )}
                         </dd>
                       </div>
                       <div className="flex justify-between gap-2">
@@ -2109,120 +3002,988 @@ export function FinanceAdvancePaymentReportView({
         )}
       </Modal>
 
-      {/* Modal 2: Chi tiết Phiếu Tạm ứng / ĐNTT trên Lark */}
+      {/* Modal 2: Đối chiếu Hồ sơ Phiếu Thanh toán / Tạm ứng — Bố cục 2 cột chuẩn §7 Rule 14 */}
       <Modal
         open={Boolean(selectedSlip)}
         onClose={() => setSelectedSlip(null)}
         title={
           selectedSlip
-            ? `Phiếu Lark ${selectedSlip.slipCode} · ${selectedSlip.payee.kocStageName}`
-            : 'Chi tiết phiếu Lark'
+            ? `Đối chiếu phiếu ${selectedSlip.slipCode} · ${selectedSlip.payee.kocStageName} (${selectedSlip.requestType === 'ADVANCE' ? 'Tạm ứng đợt 1' : 'Quyết toán'})`
+            : 'Đối chiếu phiếu thanh toán'
         }
-        size="lg"
+        size="xl"
         footer={
           selectedSlip && (
-            <div className="flex items-center justify-between w-full gap-2">
+            <div className="flex flex-wrap items-center justify-between w-full gap-2">
               <span className="text-2xs text-ink-3">
-                Luồng duyệt: {selectedSlip.approvalRoute.routeSummary}
+                Luồng duyệt: <span className="text-ink-2">{selectedSlip.approvalRoute.routeSummary}</span>
               </span>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => setSelectedSlip(null)}
-              >
-                Đóng
-              </Button>
+              <div className="flex items-center gap-2">
+                {isFinanceActor &&
+                  selectedSlip.larkSync.approvalStatus !== 'PAID' &&
+                  selectedSlip.larkSync.approvalStatus !== 'REJECTED' &&
+                  !selectedSlip.larkSync.daDiTien && (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={slipActionBusy}
+                      onClick={() => setRejectSlipTarget(selectedSlip)}
+                    >
+                      Từ chối phiếu
+                    </Button>
+                  )}
+                {isFinanceActor &&
+                (selectedSlip.larkSync.approvalStatus === 'PENDING_LEADER' ||
+                  selectedSlip.larkSync.approvalStatus === 'PENDING_DIRECTOR' ||
+                  selectedSlip.larkSync.approvalStatus === 'PENDING_FINANCE') ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setSelectedSlip(null)}
+                    >
+                      Đóng
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={CheckCircle2}
+                      disabled={slipActionBusy}
+                      onClick={() => void handleSlipDecision(selectedSlip, 'ADVANCE_STEP')}
+                    >
+                      {slipActionBusy ? 'Đang xử lý...' : 'Duyệt kế toán'}
+                    </Button>
+                  </>
+                ) : isFinanceActor &&
+                  selectedSlip.larkSync.approvalStatus === 'APPROVED' &&
+                  !selectedSlip.larkSync.daDiTien ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setSelectedSlip(null)}
+                    >
+                      Đóng
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={CheckCircle2}
+                      disabled={slipActionBusy}
+                      onClick={() =>
+                        void handleSlipDecision(selectedSlip, 'ADVANCE_STEP', {
+                          uncBillCode: slipUncInput,
+                        })
+                      }
+                    >
+                      {slipActionBusy ? 'Đang lưu...' : 'Xác nhận đi tiền'}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => setSelectedSlip(null)}
+                  >
+                    Đóng
+                  </Button>
+                )}
+              </div>
             </div>
           )
         }
       >
-        {selectedSlip && (
-          <div className="space-y-4 text-xs">
-            <div className="rounded-xl border border-line bg-surface p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-0.5">
-                <span className="text-2xs text-ink-3 block">Loại phiếu &amp; mã Lark</span>
-                <span className="font-semibold text-ink block">
-                  {selectedSlip.larkPaymentCategory || selectedSlip.requestTypeLabel}
-                </span>
-                <span className="font-code text-2xs text-ink-2">
-                  {selectedSlip.larkSync.approvalInstanceCode}
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-2xs text-ink-3 block">Thụ hưởng</span>
-                <span className="font-semibold text-ink block">
-                  {selectedSlip.payee.bankName} ·{' '}
-                  {maskSensitiveNumber(selectedSlip.payee.bankAccount, revealSensitive)}
-                </span>
-                <span className="text-2xs text-ink-2">
-                  Chủ TK: {selectedSlip.payee.bankHolder}
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-2xs text-ink-3 block">Thực chuyển ngân hàng</span>
-                <span className="font-code text-sm font-semibold text-ink tabular-nums block">
-                  {formatVnd(selectedSlip.totals.netTransferTotal)}
-                </span>
-                <span className="text-2xs text-ink-3">
-                  Gross {formatVnd(selectedSlip.totals.grossTotal)}
-                </span>
-              </div>
-            </div>
+        {selectedSlip && (() => {
+          const activeLine =
+            selectedSlip.lineItems.find(
+              (l) => l.dealCode.toUpperCase() === selectedSlipDealCode.toUpperCase(),
+            ) || selectedSlip.lineItems[0];
+          const activeDealRow = activeLine
+            ? dealRowByCode.get(activeLine.dealCode.toUpperCase())
+            : undefined;
+          const slipLegalAttachments = activeDealRow?.legalAttachments || [];
+          const slipSigningHistory = activeDealRow?.signingHistory;
+          const isBbntRequired = Boolean(
+            activeLine?.isBbntMandatory ||
+              (activeDealRow &&
+                (activeDealRow.grossAmount >= 20_000_000 ||
+                  activeDealRow.droppedDeductionAmount > 0 ||
+                  activeDealRow.legalTypeLabel !== 'Cá nhân')),
+          );
+          const isContractRequired = Boolean(
+            activeLine?.isContractMandatory ||
+              (activeDealRow &&
+                (activeDealRow.advanceAmount >= 2_000_000 ||
+                  activeDealRow.grossAmount >= 10_000_000 ||
+                  activeDealRow.legalTypeLabel !== 'Cá nhân')),
+          );
+          const isInvoiceRequired = Boolean(
+            selectedSlip.payee.subjectKind === 'HKD' ||
+              selectedSlip.payee.subjectKind === 'COM' ||
+              (activeDealRow && activeDealRow.legalTypeLabel !== 'Cá nhân'),
+          );
+          const currentInvoiceCode =
+            activeDealRow?.invoiceNumber || activeLine?.invoiceNumber || '—';
+          const currentSlipIdx = filteredSlips.findIndex((s) => s.id === selectedSlip.id);
+          const prevSlip = currentSlipIdx > 0 ? filteredSlips[currentSlipIdx - 1] : null;
+          const nextSlip =
+            currentSlipIdx >= 0 && currentSlipIdx < filteredSlips.length - 1
+              ? filteredSlips[currentSlipIdx + 1]
+              : null;
 
-            <div className="rounded-xl border border-line bg-surface divide-y divide-line">
-              <div className="px-4 py-2.5 font-semibold text-ink">
-                Danh sách deal trong phiếu ({selectedSlip.lineItems.length})
+          const gate1ContractSowOk = Boolean(
+            activeDealRow?.sowSigned &&
+              (!isContractRequired || activeDealRow?.masterContractSigned),
+          );
+          const gate2BbntOk =
+            selectedSlip.requestType === 'ADVANCE'
+              ? true
+              : Boolean(activeDealRow?.bbntSigned || !isBbntRequired);
+          const gate3PayeeInvoiceOk = Boolean(
+            selectedSlip.payee.bankAccount &&
+              selectedSlip.payee.legalId &&
+              (!isInvoiceRequired || currentInvoiceCode !== '—'),
+          );
+
+          return (
+            <div className="space-y-4 text-xs">
+              {slipSigningHistory && (
+                <LegalProfileSigningHistoryBanner summary={slipSigningHistory} />
+              )}
+
+              {/* Thanh 4 cổng kiểm tra tự động (Recognition rather than recall — Nielsen #6) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs text-ink-3">Hợp đồng &amp; SOW</span>
+                    <Status tone={gate1ContractSowOk ? 'positive' : 'warning'}>
+                      {gate1ContractSowOk ? 'Đạt' : 'Cần kiểm tra'}
+                    </Status>
+                  </div>
+                  <span className="font-medium text-ink block truncate">
+                    {activeDealRow?.masterContractSigned
+                      ? 'Đã ký HĐNT'
+                      : isContractRequired
+                        ? 'Chờ ký HĐNT'
+                        : 'Miễn HĐNT (<10tr)'}{' '}
+                    · {activeDealRow?.sowSigned ? 'Đã ký SOW' : 'Chờ ký SOW'}
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs text-ink-3">Nghiệm thu &amp; BBNT</span>
+                    <Status tone={gate2BbntOk ? 'positive' : 'warning'}>
+                      {selectedSlip.requestType === 'ADVANCE'
+                        ? 'Tạm ứng'
+                        : activeDealRow?.bbntSigned
+                          ? 'Đã ký BBNT'
+                          : !isBbntRequired
+                            ? 'Miễn BBNT'
+                            : 'Thiếu BBNT'}
+                    </Status>
+                  </div>
+                  <span className="font-medium text-ink block truncate">
+                    {selectedSlip.requestType === 'ADVANCE'
+                      ? 'Đối soát BBNT ở kỳ quyết toán'
+                      : activeDealRow?.bbntSigned
+                        ? activeDealRow.bbntCode
+                        : !isBbntRequired
+                          ? 'Tự động nghiệm thu (<20tr, khớp SOW)'
+                          : 'Bắt buộc BBNT (≥20tr / lệch SOW)'}
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs text-ink-3">Pháp nhân &amp; hóa đơn</span>
+                    <Status tone={gate3PayeeInvoiceOk ? 'positive' : 'warning'}>
+                      {gate3PayeeInvoiceOk ? 'Đủ thông tin' : 'Thiếu HĐơn/STK'}
+                    </Status>
+                  </div>
+                  <span className="font-medium text-ink block truncate">
+                    {activeDealRow?.legalTypeLabel || selectedSlip.payee.subjectLabel} · HĐơn:{' '}
+                    <span className="font-code">{currentInvoiceCode}</span>
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs text-ink-3">Công nợ &amp; thực chuyển</span>
+                    <Status tone="positive">
+                      {selectedSlip.totals.advancePaidTotal > 0 ? 'Có trừ tạm ứng' : 'Thanh toán 1 lần'}
+                    </Status>
+                  </div>
+                  <span className="font-code font-semibold text-ink block truncate tabular-nums">
+                    {formatVnd(selectedSlip.totals.netTransferTotal)}
+                  </span>
+                </div>
               </div>
-              {selectedSlip.lineItems.map((line) => {
-                const matchedRow = dealLedgerRows.find(
-                  (r) => r.dealCode.toUpperCase() === line.dealCode.toUpperCase(),
-                );
-                return (
-                  <div
-                    key={line.dealId}
-                    className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"
-                  >
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Segmented
+                    value={slipModalTab}
+                    onChange={(v) => setSlipModalTab(v)}
+                    items={[
+                      {
+                        key: 'SLIP_DOSSIER',
+                        label: `Deal, hợp đồng & nghiệm thu (${selectedSlip.lineItems.length})`,
+                      },
+                      {
+                        key: 'SLIP_LEGAL_DOCS',
+                        label: `Giấy tờ CCCD / ĐKKD (${slipLegalAttachments.length})`,
+                      },
+                    ]}
+                  />
+
+                  {selectedSlip.lineItems.length > 1 && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-code font-semibold text-ink">
-                        {line.dealCode}
-                      </span>
-                      <span className="text-ink-2">· {line.brandName}</span>
-                      <span className="font-code text-2xs text-ink-3">
-                        · {line.contractAppendixCode || '—'}
-                      </span>
-                      {matchedRow && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedSlip(null);
-                            openDealModal(matchedRow, 'DOSSIER_AND_PAYMENT');
-                          }}
-                          className="text-2xs font-medium text-accent hover:underline"
-                        >
-                          Xem hồ sơ deal →
-                        </button>
+                      {selectedSlip.lineItems.map((line) => {
+                        const isCurrent =
+                          line.dealCode.toUpperCase() ===
+                          (activeLine?.dealCode || '').toUpperCase();
+                        return (
+                          <Button
+                            key={line.dealId}
+                            size="sm"
+                            variant={isCurrent ? 'secondary' : 'ghost'}
+                            onClick={() => setSelectedSlipDealCode(line.dealCode)}
+                          >
+                            {line.dealCode} · {formatVnd(line.netTransferAmount)}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {filteredSlips.length > 1 && currentSlipIdx >= 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xs text-ink-3 tabular-nums">
+                      Phiếu {currentSlipIdx + 1} / {filteredSlips.length}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={ChevronLeft}
+                      disabled={!prevSlip}
+                      onClick={() => prevSlip && openSlipModal(prevSlip, slipModalTab)}
+                    >
+                      Trước
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={ChevronRight}
+                      disabled={!nextSlip}
+                      onClick={() => nextSlip && openSlipModal(nextSlip, slipModalTab)}
+                    >
+                      Tiếp
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {slipModalTab === 'SLIP_DOSSIER' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-5 items-start">
+                  {/* CỘT CHÍNH: Bộ chứng từ (HĐNT · Phụ lục SOW · BBNT nếu có) + Thông tin Deal & Nghiệm thu */}
+                  <div className="space-y-4 min-w-0">
+                    {/* Khối 1: Đối chiếu bộ chứng từ hợp đồng của Deal trong phiếu */}
+                    <div className="rounded-xl border border-line bg-surface divide-y divide-line">
+                      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">
+                          Bộ chứng từ pháp lý của Deal {activeLine?.dealCode || '—'} (HĐNT · Phụ lục SOW · BBNT)
+                        </span>
+                        <span className="text-2xs text-ink-3">
+                          Hóa đơn:{' '}
+                          <strong className="font-code text-ink">
+                            {currentInvoiceCode}
+                          </strong>
+                        </span>
+                      </div>
+
+                      {/* Hợp đồng nguyên tắc (HĐNT) */}
+                      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium text-ink">Hợp đồng nguyên tắc</span>
+                            <span className="font-code text-ink-2">
+                              {activeDealRow?.masterContractCode || activeLine?.masterContractCode || '—'}
+                            </span>
+                          </div>
+                          <span className="block text-2xs text-ink-3 truncate">
+                            {isContractRequired
+                              ? 'Bắt buộc ký HĐNT theo ngưỡng BR-03 (Tạm ứng ≥ 2tr hoặc Gross ≥ 10tr / HKD / Công ty)'
+                              : 'Dưới ngưỡng 10tr Gross & không tạm ứng ≥ 2tr: Miễn ký HĐ theo BR-03'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`text-2xs font-medium ${
+                              activeDealRow?.masterContractSigned
+                                ? 'text-positive'
+                                : isContractRequired
+                                  ? 'text-warning'
+                                  : 'text-ink-2'
+                            }`}
+                          >
+                            {activeDealRow?.masterContractSigned
+                              ? 'Đã ký 2 bên'
+                              : isContractRequired
+                                ? 'Chờ ký'
+                                : 'Miễn ký HĐ'}
+                          </span>
+                          {activeDealRow?.frameworkRecord && onQuickViewRecord && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              icon={Eye}
+                              onClick={() => onQuickViewRecord(activeDealRow.frameworkRecord!)}
+                            >
+                              Xem văn bản
+                            </Button>
+                          )}
+                          {activeDealRow?.frameworkRecord && onOpenContractRecord && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={FileText}
+                              onClick={() => {
+                                setSelectedSlip(null);
+                                onOpenContractRecord(activeDealRow.frameworkRecord!.id);
+                              }}
+                            >
+                              Chi tiết
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phụ lục hợp đồng (SOW) */}
+                      {activeDealRow && activeDealRow.sowRecords.length > 0 ? (
+                        activeDealRow.sowRecords.map((sowRec, idx) => {
+                          const isSowCompleted = sowRec.signing.some(
+                            (s) => s.status === 'COMPLETED',
+                          );
+                          const code = sowRec.contractSystem?.contractCode || sowRec.title;
+                          return (
+                            <div
+                              key={sowRec.id}
+                              className="px-4 py-3 flex flex-wrap items-center justify-between gap-2"
+                            >
+                              <div className="space-y-0.5 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-medium text-ink">
+                                    Phụ lục SOW {idx > 0 ? `(Bổ sung #${idx + 1})` : ''}
+                                  </span>
+                                  <span className="font-code text-ink-2">{code}</span>
+                                </div>
+                                <span className="block text-2xs text-ink-3 truncate">
+                                  {sowRec.title} · Định mức Net SOW:{' '}
+                                  <strong className="font-code text-ink-2">
+                                    {formatVnd(activeDealRow.sowNetAmount)}
+                                  </strong>
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`text-2xs font-medium ${
+                                    isSowCompleted ? 'text-positive' : 'text-warning'
+                                  }`}
+                                >
+                                  {isSowCompleted ? 'Đã ký 2 bên' : 'Chờ ký'}
+                                </span>
+                                {onQuickViewRecord && (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={Eye}
+                                    onClick={() => onQuickViewRecord(sowRec)}
+                                  >
+                                    Xem văn bản
+                                  </Button>
+                                )}
+                                {onOpenContractRecord && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon={FileText}
+                                    onClick={() => {
+                                      setSelectedSlip(null);
+                                      onOpenContractRecord(sowRec.id);
+                                    }}
+                                  >
+                                    Chi tiết
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-ink">Phụ lục SOW</span>
+                              <span className="font-code text-ink-2">
+                                {activeDealRow?.sowCode || activeLine?.contractAppendixCode || '—'}
+                              </span>
+                            </div>
+                            <span className="block text-2xs text-ink-3">
+                              Định mức Net theo Phụ lục SOW:{' '}
+                              <strong className="font-code text-ink-2">
+                                {formatVnd(
+                                  activeDealRow?.sowNetAmount ||
+                                    activeLine?.agreedNetAmount ||
+                                    0,
+                                )}
+                              </strong>
+                            </span>
+                          </div>
+                          <span
+                            className={`text-2xs font-medium ${
+                              activeDealRow?.sowSigned ? 'text-positive' : 'text-warning'
+                            }`}
+                          >
+                            {activeDealRow?.sowSigned ? 'Đã ký 2 bên' : 'Chờ ký'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Biên bản nghiệm thu (BBNT — nếu có hoặc kiểm tra điều kiện bắt buộc) */}
+                      {activeDealRow && activeDealRow.bbntRecords.length > 0 ? (
+                        activeDealRow.bbntRecords.map((bbntRec) => {
+                          const isBbntCompleted = bbntRec.signing.some(
+                            (s) => s.status === 'COMPLETED',
+                          );
+                          const code = bbntRec.contractSystem?.contractCode || bbntRec.title;
+                          return (
+                            <div
+                              key={bbntRec.id}
+                              className="px-4 py-3 flex flex-wrap items-center justify-between gap-2"
+                            >
+                              <div className="space-y-0.5 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-medium text-ink">
+                                    Biên bản nghiệm thu (BBNT)
+                                  </span>
+                                  <span className="font-code text-ink-2">{code}</span>
+                                </div>
+                                <span className="block text-2xs text-ink-3 truncate">
+                                  {bbntRec.title} ({bbntRec.templateId} · v{bbntRec.version})
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`text-2xs font-medium ${
+                                    isBbntCompleted ? 'text-positive' : 'text-warning'
+                                  }`}
+                                >
+                                  {isBbntCompleted ? 'Đã ký 2 bên' : 'Chờ ký'}
+                                </span>
+                                {onQuickViewRecord && (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={Eye}
+                                    onClick={() => onQuickViewRecord(bbntRec)}
+                                  >
+                                    Xem văn bản
+                                  </Button>
+                                )}
+                                {onOpenContractRecord && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon={FileText}
+                                    onClick={() => {
+                                      setSelectedSlip(null);
+                                      onOpenContractRecord(bbntRec.id);
+                                    }}
+                                  >
+                                    Chi tiết
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-ink">
+                                Biên bản nghiệm thu (BBNT)
+                              </span>
+                              <span className="font-code text-ink-2">
+                                {activeDealRow?.bbntCode && activeDealRow.bbntCode !== '—'
+                                  ? activeDealRow.bbntCode
+                                  : isBbntRequired
+                                    ? 'Chưa gắn mã BBNT'
+                                    : 'Miễn lập BBNT'}
+                              </span>
+                            </div>
+                            <span className="block text-2xs text-ink-3">
+                              {selectedSlip.requestType === 'ADVANCE'
+                                ? 'Phiếu tạm ứng đợt 1 — Chưa đến bước nghiệm thu BBNT'
+                                : isBbntRequired
+                                  ? 'Bắt buộc có BBNT đã ký (Gross ≥ 20tr hoặc nghiệm thu lệch SOW / HKD / Công ty)'
+                                  : 'Tự động nghiệm thu (< 20tr & khớp 100% Phụ lục SOW theo quy tắc BR-04)'}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-2xs font-medium ${
+                              activeDealRow?.bbntSigned
+                                ? 'text-positive'
+                                : selectedSlip.requestType === 'ADVANCE'
+                                  ? 'text-ink-3'
+                                  : !isBbntRequired
+                                    ? 'text-positive'
+                                    : 'text-warning'
+                            }`}
+                          >
+                            {activeDealRow?.bbntSigned
+                              ? 'Đã ký 2 bên'
+                              : selectedSlip.requestType === 'ADVANCE'
+                                ? 'Đối soát khi tất toán'
+                                : !isBbntRequired
+                                  ? 'Tự động nghiệm thu'
+                                  : 'Cần bổ sung BBNT'}
+                          </span>
+                        </div>
                       )}
                     </div>
-                    <div className="font-code tabular-nums text-right">
-                      <span className="text-ink-3 mr-3">
-                        Gross {formatVnd(line.grossContractAmount)}
-                      </span>
-                      {line.advancePaidAmount > 0 && (
-                        <span className="text-ink-2 mr-3">
-                          Trừ ứng -{formatVnd(line.advancePaidAmount)}
+
+                    {/* Khối 2: Chi tiết Deal, Hạng mục SOW (Jobs & Assets) & Bằng chứng Nghiệm thu */}
+                    <div className="rounded-xl border border-line bg-surface p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">
+                          Thông tin Deal {activeLine?.dealCode} &amp; bằng chứng nghiệm thu
                         </span>
+                        {activeDealRow && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedSlip(null);
+                              openDealModal(activeDealRow, 'DOSSIER_AND_PAYMENT');
+                            }}
+                          >
+                            Mở sổ chi tiết deal →
+                          </Button>
+                        )}
+                      </div>
+
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Nhãn hàng · Gian hàng</dt>
+                          <dd className="font-medium text-ink text-right truncate">
+                            {activeDealRow?.brandName || activeLine?.brandName || '—'} ·{' '}
+                            {activeDealRow?.storeName || activeLine?.storeName || '—'}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Sản phẩm</dt>
+                          <dd className="font-medium text-ink text-right truncate">
+                            {activeDealRow?.productName || activeLine?.productName || '—'}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2 items-center">
+                          <dt className="text-ink-3">Chuyên viên PIC</dt>
+                          <dd className="text-ink text-right">
+                            <Person
+                              name={
+                                activeDealRow?.picName ||
+                                activeLine?.bookingPic ||
+                                selectedSlip.createdBy
+                              }
+                              size={20}
+                            />
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Kỳ nghiệm thu chốt</dt>
+                          <dd className="font-code text-ink text-right">
+                            {activeDealRow?.lockedAcceptanceMonth || selectedSlip.month}{' '}
+                            {activeDealRow?.isDataLocked ? '(Đã khóa sổ)' : ''}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Ngày lên sóng (Air)</dt>
+                          <dd className="font-code text-ink text-right">
+                            {activeDealRow?.actualAirDate ||
+                              activeLine?.postedDate ||
+                              activeDealRow?.plannedAirDate ||
+                              '—'}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Link video nghiệm thu</dt>
+                          <dd className="text-right">
+                            {activeDealRow?.linkAir || activeLine?.linkAir ? (
+                              <a
+                                href={activeDealRow?.linkAir || activeLine?.linkAir}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
+                              >
+                                Kiểm tra link air <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ) : (
+                              <span className="text-ink-3">Chưa cập nhật</span>
+                            )}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Mã Spark Ads</dt>
+                          <dd className="font-code text-ink text-right">
+                            {activeDealRow?.sparkAdsCode || activeLine?.sparkAdsCode || '—'}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Trạng thái nghiệm thu</dt>
+                          <dd className="font-medium text-ink text-right">
+                            {activeDealRow?.acceptanceStageLabel || 'Đã nghiệm thu'}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      {activeDealRow && activeDealRow.dealJobs.length > 0 && (
+                        <div className="pt-3 border-t border-line space-y-2">
+                          <span className="text-2xs font-semibold text-ink-3 block">
+                            Các Job &amp; hạng mục công việc trong Deal ({activeDealRow.dealJobs.length})
+                          </span>
+                          <div className="divide-y divide-line border border-line rounded-lg">
+                            {activeDealRow.dealJobs.map((job, idx) => (
+                              <div
+                                key={job.id || idx}
+                                className="px-3 py-2 flex items-center justify-between gap-2"
+                              >
+                                <span className="truncate text-ink">
+                                  {job.jobTitle || job.productName || activeDealRow.productName}
+                                </span>
+                                <span className="font-code text-ink-2 tabular-nums shrink-0">
+                                  {formatVnd(
+                                    (job.videoAssetNetCost || 0) + (job.addonServicesNetCost || 0),
+                                  )}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                      <strong className="text-ink">
-                        {formatVnd(line.netTransferAmount)}
-                      </strong>
+
+                      {activeDealRow && activeDealRow.addonServices.length > 0 && (
+                        <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
+                          <span className="text-ink-3">Quyền lợi / Addon đi kèm:</span>
+                          <span>
+                            {activeDealRow.addonServices
+                              .map((ad) => `${ad.termLabel} (${formatVnd(ad.allocatedCostVnd || 0)})`)
+                              .join(' · ')}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* CỘT PHỤ 350PX: Thụ hưởng + Đối soát Công nợ (SOW - Hủy - Tạm ứng = Thực chuyển) + Xác nhận UNC */}
+                  <div className="rounded-xl border border-line bg-surface divide-y divide-line">
+                    {/* Khối 1: Định danh thụ hưởng */}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">
+                          Thụ hưởng ({activeDealRow?.legalProfileCode || selectedSlip.payee.subjectKind})
+                        </span>
+                        {isFinanceActor && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={revealSensitive ? EyeOff : Eye}
+                            onClick={() => setRevealSensitive((v) => !v)}
+                          >
+                            {revealSensitive ? 'Ẩn số' : 'Hiện số'}
+                          </Button>
+                        )}
+                      </div>
+
+                      <dl className="space-y-2">
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Đối tác KOC</dt>
+                          <dd className="font-medium text-ink text-right">
+                            {selectedSlip.payee.kocStageName} ({selectedSlip.payee.kocChannelId})
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Loại hình pháp lý</dt>
+                          <dd className="text-ink text-right">
+                            {activeDealRow?.legalTypeLabel || selectedSlip.payee.subjectLabel}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Số CCCD / MST</dt>
+                          <dd className="font-code font-medium text-ink text-right">
+                            {maskSensitiveNumber(selectedSlip.payee.legalId, revealSensitive)}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Ngân hàng</dt>
+                          <dd className="text-ink text-right">
+                            {selectedSlip.payee.bankName || '—'}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Số tài khoản</dt>
+                          <dd className="font-code font-medium text-ink text-right">
+                            {maskSensitiveNumber(selectedSlip.payee.bankAccount, revealSensitive)}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Chủ tài khoản</dt>
+                          <dd className="font-code font-medium text-ink text-right">
+                            {selectedSlip.payee.bankHolder || '—'}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSlipModalTab('SLIP_LEGAL_DOCS')}
+                        >
+                          Xem CCCD / ĐKKD ({slipLegalAttachments.length})
+                        </Button>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {selectedSlip.payee.bankAccount && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={Copy}
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(
+                                    selectedSlip.payee.bankAccount,
+                                  );
+                                  onNotify?.('Đã sao chép số tài khoản ngân hàng.', 'success');
+                                } catch {
+                                  onNotify?.('Không thể sao chép.', 'error');
+                                }
+                              }}
+                            >
+                              Chép STK
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={Copy}
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(
+                                  selectedSlip.transferTitle ||
+                                    activeDealRow?.transferNote ||
+                                    selectedSlip.slipCode,
+                                );
+                                onNotify?.('Đã sao chép nội dung chuyển khoản.', 'success');
+                              } catch {
+                                onNotify?.('Không thể sao chép.', 'error');
+                              }
+                            }}
+                          >
+                            Chép ND CK
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Khối 2: Bảng đối soát công nợ & khấu trừ tạm ứng */}
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">
+                          Đối soát số tiền ({selectedSlip.totals.dealsCount} deal)
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={Copy}
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                String(selectedSlip.totals.netTransferTotal),
+                              );
+                              onNotify?.('Đã sao chép số tiền thực chuyển.', 'success');
+                            } catch {
+                              onNotify?.('Không thể sao chép.', 'error');
+                            }
+                          }}
+                        >
+                          Chép số tiền
+                        </Button>
+                      </div>
+                      <dl className="space-y-2 tabular-nums">
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Định mức Net theo SOW</dt>
+                          <dd className="font-code text-ink">
+                            {formatVnd(selectedSlip.totals.agreedNetTotal)}
+                          </dd>
+                        </div>
+                        {selectedSlip.totals.droppedDeductionTotal > 0 && (
+                          <div className="flex justify-between gap-2">
+                            <dt className="text-ink-3">Khấu trừ hạng mục hủy</dt>
+                            <dd className="font-code text-critical">
+                              -{formatVnd(selectedSlip.totals.droppedDeductionTotal)}
+                            </dd>
+                          </div>
+                        )}
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Tổng giá trị Gross</dt>
+                          <dd className="font-code text-ink">
+                            {formatVnd(selectedSlip.totals.grossTotal)}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Thuế TNCN / VAT</dt>
+                          <dd className="font-code text-ink-2">
+                            {formatVnd(
+                              selectedSlip.totals.pitTax10PctTotal +
+                                selectedSlip.totals.vatTotal,
+                            )}
+                          </dd>
+                        </div>
+                        {selectedSlip.totals.advancePaidTotal > 0 && (
+                          <div className="flex justify-between gap-2">
+                            <dt className="text-ink-3">
+                              Trừ tạm ứng đợt 1{' '}
+                              {activeDealRow?.advanceSlipCode &&
+                              activeDealRow.advanceSlipCode !== '—'
+                                ? `(${activeDealRow.advanceSlipCode})`
+                                : ''}
+                            </dt>
+                            <dd className="font-code text-warning">
+                              -{formatVnd(selectedSlip.totals.advancePaidTotal)}
+                            </dd>
+                          </div>
+                        )}
+                        <div className="flex justify-between gap-2 pt-2 border-t border-line">
+                          <dt className="font-semibold text-ink">Thực chuyển đợt này</dt>
+                          <dd className="font-code font-semibold text-positive">
+                            {formatVnd(selectedSlip.totals.netTransferTotal)}
+                          </dd>
+                        </div>
+                      </dl>
+                      {selectedSlip.totals.amountInWords && (
+                        <p className="text-2xs text-ink-3 pt-1">
+                          Bằng chữ: {selectedSlip.totals.amountInWords}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Khối 3: Trạng thái phiếu Lark & Cập nhật Bill UNC */}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">Trạng thái phiếu &amp; UNC</span>
+                        <Status
+                          tone={
+                            selectedSlip.larkSync.daDiTien ||
+                            selectedSlip.larkSync.approvalStatus === 'PAID'
+                              ? 'positive'
+                              : selectedSlip.larkSync.approvalStatus === 'APPROVED'
+                                ? 'positive'
+                                : selectedSlip.larkSync.approvalStatus === 'REJECTED'
+                                  ? 'critical'
+                                  : 'warning'
+                          }
+                        >
+                          {selectedSlip.larkSync.daDiTien ||
+                          selectedSlip.larkSync.approvalStatus === 'PAID'
+                            ? 'Hoàn tất'
+                            : selectedSlip.larkSync.approvalStatus === 'APPROVED'
+                              ? 'Đã duyệt'
+                              : selectedSlip.larkSync.approvalStatus === 'REJECTED'
+                                ? 'Cần sửa'
+                                : 'Chờ duyệt'}
+                        </Status>
+                      </div>
+
+                      <dl className="space-y-2">
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Mã phiếu</dt>
+                          <dd className="font-code font-medium text-ink text-right">
+                            {selectedSlip.slipCode}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Mã Lark Approval</dt>
+                          <dd className="font-code text-ink-2 text-right">
+                            {selectedSlip.larkSync.approvalInstanceCode}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-3">Mã Bill UNC</dt>
+                          <dd className="font-code font-medium text-positive text-right">
+                            {selectedSlip.larkSync.uncBillCode ||
+                              activeDealRow?.uncBillCode ||
+                              'Chưa cập nhật'}
+                          </dd>
+                        </div>
+                        {selectedSlip.larkSync.rejectedReason && (
+                          <div className="pt-1 text-2xs text-critical">
+                            Lý do từ chối: {selectedSlip.larkSync.rejectedReason}
+                          </div>
+                        )}
+                      </dl>
+
+                      {isFinanceActor &&
+                        selectedSlip.larkSync.approvalStatus === 'APPROVED' &&
+                        !selectedSlip.larkSync.daDiTien && (
+                          <div className="pt-2 border-t border-line">
+                            <Field label="Mã lệnh chi / Bill UNC" htmlFor="slip-unc-input">
+                              <Input
+                                id="slip-unc-input"
+                                value={slipUncInput}
+                                onChange={(e) => setSlipUncInput(e.target.value)}
+                                placeholder="Nhập mã lệnh chi ngân hàng..."
+                              />
+                            </Field>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <LegalAttachmentsPanel
+                  title={`Giấy tờ CCCD / ĐKKD của ${selectedSlip.payee.kocStageName}`}
+                  attachments={slipLegalAttachments}
+                  editable={false}
+                  defaultExpandPreview
+                />
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
+
+      {/* Hộp thoại Kế toán từ chối phiếu thanh toán */}
+      {rejectSlipTarget && (
+        <ConfirmDialog
+          open={true}
+          title={`Từ chối phiếu ${rejectSlipTarget.slipCode}`}
+          tone="danger"
+          confirmLabel="Từ chối phiếu"
+          reason={{
+            label: 'Lý do từ chối / yêu cầu bổ sung chứng từ',
+            required: true,
+          }}
+          onConfirm={(note) =>
+            void handleSlipDecision(rejectSlipTarget, 'REJECT_SLIP', {
+              rejectedReason: note || '',
+            })
+          }
+          onCancel={() => setRejectSlipTarget(null)}
+          onOpenChange={(o) => !o && setRejectSlipTarget(null)}
+        />
+      )}
     </div>
   );
 }
