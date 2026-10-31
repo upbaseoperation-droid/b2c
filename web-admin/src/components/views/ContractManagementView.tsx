@@ -1054,34 +1054,6 @@ export function ContractManagementView({
         })()
       ) : (
         <div className="space-y-4">
-          <StatRow size="sm">
-            <Stat
-              label={showDealDocs ? 'Phụ lục & BBNT' : 'Hợp đồng nguyên tắc'}
-              value={`${tabRecords.length} bộ`}
-              note={showDealDocs
-                ? `${tabRecords.filter(r => documentOfTemplate(r.templateId) === 'SOW').length} SOW · ${tabRecords.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length} BBNT`
-                : `${tabRecords.filter(r => r.googleDocsSource === 'KOC_CUSTOM_DOC' || r.isKocOwnForm).length} theo mẫu của KOC`}
-            />
-            <Stat
-              label="Đang chờ duyệt nội bộ"
-              value={`${tabRecords.filter(r => r.approval === 'IN_REVIEW').length} bộ`}
-              tone={tabRecords.some(waitingMe) ? 'warning' : undefined}
-              note={`${tabRecords.filter(waitingMe).length} hồ sơ chờ lượt duyệt của bạn`}
-            />
-            <Stat
-              label="Đang trình ký weSign"
-              value={`${tabRecords.filter(awaitingSign).length} bộ`}
-              tone={tabRecords.some(awaitingSign) ? 'warning' : undefined}
-              note="Chờ Bên A và Bên B ký số"
-            />
-            <Stat
-              label="Đã ký hoàn tất"
-              value={`${tabRecords.filter(done).length} bộ`}
-              tone="positive"
-              note={showDealDocs ? `${tabRecords.filter(needAcceptance).length} phụ lục SOW chờ lập BBNT` : 'Sẵn sàng lập phụ lục khi KOC có deal'}
-            />
-          </StatRow>
-
           <Panel flush>
             <div className="p-4 border-b border-line">
               <FilterBar

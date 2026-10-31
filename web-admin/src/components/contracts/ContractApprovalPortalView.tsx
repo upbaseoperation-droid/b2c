@@ -1006,60 +1006,6 @@ export function ContractApprovalPortalView({
         />
       ) : (
         <>
-          {mode === 'LEGAL_PORTAL' ? (
-            <StatRow size="sm">
-              <Stat
-                label="Chờ Pháp chế duyệt"
-                value={`${data.records.filter(isPendingLegal).length} bộ`}
-                tone={data.records.some(isPendingLegal) ? 'warning' : 'positive'}
-                note="SLA phản hồi trong 24h"
-              />
-              <Stat
-                label="Sửa điều khoản"
-                value={`${data.records.filter(legalMatches.CLAUSE_DIFF).length} bộ`}
-                note="Rà soát bản quyền & phạt vi phạm"
-              />
-              <Stat
-                label="Mẫu riêng KOC"
-                value={`${data.records.filter(legalMatches.KOC_OWN_FORM).length} bộ`}
-                note="Hợp đồng giá trị ≥ 50.000.000đ"
-              />
-              <Stat
-                label="Mẫu KOC đã chuẩn hóa"
-                value={`${data.templates.filter(t => t.scope === 'KOC_CUSTOM').length} mẫu`}
-                tone="positive"
-                note="Tự động miễn duyệt đợt sau"
-              />
-            </StatRow>
-          ) : (
-            <StatRow size="sm">
-              <Stat
-                label="Chờ Kế toán duyệt"
-                value={`${data.records.filter(isPendingFinance).length} bộ`}
-                tone={data.records.some(isPendingFinance) ? 'warning' : 'positive'}
-                note={`Thực chi Net: ${formatVnd(totalPendingNetVnd)}`}
-              />
-              <Stat
-                label="Đã từng ký với HSPL này"
-                value={`${data.records.filter(financeMatches.VERIFIED_PROFILE).length} bộ`}
-                tone="positive"
-                note="Khớp CCCD & STK — miễn kiểm tra lại"
-              />
-              <Stat
-                label="Chờ chốt ký WeSign"
-                value={`${data.records.filter(r => isGDocsPendingFinal(r) || financeMatches.BBNT_SETTLEMENT(r)).length} bộ`}
-                tone={data.records.some(isGDocsPendingFinal) ? 'warning' : undefined}
-                note="Hợp đồng Google Docs & BBNT"
-              />
-              <Stat
-                label="Cảnh báo vượt trần / đổi STK"
-                value={`${data.records.filter(hasBudgetOrBankAlert).length} bộ`}
-                tone={data.records.some(hasBudgetOrBankAlert) ? 'critical' : 'positive'}
-                note="Kiểm tra ngân sách & số tài khoản"
-              />
-            </StatRow>
-          )}
-
           <Panel flush>
             <div className="p-4 border-b border-line">
               <FilterBar

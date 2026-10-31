@@ -558,33 +558,6 @@ export function FinanceReminderInboxView({
 
   return (
     <div className="space-y-4">
-      <StatRow size="sm">
-        <Stat
-          label="Việc khẩn cấp hôm nay"
-          value={`${stats.criticalCount} việc`}
-          tone={stats.criticalCount > 0 ? 'critical' : 'positive'}
-          note="Cần Kế toán xử lý trong 4h–24h"
-        />
-        <Stat
-          label="Hợp đồng chờ Kế toán duyệt"
-          value={`${stats.contractReviewCount} bộ`}
-          tone={stats.contractReviewCount > 0 ? 'warning' : 'positive'}
-          note={`${stats.fastTrackCount} bộ đã từng ký HSPL (miễn kiểm tra lại)`}
-        />
-        <Stat
-          label="Phiếu Lark chờ duyệt / UNC"
-          value={`${stats.larkSlipCount} phiếu`}
-          tone={stats.larkSlipCount > 0 ? 'warning' : 'positive'}
-          note="Tạm ứng đợt 1 & ĐNTT quyết toán"
-        />
-        <Stat
-          label="Tạm ứng treo & cảnh báo"
-          value={`${stats.advanceAndRiskCount} mục`}
-          tone={stats.advanceAndRiskCount > 0 ? 'critical' : 'positive'}
-          note="Theo dõi thu hồi cọc & lệch trần"
-        />
-      </StatRow>
-
       <Panel flush>
         <div className="p-4 border-b border-line">
           <FilterBar

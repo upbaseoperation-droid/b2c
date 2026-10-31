@@ -824,9 +824,9 @@ export function ContractSetReconciliationView({
       width: 210,
       render: s => (
         <div className="space-y-0.5 leading-tight">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="font-semibold text-ink">{s.kocName}</span>
-            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2">
+            <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2">
               {s.subjectLabel}
             </span>
           </div>
@@ -871,7 +871,7 @@ export function ContractSetReconciliationView({
             <div className="font-code text-2xs font-semibold text-ink truncate max-w-[185px]" title={code}>
               {code}
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Status tone={st.tone}>{st.label}</Status>
               <button
                 type="button"
@@ -926,9 +926,9 @@ export function ContractSetReconciliationView({
             <div className="font-code text-2xs font-semibold text-ink truncate max-w-[200px]" title={code}>
               {code}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               <Status tone={st.tone}>{st.label}</Status>
-              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2">
+              <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2">
                 {payOpt === 'TWO_TIMES' ? 'TT 2 lần' : 'TT 1 lần'}
               </span>
               <button
@@ -982,7 +982,7 @@ export function ContractSetReconciliationView({
             <div className="font-code text-2xs font-semibold text-ink truncate max-w-[195px]" title={code}>
               {code}
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Status tone={st.tone}>{st.label}</Status>
               <button
                 type="button"
@@ -1025,35 +1025,6 @@ export function ContractSetReconciliationView({
 
   return (
     <div className="space-y-4">
-      <StatRow>
-        <Stat
-          label="Tổng số Bộ hồ sơ (HĐNT ↔ SOW ↔ BBNT)"
-          value={`${totalSets} bộ`}
-          note={`${full3StageCount} bộ đã khép kín đủ 3 giai đoạn`}
-        />
-        <Stat
-          label="Khớp 100% chỉ số phụ thuộc"
-          value={`${matchedSetsCount}/${totalSets} bộ`}
-          tone="positive"
-          note="Đồng bộ số hiệu, pháp nhân, ngân hàng, thuế & quyết toán"
-        />
-        <Stat
-          label="Cảnh báo lệch chỉ số cần đồng bộ"
-          value={`${mismatchSetsCount} bộ`}
-          tone={mismatchSetsCount > 0 ? 'critical' : 'positive'}
-          note={
-            mismatchSetsCount > 0
-              ? 'Có chỉ số lệch giữa HĐNT/SOW/BBNT hoặc công thức trong file'
-              : 'Không có sai lệch số liệu giữa các văn bản'
-          }
-        />
-        <Stat
-          label="Ràng buộc kiểm tra tự động"
-          value="12 quy tắc"
-          note="6 liên kết xuyên văn bản + 6 công thức nội tại trong từng file"
-        />
-      </StatRow>
-
       <Panel title="Bộ hồ sơ pháp lý liên kết">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1149,7 +1120,7 @@ export function ContractSetReconciliationView({
               ].map(card => (
                 <div
                   key={card.stage}
-                  className="p-3 rounded-xl border border-line bg-sunken/35 flex flex-col justify-between gap-2.5 text-xs"
+                  className="p-3 rounded-xl border border-line bg-sunken/35 flex flex-col justify-between gap-3 text-xs"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
@@ -1169,7 +1140,7 @@ export function ContractSetReconciliationView({
                       <span className="font-code text-2xs text-ink-2 truncate max-w-[180px]">
                         {card.rec.title}
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Button size="sm" variant="secondary" icon={Eye} onClick={() => onQuickViewRecord(card.rec!)}>
                           Xem A4
                         </Button>
