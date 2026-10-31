@@ -22,7 +22,7 @@ import {
   type StaffListingSheetRow,
 } from './staffBrandListingSheet';
 import { getVietnamDateYmd, maskSensitivePii } from './format';
-import { pushSharedStateToDb } from './sharedStateClient';
+import { getInMemorySharedState, pushSharedStateToDb } from './sharedStateClient';
 
 export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v3';
 export const APPROVED_BOOKING_LIST_UPDATED_EVENT = 'upbase-approved-booking-list-updated';
@@ -283,6 +283,81 @@ export interface ApprovedBookingListItem {
   liveKocConfirmed?: boolean;          // KOC xác nhận lịch & deal Live
   liveBrandConfirmed?: boolean;        // Brand xác nhận deal & tồn kho Live
   liveLeaderConfirmed?: boolean;       // Booking Lead xác nhận đủ điều kiện tạo HĐ & gửi mẫu
+  livePackageType?: 'Độc quyền' | 'Ghép giỏ (Add-in)' | 'Chỉ Hoa hồng'; // Gói hình thức phiên Live (Mục 3.1/3.2)
+  liveBonusAmount?: number;            // Thưởng nóng vượt mốc GMV (VNĐ)
+  livePenaltyDeduction?: number;       // Khấu trừ thiếu thời lượng / vi phạm độc quyền / rớt KPI Cam kết (VNĐ)
+}
+
+export interface LivestreamDurationEvaluation {
+  ratioPct: number;
+  status: 'PENDING' | 'PASS_100' | 'PARTIAL_DEDUCT' | 'FAIL_HOLD';
+  statusLabel: string;
+  autoDeductionVnd: number;
+}
+
+/**
+ * BR-LIVE-02: Dung sai & Khấu trừ thời lượng phiên Live thực tế so với cam kết:
+ * - >= 90%: Đạt 100% thời lượng (Khấu trừ 0đ)
+ * - 50% -> < 90%: Khấu trừ tỷ lệ thuận theo phút thiếu (agreedNet * (1 - actual/committed))
+ * - < 50%: Không đạt nghiệm thu — giữ 100% cát-xê chờ live bù hoặc GĐ MKT phê duyệt
+ */
+export function computeLivestreamDurationEvaluation(
+  committedMinutes?: number,
+  actualMinutes?: number,
+  agreedNet?: number
+): LivestreamDurationEvaluation {
+  const committed = Math.max(0, Number(committedMinutes) || 0);
+  const actual = Math.max(0, Number(actualMinutes) || 0);
+  const net = Math.max(0, Number(agreedNet) || 0);
+  if (committed <= 0 || actual <= 0) {
+    return {
+      ratioPct: 0,
+      status: 'PENDING',
+      statusLabel: 'Chờ nhập phút thực tế',
+      autoDeductionVnd: 0,
+    };
+  }
+  const ratio = actual / committed;
+  const ratioPct = Math.round(ratio * 100);
+  if (ratio >= 0.9) {
+    return {
+      ratioPct,
+      status: 'PASS_100',
+      statusLabel: `Đạt chuẩn (${actual}/${committed}p · ${ratioPct}%)`,
+      autoDeductionVnd: 0,
+    };
+  }
+  if (ratio >= 0.5) {
+    const autoDeductionVnd = Math.round(net * Math.max(0, 1 - ratio));
+    return {
+      ratioPct,
+      status: 'PARTIAL_DEDUCT',
+      statusLabel: `Thiếu giờ (${actual}/${committed}p · ${ratioPct}%) — Khấu trừ ${autoDeductionVnd.toLocaleString('vi-VN')} ₫`,
+      autoDeductionVnd,
+    };
+  }
+  return {
+    ratioPct,
+    status: 'FAIL_HOLD',
+    statusLabel: `Vi phạm (<50% · ${actual}/${committed}p) — Yêu cầu Live bù`,
+    autoDeductionVnd: net,
+  };
+}
+
+/**
+ * Kiểm tra Link nghiệm thu phiên Livestream hợp lệ (Chấp nhận Google Drive Folder/File, Lark Drive/Docx, Google Sheets, hoặc Link Replay TikTok/Shopee)
+ */
+export function isValidLivestreamProofUrl(rawUrl?: string): boolean {
+  const url = (rawUrl || '').trim();
+  if (!url || !/^https?:\/\//i.test(url)) return false;
+  return (
+    /drive\.google\.com\/(drive\/folders\/|file\/d\/|open\?id=)/i.test(url) ||
+    /docs\.google\.com\/(spreadsheets|document|presentation)\//i.test(url) ||
+    /larksuite\.com\/(drive\/folder\/|docx\/|sheets\/|base\/|wiki\/|file\/)/i.test(url) ||
+    /tiktok\.com\//i.test(url) ||
+    /shopee\.vn\//i.test(url) ||
+    /facebook\.com\//i.test(url)
+  );
 }
 
 export function isLivestreamBookingItem(
@@ -884,9 +959,35 @@ export function recalculateApprovedBookingItem(
     (sum, a) => sum + (Number(a.allocatedCostVnd) || 0),
     0
   );
-  const khauTruHangMucHuy = normalizedAddons
+  const droppedAddonsCost = normalizedAddons
     .filter((a) => a.acceptanceStatus === 'DROPPED')
     .reduce((sum, a) => sum + (Number(a.allocatedCostVnd) || 0), 0);
+
+  const isLivestreamFormat =
+    item.phanLoaiVideo === 'Livestream' ||
+    item.dinhDangNghiemThu === 'Phiên Livestream' ||
+    Boolean(item.maBooking && /^LIVE[-_]/i.test(item.maBooking.trim()));
+
+  const liveDurationEval = isLivestreamFormat
+    ? computeLivestreamDurationEvaluation(
+        item.liveCommittedMinutes,
+        item.liveActualMinutes,
+        finalNet
+      )
+    : undefined;
+
+  const livePenaltyDeduction = isLivestreamFormat
+    ? item.livePenaltyDeduction !== undefined
+      ? Math.max(0, Number(item.livePenaltyDeduction) || 0)
+      : liveDurationEval?.autoDeductionVnd || 0
+    : 0;
+  const liveBonusAmount = isLivestreamFormat
+    ? Math.max(0, Number(item.liveBonusAmount) || 0)
+    : 0;
+
+  const khauTruHangMucHuy = isLivestreamFormat
+    ? droppedAddonsCost + livePenaltyDeduction
+    : droppedAddonsCost;
   const videoAssetNetCost = hasExplicitMultiJobs
     ? sumJobsVideoNet
     : Math.max(0, finalNet - addonServicesNetCost);
@@ -937,8 +1038,8 @@ export function recalculateApprovedBookingItem(
       ? 'CHỜ_KÝ'
       : 'CHƯA_LẬP');
 
-  // Số tiền cần thanh toán theo Deal = Tổng giá Deal - Khấu trừ phần hủy - Tạm ứng
-  const canThanhToan = Math.max(0, finalNet - khauTruHangMucHuy - tamUng);
+  // Số tiền cần thanh toán theo Deal = Tổng giá Deal + Thưởng GMV - Khấu trừ phần hủy/thiếu giờ - Tạm ứng
+  const canThanhToan = Math.max(0, finalNet + liveBonusAmount - khauTruHangMucHuy - tamUng);
 
   const views30 = Math.max(0, Number(item.views30d) || Number(item.views14d) || 0);
   const gmv30 = Math.max(0, Number(item.gmv30d) || Number(item.gmv14d) || 0);
@@ -1005,8 +1106,6 @@ export function recalculateApprovedBookingItem(
             item.trangThaiPhieuThanhToan === 'Đã duyệt chờ chi',
         );
 
-  const isLivestreamFormat =
-    item.phanLoaiVideo === 'Livestream' || item.dinhDangNghiemThu === 'Phiên Livestream';
   const loaiThanhToanLark =
     item.loaiThanhToanLark ||
     (isLivestreamFormat ? 'Thanh toán Booking Livestream' : 'Thanh toán Booking KOC');
@@ -1045,6 +1144,8 @@ export function recalculateApprovedBookingItem(
     videoAssetNetCost,
     addonServicesNetCost,
     khauTruHangMucHuy,
+    liveBonusAmount,
+    livePenaltyDeduction,
     addonServices: normalizedAddons,
     dealJobs: syncedDealJobs,
     masterContractCode,
@@ -1230,7 +1331,7 @@ export function buildDefaultLivestreamApprovedDeals(): ApprovedBookingListItem[]
       netFee: 25000000,
       plannedAirDate: '2026-10-15',
       actualAirDate: '2026-10-15',
-      linkAir: 'https://www.tiktok.com/@callme.duy/video/7426001122334455',
+      linkAir: 'https://drive.google.com/drive/folders/1cClubClioLiveCallMeDuy20261015',
       views30d: 185000,
       orders30d: 420,
       gmv30d: 168000000,
@@ -1272,7 +1373,7 @@ export function buildDefaultLivestreamApprovedDeals(): ApprovedBookingListItem[]
       netFee: 18000000,
       plannedAirDate: '2026-10-20',
       actualAirDate: '2026-10-20',
-      linkAir: 'https://www.tiktok.com/@goc.cua.ru/video/7427881920192837',
+      linkAir: 'https://upbase.sg.larksuite.com/drive/folder/BabeLiveGocCuaRu20261020',
       views30d: 112000,
       orders30d: 265,
       gmv30d: 119250000,
@@ -1736,6 +1837,12 @@ function flushPendingApprovedListPersist(): void {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', flushPendingApprovedListPersist);
+  window.addEventListener('upbase:approved-booking-list-updated', ((evt: Event) => {
+    const customEvt = evt as CustomEvent<ApprovedBookingListItem[] | undefined>;
+    if (Array.isArray(customEvt.detail) && customEvt.detail.length > 0 && customEvt.detail !== memoryApprovedListCache) {
+      memoryApprovedListCache = null;
+    }
+  }) as EventListener);
 }
 
 export function loadApprovedBookingList(
@@ -1774,9 +1881,17 @@ export function loadApprovedBookingList(
     defaultStaffName
   );
   try {
-    const raw = window.localStorage.getItem(APPROVED_BOOKING_LIST_STORAGE_KEY);
-    if (raw) {
-      const rawParsed = JSON.parse(raw) as ApprovedBookingListItem[];
+    const hydratedMem = getInMemorySharedState<ApprovedBookingListItem[]>('approved-booking-list-v2');
+    const raw =
+      window.localStorage.getItem(APPROVED_BOOKING_LIST_STORAGE_KEY) ||
+      window.localStorage.getItem('upbase_b2c_approved_booking_list_v2');
+    const rawParsed: ApprovedBookingListItem[] | null =
+      Array.isArray(hydratedMem) && hydratedMem.length > 0
+        ? hydratedMem
+        : raw
+          ? (JSON.parse(raw) as ApprovedBookingListItem[])
+          : null;
+    if (rawParsed) {
       const parsed = Array.isArray(rawParsed)
         ? rawParsed.filter((i) => !isSyntheticApprovedBookingItem(i))
         : [];
@@ -2201,6 +2316,12 @@ export function buildBookingDealFromApprovedItem(
     stage2AddonsVerifiedAt: isFullyVerified
       ? normalized.ngayDienLinkAir || normalized.actualAirDate
       : undefined,
+    liveSessionsCount: normalized.liveSessionsCount,
+    liveCommittedMinutes: normalized.liveCommittedMinutes,
+    liveActualMinutes: normalized.liveActualMinutes,
+    liveTargetGmv: normalized.liveTargetGmv,
+    liveKpiType: normalized.liveKpiType,
+    livePackageType: normalized.livePackageType,
   };
 }
 

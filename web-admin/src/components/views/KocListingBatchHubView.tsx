@@ -12,11 +12,12 @@ import type {
   KocItem,
   BookingDealItem,
 } from '@/lib/types';
-import { Button, PageHeaderNav, Segmented } from '../ui';
+import { Button, PageActions, PageHeaderNav, Segmented } from '../ui';
 import { Send } from 'lucide-react';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
 import { MultiPlatformListingWorkspace } from '../shortlist/MultiPlatformListingWorkspace';
+import { LivestreamListingWorkspace } from '../shortlist/LivestreamListingWorkspace';
 import type { StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
 import { ApprovedBookingListView } from './ApprovedBookingListView';
 import type { ContractDocument } from '../../lib/planDealLink';
@@ -26,7 +27,6 @@ import {
 } from '@/lib/staffBrandListingSheet';
 import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
-import { REAL_LARK_LISTINGS_BY_BOARD_KEY } from '@/lib/realLarkListings2026';
 
 export interface ListingPlanContext {
   planId?: string;
@@ -52,6 +52,14 @@ interface KocListingBatchHubViewProps {
   kocs?: KocItem[];
   deals?: BookingDealItem[];
   activePlanContext?: ListingPlanContext | null;
+  navFocus?: {
+    tab: string;
+    storeName?: string;
+    monthKey?: string;
+    dealCode?: string;
+    planId?: string;
+    nonce: number;
+  } | null;
   onOpenPlanStudio?: (plan: InputPlanBreakdownState) => void;
   onOpenContractForPlanDeal?: (deal: BookingDealItem, document: ContractDocument) => void;
   onNavigateTab?: (
@@ -80,6 +88,7 @@ export function KocListingBatchHubView({
   kocs: rawKocs = INITIAL_KOCS,
   deals: rawDeals = INITIAL_DEALS,
   activePlanContext,
+  navFocus,
   onNavigateTab,
   onNotify,
 }: KocListingBatchHubViewProps) {
@@ -99,7 +108,7 @@ export function KocListingBatchHubView({
 
   // RULE-AUTH-01: Chỉ nạp các bản ghi Listing thuộc các gian hàng trong phạm vi phân quyền
   const listings = useMemo(() => {
-    const base = (Array.isArray(rawListings) ? rawListings : []).filter(
+    return (Array.isArray(rawListings) ? rawListings : []).filter(
       (i) =>
         i &&
         i.id &&
@@ -107,23 +116,6 @@ export function KocListingBatchHubView({
         !i.id.startsWith('LISTING-BBB-') &&
         (scopedStoreNameSet.size === 0 || scopedStoreNameSet.has(i.storeName))
     );
-    const seenIds = new Set<string>(base.map((i) => i.id));
-    const merged: KocListingItem[] = [...base];
-    for (const items of Object.values(REAL_LARK_LISTINGS_BY_BOARD_KEY)) {
-      if (!Array.isArray(items)) continue;
-      for (const item of items) {
-        if (
-          item &&
-          item.id &&
-          !seenIds.has(item.id) &&
-          (scopedStoreNameSet.size === 0 || scopedStoreNameSet.has(item.storeName))
-        ) {
-          seenIds.add(item.id);
-          merged.push(item);
-        }
-      }
-    }
-    return merged;
   }, [rawListings, scopedStoreNameSet]);
 
   const monthlyPlans = useMemo(
@@ -162,16 +154,9 @@ export function KocListingBatchHubView({
 
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [selectedStore, setSelectedStore] = useState<string>(() => {
-    const firstWithListings = stores.find(
-      (s) =>
-        s.isB2cManaged !== false &&
-        s.storeName &&
-        Object.values(REAL_LARK_LISTINGS_BY_BOARD_KEY).some(
-          (arr) => arr[0]?.monthKey === '2026/10' && arr[0]?.storeName === s.storeName
-        )
-    )?.storeName;
+    if (bookingMode === 'LIVESTREAM') return 'ALL';
     const validFirst = stores.find((s) => s.isB2cManaged !== false && s.storeName)?.storeName;
-    return firstWithListings || validFirst || 'BaBe_TikTok_E2E-O';
+    return validFirst || 'BaBe_TikTok_E2E-O';
   });
 
   const [shortlistTargetGrade, setShortlistTargetGrade] = useState<SalaryGrade | undefined>(undefined);
@@ -192,7 +177,34 @@ export function KocListingBatchHubView({
     }
   }
 
-  const [focusDealCode, setFocusDealCode] = useState<string | undefined>(undefined);
+  const [focusDeal, setFocusDeal] = useState<{ code: string; nonce: number } | null>(null);
+  const [appliedNavNonce, setAppliedNavNonce] = useState<number | null>(null);
+
+  if (navFocus && navFocus.nonce !== appliedNavNonce) {
+    const isTikTokTarget =
+      bookingMode === 'TIKTOK' &&
+      (navFocus.tab === 'approved-booking-list' || navFocus.tab === 'koc-listing');
+    const isMpTarget =
+      bookingMode === 'MULTI_PLATFORM' && navFocus.tab === 'multi-platform-booking';
+    const isLiveTarget =
+      bookingMode === 'LIVESTREAM' && navFocus.tab === 'livestream-booking';
+
+    if (isTikTokTarget || isMpTarget || isLiveTarget) {
+      setAppliedNavNonce(navFocus.nonce);
+      if (navFocus.storeName) setSelectedStore(navFocus.storeName);
+      if (navFocus.monthKey) setSelectedMonth(navFocus.monthKey);
+      if (navFocus.dealCode) {
+        setFocusDeal({ code: navFocus.dealCode, nonce: navFocus.nonce });
+      }
+      if (isTikTokTarget || isLiveTarget) {
+        if (navFocus.tab === 'approved-booking-list' || navFocus.dealCode) {
+          setActiveSubTab('APPROVED_DEAL_BOARD');
+        } else {
+          setActiveSubTab('STAFF_BRAND_SHEET');
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     const handleNavigateEvent = (evt: Event) => {
@@ -200,24 +212,32 @@ export function KocListingBatchHubView({
         | { tab?: string; storeName?: string; monthKey?: string; dealCode?: string }
         | undefined;
       if (!detail) return;
-      if (detail.tab === 'approved-booking-list') {
+      const nonce = Date.now();
+      if (detail.tab === 'approved-booking-list' && bookingMode === 'TIKTOK') {
         if (detail.storeName) setSelectedStore(detail.storeName);
         if (detail.monthKey) setSelectedMonth(detail.monthKey);
-        if (detail.dealCode) setFocusDealCode(detail.dealCode);
+        if (detail.dealCode) setFocusDeal({ code: detail.dealCode, nonce });
         setActiveSubTab('APPROVED_DEAL_BOARD');
-      } else if (detail.tab === 'koc-listing') {
+      } else if (detail.tab === 'koc-listing' && bookingMode === 'TIKTOK') {
         if (detail.storeName) setSelectedStore(detail.storeName);
         if (detail.monthKey) setSelectedMonth(detail.monthKey);
         if (detail.dealCode) {
-          setFocusDealCode(detail.dealCode);
+          setFocusDeal({ code: detail.dealCode, nonce });
           setActiveSubTab('APPROVED_DEAL_BOARD');
         } else {
           setActiveSubTab('STAFF_BRAND_SHEET');
         }
-      } else if (detail.tab === 'multi-platform-booking' || detail.tab === 'livestream-booking') {
+      } else if (detail.tab === 'multi-platform-booking' && bookingMode === 'MULTI_PLATFORM') {
         if (detail.storeName) setSelectedStore(detail.storeName);
         if (detail.monthKey) setSelectedMonth(detail.monthKey);
-        if (detail.dealCode) setFocusDealCode(detail.dealCode);
+        if (detail.dealCode) setFocusDeal({ code: detail.dealCode, nonce });
+      } else if (detail.tab === 'livestream-booking' && bookingMode === 'LIVESTREAM') {
+        if (detail.storeName) setSelectedStore(detail.storeName);
+        if (detail.monthKey) setSelectedMonth(detail.monthKey);
+        if (detail.dealCode) {
+          setFocusDeal({ code: detail.dealCode, nonce });
+          setActiveSubTab('APPROVED_DEAL_BOARD');
+        }
       }
     };
     const handleSidebarSubView = (evt: Event) => {
@@ -395,38 +415,50 @@ export function KocListingBatchHubView({
 
   return (
     <div className="space-y-2">
-      <PageHeaderNav>
-        {bookingMode === 'TIKTOK' ? (
-          <Segmented
-            value={
-              activeSubTab === 'MULTI_PLATFORM_WORKSPACE' ? 'STAFF_BRAND_SHEET' : activeSubTab
-            }
-            onChange={(val) =>
-              setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')
-            }
-            items={[
-              { key: 'STAFF_BRAND_SHEET', label: 'Listing TikTok' },
-              { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu TikTok' },
-            ]}
-          />
-        ) : (
-          <div className="text-xs font-semibold text-ink-2">
-            {bookingMode === 'MULTI_PLATFORM'
-              ? 'Quản lý Listing, Deal & Nghiệm thu Đa nền tảng'
-              : 'Quản lý Deal & Nghiệm thu Phiên Livestream'}
-          </div>
-        )}
-        {currentRole !== 'BRAND_PARTNER' && onNavigateTab && (
+      {(bookingMode === 'TIKTOK' || bookingMode === 'LIVESTREAM') && (
+        <PageHeaderNav>
+          {bookingMode === 'TIKTOK' ? (
+            <Segmented
+              value={
+                activeSubTab === 'MULTI_PLATFORM_WORKSPACE' ? 'STAFF_BRAND_SHEET' : activeSubTab
+              }
+              onChange={(val) =>
+                setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')
+              }
+              items={[
+                { key: 'STAFF_BRAND_SHEET', label: 'Listing TikTok' },
+                { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu TikTok' },
+              ]}
+            />
+          ) : (
+            <Segmented
+              value={
+                activeSubTab === 'MULTI_PLATFORM_WORKSPACE' ? 'STAFF_BRAND_SHEET' : activeSubTab
+              }
+              onChange={(val) =>
+                setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')
+              }
+              items={[
+                { key: 'STAFF_BRAND_SHEET', label: 'Listing Livestream' },
+                { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu Live' },
+              ]}
+            />
+          )}
+        </PageHeaderNav>
+      )}
+
+      {currentRole !== 'BRAND_PARTNER' && onNavigateTab && (
+        <PageActions>
           <Button
             size="sm"
             variant="secondary"
             icon={Send}
             onClick={() => onNavigateTab('lark-settlement')}
           >
-            Sổ Nghiệm thu & ĐNTT Lark
+            Sổ ĐNTT Lark
           </Button>
-        )}
-      </PageHeaderNav>
+        </PageActions>
+      )}
 
       {bookingMode === 'TIKTOK' && activeSubTab === 'STAFF_BRAND_SHEET' && (
         <StaffBrandListingSheetWorkspace
@@ -472,13 +504,40 @@ export function KocListingBatchHubView({
           onChangeMonth={setSelectedMonth}
           selectedStore={selectedStore}
           onChangeStore={setSelectedStore}
-          focusDealCode={focusDealCode}
+          focusDeal={focusDeal}
+          onOpenLarkSettlement={
+            onNavigateTab ? () => onNavigateTab('lark-settlement') : undefined
+          }
           onCreateOrUpdateDeals={onCreateOrUpdateDeals}
           onNotify={onNotify}
         />
       )}
 
-      {bookingMode === 'LIVESTREAM' && (
+      {bookingMode === 'LIVESTREAM' && activeSubTab !== 'APPROVED_DEAL_BOARD' && (
+        <LivestreamListingWorkspace
+          kocs={kocs}
+          stores={stores}
+          deals={deals}
+          monthlyPlans={monthlyPlans}
+          currentUser={currentUser}
+          currentUserName={currentUserName}
+          currentRole={currentRole}
+          selectedMonth={selectedMonth}
+          onChangeMonth={setSelectedMonth}
+          selectedStore={selectedStore}
+          onChangeStore={setSelectedStore}
+          onCreateOrUpdateDeals={onCreateOrUpdateDeals}
+          onOpenDealBoard={(ctx) => {
+            if (ctx?.storeName) setSelectedStore(ctx.storeName);
+            if (ctx?.monthKey) setSelectedMonth(ctx.monthKey);
+            if (ctx?.dealCode) setFocusDeal({ code: ctx.dealCode, nonce: Date.now() });
+            setActiveSubTab('APPROVED_DEAL_BOARD');
+          }}
+          onNotify={onNotify}
+        />
+      )}
+
+      {bookingMode === 'LIVESTREAM' && activeSubTab === 'APPROVED_DEAL_BOARD' && (
         <ApprovedBookingListView
           kocs={kocs}
           stores={stores}
@@ -491,7 +550,7 @@ export function KocListingBatchHubView({
           bookingScope="LIVESTREAM"
           initialStoreName={selectedStore}
           initialMonthKey={selectedMonth === 'ALL' ? '2026/10' : selectedMonth}
-          focusDealCode={focusDealCode}
+          focusDeal={focusDeal}
           onCreateOrUpdateDeals={onCreateOrUpdateDeals}
           onOpenContractForDeal={onOpenContractForDeal}
           onNavigateTab={(targetTab, ctx) => {
@@ -518,7 +577,7 @@ export function KocListingBatchHubView({
           bookingScope="TIKTOK_VIDEO"
           initialStoreName={selectedStore === 'ALL' ? defaultInitialStore : selectedStore}
           initialMonthKey={selectedMonth === 'ALL' ? '2026/10' : selectedMonth}
-          focusDealCode={focusDealCode}
+          focusDeal={focusDeal}
           onCreateOrUpdateDeals={onCreateOrUpdateDeals}
           onOpenContractForDeal={onOpenContractForDeal}
           onNavigateTab={(targetTab, ctx) => {

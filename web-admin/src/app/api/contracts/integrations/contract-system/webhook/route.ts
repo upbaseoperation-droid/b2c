@@ -5,6 +5,7 @@ import { listContracts, saveContract } from '@/lib/contracts/store';
 import {
   buildStableContractCode,
   canAdvanceSigningStatus,
+  normalizeContractServiceStatus,
   verifyContractSystemWebhookAuth,
 } from '@/lib/contracts/contractSystemClient';
 import { syncContractToJob } from '@/lib/server/contractJobSync';
@@ -17,20 +18,21 @@ interface ContractSystemWebhookPayload {
   /** Mã hợp đồng idempotent (code). */
   code?: string;
   contractCode?: string;
-  /** ID hợp đồng trên contract-system. */
+  /** ID hợp đồng trên Contract Service. */
   contractId?: string;
-  /** UUID tài liệu trên WeSign. */
+  /** UUID / requestId tài liệu trên WeSign. */
   documentId?: string;
   providerDocumentId?: string;
-  /** Trạng thái ký mới: WAITING | PARTIAL | COMPLETED | REJECTED | CANCELLED. */
+  requestId?: string;
+  /** Trạng thái ký mới: completed | rejected | cancelled | signing_requested | WAITING | PARTIAL | COMPLETED | REJECTED | CANCELLED. */
   status?: string;
   sourceStatus?: number;
   /** Thời điểm phát sinh sự kiện (epoch ms hoặc ISO string) để chống ghi đè lùi trạng thái. */
   timestamp?: number | string;
-  /** URL file đã ký sau khi worker hoàn tất queue signed-file-download (Bước 12). */
+  /** URL file đã ký sau khi worker hoàn tất tải PDF từ WeSign. */
   signedFileUrl?: string;
   signedFileStatus?: 'IDLE' | 'QUEUED' | 'DOWNLOADED' | 'FAILED';
-  /** Danh sách người ký cập nhật từ WeSign. */
+  /** Danh sách người ký cập nhật từ WeSign / Contract Service. */
   signers?: Array<{
     name: string;
     email: string;
@@ -40,11 +42,20 @@ interface ContractSystemWebhookPayload {
     order?: number;
     signedAt?: string;
   }>;
+  participants?: Array<{
+    code: string;
+    name: string;
+    email: string;
+    action?: number | string;
+    status?: string;
+    role?: string;
+    signedAt?: string;
+  }>;
 }
 
 /**
- * Bước 13: Endpoint nhận sự kiện đồng bộ trạng thái ký và file đã ký từ `contract-system` đẩy về B2C Portal.
- * - Xác thực chữ ký HMAC-SHA256 hoặc khóa bí mật (`verifyContractSystemWebhookAuth`).
+ * Endpoint nhận sự kiện đồng bộ trạng thái ký và file đã ký từ Contract Service / WeSign đẩy về B2C Portal.
+ * - Xác thực chữ ký HMAC-SHA256 hoặc khóa bí mật (`x-upbase-secret-access` / `verifyContractSystemWebhookAuth`).
  * - Chỉ chấp nhận chuyển trạng thái tiến (`canAdvanceSigningStatus`) và làm bước cập nhật file đã ký idempotent.
  */
 export async function POST(req: NextRequest) {
@@ -54,6 +65,7 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-contract-system-signature') ||
       req.headers.get('x-wesign-signature');
     const bearerToken =
+      req.headers.get('x-upbase-secret-access') ||
       req.headers.get('authorization') ||
       req.headers.get('x-contract-system-secret') ||
       req.headers.get('x-wesign-secret');
@@ -66,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     let actorLabel = {
       id: 'contract-system-webhook',
-      name: 'Đồng bộ contract-system (Webhook)',
+      name: 'Đồng bộ Contract Service (Webhook)',
       roles: [] as never[],
       brands: [] as string[],
     };
@@ -88,7 +100,7 @@ export async function POST(req: NextRequest) {
         };
       } catch {
         throw new ContractError(
-          'Chữ ký xác thực Webhook contract-system không hợp lệ hoặc thiếu khóa bảo mật.',
+          'Chữ ký xác thực Webhook Contract Service không hợp lệ hoặc thiếu khóa bảo mật.',
           401,
         );
       }
@@ -103,11 +115,18 @@ export async function POST(req: NextRequest) {
 
     const targetCode = (payload.code || payload.contractCode || '').trim().toUpperCase();
     const targetContractId = (payload.contractId || '').trim();
-    const targetDocId = (payload.documentId || payload.providerDocumentId || '').trim().toLowerCase();
+    const targetDocId = (
+      payload.documentId ||
+      payload.providerDocumentId ||
+      payload.requestId ||
+      ''
+    )
+      .trim()
+      .toLowerCase();
 
     requireCondition(
       Boolean(targetCode || targetContractId || targetDocId),
-      'Cần cung cấp mã hợp đồng (code), contractId hoặc documentId.',
+      'Cần cung cấp mã hợp đồng (code), contractId hoặc requestId/documentId.',
       400,
     );
 
@@ -116,7 +135,13 @@ export async function POST(req: NextRequest) {
       const recCode = (r.contractSystem?.contractCode || buildStableContractCode(r)).toUpperCase();
       if (targetCode && recCode === targetCode) return true;
       if (targetContractId && r.contractSystem?.contractSystemId === targetContractId) return true;
-      if (targetDocId && r.signing.some(s => s.documentId.toLowerCase() === targetDocId)) return true;
+      if (
+        targetDocId &&
+        (r.contractSystem?.wesignRequestId?.toLowerCase() === targetDocId ||
+          r.signing.some(s => s.documentId.toLowerCase() === targetDocId))
+      ) {
+        return true;
+      }
       return false;
     });
 
@@ -126,7 +151,7 @@ export async function POST(req: NextRequest) {
     const attempt = next.signing.at(-1);
     requireCondition(attempt, 'Hồ sơ chưa mở lượt trình ký.', 409);
 
-    const incomingStatus = (payload.status || attempt.status || 'WAITING').toUpperCase();
+    const incomingStatus = normalizeContractServiceStatus(payload.status || attempt.status || 'WAITING');
     const incomingTs =
       typeof payload.timestamp === 'number'
         ? payload.timestamp
@@ -143,7 +168,7 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // Trường hợp sự kiện COMPLETED lặp hoặc worker vừa tải xong file đã ký (Bước 12) cho hợp đồng đã COMPLETED
+    // Trường hợp sự kiện COMPLETED lặp hoặc worker vừa tải xong file đã ký cho hợp đồng đã COMPLETED
     if (!transition.allowed) {
       if (transition.isDuplicateCompleted && payload.signedFileUrl && attempt.signedFileUrl !== payload.signedFileUrl) {
         attempt.signedFileUrl = payload.signedFileUrl;
@@ -188,6 +213,41 @@ export async function POST(req: NextRequest) {
         level: s.order || idx + 1,
         at: s.signedAt || (s.action === 2 ? now : attempt.people[idx]?.at),
       }));
+      attempt.people = updatedPeople;
+    } else if (Array.isArray(payload.participants) && payload.participants.length > 0) {
+      const updatedPeople: SigningPerson[] = payload.participants.map((p, idx) => {
+        const numericAction =
+          typeof p.action === 'number'
+            ? p.action
+            : incomingStatus === 'COMPLETED'
+              ? 2
+              : incomingStatus === 'REJECTED'
+                ? 3
+                : idx === 0
+                  ? 1
+                  : 0;
+        return {
+          name: p.name,
+          email: p.email,
+          action: numericAction,
+          status:
+            p.status ||
+            (numericAction === 2
+              ? 'Đã ký'
+              : numericAction === 3
+                ? 'Từ chối'
+                : numericAction === 1
+                  ? 'Chờ ký'
+                  : 'Chưa đến lượt'),
+          role: 0,
+          roleLabel:
+            /PROVIDER|BEN_A/i.test(p.code)
+              ? `Bên A · {{${p.code}}}`
+              : `Bên B · {{${p.code}}}`,
+          level: idx + 1,
+          at: p.signedAt || (numericAction === 2 ? now : attempt.people[idx]?.at),
+        };
+      });
       attempt.people = updatedPeople;
     } else if (incomingStatus === 'COMPLETED') {
       attempt.people = attempt.people.map(p => ({
@@ -247,6 +307,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (next.contractSystem) {
+      next.contractSystem.remoteStatus = payload.status || incomingStatus.toLowerCase();
       next.contractSystem.lastSyncedAt = now;
       next.contractSystem.lastWebhookTimestamp = attempt.lastWebhookTimestamp;
       if (attempt.signedFileUrl) next.contractSystem.signedFileUrl = attempt.signedFileUrl;
@@ -257,7 +318,7 @@ export async function POST(req: NextRequest) {
       next,
       actorLabel,
       'CONTRACT_SYSTEM_WEBHOOK',
-      `Đồng bộ trạng thái ký từ contract-system: ${incomingStatus} (${attempt.completedCount}/${attempt.totalCount})`,
+      `Đồng bộ trạng thái ký từ Contract Service: ${incomingStatus} (${attempt.completedCount}/${attempt.totalCount})`,
     );
 
     const saved = await saveContract(next, matched.revision);
@@ -273,7 +334,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const status = error instanceof ContractError ? error.status : 500;
     return NextResponse.json(
-      { error: error instanceof ContractError ? error.message : 'Không thể xử lý Webhook từ contract-system.' },
+      { error: error instanceof ContractError ? error.message : 'Không thể xử lý Webhook từ Contract Service.' },
       { status },
     );
   }

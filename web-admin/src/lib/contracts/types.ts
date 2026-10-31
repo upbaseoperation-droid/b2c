@@ -91,6 +91,22 @@ export interface TemplateVersionHistoryItem {
   updatedBy: string;
   note?: string;
 }
+export interface ContractServiceTemplateField {
+  fieldKey: string;
+  fieldType: 'text' | 'number' | 'date' | 'checkbox' | 'select' | string;
+  required: boolean;
+}
+export interface ContractServiceTemplateParticipant {
+  code: string;
+  role?: string | null;
+  action?: string | null;
+  signingOrder?: number | null;
+  required?: boolean | null;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  signatureType?: string | null;
+}
 export interface LegalTemplate {
   id: string;
   name: string;
@@ -129,7 +145,21 @@ export interface LegalTemplate {
   customType?: 'UPBASE_AMENDED' | 'KOC_FORM';
   /** Ghi chú và lưu ý nghiệp vụ của Pháp chế cho KOC. */
   legalNotes?: string;
-  /** Danh sách thẻ ô ký tự động trong mẫu (ví dụ: {{SIGN_BEN_A}}, {{SIGN_BEN_B}}) do contract-system bóc tách. */
+  /** UUID mẫu hợp đồng trên Contract Service (ví dụ: 23adfa68-b9a5-4ff6-a453-48a08b6a47a0). */
+  remoteTemplateId?: string;
+  /** Mã code mẫu hợp đồng trên Contract Service (ví dụ: HDNT-CANHAN). */
+  remoteTemplateCode?: string;
+  /** Cờ xác nhận mẫu đã cấu hình luồng ký trên Contract Service (chỉ true mới gọi được requestSign). */
+  hasSigningFlowConfig?: boolean;
+  /** Danh sách field placeholder {{KEY}} khai báo trên Contract Service. */
+  remoteFields?: ContractServiceTemplateField[];
+  /** Danh sách người ký (participants) khai báo trên Contract Service. */
+  remoteParticipants?: ContractServiceTemplateParticipant[];
+  /** Link file .docx gốc của mẫu trên S3 (từ documents[type=source] của API 2 getContractTemplate). */
+  sourceFileUrl?: string;
+  /** Link Google Docs xem trước của mẫu (từ documents[type=preview] của API 2 getContractTemplate). */
+  previewFileUrl?: string;
+  /** Danh sách thẻ ô ký tự động trong mẫu (ví dụ: {{SIGN_PROVIDER}}, {{SIGN_CLIENT}}) do contract-system bóc tách. */
   signTags?: string[];
   /** Cấu hình luồng ký từ configureTemplateSigningFlow (Agency Portal / contract-system). */
   signingFlowConfig?: {
@@ -248,6 +278,10 @@ export interface ContractSystemSyncMeta {
   contractCode: string;
   /** ID bản ghi hợp đồng bên contract-system. */
   contractSystemId: string;
+  /** UUID mẫu hợp đồng trên Contract Service (ví dụ: 23adfa68-b9a5-4ff6-a453-48a08b6a47a0). */
+  remoteTemplateId?: string;
+  /** Trạng thái nguyên bản của hợp đồng trên Contract Service (rendered, ready, signing_requested, completed...). */
+  remoteStatus?: string;
   /** Phân loại chặng văn bản trong chuỗi 3 bước: HĐNT Khung -> Phụ lục SOW -> Biên bản nghiệm thu BBNT. */
   documentStage?: 'HDNT' | 'SOW' | 'BBNT';
   /** Mã hợp đồng gốc / Phụ lục SOW gốc mà văn bản này kế thừa (HĐNT -> SOW -> BBNT). */
@@ -258,6 +292,10 @@ export interface ContractSystemSyncMeta {
   googleDocsSyncedAt?: string;
   /** URL file .docx đã render / xuất lại từ Google Docs trên UpBase upload API. */
   exportedDocxUrl?: string;
+  /** URL file .docx dùng cho bước ký (giữ tag {{SIGN_*}}) từ generateContract.data.document.signingFileUrl. */
+  signingFileUrl?: string;
+  /** Request ID trả về từ WeSign khi gọi requestSign thành công. */
+  wesignRequestId?: string;
   /** Trạng thái và URL file đã ký từ worker queue signed-file-download (Bước 11 & 12). */
   signedFileStatus?: 'IDLE' | 'QUEUED' | 'DOWNLOADED' | 'FAILED';
   signedFileUrl?: string;

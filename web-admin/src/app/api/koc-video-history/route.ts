@@ -12,7 +12,10 @@ import {
   ingestWeeklyRowsBySystemVideoId,
   normalizeChannelHandle,
   registerNewSystemVideo,
+  registerNewSystemVideosBatch,
+  sanitizeWeeklyHistoryStore,
   type KocVideoWeeklyHistoryStoreData,
+  type RegisterSystemVideoPayload,
   type SystemRegisteredVideo,
   type WeeklyVideoInputRow,
 } from '@/lib/kocVideoWeeklyHistory';
@@ -63,7 +66,26 @@ export async function GET(req: NextRequest) {
       getDefaultStore()
     );
 
-    const store = record.data;
+    const sanitized = sanitizeWeeklyHistoryStore(record.data);
+    let store = sanitized.store;
+    let currentRevision = record.revision;
+
+    // Tự động lưu bản ghi đã làm sạch xuống DB nếu phát hiện dữ liệu thừa (registeredVideos / chuỗi lặp 32KB)
+    if (sanitized.changed && record.revision > 0) {
+      try {
+        const cleanedRec = await updateRecord<KocVideoWeeklyHistoryStoreData>(
+          KOC_VIDEO_HISTORY_RECORD_KEY,
+          getDefaultStore(),
+          record.revision,
+          () => sanitized.store
+        );
+        store = cleanedRec.data;
+        currentRevision = cleanedRec.revision;
+      } catch {
+        // Bỏ qua nếu có xung đột đồng thời
+      }
+    }
+
     let registeredVideos = Object.values(store.registeredVideosById || {});
     let videoSnapshots = Object.values(store.snapshotsByKey || {});
 
@@ -100,7 +122,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        revision: record.revision,
+        revision: currentRevision,
         updatedAt: store.updatedAt,
         batches: store.batches || [],
         totalRegisteredVideos: Object.keys(store.registeredVideosById || {}).length,
@@ -137,11 +159,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const action = String(body.action || 'INGEST_WEEKLY_DATA').toUpperCase();
+    const compactResponse = Boolean(body.compactResponse);
 
     const current = await readRecord<KocVideoWeeklyHistoryStoreData>(
       KOC_VIDEO_HISTORY_RECORD_KEY,
       getDefaultStore()
     );
+    const currentCleanStore = sanitizeWeeklyHistoryStore(current.data).store;
 
     // 1. Khi phát sinh KOC mới (kèm tùy chọn đăng ký luôn Video mới của KOC đó)
     if (action === 'REGISTER_NEW_KOC') {
@@ -218,9 +242,9 @@ export async function POST(req: NextRequest) {
 
       // Nếu payload phát sinh KOC mới gửi kèm videoId / linkAir đầu tiên, đăng ký luôn vào sổ Video
       let registeredVideo: SystemRegisteredVideo | undefined;
-      let updatedStore = current.data;
+      let updatedStore = currentCleanStore;
       if (body.videoId || body.linkAir) {
-        const regResult = registerNewSystemVideo(current.data, {
+        const regResult = registerNewSystemVideo(currentCleanStore, {
           videoId: body.videoId,
           linkAir: body.linkAir,
           dealCode: body.dealCode,
@@ -260,7 +284,9 @@ export async function POST(req: NextRequest) {
           action: 'REGISTER_NEW_KOC',
           koc: newKocItem,
           registeredVideo,
-          kocSummaries: aggregateKocHistoryFromVideoSnapshots(updatedStore),
+          ...(compactResponse
+            ? {}
+            : { kocSummaries: aggregateKocHistoryFromVideoSnapshots(updatedStore) }),
         },
         { headers }
       );
@@ -268,7 +294,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Khi phát sinh Video mới (theo videoId của hệ thống)
     if (action === 'REGISTER_NEW_VIDEO') {
-      const regResult = registerNewSystemVideo(current.data, {
+      const regResult = registerNewSystemVideo(currentCleanStore, {
         videoId: body.videoId,
         linkAir: body.linkAir,
         dealCode: body.dealCode,
@@ -308,7 +334,72 @@ export async function POST(req: NextRequest) {
           revision: saved.revision,
           registeredVideo: regResult.registeredVideo,
           initialSnapshot: regResult.initialSnapshot,
-          kocSummaries: aggregateKocHistoryFromVideoSnapshots(saved.data),
+          ...(compactResponse
+            ? {}
+            : { kocSummaries: aggregateKocHistoryFromVideoSnapshots(saved.data) }),
+        },
+        { headers }
+      );
+    }
+
+    // 2b. Đăng ký hàng loạt Video trong 1 giao dịch DB duy nhất
+    if (action === 'REGISTER_VIDEOS_BATCH') {
+      const rawVideos: Array<Record<string, unknown>> = Array.isArray(body.videos)
+        ? body.videos
+        : [];
+      if (rawVideos.length === 0) {
+        return NextResponse.json(
+          { success: true, action: 'REGISTER_VIDEOS_BATCH', registeredCount: 0 },
+          { headers }
+        );
+      }
+
+      const payloads: RegisterSystemVideoPayload[] = rawVideos.map((v) => ({
+        videoId: v.videoId ? String(v.videoId) : undefined,
+        linkAir: v.linkAir ? String(v.linkAir) : undefined,
+        dealCode: v.dealCode ? String(v.dealCode) : undefined,
+        kocId: v.kocId ? String(v.kocId) : undefined,
+        kocChannelId: String(v.kocChannelId || v.channelId || '').trim(),
+        kocStageName: v.kocStageName ? String(v.kocStageName) : undefined,
+        brandName: String(v.brandName || 'Cathy Doll'),
+        storeName: String(v.storeName || `${v.brandName || 'Cathy Doll'}_TikTok_E2E-C`),
+        productName: v.productName ? String(v.productName) : undefined,
+        campaignName: v.campaignName ? String(v.campaignName) : undefined,
+        videoTitle: v.videoTitle ? String(v.videoTitle) : undefined,
+        airDate: v.airDate ? String(v.airDate) : undefined,
+        weekKey: v.weekKey ? String(v.weekKey) : undefined,
+        pic: String(v.pic || user.name),
+        klGrade: v.klGrade ? String(v.klGrade) : undefined,
+        bookingCostNet: Number(v.bookingCostNet) || 0,
+        sparkAdsCode: v.sparkAdsCode ? String(v.sparkAdsCode) : undefined,
+        authorizationType: v.authorizationType ? String(v.authorizationType) : undefined,
+        initialAdsSpend: Number(v.initialAdsSpend) || 0,
+        initialGmv: Number(v.initialGmv) || 0,
+        initialOrders: Number(v.initialOrders) || 0,
+        initialViews: Number(v.initialViews) || 0,
+        source: (v.source as SystemRegisteredVideo['source']) || 'SYSTEM_BOOKING',
+      }));
+
+      const batchResult = registerNewSystemVideosBatch(currentCleanStore, payloads);
+      const saved = await updateRecord<KocVideoWeeklyHistoryStoreData>(
+        KOC_VIDEO_HISTORY_RECORD_KEY,
+        getDefaultStore(),
+        current.revision,
+        () => batchResult.nextStore
+      );
+
+      return NextResponse.json(
+        {
+          success: true,
+          action: 'REGISTER_VIDEOS_BATCH',
+          revision: saved.revision,
+          registeredCount: batchResult.registeredVideos.length,
+          ...(compactResponse
+            ? {}
+            : {
+                registeredVideos: batchResult.registeredVideos,
+                kocSummaries: aggregateKocHistoryFromVideoSnapshots(saved.data),
+              }),
         },
         { headers }
       );
@@ -329,7 +420,7 @@ export async function POST(req: NextRequest) {
     const weekKey = String(body.weekKey || '2026-W42').trim();
     const fileName = String(body.fileName || `API_Weekly_Sync_${weekKey}.json`).trim();
 
-    const ingestResult = ingestWeeklyRowsBySystemVideoId(current.data, {
+    const ingestResult = ingestWeeklyRowsBySystemVideoId(currentCleanStore, {
       weekKey,
       weekLabel: body.weekLabel,
       dateRange: body.dateRange,
@@ -357,10 +448,14 @@ export async function POST(req: NextRequest) {
         matchedCount: ingestResult.matchedCount,
         newlyRegisteredVideosCount: ingestResult.newlyRegisteredVideosCount,
         batches: saved.data.batches,
-        videoSnapshots: Object.values(saved.data.snapshotsByKey).sort(
-          (a, b) => b.weekKey.localeCompare(a.weekKey) || b.gmv - a.gmv
-        ),
-        kocSummaries: aggregateKocHistoryFromVideoSnapshots(saved.data),
+        ...(compactResponse
+          ? {}
+          : {
+              videoSnapshots: Object.values(saved.data.snapshotsByKey).sort(
+                (a, b) => b.weekKey.localeCompare(a.weekKey) || b.gmv - a.gmv
+              ),
+              kocSummaries: aggregateKocHistoryFromVideoSnapshots(saved.data),
+            }),
       },
       { headers }
     );

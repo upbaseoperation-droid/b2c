@@ -68,6 +68,7 @@ import { getVietnamDateYmd } from '../../lib/format';
 import { UserProfile, StorePortfolioItem } from '../../lib/types';
 import { USERS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { CloudflareR2SetupPanel } from '../brands/CloudflareR2SetupPanel';
+import { SupabaseDatabaseStatusPanel } from '../brands/SupabaseDatabaseStatusPanel';
 import { ZaloBotManagerView } from './ZaloBotManagerView';
 import { StoreStaffSheetSetupView, type StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
 
@@ -582,7 +583,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
           { key: 'ai-llm', label: 'Mô hình AI & LLM', count: 3 },
           { key: 'zalo-bot', label: 'Trợ lý Zalo Bot & Webhook' },
           { key: 'google-sheets', label: 'Google Sheet', count: stores?.length || undefined },
-          { key: 'storage', label: 'Kho Lưu Trữ Cloudflare R2' },
+          { key: 'storage', label: 'Cơ Sở Dữ Liệu Supabase & R2' },
         ]}
         value={category}
         onChange={k => setCategory(k as SetupCategory)}
@@ -615,10 +616,11 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
       )}
 
       {/* ===================================================================== */}
-      {/* DANH MỤC: KHO LƯU TRỮ CLOUDFLARE R2                                    */}
+      {/* DANH MỤC: CƠ SỞ DỮ LIỆU SUPABASE & KHO LƯU TRỮ CLOUDFLARE R2          */}
       {/* ===================================================================== */}
       {category === 'storage' && (
-        <div className="animate-in fade-in duration-150">
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <SupabaseDatabaseStatusPanel onNotify={onNotify} />
           <CloudflareR2SetupPanel onNotify={onNotify} />
         </div>
       )}

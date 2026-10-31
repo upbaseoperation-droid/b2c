@@ -4,7 +4,6 @@
     "chu-nho": 1
   },
   "src/app/page.tsx": {
-    "bang-tu-viet": 1,
     "dinh-dang-so": 3
   },
   "src/components/CampaignCreateModal.tsx": {
@@ -571,15 +570,10 @@
   },
   "src/components/views/TaskDelegationView.tsx": {
     "button-tu-viet": 1,
-    "dinh-dang-so": 34,
-    "font-mono": 29,
     "select-tu-viet": 2
   },
   "src/components/views/TaskPolicySetupView.tsx": {
-    "bang-tu-viet": 6,
-    "button-tu-viet": 1,
-    "dinh-dang-so": 9,
-    "font-mono": 16
+    "button-tu-viet": 1
   },
   "src/components/views/ThirdPartyAccessSetupView.tsx": {
     "button-tu-viet": 6,

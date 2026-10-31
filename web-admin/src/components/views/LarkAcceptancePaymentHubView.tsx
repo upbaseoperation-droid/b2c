@@ -25,6 +25,7 @@ import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import {
   buildBookingDealFromApprovedItem,
   hydrateApprovedBookingListFromServer,
+  isLivestreamBookingItem,
   loadApprovedBookingList,
   saveApprovedBookingList,
   type ApprovedBookingListItem,
@@ -105,16 +106,16 @@ export const BOOKING_SERVICE_FILTER_OPTIONS: Array<{
   key: BookingServiceFilterKey;
   label: string;
 }> = [
-  { key: 'ALL', label: 'Dịch vụ: Tất cả dịch vụ Booking' },
-  { key: 'TIKTOK_VIDEO_ONLY', label: 'Video TikTok đơn lẻ (Chỉ đăng Video)' },
-  { key: 'COMBO_VIDEO_ADDONS', label: 'Combo Video + Dịch vụ đi kèm (2 tầng)' },
-  { key: 'ADS_CODE', label: 'Cung cấp Mã quảng cáo Spark Ads' },
-  { key: 'IMAGE_USAGE', label: 'Bản quyền sử dụng Hình ảnh / Video' },
-  { key: 'EXCLUSIVITY', label: 'Cam kết Độc quyền nhãn / ngành hàng' },
-  { key: 'LINK_BIO_CART', label: 'Gắn Link Bio / Giỏ hàng / Ghim bài' },
-  { key: 'MULTI_PLATFORM_POST', label: 'Đăng bài Đa sàn (Shopee / FB / IG / Threads)' },
-  { key: 'LIVESTREAM_SESSION', label: 'Phiên Livestream Affiliate (KOC / KOL)' },
-  { key: 'SELF_CHANNEL_VIDEO', label: 'Sản xuất Video Kênh Brand (CTV / VJ)' },
+  { key: 'ALL', label: 'Tất cả dịch vụ' },
+  { key: 'TIKTOK_VIDEO_ONLY', label: 'Video TikTok' },
+  { key: 'COMBO_VIDEO_ADDONS', label: 'Combo Video + Quyền phụ' },
+  { key: 'ADS_CODE', label: 'Mã Spark Ads' },
+  { key: 'IMAGE_USAGE', label: 'Bản quyền hình ảnh / video' },
+  { key: 'EXCLUSIVITY', label: 'Độc quyền ngành hàng' },
+  { key: 'LINK_BIO_CART', label: 'Gắn Link Bio / Giỏ hàng' },
+  { key: 'MULTI_PLATFORM_POST', label: 'Đăng bài đa sàn' },
+  { key: 'LIVESTREAM_SESSION', label: 'Phiên Livestream' },
+  { key: 'SELF_CHANNEL_VIDEO', label: 'Video Kênh Brand' },
 ];
 
 type HubMainTab = 'UNIFIED_QUEUE' | 'LARK_SLIPS' | 'FINANCE_RECON';
@@ -593,6 +594,19 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
     return map;
   }, [deals]);
 
+  // Index O(1) cho KOC theo ID và handle để tránh quét O(N * M) trong unifiedItems (RULE-PERF-01)
+  const kocLookup = useMemo(() => {
+    const byId = new Map<string, KocItem>();
+    const byHandle = new Map<string, KocItem>();
+    for (const k of kocs) {
+      if (k.id) byId.set(k.id, k);
+      if (k.channelId) {
+        byHandle.set(k.channelId.replace(/^@/, '').trim().toLowerCase(), k);
+      }
+    }
+    return { byId, byHandle };
+  }, [kocs]);
+
   // Hợp nhất dữ liệu 4 phân hệ Booking vào 1 danh sách chuẩn duy nhất (RULE-SYNC-01 & RULE-PERF-01)
   const unifiedItems = useMemo<UnifiedAcceptancePaymentItem[]>(() => {
     const list: UnifiedAcceptancePaymentItem[] = [];
@@ -614,10 +628,18 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
 
       const linkedDeal =
         dealByCodeMap.get(upper) || buildBookingDealFromApprovedItem(it);
+      const cleanHandle = (linkedDeal.kocChannelId || it.idKenh || '')
+        .replace(/^@/, '')
+        .trim()
+        .toLowerCase();
+      const matchedKoc =
+        (linkedDeal.kocId && kocLookup.byId.get(linkedDeal.kocId)) ||
+        (it.kocId && kocLookup.byId.get(it.kocId)) ||
+        (cleanHandle ? kocLookup.byHandle.get(cleanHandle) : undefined);
       const evalResult = buildLarkPaymentRequestSlip({
         requestType: 'SETTLEMENT',
         deals: [linkedDeal],
-        kocs,
+        kocs: matchedKoc ? [matchedKoc] : [],
         createdBy: currentUserName,
         month: it.thangNghiemThuChot || it.thangPlan || '2026/10',
       });
@@ -631,12 +653,19 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
           setSlip?.larkSync.approvalStatus === 'PAID' ||
           it.trangThaiPhieuThanhToan === 'Đã thanh toán'
       );
+      const isAdvancePendingInLark = Boolean(
+        advSlip &&
+          advSlip.larkSync.approvalStatus !== 'REJECTED' &&
+          advSlip.larkSync.approvalStatus !== 'PAID' &&
+          !advSlip.larkSync.daDiTien
+      );
       const inLarkFlow = Boolean(
         !isPaid &&
           ((setSlip && setSlip.larkSync.approvalStatus !== 'REJECTED') ||
-            (advSlip && advSlip.larkSync.approvalStatus !== 'REJECTED') ||
-            it.trangThaiPhieuThanhToan === 'Đang duyệt Lark' ||
-            it.trangThaiPhieuThanhToan === 'Đã duyệt chờ chi')
+            isAdvancePendingInLark ||
+            (!advSlip &&
+              (it.trangThaiPhieuThanhToan === 'Đang duyệt Lark' ||
+                it.trangThaiPhieuThanhToan === 'Đã duyệt chờ chi')))
       );
       const isAcceptedTech = Boolean((it.linkAir || '').trim() && (it.actualAirDate || '').trim());
       const blockingIssues = evalResult.allIssues.map(i => i.issue.message);
@@ -665,9 +694,7 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
         paymentStateTone = 'critical';
       }
 
-      const isLivestream =
-        (it.phanLoaiVideo || '').toLowerCase().includes('live') ||
-        linkedDeal.bookingFormat === 'Booking Livestream KOC' || linkedDeal.bookingFormat === 'Phiên Livestream';
+      const isLivestream = isLivestreamBookingItem(it);
       const extractedServices = extractApprovedItemServices(it, linkedDeal, isLivestream);
       const hasAdvanceOption =
         it.paymentScheduleOption === 'TWO_TIMES' ||
@@ -752,10 +779,18 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
       seenDealCodes.add(upper);
 
       const mpDeal = buildBookingDealFromMultiPlatformItem(mp, stores, kocs);
+      const mpCleanHandle = (mpDeal.kocChannelId || mp.kocTiktokHandle || mp.channelHandle || '')
+        .replace(/^@/, '')
+        .trim()
+        .toLowerCase();
+      const matchedMpKoc =
+        (mpDeal.kocId && kocLookup.byId.get(mpDeal.kocId)) ||
+        (mp.kocId && kocLookup.byId.get(mp.kocId)) ||
+        (mpCleanHandle ? kocLookup.byHandle.get(mpCleanHandle) : undefined);
       const evalResult = buildLarkPaymentRequestSlip({
         requestType: 'SETTLEMENT',
         deals: [mpDeal],
-        kocs,
+        kocs: matchedMpKoc ? [matchedMpKoc] : [],
         overridesByDealId: {
           [mpDeal.id]: {
             linkAir: mp.postUrl || '',
@@ -1006,6 +1041,7 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
     selfJobs,
     scopedStoreNameSet,
     dealByCodeMap,
+    kocLookup,
     stores,
     kocs,
     currentUserName,
@@ -1018,8 +1054,14 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
     const map = new Map<string, UnifiedAcceptancePaymentItem>();
     for (const item of unifiedItems) {
       map.set(item.code.trim().toUpperCase(), item);
-      if (item.rawSelfJob && item.storeName) {
-        map.set(`${item.code}@${item.storeName}`.toUpperCase(), item);
+      if (item.rawSelfJob) {
+        if (item.storeName) {
+          map.set(`${item.code}@${item.storeName}`.toUpperCase(), item);
+        }
+        if (item.brandName) {
+          map.set(`${item.code}@${item.brandName}`.toUpperCase(), item);
+        }
+        map.set(`${item.code}@GIAN`.toUpperCase(), item);
       }
     }
     return map;
@@ -1266,17 +1308,15 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
       }
       const syncedCodes = new Set(itemsToSync.map(x => x.code.toUpperCase()));
       const nowIso = new Date().toISOString();
-      setApprovedItems(prev => {
-        const updated = prev.map(row => {
-          if (!syncedCodes.has((row.maBooking || '').trim().toUpperCase())) return row;
-          return {
-            ...row,
-            larkSyncedAt: nowIso,
-          };
-        });
-        saveApprovedBookingList(updated);
-        return updated;
+      const updatedApproved = approvedItems.map(row => {
+        if (!syncedCodes.has((row.maBooking || '').trim().toUpperCase())) return row;
+        return {
+          ...row,
+          larkSyncedAt: nowIso,
+        };
       });
+      setApprovedItems(updatedApproved);
+      saveApprovedBookingList(updatedApproved);
       setSelectedQueueIds([]);
       onNotify?.(
         `Đã đẩy nghiệm thu ${json.syncedCount || itemsToSync.length} hạng mục sang Bảng 3.2 Larkbase.`,
@@ -1325,11 +1365,9 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
           return false;
         }
         if (body.slip) {
-          setSlips(prev => {
-            const next = [body.slip!, ...prev.filter(x => x.id !== body.slip!.id)];
-            saveLarkPaymentSlipsToStorage(next);
-            return next;
-          });
+          const nextSlips = [body.slip, ...slips.filter(x => x.id !== body.slip!.id)];
+          setSlips(nextSlips);
+          saveLarkPaymentSlipsToStorage(nextSlips);
         }
         if (!silent) {
           onNotify?.(
@@ -1345,7 +1383,7 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
         setBusyKey(null);
       }
     },
-    [onNotify]
+    [onNotify, slips]
   );
 
   // Mở hộp thoại lập phiếu Tạm ứng / ĐNTT cho 1 hoặc nhiều hạng mục đã chọn
@@ -1472,83 +1510,106 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
         const isApproved = st === 'APPROVED' || isPaid;
 
         // 1. Cập nhật sổ phiếu local
-        setSlips(prev => {
-          const next = prev.map(x => (x.id === updatedSlip.id ? updatedSlip : x));
-          saveLarkPaymentSlipsToStorage(next);
-          return next;
-        });
+        const nextSlips = slips.map(x => (x.id === updatedSlip.id ? updatedSlip : x));
+        setSlips(nextSlips);
+        saveLarkPaymentSlipsToStorage(nextSlips);
         setDetailSlip(prev => (prev && prev.id === updatedSlip.id ? updatedSlip : prev));
 
-        // 2. Đồng bộ ngược sang Bảng 3.2 (ApprovedBookingList)
-        setApprovedItems(prev => {
-          const next = prev.map(row => {
-            if (!dealCodesInSlip.has((row.maBooking || '').trim().toUpperCase())) return row;
-            if (updatedSlip.requestType === 'ADVANCE') {
-              return {
-                ...row,
-                larkAdvanceSlipCode: updatedSlip.slipCode,
-                larkAdvanceInstanceCode: updatedSlip.larkSync.approvalInstanceCode,
-                larkAdvanceStatus: (isRejected
-                  ? 'TỪ_CHỐI_TẠM_ỨNG'
-                  : isPaid
-                  ? 'ĐÃ_CHI_TẠM_ỨNG'
-                  : isApproved
-                  ? 'ĐÃ_DUYỆT_TẠM_ỨNG'
-                  : 'CHỜ_DUYỆT_TẠM_ỨNG') as ApprovedBookingListItem['larkAdvanceStatus'],
-                larkApprovalStatus: st,
-                trangThaiPhieuThanhToan: (isRejected
-                  ? 'Từ chối duyệt'
-                  : isPaid || isApproved
-                  ? 'Đã tạm ứng'
-                  : 'Đang duyệt Lark') as ApprovedBookingListItem['trangThaiPhieuThanhToan'],
-              };
-            }
-            return {
+        // 2. Đồng bộ ngược sang Bảng 3.2 (ApprovedBookingList) và state deals toàn cục
+        const touchedApproved: ApprovedBookingListItem[] = [];
+        const nextApproved = approvedItems.map(row => {
+          if (!dealCodesInSlip.has((row.maBooking || '').trim().toUpperCase())) return row;
+          if (updatedSlip.requestType === 'ADVANCE') {
+            const updatedRow: ApprovedBookingListItem = {
               ...row,
-              larkSlipCode: updatedSlip.slipCode,
-              larkApprovalInstanceCode: updatedSlip.larkSync.approvalInstanceCode,
+              larkAdvanceSlipCode: updatedSlip.slipCode,
+              larkAdvanceInstanceCode: updatedSlip.larkSync.approvalInstanceCode,
+              larkAdvanceStatus: (isRejected
+                ? 'TỪ_CHỐI_TẠM_ỨNG'
+                : isPaid
+                ? 'ĐÃ_CHI_TẠM_ỨNG'
+                : isApproved
+                ? 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                : 'CHỜ_DUYỆT_TẠM_ỨNG') as ApprovedBookingListItem['larkAdvanceStatus'],
               larkApprovalStatus: st,
               trangThaiPhieuThanhToan: (isRejected
                 ? 'Từ chối duyệt'
-                : isPaid
-                ? 'Đã thanh toán'
-                : isApproved
-                ? 'Đã duyệt chờ chi'
+                : isPaid || isApproved
+                ? 'Đã tạm ứng'
                 : 'Đang duyệt Lark') as ApprovedBookingListItem['trangThaiPhieuThanhToan'],
-              daDiTien: isPaid ? true : isRejected ? false : row.daDiTien,
-              uncBillCode: updatedSlip.larkSync.uncBillCode || row.uncBillCode,
-              uncSentToKocAt: updatedSlip.larkSync.uncSentToKocAt || row.uncSentToKocAt,
             };
-          });
-          saveApprovedBookingList(next);
-          return next;
+            touchedApproved.push(updatedRow);
+            return updatedRow;
+          }
+          const updatedRow: ApprovedBookingListItem = {
+            ...row,
+            larkSlipCode: updatedSlip.slipCode,
+            larkApprovalInstanceCode: updatedSlip.larkSync.approvalInstanceCode,
+            larkApprovalStatus: st,
+            trangThaiPhieuThanhToan: (isRejected
+              ? 'Từ chối duyệt'
+              : isPaid
+              ? 'Đã thanh toán'
+              : isApproved
+              ? 'Đã duyệt chờ chi'
+              : 'Đang duyệt Lark') as ApprovedBookingListItem['trangThaiPhieuThanhToan'],
+            daDiTien: isPaid ? true : isRejected ? false : row.daDiTien,
+            uncBillCode: updatedSlip.larkSync.uncBillCode || row.uncBillCode,
+            uncSentToKocAt: updatedSlip.larkSync.uncSentToKocAt || row.uncSentToKocAt,
+          };
+          touchedApproved.push(updatedRow);
+          return updatedRow;
         });
+        setApprovedItems(nextApproved);
+        saveApprovedBookingList(nextApproved);
+        if (touchedApproved.length > 0 && onCreateOrUpdateDeals) {
+          onCreateOrUpdateDeals(touchedApproved.map(it => buildBookingDealFromApprovedItem(it)));
+        }
 
         // 3. Đồng bộ ngược sang Đa nền tảng (MultiPlatformListingItems)
-        setMultiPlatformItems(prev => {
-          let changed = false;
-          const next = prev.map(mp => {
-            const code = (mp.boCode || `MP-DEAL-${mp.id}`).trim().toUpperCase();
-            if (!dealCodesInSlip.has(code)) return mp;
-            changed = true;
-            return {
-              ...mp,
-              paymentStatus: (isRejected
-                ? 'Đủ điều kiện ĐNTT'
-                : isPaid
-                ? 'Đã thanh toán'
-                : 'Đã lập ĐNTT') as MultiPlatformListingItem['paymentStatus'],
-              stage: (isRejected
-                ? 'ACCEPTED'
-                : isPaid
-                ? 'PAID'
-                : 'PAYMENT_READY') as MultiPlatformListingItem['stage'],
-              updatedAt: new Date().toISOString(),
-            };
-          });
-          if (changed) saveMultiPlatformListingItems(next);
-          return next;
+        let mpChanged = false;
+        const nextMp = multiPlatformItems.map(mp => {
+          const code = (mp.boCode || `MP-DEAL-${mp.id}`).trim().toUpperCase();
+          const fallbackMpCode = `MP-DEAL-${mp.id}`.trim().toUpperCase();
+          if (!dealCodesInSlip.has(code) && !dealCodesInSlip.has(fallbackMpCode)) return mp;
+          mpChanged = true;
+          return {
+            ...mp,
+            paymentStatus: (isRejected
+              ? 'Đủ điều kiện ĐNTT'
+              : isPaid
+              ? 'Đã thanh toán'
+              : 'Đã lập ĐNTT') as MultiPlatformListingItem['paymentStatus'],
+            stage: (isRejected
+              ? 'ACCEPTED'
+              : isPaid
+              ? 'PAID'
+              : 'PAYMENT_READY') as MultiPlatformListingItem['stage'],
+            updatedAt: new Date().toISOString(),
+          };
         });
+        setMultiPlatformItems(nextMp);
+        if (mpChanged) saveMultiPlatformListingItems(nextMp);
+
+        // 4. Đồng bộ lạc quan cho Việc CTV Kênh Brand (Self-channel)
+        setSelfJobs(prev =>
+          prev.map(job => {
+            const jobKey = job.code.trim().toUpperCase();
+            const jobStoreKey = `${job.code}@${job.storeName || ''}`.trim().toUpperCase();
+            const jobBrandKey = `${job.code}@${job.brandName || ''}`.trim().toUpperCase();
+            if (
+              !dealCodesInSlip.has(jobKey) &&
+              !dealCodesInSlip.has(jobStoreKey) &&
+              !dealCodesInSlip.has(jobBrandKey)
+            ) {
+              return job;
+            }
+            return {
+              ...job,
+              paymentStatus: isPaid ? 'PAID' : isRejected ? 'NONE' : 'REQUESTED',
+            };
+          })
+        );
 
         setRejectSlipTarget(null);
         await reloadAllSources();
@@ -1559,7 +1620,14 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
         setBusyKey(null);
       }
     },
-    [onNotify, reloadAllSources]
+    [
+      approvedItems,
+      multiPlatformItems,
+      onCreateOrUpdateDeals,
+      onNotify,
+      reloadAllSources,
+      slips,
+    ]
   );
 
   const allModalDeals = useMemo(() => {
@@ -1581,12 +1649,12 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
       },
       {
         key: 'PENDING_ACCEPTANCE' as const,
-        label: 'Chờ nghiệm thu kỹ thuật',
+        label: 'Chờ nghiệm thu bài đăng',
         count: baseFilteredQueue.filter(i => i.paymentState === 'PENDING_ACCEPTANCE').length,
       },
       {
         key: 'HARD_BLOCKED' as const,
-        label: 'Thiếu hồ sơ / Chặn cứng',
+        label: 'Chưa đủ hồ sơ',
         count: baseFilteredQueue.filter(i => i.paymentState === 'HARD_BLOCKED').length,
       },
       {
@@ -1885,7 +1953,7 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
                   )}
                   <Button
                     size="sm"
-                    variant={r.canPushLarkSlip ? 'primary' : 'secondary'}
+                    variant="secondary"
                     disabled={
                       busyKey !== null ||
                       (r.subsystem === 'SELF_CHANNEL_CTV' && !r.canPushLarkSlip)
@@ -2074,26 +2142,12 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
               className="flex items-center justify-end gap-1.5 flex-wrap"
               onClick={e => e.stopPropagation()}
             >
-              {st === 'APPROVED' && canAct && (
-                <Input
-                  placeholder="Mã UNC..."
-                  value={uncInputs[s.id] ?? ''}
-                  onChange={e =>
-                    setUncInputs(prev => ({ ...prev, [s.id]: e.target.value }))
-                  }
-                  className="w-28 h-7 text-xs"
-                />
-              )}
-              {!isClosed && nextBtnLabel && canAct && (
+              {!isClosed && nextBtnLabel && canAct && st !== 'APPROVED' && (
                 <Button
                   size="sm"
-                  variant="primary"
+                  variant="secondary"
                   disabled={busyKey !== null}
-                  onClick={() =>
-                    void handleAdvanceOrRejectSlip(s, 'ADVANCE_STEP', {
-                      uncBillCode: uncInputs[s.id]?.trim() || undefined,
-                    })
-                  }
+                  onClick={() => void handleAdvanceOrRejectSlip(s, 'ADVANCE_STEP')}
                 >
                   {busyKey === `act-${s.id}` ? 'Đang xử lý…' : nextBtnLabel}
                 </Button>
@@ -2106,23 +2160,8 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
               >
                 Đồng bộ
               </Button>
-              {!isClosed && canAct && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busyKey !== null}
-                  onClick={() => {
-                    setRejectSlipTarget(s);
-                    setRejectReasonInput(
-                      'Cần bổ sung chứng từ nghiệm thu hoặc kiểm tra lại thông tin tài khoản thụ hưởng'
-                    );
-                  }}
-                >
-                  Từ chối
-                </Button>
-              )}
               <Button size="sm" variant="secondary" onClick={() => setDetailSlip(s)}>
-                Chi tiết
+                {st === 'APPROVED' && canAct ? 'Xác nhận UNC' : 'Chi tiết'}
               </Button>
             </div>
           );
@@ -2136,7 +2175,6 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
       currentRole,
       currentUser,
       currentUserName,
-      uncInputs,
       busyKey,
       handleAdvanceOrRejectSlip,
       handleSyncSlipStatusFromLark,
@@ -2279,9 +2317,9 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
                   items={[
                     { key: 'ALL', label: 'Tất cả' },
                     { key: 'SETTLEMENT', label: 'Thanh toán / ĐNTT' },
-                    { key: 'ADVANCE', label: 'Tạm ứng (Đợt 1)' },
-                    { key: 'ADVANCE_PENDING', label: 'Chờ / Đang duyệt TU' },
-                    { key: 'SETTLEMENT_WITH_ADVANCE', label: 'Tất toán trừ TU' },
+                    { key: 'ADVANCE', label: 'Tạm ứng' },
+                    { key: 'ADVANCE_PENDING', label: 'Chờ duyệt tạm ứng' },
+                    { key: 'SETTLEMENT_WITH_ADVANCE', label: 'Tất toán sau tạm ứng' },
                   ]}
                 />
               </div>
@@ -2323,11 +2361,11 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
                 }}
                 className="w-56"
               >
-                <option value="ALL">Phân hệ: Tất cả phân hệ Booking</option>
-                <option value="TIKTOK_KOC_32">1. Booking KOC TikTok (Bảng 3.2)</option>
-                <option value="MULTI_PLATFORM">2. Đa nền tảng (Shopee / FB / IG / Threads)</option>
-                <option value="SELF_CHANNEL_CTV">3. Video Kênh Brand &amp; CTV</option>
-                <option value="LIVESTREAM_DEAL">4. Booking Livestream / Kế hoạch</option>
+                <option value="ALL">Tất cả phân hệ</option>
+                <option value="TIKTOK_KOC_32">Booking TikTok</option>
+                <option value="MULTI_PLATFORM">Booking đa sàn</option>
+                <option value="SELF_CHANNEL_CTV">Video Self-channel &amp; CTV</option>
+                <option value="LIVESTREAM_DEAL">Livestream Affiliate</option>
               </Select>
 
               <Select

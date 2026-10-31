@@ -19,6 +19,7 @@ import {
   extractSystemVideoId,
   ingestWeeklyRowsBySystemVideoId,
   registerNewSystemVideo,
+  sanitizeWeeklyHistoryStore,
   type KocVideoWeeklyHistoryStoreData,
   type WeeklyVideoInputRow,
 } from '@/lib/kocVideoWeeklyHistory';
@@ -763,7 +764,8 @@ export async function POST(req: NextRequest) {
         KOC_VIDEO_HISTORY_RECORD_KEY,
         buildInitialWeeklyHistoryStore(),
         (current) => {
-          const nextRegisteredById = { ...current.registeredVideosById };
+          const cleanCurrent = sanitizeWeeklyHistoryStore(current).store;
+          const nextRegisteredById = { ...cleanCurrent.registeredVideosById };
           for (const item of codes) {
             const vidKey =
               item.videoId && nextRegisteredById[item.videoId]
@@ -789,9 +791,9 @@ export async function POST(req: NextRequest) {
             }
           }
           return {
-            ...current,
             registeredVideosById: nextRegisteredById,
-            registeredVideos: Object.values(nextRegisteredById),
+            snapshotsByKey: cleanCurrent.snapshotsByKey || {},
+            batches: cleanCurrent.batches || [],
             updatedAt: nowIso,
           };
         }

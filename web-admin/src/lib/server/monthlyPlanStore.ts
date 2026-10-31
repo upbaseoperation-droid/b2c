@@ -109,7 +109,7 @@ const planInclude = {
 
 type PlanRow = Prisma.MonthlyPlanGetPayload<{ include: typeof planInclude }>;
 
-const PLANS_CACHE_TTL_MS = 25_000;
+const PLANS_CACHE_TTL_MS = 60_000;
 const DEPRECATED_MOCK_PLAN_IDS = new Set([
   'PLAN-2026-09-CLIO',
   'PLAN-2026-09-LEMONADE',
@@ -349,13 +349,39 @@ async function getStoredPlanByIdFast(id: string): Promise<StoredMonthlyPlan | nu
     const mem = memoryPlansById.get(id);
     return mem ? toMemoryStored(mem) : null;
   }
-  if (cachedPlansState && Date.now() < cachedPlansState.expiresAt) {
-    const cached = cachedPlansState.byId.get(id);
-    if (cached) return cached;
+  const cached = cachedPlansState?.byId.get(id);
+  if (cached) {
+    if (Date.now() < cachedPlansState!.expiresAt) return cached;
+    try {
+      const meta = await prisma.monthlyPlan.findUnique({
+        where: { id },
+        select: {
+          deletedAt: true,
+          revision: true,
+          _count: { select: { versionSnapshots: true, discussions: true } },
+        },
+      });
+      if (!meta || meta.deletedAt) return null;
+      if (
+        meta.revision === cached.revision &&
+        (cached.plan.versionSnapshots?.length || 0) === meta._count.versionSnapshots &&
+        (cached.plan.discussions?.length || 0) === meta._count.discussions
+      ) {
+        return cached;
+      }
+    } catch {
+      // Fall through to full read
+    }
   }
   const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
   if (!row || row.deletedAt) return null;
-  return toStored(row);
+  const stored = toStored(row);
+  if (cachedPlansState) {
+    cachedPlansState.byId.set(id, stored);
+    const idx = cachedPlansState.list.findIndex(item => item.plan.id === id);
+    if (idx >= 0) cachedPlansState.list[idx] = stored;
+  }
+  return stored;
 }
 
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
@@ -493,6 +519,22 @@ export async function resolveBrandPlanAccess(id: string, actor: UserProfile): Pr
 
 /** Mã mọi kế hoạch (cho việc đồng bộ của hệ thống, không lọc theo người dùng). */
 export async function allPlanIdsForSync(): Promise<string[]> {
+  if (cachedPlansState) {
+    return cachedPlansState.list.map(r => r.plan.id);
+  }
+  if (isPostgresMonthlyPlanEnabled()) {
+    try {
+      const rows = await prisma.monthlyPlan.findMany({
+        where: { deletedAt: null },
+        select: { id: true },
+      });
+      if (rows.length > 0) {
+        return rows.map(r => r.id).filter(id => !isDeprecatedMockPlanId(id));
+      }
+    } catch {
+      // Fall back to loadAllStoredPlans
+    }
+  }
   return (await loadAllStoredPlans()).map(r => r.plan.id);
 }
 
@@ -561,6 +603,65 @@ async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMon
     return inflightPlansLoad;
   }
   inflightPlansLoad = (async () => {
+    const previousCache = cachedPlansState;
+    if (previousCache && hasVerifiedRealLarkPlans) {
+      try {
+        const metaRows = await prisma.monthlyPlan.findMany({
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            revision: true,
+            _count: { select: { versionSnapshots: true, discussions: true } },
+          },
+          orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }],
+        });
+        if (metaRows.length > 0) {
+          const validMeta = metaRows.filter(m => !isDeprecatedMockPlanId(m.id));
+          const changedIds: string[] = [];
+          for (const m of validMeta) {
+            const cached = previousCache.byId.get(m.id);
+            if (
+              !cached ||
+              cached.revision !== m.revision ||
+              (cached.plan.versionSnapshots?.length || 0) !== m._count.versionSnapshots ||
+              (cached.plan.discussions?.length || 0) !== m._count.discussions
+            ) {
+              changedIds.push(m.id);
+            }
+          }
+          const freshById = new Map<string, StoredMonthlyPlan>();
+          if (changedIds.length > 0) {
+            const changedRows = await prisma.monthlyPlan.findMany({
+              where: { id: { in: changedIds }, deletedAt: null },
+              include: planInclude,
+            });
+            for (const r of changedRows) {
+              if (!isDeprecatedMockPlanId(r.id)) {
+                freshById.set(r.id, toStored(r));
+              }
+            }
+          }
+          const nextList: StoredMonthlyPlan[] = [];
+          const nextById = new Map<string, StoredMonthlyPlan>();
+          for (const m of validMeta) {
+            const item = freshById.get(m.id) || previousCache.byId.get(m.id);
+            if (item) {
+              nextList.push(item);
+              nextById.set(m.id, item);
+            }
+          }
+          cachedPlansState = {
+            expiresAt: Date.now() + PLANS_CACHE_TTL_MS,
+            list: nextList,
+            byId: nextById,
+          };
+          return nextList;
+        }
+      } catch {
+        // Fall through to full load
+      }
+    }
+
     let rows = await prisma.monthlyPlan.findMany({
       where: { deletedAt: null },
       include: planInclude,

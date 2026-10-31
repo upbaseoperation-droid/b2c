@@ -57,7 +57,7 @@ function DiscussionWorkspace({ root, family, actorId, initialRoom, onRooms, rend
     // Initial fetch updates state after the network response, not synchronously.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh(controller.signal);
-    const timer = setInterval(() => { if (document.visibilityState === 'visible') void refresh(controller.signal); }, 15000);
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') void refresh(controller.signal); }, 60000);
     return () => { controller.abort(); clearInterval(timer); };
   }, [refresh]);
   const markRead = useCallback((key: string, revision: number) => {
@@ -131,7 +131,7 @@ function ThreadPane({ roomKey, onRead, onSaved }: { roomKey: string; onRead: (ke
     // Initial fetch updates state asynchronously after the server responds.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
-    const timer = setInterval(() => { if (!busy.current && visible.current && document.visibilityState === 'visible') void refresh(); }, 10000);
+    const timer = setInterval(() => { if (!busy.current && visible.current && document.visibilityState === 'visible') void refresh(); }, 45000);
     return () => { mounted.current = false; clearInterval(timer); };
   }, [refresh]);
   async function older() {
@@ -194,7 +194,7 @@ function ThreadPane({ roomKey, onRead, onSaved }: { roomKey: string; onRead: (ke
           {data.thread.proposalVersion && <p className="text-xs text-ink-3">Không duyệt / cần bổ sung phải có lý do. Gửi ý kiến hoặc ghi nhận trao đổi bên ngoài không tự thay đổi quyết định.</p>}
         </fieldset>
         {sending && <p role="status" className="text-sm text-accent-hover">Đang lưu…</p>}
-        {pending && !sending && <div className="flex flex-wrap items-center gap-2"><span className="text-sm text-critical">Chưa xác nhận đã lưu.</span><button className={buttonClass} type="button" onClick={() => void send(pending.kind, pending)}>Thử gửi lại</button><button className={buttonClass} type="button" onClick={() => { setPending(null); busy.current = false; void refresh(); }}>Kiểm tra lịch sử / sửa nội dung</button></div>}
+        {pending && !sending && <div className="flex flex-wrap items-center gap-2"><span className="text-sm text-critical">Chưa xác nhận đã lưu.</span><button className={buttonClass} type="button" onClick={() => void send(pending.kind, pending)}>Thử gửi lại</button><button className={buttonClass} type="button" onClick={() => { setPending(null); busy.current = false; void refresh(); }}>Kiểm tra lịch sử / sửa nội dung</button>}</div>}
       </form>
     </>}
   </div>;

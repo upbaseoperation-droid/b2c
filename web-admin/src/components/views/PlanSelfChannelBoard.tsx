@@ -74,7 +74,7 @@ export interface PlanSelfChannelBoardProps {
   currentUserName?: string;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   /** Mở đúng kế hoạch này (bấm từ Tổng quan / Hàng chờ duyệt); nonce đổi để mở lại cùng kế hoạch */
-  focus?: { planId: string; nonce: number; jobCode?: string } | null;
+  focus?: { planId: string; nonce: number; jobCode?: string; storeName?: string; monthKey?: string } | null;
   /** Mở tab Quyết toán (BBNT tháng, ĐNTT Lark, Kế toán xác nhận đã chi) */
   onOpenSettlement?: () => void;
 }
@@ -136,8 +136,19 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
   // Nhảy tới kế hoạch được chọn từ màn khác, khi danh sách kế hoạch đã tải
   const [appliedFocusNonce, setAppliedFocusNonce] = useState<number | null>(null);
-  if (focus && focus.nonce !== appliedFocusNonce) {
-    const target = plans.find(p => p.id === focus.planId);
+  const isWaitingForFocusPlan = Boolean(
+    focus && focus.nonce !== appliedFocusNonce && plansState === 'loading'
+  );
+  if (focus && focus.nonce !== appliedFocusNonce && plans.length > 0) {
+    const target =
+      plans.find(p => p.id === focus.planId) ||
+      (focus.storeName
+        ? plans.find(
+            p =>
+              p.storeName?.trim().toLowerCase() === focus.storeName?.trim().toLowerCase() &&
+              (!focus.monthKey || p.month === focus.monthKey)
+          )
+        : undefined);
     if (target) {
       setAppliedFocusNonce(focus.nonce);
       setMonth(target.month);
@@ -184,12 +195,13 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   }, [plans, activeMonth, search]);
 
   useEffect(() => {
+    if (isWaitingForFocusPlan) return;
     if (!selectedId && visiblePlans.length > 0) {
       queueMicrotask(() => setSelectedId(visiblePlans[0].id));
     } else if (selectedId && !visiblePlans.some(p => p.id === selectedId)) {
       queueMicrotask(() => setSelectedId(visiblePlans[0]?.id ?? null));
     }
-  }, [visiblePlans, selectedId]);
+  }, [visiblePlans, selectedId, isWaitingForFocusPlan]);
 
   const activePlan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
 

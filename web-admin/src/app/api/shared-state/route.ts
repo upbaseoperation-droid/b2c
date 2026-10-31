@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { USERS } from '@/lib/mockData';
-import { readRecord, upsertRecord, RecordError } from '@/lib/server/sharedRecords';
+import { readRecord, readRecordsBatch, readRevisionsBatch, upsertRecord, RecordError } from '@/lib/server/sharedRecords';
 import { ensureLarkListingsSyncedToDb } from '@/lib/server/larkListingDbSync';
 import {
   isSyntheticMultiPlatformSeedItem,
@@ -94,6 +94,171 @@ async function syncStoreOverridesToPrisma(data: unknown): Promise<void> {
   }
 }
 
+const ENTITY_MERGE_ARRAY_KEYS = new Set<string>([
+  'brand-monthly-plans-v1',
+  'store-air-plans-v1',
+  'approved-booking-list-v2',
+  'multi-platform-listings-v1',
+  'multi-platform-reups-v1',
+  'sla-tasks-v1',
+  'custom-knowledge-articles-v1',
+]);
+
+function getSharedEntityId(key: string, rawItem: unknown): string {
+  if (!rawItem || typeof rawItem !== 'object') return '';
+  const item = rawItem as Record<string, unknown>;
+  if (typeof item.id === 'string' && item.id.trim()) {
+    return item.id.trim();
+  }
+  if (key === 'approved-booking-list-v2') {
+    if (typeof item.sourceSheetRowId === 'string' && item.sourceSheetRowId.trim()) {
+      return `row:${item.sourceSheetRowId.trim()}`;
+    }
+    if (typeof item.maBooking === 'string' && item.maBooking.trim()) {
+      return `bo:${item.maBooking.trim()}`;
+    }
+  }
+  if (key === 'brand-monthly-plans-v1') {
+    const brand = typeof item.brandName === 'string' ? item.brandName.trim() : '';
+    const month =
+      typeof item.monthKey === 'string'
+        ? item.monthKey.trim()
+        : typeof item.month === 'string'
+          ? item.month.trim()
+          : '';
+    if (brand && month) return `bmp:${brand}::${month}`;
+  }
+  if (key === 'store-air-plans-v1') {
+    const store =
+      typeof item.storeId === 'string'
+        ? item.storeId.trim()
+        : typeof item.storeName === 'string'
+          ? item.storeName.trim()
+          : '';
+    const month =
+      typeof item.monthKey === 'string'
+        ? item.monthKey.trim()
+        : typeof item.month === 'string'
+          ? item.month.trim()
+          : '';
+    if (store && month) return `sap:${store}::${month}`;
+  }
+  return '';
+}
+
+function getEntityTimestampMs(rawItem: unknown): number {
+  if (!rawItem || typeof rawItem !== 'object') return 0;
+  const item = rawItem as Record<string, unknown>;
+  const ts =
+    (typeof item.updatedAt === 'string' && item.updatedAt) ||
+    (typeof item.brandReviewedAt === 'string' && item.brandReviewedAt) ||
+    (typeof item.bookingOrderCreatedAt === 'string' && item.bookingOrderCreatedAt) ||
+    (typeof item.createdAt === 'string' && item.createdAt) ||
+    '';
+  if (!ts) return 0;
+  const parsed = Date.parse(ts);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Hợp nhất thông minh cấp độ thực thể (Entity-Level Concurrency Merge) chống lỗi Last-Write-Wins
+ * khi nhiều PIC cùng thao tác đồng thời trên 69 gian hàng.
+ */
+function mergeSharedStateData(
+  key: string,
+  currentServerData: unknown,
+  incomingClientData: unknown,
+  deletedIds?: string[]
+): unknown {
+  const deletedSet = new Set((deletedIds || []).map((id) => String(id).trim()).filter(Boolean));
+
+  if (
+    key === 'store-overrides-v1' &&
+    currentServerData &&
+    typeof currentServerData === 'object' &&
+    !Array.isArray(currentServerData) &&
+    incomingClientData &&
+    typeof incomingClientData === 'object' &&
+    !Array.isArray(incomingClientData)
+  ) {
+    const mergedMap: Record<string, unknown> = {
+      ...(currentServerData as Record<string, unknown>),
+      ...(incomingClientData as Record<string, unknown>),
+    };
+    for (const delKey of deletedSet) {
+      delete mergedMap[delKey];
+    }
+    return mergedMap;
+  }
+
+  if (!ENTITY_MERGE_ARRAY_KEYS.has(key) || !Array.isArray(incomingClientData)) {
+    return incomingClientData;
+  }
+
+  if (!Array.isArray(currentServerData) || currentServerData.length === 0) {
+    return deletedSet.size > 0
+      ? incomingClientData.filter((it) => !deletedSet.has(getSharedEntityId(key, it)))
+      : incomingClientData;
+  }
+
+  const serverById = new Map<string, unknown>();
+  const serverOrderIds: string[] = [];
+
+  for (const srvItem of currentServerData) {
+    const id = getSharedEntityId(key, srvItem);
+    if (!id || deletedSet.has(id)) continue;
+    if (!serverById.has(id)) {
+      serverOrderIds.push(id);
+    }
+    serverById.set(id, srvItem);
+  }
+
+  const visitedIds = new Set<string>();
+  const mergedList: unknown[] = [];
+
+  for (const incItem of incomingClientData) {
+    const id = getSharedEntityId(key, incItem);
+    if (!id) {
+      mergedList.push(incItem);
+      continue;
+    }
+    if (deletedSet.has(id) || visitedIds.has(id)) continue;
+    visitedIds.add(id);
+
+    const existingSrv = serverById.get(id);
+    if (!existingSrv) {
+      mergedList.push(incItem);
+      continue;
+    }
+
+    const srvTs = getEntityTimestampMs(existingSrv);
+    const incTs = getEntityTimestampMs(incItem);
+
+    // Nếu bản ghi trên máy chủ có dấu thời gian cập nhật mới hơn hẳn bản client gửi lên,
+    // giữ bản máy chủ để không làm mất chỉnh sửa vừa lưu của đồng nghiệp khác.
+    if (srvTs > 0 && incTs > 0 && srvTs > incTs) {
+      mergedList.push(existingSrv);
+    } else {
+      mergedList.push(incItem);
+    }
+  }
+
+  // Bảo toàn các bản ghi do nhân sự khác vừa thêm mới trên máy chủ (chưa kịp có trên trình duyệt người gửi)
+  const concurrentServerAdditions: unknown[] = [];
+  for (const srvId of serverOrderIds) {
+    if (!visitedIds.has(srvId) && !deletedSet.has(srvId)) {
+      const item = serverById.get(srvId);
+      if (item !== undefined) {
+        concurrentServerAdditions.push(item);
+      }
+    }
+  }
+
+  return concurrentServerAdditions.length > 0
+    ? [...concurrentServerAdditions, ...mergedList]
+    : mergedList;
+}
+
 function sanitizeSharedStatePayload(key: string, data: unknown): unknown {
   if (!Array.isArray(data)) return data;
   if (key === 'multi-platform-listings-v1') {
@@ -131,6 +296,20 @@ export async function GET(req: NextRequest) {
 
     const singleKey = req.nextUrl.searchParams.get('key')?.trim();
     const multiKeys = req.nextUrl.searchParams.get('keys')?.trim();
+    const clientRevsRaw = req.nextUrl.searchParams.get('clientRevs')?.trim() || '';
+
+    const clientRevMap = new Map<string, number>();
+    if (clientRevsRaw) {
+      for (const part of clientRevsRaw.split(',')) {
+        const idx = part.lastIndexOf(':');
+        if (idx <= 0) continue;
+        const k = part.slice(0, idx).trim();
+        const rev = Number(part.slice(idx + 1).trim());
+        if (k && Number.isInteger(rev) && rev > 0) {
+          clientRevMap.set(k, rev);
+        }
+      }
+    }
 
     let targetKeys: string[] = [];
 
@@ -158,13 +337,32 @@ export async function GET(req: NextRequest) {
       await ensureLarkListingsSyncedToDb();
     }
 
-    const records: Record<string, { revision: number; data: unknown }> = {};
-    await Promise.all(
-      targetKeys.map(async (k) => {
-        const rec = await readRecord<unknown>(k, null);
+    const records: Record<string, { revision: number; data: unknown; unchanged?: boolean }> = {};
+    let keysToFetchData = targetKeys;
+
+    if (clientRevMap.size > 0) {
+      const serverRevs = await readRevisionsBatch(targetKeys);
+      keysToFetchData = [];
+      for (const k of targetKeys) {
+        const srvRev = serverRevs.get(k) ?? 0;
+        const cliRev = clientRevMap.get(k) ?? 0;
+        if (srvRev > 0 && cliRev === srvRev) {
+          records[k] = { revision: srvRev, data: null, unchanged: true };
+        } else if (srvRev === 0) {
+          records[k] = { revision: 0, data: null };
+        } else {
+          keysToFetchData.push(k);
+        }
+      }
+    }
+
+    if (keysToFetchData.length > 0) {
+      const batchMap = await readRecordsBatch<unknown>(keysToFetchData, null, { clone: false });
+      for (const k of keysToFetchData) {
+        const rec = batchMap.get(k) || { revision: 0, data: null };
         records[k] = { revision: rec.revision, data: sanitizeSharedStatePayload(k, rec.data) };
-      })
-    );
+      }
+    }
 
     if (singleKey) {
       return NextResponse.json(
@@ -172,6 +370,7 @@ export async function GET(req: NextRequest) {
           success: true,
           key: singleKey,
           revision: records[singleKey]?.revision ?? 0,
+          unchanged: records[singleKey]?.unchanged ?? false,
           data: records[singleKey]?.data ?? null,
           records,
         },
@@ -216,16 +415,31 @@ export async function PUT(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as {
       key?: string;
       data?: unknown;
+      deletedIds?: string[];
+      mode?: 'MERGE' | 'REPLACE';
       updates?: Record<string, unknown>;
+      deletedIdsByKey?: Record<string, string[]>;
     };
 
     const updatesMap: Record<string, unknown> = {};
+    const deletedMap: Record<string, string[]> = {};
 
     if (body.key && typeof body.key === 'string') {
-      updatesMap[body.key.trim()] = body.data;
+      const cleanKey = body.key.trim();
+      updatesMap[cleanKey] = body.data;
+      if (Array.isArray(body.deletedIds)) {
+        deletedMap[cleanKey] = body.deletedIds;
+      }
     } else if (body.updates && typeof body.updates === 'object') {
       for (const [k, v] of Object.entries(body.updates)) {
         updatesMap[k.trim()] = v;
+      }
+      if (body.deletedIdsByKey && typeof body.deletedIdsByKey === 'object') {
+        for (const [k, delIds] of Object.entries(body.deletedIdsByKey)) {
+          if (Array.isArray(delIds)) {
+            deletedMap[k.trim()] = delIds;
+          }
+        }
       }
     }
 
@@ -246,7 +460,8 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const savedRecords: Record<string, { revision: number; data: unknown }> = {};
+    const returnFullData = req.nextUrl.searchParams.get('returnData') === '1';
+    const savedRecords: Record<string, { revision: number; data?: unknown }> = {};
 
     const isAdminOrManager =
       ['ADMIN', 'MANAGER'].includes(user.role) ||
@@ -268,24 +483,32 @@ export async function PUT(req: NextRequest) {
       'store-overrides-v1',
     ]);
 
+    const keysNeedingExistenceCheck = keysToProcess.filter(
+      (k) =>
+        k === 'staff-brand-listing-sheets-v1' ||
+        (ADMIN_ONLY_KEYS.has(k) && !isAdminOrManager) ||
+        (MASTER_CONFIG_KEYS.has(k) && !canManageMasterData)
+    );
+    const existingRevisionsMap =
+      keysNeedingExistenceCheck.length > 0
+        ? await readRevisionsBatch(keysNeedingExistenceCheck)
+        : new Map<string, number>();
+
     for (const key of keysToProcess) {
       let dataToSave = sanitizeSharedStatePayload(key, updatesMap[key]);
 
       // Sheet nhân sự lưu theo từng dòng qua /api/staff-listing-sheets (có kiểm quyền theo gian).
       // Ở đây chỉ nhận lần nạp đầu khi máy chủ chưa có dữ liệu, không cho ghi đè cả kho.
       if (key === 'staff-brand-listing-sheets-v1') {
-        const existing = await readRecord<unknown>(key, null);
-        if (existing.revision > 0) continue;
+        if ((existingRevisionsMap.get(key) || 0) > 0) continue;
       }
 
       if (ADMIN_ONLY_KEYS.has(key) && !isAdminOrManager) {
-        const existing = await readRecord<unknown>(key, null);
-        if (existing.revision > 0) continue;
+        if ((existingRevisionsMap.get(key) || 0) > 0) continue;
       }
 
       if (MASTER_CONFIG_KEYS.has(key) && !canManageMasterData) {
-        const existing = await readRecord<unknown>(key, null);
-        if (existing.revision > 0) continue;
+        if ((existingRevisionsMap.get(key) || 0) > 0) continue;
       }
 
       // Giới hạn số lượng bản ghi cho logs và screenshots để tránh phình dung lượng
@@ -295,8 +518,27 @@ export async function PUT(req: NextRequest) {
         dataToSave = dataToSave.slice(0, 500);
       }
 
-      const saved = await upsertRecord<unknown>(key, null, () => dataToSave);
-      savedRecords[key] = { revision: saved.revision, data: saved.data };
+      const keyDeletedIds = deletedMap[key];
+      const forceReplace = body.mode === 'REPLACE';
+      const saved = await upsertRecord<unknown>(key, null, (currentServerData) => {
+        if (forceReplace) return dataToSave;
+        const merged = mergeSharedStateData(
+          key,
+          sanitizeSharedStatePayload(key, currentServerData),
+          dataToSave,
+          keyDeletedIds
+        );
+        if (key === 'video-acceptance-screenshots-v1' && Array.isArray(merged)) {
+          return merged.slice(0, 100);
+        }
+        if (key === 'api-usage-logs-v1' && Array.isArray(merged)) {
+          return merged.slice(0, 500);
+        }
+        return merged;
+      });
+      savedRecords[key] = returnFullData
+        ? { revision: saved.revision, data: saved.data }
+        : { revision: saved.revision };
 
       // Đồng bộ gian hàng bị override sang bảng prisma.storePortfolio nếu cấu hình DB
       if (key === 'store-overrides-v1' && dataToSave && typeof dataToSave === 'object') {

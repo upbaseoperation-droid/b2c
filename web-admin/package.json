@@ -13,7 +13,9 @@
     "ui:audit": "node scripts/ui-audit-browser/run.mjs",
     "test": "tsx --test tests/*.test.ts",
     "db:push": "node --env-file=.env.local node_modules/prisma/build/index.js db push",
-    "db:status": "node --env-file=.env.local node_modules/prisma/build/index.js migrate status"
+    "db:status": "node --env-file=.env.local node_modules/prisma/build/index.js migrate status",
+    "db:sync": "node --env-file=.env.local ./node_modules/tsx/dist/cli.mjs scripts/supabase-sync-all.ts",
+    "db:inspect": "node --env-file=.env.local ./node_modules/tsx/dist/cli.mjs scripts/supabase-sync-all.ts --inspect"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

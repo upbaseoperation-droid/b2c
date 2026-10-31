@@ -2,12 +2,20 @@ import { mkdir, readFile, writeFile, rename, open, unlink } from 'node:fs/promis
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import prisma from '../prisma';
+import { isPostgresStorageEnabled } from '../server/dbStorageMode';
 import { ContractError, requireCondition } from './domain';
 import { DEMO_SEED_RECORDS } from './demoSeedRecords';
 import type { ContractRecord } from './types';
 
-const local = () => !!process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres');
+const local = () => !!process.env.CONTRACT_DATA_DIR || !isPostgresStorageEnabled('CONTRACT_STORAGE');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ process.env.CONTRACT_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.contract-data'));
+
+const PG_CONTRACT_CACHE_TTL_MS = 60_000;
+let pgContractCache: {
+  expiresAt: number;
+  byId: Map<string, ContractRecord>;
+  list: ContractRecord[];
+} | null = null;
 
 function defaultSeedRecords(): ContractRecord[] {
   return structuredClone(DEMO_SEED_RECORDS);
@@ -54,15 +62,81 @@ async function localRecords(): Promise<ContractRecord[]> {
 
 export async function listContracts(): Promise<ContractRecord[]> {
   if (local()) return localRecords();
+  const now = Date.now();
+  if (pgContractCache && now < pgContractCache.expiresAt) {
+    return pgContractCache.list;
+  }
   try {
+    if (pgContractCache) {
+      const metaRows = await prisma.$queryRaw<Array<{ id: string; revision: number }>>`
+        SELECT id, revision FROM "ContractHubRecord" ORDER BY "updatedAt" DESC
+      `;
+      const changedIds: string[] = [];
+      for (const m of metaRows) {
+        const cached = pgContractCache.byId.get(m.id);
+        if (!cached || cached.revision !== Number(m.revision)) {
+          changedIds.push(m.id);
+        }
+      }
+      const nextById = new Map<string, ContractRecord>(pgContractCache.byId);
+      if (changedIds.length > 0) {
+        const changedRows = await prisma.$queryRaw<Array<{ id: string; data: ContractRecord }>>`
+          SELECT id, data FROM "ContractHubRecord" WHERE id = ANY(${changedIds}::text[])
+        `;
+        for (const r of changedRows) {
+          if (r.data && r.id) nextById.set(r.id, r.data);
+        }
+      }
+      const merged = mergeWithSeedRecords(Array.from(nextById.values()));
+      pgContractCache = {
+        expiresAt: Date.now() + PG_CONTRACT_CACHE_TTL_MS,
+        byId: new Map(merged.map(r => [r.id, r])),
+        list: merged,
+      };
+      return merged;
+    }
+
     const rows = await prisma.$queryRaw<Array<{ data: ContractRecord }>>`SELECT data FROM "ContractHubRecord" ORDER BY "updatedAt" DESC`;
-    return mergeWithSeedRecords(rows.map(r => r.data));
+    const merged = mergeWithSeedRecords(rows.map(r => r.data));
+    pgContractCache = {
+      expiresAt: Date.now() + PG_CONTRACT_CACHE_TTL_MS,
+      byId: new Map(merged.map(r => [r.id, r])),
+      list: merged,
+    };
+    return merged;
   } catch {
     return localRecords().catch(() => defaultSeedRecords());
   }
 }
 
 export async function getContract(id: string) {
+  if (!local()) {
+    const cached = pgContractCache?.byId.get(id);
+    if (cached && Date.now() < pgContractCache!.expiresAt) {
+      return cached;
+    }
+    try {
+      if (cached) {
+        const meta = await prisma.$queryRaw<Array<{ revision: number }>>`
+          SELECT revision FROM "ContractHubRecord" WHERE id = ${id} LIMIT 1
+        `;
+        if (meta.length > 0 && Number(meta[0].revision) === cached.revision) {
+          return cached;
+        }
+      }
+      const rows = await prisma.$queryRaw<Array<{ data: ContractRecord }>>`
+        SELECT data FROM "ContractHubRecord" WHERE id = ${id} LIMIT 1
+      `;
+      if (rows.length > 0 && rows[0].data) {
+        if (pgContractCache) {
+          pgContractCache.byId.set(id, rows[0].data);
+        }
+        return rows[0].data;
+      }
+    } catch {
+      // Fall back to listContracts
+    }
+  }
   const record = (await listContracts()).find(r => r.id === id);
   requireCondition(record, 'Không tìm thấy hồ sơ.', 404);
   return record;
@@ -86,6 +160,11 @@ export async function saveContract(record: ContractRecord, expected?: number) {
           SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW()
         `;
       });
+      if (pgContractCache) {
+        pgContractCache.byId.set(next.id, next);
+        pgContractCache.list = mergeWithSeedRecords(Array.from(pgContractCache.byId.values()));
+        pgContractCache.expiresAt = Date.now() + PG_CONTRACT_CACHE_TTL_MS;
+      }
       return next;
     } catch (err) {
       if (err instanceof ContractError) throw err;

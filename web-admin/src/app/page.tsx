@@ -10,135 +10,11 @@ import { MobileBottomNav } from '../components/MobileBottomNav';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
 import { UserProfileModal } from '../components/UserProfileModal';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-import { CockpitView } from '../components/views/CockpitView';
-
-import dynamic from 'next/dynamic';
+import { WorkspaceViewRouter, ViewLoading, prefetchViewTab } from '../components/WorkspaceViewRouter';
 import type { ContractIntent } from '../components/views/ContractManagementView';
 import type { ContractDocument } from '../lib/planDealLink';
 import type { ListingPlanContext } from '../components/views/KocListingBatchHubView';
 import type { StoreSheetSetupTabKey } from '../components/views/StoreStaffSheetSetupView';
-import {
-  getKocLegalProfiles,
-  mergeLegalDocAttachments,
-  saveSyncedKocLegalAttachments,
-} from '../components/koc/kocUtils';
-
-/** Khung giữ chỗ khi màn đang tải gói: đúng hình dạng màn (thanh lọc → hàng chỉ số → bảng), DESIGN_SYSTEM.md §9. */
-function ViewLoading() {
-  return (
-    <div role="status" aria-live="polite" className="space-y-6">
-      <span className="sr-only">Đang chuẩn bị không gian làm việc…</span>
-      <div aria-hidden="true" className="flex items-center gap-3">
-        <Skeleton className="h-8 w-56 rounded-md" />
-        <Skeleton className="h-8 w-32 rounded-md" />
-      </div>
-      <div aria-hidden="true" className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line rounded-xl overflow-hidden">
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className="bg-surface px-4 pt-4 pb-4 grid gap-3">
-            <Skeleton className="w-24" />
-            <Skeleton className="h-7 w-32 rounded-md" />
-            <Skeleton className="w-20" />
-          </div>
-        ))}
-      </div>
-      <div aria-hidden="true" className="bg-surface border border-line rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-line"><Skeleton className="h-8 w-full max-w-[18rem] rounded-md" /></div>
-        <div className="overflow-x-auto"><table className="w-full"><tbody><SkeletonRows rows={7} columns={5} /></tbody></table></div>
-      </div>
-    </div>
-  );
-}
-
-const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
-const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
-const ContentView = dynamic(() => import('../components/views/ContentView').then(m => m.ContentView), { loading: ViewLoading });
-const ManagerView = dynamic(() => import('../components/views/ManagerView').then(m => m.ManagerView), { loading: ViewLoading });
-const InputPlanBreakdownView = dynamic(() => import('../components/views/InputPlanBreakdownView').then(m => m.InputPlanBreakdownView), { loading: ViewLoading });
-const SelfChannelCtvHubView = dynamic(() => import('../components/views/SelfChannelCtvHubView').then(m => m.SelfChannelCtvHubView), { loading: ViewLoading });
-const KocKolHubView = dynamic(() => import('../components/views/KocKolHubView').then(m => m.KocKolHubView), { loading: ViewLoading });
-const CentralizedRbacHubView = dynamic(() => import('../components/views/CentralizedRbacHubView').then(m => m.CentralizedRbacHubView), { loading: ViewLoading });
-const MasterDataHubView = dynamic(() => import('../components/views/MasterDataHubView').then(m => m.MasterDataHubView), { loading: ViewLoading });
-const KocListingBatchHubView = dynamic(() => import('../components/views/KocListingBatchHubView').then(m => m.KocListingBatchHubView), { loading: ViewLoading });
-const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(m => m.KocMasterDataView), { loading: ViewLoading });
-const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
-const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
-const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
-const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
-const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
-const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCrawlerHubView').then(m => m.TikTokCrawlerHubView), { loading: ViewLoading });
-const BrandMarketResearchHubView = dynamic(() => import('../components/views/BrandMarketResearchHubView').then(m => m.BrandMarketResearchHubView), { loading: ViewLoading });
-const LarkAcceptancePaymentHubView = dynamic(() => import('../components/views/LarkAcceptancePaymentHubView').then(m => m.LarkAcceptancePaymentHubView), { loading: ViewLoading });
-
-function prefetchViewTab(tab: TabKey) {
-  switch (tab) {
-    case 'dashboard-bi':
-    case 'dashboard-brand':
-    case 'overview':
-    case 'dashboard-video':
-    case 'dashboard-team-sla':
-    case 'dashboard-staff':
-      void import('../components/views/ExecutiveDashboardReportsView');
-      break;
-    case 'input-plan':
-      void import('../components/views/InputPlanBreakdownView');
-      break;
-    case 'koc-listing':
-    case 'multi-platform-booking':
-    case 'livestream-booking':
-      void import('../components/views/KocListingBatchHubView');
-      break;
-    case 'contracts':
-      void import('../components/views/ContractManagementView');
-      break;
-    case 'brand-knowledge':
-      void import('../components/views/BrandProfilesView');
-      break;
-    case 'master-data':
-      void import('../components/views/MasterDataHubView');
-      break;
-    case 'koc-master':
-      void import('../components/views/KocMasterDataView');
-      break;
-    case 'tiktok-crawler':
-      void import('../components/views/TikTokCrawlerHubView');
-      break;
-    case 'market-research':
-      void import('../components/views/BrandMarketResearchHubView');
-      break;
-    case 'task-delegation':
-      void import('../components/views/TaskDelegationView');
-      break;
-    case 'content':
-      void import('../components/views/ContentView');
-      break;
-    case 'self-channel-hub':
-      void import('../components/views/SelfChannelCtvHubView');
-      break;
-    case 'lark-settlement':
-      void import('../components/views/LarkAcceptancePaymentHubView');
-      break;
-    case 'manager':
-      void import('../components/views/ManagerView');
-      break;
-    case 'ads-report':
-      void import('../components/views/WeeklyAdsReportHubView');
-      break;
-    case 'knowledge-qa':
-      void import('../components/views/MarketingKnowledgeQaView');
-      break;
-    case 'partner-access':
-      void import('../components/views/CentralizedRbacHubView');
-      break;
-    case 'api-settings':
-      void import('../components/views/ApiKeySetupView');
-      break;
-    case 'koc-hub':
-      void import('../components/views/KocKolHubView');
-      break;
-  }
-}
-
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { hydrateAllSharedStatesFromDb, pushSharedStateToDb } from '../lib/sharedStateClient';
 import {
@@ -206,54 +82,6 @@ function withoutAssignment(o: Partial<StorePortfolioItem> | undefined): Partial<
   return copy as Partial<StorePortfolioItem>;
 }
 
-
-const FrozenTabBody = React.memo(
-  function FrozenTabBody({
-    tabKey,
-    children,
-  }: {
-    isActive: boolean;
-    tabKey: TabKey;
-    children: React.ReactNode;
-  }) {
-    return (
-      <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
-        {children}
-      </ErrorBoundary>
-    );
-  },
-  (_prev, next) => !next.isActive
-);
-
-function KeepAliveTab({
-  tabKey,
-  currentTab,
-  children,
-}: {
-  tabKey: TabKey;
-  currentTab: TabKey;
-  children: React.ReactNode;
-}) {
-  const isActive = tabKey === currentTab;
-  const [hasMounted, setHasMounted] = useState(isActive);
-  if (isActive && !hasMounted) {
-    setHasMounted(true);
-  }
-
-  if (!hasMounted) return null;
-  return (
-    <div
-      style={{ display: isActive ? 'block' : 'none' }}
-      className="workspace-view space-y-6"
-    >
-      <PageActiveContext.Provider value={isActive}>
-        <FrozenTabBody isActive={isActive} tabKey={tabKey}>
-          {children}
-        </FrozenTabBody>
-      </PageActiveContext.Provider>
-    </div>
-  );
-}
 
 const ACTIVE_TAB_SESSION_KEY = 'upbase_active_tab';
 
@@ -638,12 +466,16 @@ export default function App() {
   const activePolicyUserId = currentUser?.id;
   useEffect(() => {
     if (!activePolicyUserId || isLoadingAuth) return;
+    let lastRefreshAt = Date.now();
     const refresh = () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastRefreshAt < 60_000) return;
+      lastRefreshAt = now;
       void loadAccessPolicy().catch(error => showToast(error.message, 'error'));
     };
     window.addEventListener('focus', refresh);
-    const timer = window.setInterval(refresh, 60000);
+    const timer = window.setInterval(refresh, 180000);
     return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
   }, [activePolicyUserId, isLoadingAuth, showToast]);
 
@@ -1705,679 +1537,90 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <>
-          <KeepAliveTab tabKey="cockpit" currentTab={activeTab}>
-            <CockpitView
+            <WorkspaceViewRouter
+              activeTab={activeTab}
               currentUser={currentUser}
               tasks={tasks}
-              onCompleteTask={handleCompleteTask}
-              onOpenQuickBook={() => {
-                setPreselectedKoc(null);
-                setIsQuickBookOpen(true);
-              }}
-              onSelectDeal={openContractForDeal}
               deals={deals}
-              onTaskActionClick={handleTaskActionClick}
-              onNavigateToInputPlan={() => handleSelectTab('input-plan')}
-              onNavigateToAirSync={() => handleSelectTab('dashboard-air-sync')}
-              onNavigateToTaskDelegation={() => handleSelectTab('task-delegation')}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab
-            tabKey="dashboard-bi"
-            currentTab={
-              [
-                'overview',
-                'dashboard-bi',
-                'dashboard-brand',
-                'dashboard-air-sync',
-                'dashboard-store',
-                'dashboard-video',
-                'dashboard-team-sla',
-                'dashboard-staff',
-                'dashboard-finance'
-              ].includes(activeTab)
-                ? 'dashboard-bi'
-                : activeTab
-            }
-          >
-            <ExecutiveDashboardReportsView
-              currentUser={currentUser}
-              deals={scopedDeals}
-              brands={scopedBrands}
+              scopedDeals={scopedDeals}
+              brands={brands}
+              scopedBrands={scopedBrands}
+              storePortfolios={storePortfolios}
+              scopedStores={scopedStores}
               kocs={kocs}
-              storePortfolios={scopedStores}
-              activeSidebarTab={activeTab}
-              onNotify={showToast}
-              onNavigateToTab={(tabKey) => handleSelectTab(tabKey as TabKey)}
-              onOpenPlanForStore={handleDrilldownToPlan}
-              onOpenListingForStore={handleDrilldownToListing}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="input-plan" currentTab={activeTab}>
-            <InputPlanBreakdownView
-              currentUser={currentUser}
-              storePortfolios={scopedStores}
-              onUpdateStore={handleUpdateStore}
+              kocListings={kocListings}
+              scopedMonthlyPlans={scopedMonthlyPlans}
               campaigns={campaigns}
-              onCampaignsChange={setCampaigns}
-              onNotify={showToast}
-              planDrilldownIntent={planDrilldownIntent}
-              onOpenGovernanceDashboard={() => handleSelectTab('overview')}
-              onGenerateDealsFromPlan={(newSlots) => {
-                setDetailedPlans(prev => [...newSlots, ...prev]);
-                showToast(`Đã tạo ${newSlots.length} slot KOC trong Booking`);
-                setActiveTab('koc-listing');
-              }}
-              onApplyPlanToWeeklyStore={(weeklyPlan) => {
-                showToast(`Đã lưu kế hoạch ${weeklyPlan.storeName}, ${weeklyPlan.week}`);
-              }}
-              onOpenListingForPlan={(plan, grade) => {
-                setListingPlanContext({
-                  planId: plan.id,
-                  storeName: plan.storeName || plan.brandName,
-                  monthKey: plan.month,
-                  salaryGrade: grade,
-                  nonce: Date.now(),
-                });
-                setActiveTab('koc-listing');
-                showToast(
-                  `Đang mở bảng Listing KOC cho kế hoạch "${plan.storeName || plan.brandName}"${grade ? ` (Khung ${grade})` : ''}`
-                );
-              }}
-              onPlansChange={setSharedMonthlyPlans}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="koc-listing" currentTab={activeTab}>
-            <KocListingBatchHubView
-              bookingMode="TIKTOK"
-              listings={kocListings}
-              onUpdateListings={setKocListings}
-              onGenerateDeal={handleGenerateDealFromListing}
-              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
-                setDeals((prev) => {
-                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
-                  const existingCodes = new Set(prev.map((d) => d.dealCode));
-                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
-                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
-                  return [...brandNew, ...updatedExisting];
-                });
-              }}
-              onOpenContractForDeal={openContractForDeal}
-              currentUser={currentUser}
-              currentRole={currentUser.role}
-              currentUserName={currentUser.name}
-              monthlyPlans={scopedMonthlyPlans}
-              stores={scopedStores}
-              kocs={kocs}
-              deals={scopedDeals}
-              activePlanContext={listingPlanContext}
-              navFocus={bookingNavFocus}
-              onOpenPlanStudio={() => setActiveTab('input-plan')}
-              onOpenContractForPlanDeal={openContractForPlanDeal}
-              onNavigateTab={(tab, ctx) => {
-                if (tab === 'api-settings') {
-                  if (ctx?.sheetTab) {
-                    setApiSettingsSheetSubTab(ctx.sheetTab);
-                  }
-                  setActiveTab('api-settings');
-                } else if (tab === 'lark-settlement') {
-                  setActiveTab('lark-settlement');
-                }
-              }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="multi-platform-booking" currentTab={activeTab}>
-            <KocListingBatchHubView
-              bookingMode="MULTI_PLATFORM"
-              listings={kocListings}
-              onUpdateListings={setKocListings}
-              onGenerateDeal={handleGenerateDealFromListing}
-              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
-                setDeals((prev) => {
-                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
-                  const existingCodes = new Set(prev.map((d) => d.dealCode));
-                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
-                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
-                  return [...brandNew, ...updatedExisting];
-                });
-              }}
-              onOpenContractForDeal={openContractForDeal}
-              currentUser={currentUser}
-              currentRole={currentUser.role}
-              currentUserName={currentUser.name}
-              monthlyPlans={scopedMonthlyPlans}
-              stores={scopedStores}
-              kocs={kocs}
-              deals={scopedDeals}
-              activePlanContext={listingPlanContext}
-              navFocus={bookingNavFocus}
-              onOpenPlanStudio={() => setActiveTab('input-plan')}
-              onOpenContractForPlanDeal={openContractForPlanDeal}
-              onNavigateTab={(tab, ctx) => {
-                if (tab === 'api-settings') {
-                  if (ctx?.sheetTab) {
-                    setApiSettingsSheetSubTab(ctx.sheetTab);
-                  }
-                  setActiveTab('api-settings');
-                } else if (tab === 'lark-settlement') {
-                  setActiveTab('lark-settlement');
-                }
-              }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="livestream-booking" currentTab={activeTab}>
-            <KocListingBatchHubView
-              bookingMode="LIVESTREAM"
-              listings={kocListings}
-              onUpdateListings={setKocListings}
-              onGenerateDeal={handleGenerateDealFromListing}
-              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
-                setDeals((prev) => {
-                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
-                  const existingCodes = new Set(prev.map((d) => d.dealCode));
-                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
-                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
-                  return [...brandNew, ...updatedExisting];
-                });
-              }}
-              onOpenContractForDeal={openContractForDeal}
-              currentUser={currentUser}
-              currentRole={currentUser.role}
-              currentUserName={currentUser.name}
-              monthlyPlans={scopedMonthlyPlans}
-              stores={scopedStores}
-              kocs={kocs}
-              deals={scopedDeals}
-              activePlanContext={listingPlanContext}
-              navFocus={bookingNavFocus}
-              onOpenPlanStudio={() => setActiveTab('input-plan')}
-              onOpenContractForPlanDeal={openContractForPlanDeal}
-              onNavigateTab={(tab, ctx) => {
-                if (tab === 'api-settings') {
-                  if (ctx?.sheetTab) {
-                    setApiSettingsSheetSubTab(ctx.sheetTab);
-                  }
-                  setActiveTab('api-settings');
-                } else if (tab === 'lark-settlement') {
-                  setActiveTab('lark-settlement');
-                }
-              }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="master-data" currentTab={activeTab}>
-            <MasterDataHubView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              stores={scopedStores}
-              kocs={kocs}
-              deals={scopedDeals}
+              detailedPlans={detailedPlans}
+              staffAllocations={staffAllocations}
               contributors={contributors}
-              onNotify={showToast}
-              onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
-              onKocCreated={handleKocCreated}
-              onKocUpdated={handleKocUpdated}
-              onContributorCreated={handleContributorCreated}
-              onContributorUpdated={handleContributorUpdated}
-              onContributorDeleted={handleContributorDeleted}
-              onUpdateStore={handleUpdateStore}
-              onNavigateToBrandProfile={(brandName) => {
-                if (brandName && brandName !== 'ALL') {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
-              onNavigateToStoreProfile={(storeName) => {
-                if (storeName) {
-                  setSelectedStoreContext(storeName);
-                }
-                setActiveTab('master-data');
-              }}
-              onNavigateToCtvProfile={(ctvId) => {
-                setSelectedCtvContext(ctvId || null);
-                setActiveTab('self-channel-hub');
-              }}
-              onOpenKocDirectory={() => setActiveTab('koc-master')}
               ctvAccess={ctvDirectory.access}
               partnershipStaff={ctvDirectory.partnershipStaff}
               onSavePartnershipStaff={ctvDirectory.savePartnershipStaff}
-              onNavigateToKocPortal={(kocId) => {
-                setSelectedKocContext(kocId);
-                setActiveTab('koc-hub');
-              }}
-              onSelectDealForContract={openContractForDeal}
+              selectedBrandContext={selectedBrandContext}
+              selectedCtvContext={selectedCtvContext}
+              selectedKocContext={selectedKocContext}
+              brandInitialDetailTab={brandInitialDetailTab}
+              kocMasterReturnTab={kocMasterReturnTab}
+              kocMasterOpenTrigger={kocMasterOpenTrigger}
+              apiSettingsSheetSubTab={apiSettingsSheetSubTab}
+              planDrilldownIntent={planDrilldownIntent}
+              listingPlanContext={listingPlanContext}
+              bookingNavFocus={bookingNavFocus}
+              contractIntent={contractIntent}
+              setActiveTab={setActiveTab}
+              handleSelectTab={handleSelectTab}
+              setSelectedBrandContext={setSelectedBrandContext}
+              setSelectedStoreContext={setSelectedStoreContext}
+              setSelectedCtvContext={setSelectedCtvContext}
+              setSelectedKocContext={setSelectedKocContext}
+              setBrandInitialDetailTab={setBrandInitialDetailTab}
+              setKocMasterReturnTab={setKocMasterReturnTab}
+              setKocMasterOpenTrigger={setKocMasterOpenTrigger}
+              setApiSettingsSheetSubTab={setApiSettingsSheetSubTab}
+              setListingPlanContext={setListingPlanContext}
+              setBookingNavFocus={setBookingNavFocus}
+              setDeals={setDeals}
+              setKocs={setKocs}
+              setKocListings={setKocListings}
+              setCampaigns={setCampaigns}
+              setDetailedPlans={setDetailedPlans}
+              setStaffAllocations={setStaffAllocations}
+              setSharedMonthlyPlans={setSharedMonthlyPlans}
+              setPreselectedKoc={setPreselectedKoc}
+              setIsQuickBookOpen={setIsQuickBookOpen}
+              showToast={showToast}
+              handleCompleteTask={handleCompleteTask}
+              handleAddTask={handleAddTask}
+              handleUpdateTask={handleUpdateTask}
+              handleTaskActionClick={handleTaskActionClick}
+              handlePingStaffNotification={handlePingStaffNotification}
+              handleScriptApprovedNotification={handleScriptApprovedNotification}
+              handleDrilldownToPlan={handleDrilldownToPlan}
+              handleDrilldownToListing={handleDrilldownToListing}
+              handleDrilldownToBooking={handleDrilldownToBooking}
+              handleGenerateDealFromListing={handleGenerateDealFromListing}
+              handleOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
+              handleKocCreated={handleKocCreated}
+              handleKocUpdated={handleKocUpdated}
+              handleContributorCreated={handleContributorCreated}
+              handleContributorUpdated={handleContributorUpdated}
+              handleContributorDeleted={handleContributorDeleted}
+              handleUpdateStore={handleUpdateStore}
+              handleUpdateBrand={handleUpdateBrand}
+              handleAddBrand={handleAddBrand}
+              handleUpdateDeal={handleUpdateDeal}
+              handleUpdatePlanItemStatusFromLead={handleUpdatePlanItemStatusFromLead}
+              handleApproveEntirePlanFromLead={handleApproveEntirePlanFromLead}
+              handleRequestPlanRevisionFromLead={handleRequestPlanRevisionFromLead}
+              handleGenerateDealsFromGrowthDemand={handleGenerateDealsFromGrowthDemand}
+              handleBatchConvertPlanToDeals={handleBatchConvertPlanToDeals}
+              openContractForDeal={openContractForDeal}
+              openContractForPlanDeal={openContractForPlanDeal}
+              openContractForKoc={openContractForKoc}
+              syncCustomKocsIntoState={syncCustomKocsIntoState}
+              persistKocsToDatabase={persistKocsToDatabase}
             />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="self-channel-hub" currentTab={activeTab}>
-            <SelfChannelCtvHubView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              contributors={contributors}
-              onContributorCreated={handleContributorCreated}
-              onContributorUpdated={handleContributorUpdated}
-              ctvAccess={ctvDirectory.access}
-              focusCtvId={selectedCtvContext}
-              navFocus={bookingNavFocus}
-              onOpenLarkSettlement={() => setActiveTab('lark-settlement')}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="lark-settlement" currentTab={activeTab}>
-            <LarkAcceptancePaymentHubView
-              currentUser={currentUser}
-              currentRole={currentUser.role}
-              currentUserName={currentUser.name}
-              kocs={kocs}
-              stores={scopedStores}
-              deals={scopedDeals}
-              monthlyPlans={scopedMonthlyPlans}
-              contributors={contributors}
-              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
-                setDeals((prev) => {
-                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
-                  const existingCodes = new Set(prev.map((d) => d.dealCode));
-                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
-                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
-                  return [...brandNew, ...updatedExisting];
-                });
-              }}
-              onOpenContractForDeal={openContractForDeal}
-              onNavigateSourceModule={(module, ctx) => {
-                const nonce = Date.now();
-                if (module === 'TIKTOK_KOC_32') {
-                  setBookingNavFocus({
-                    tab: 'approved-booking-list',
-                    storeName: ctx?.storeName,
-                    monthKey: ctx?.monthKey,
-                    dealCode: ctx?.dealCode,
-                    nonce,
-                  });
-                  setActiveTab('koc-listing');
-                } else if (module === 'MULTI_PLATFORM') {
-                  setBookingNavFocus({
-                    tab: 'multi-platform-booking',
-                    storeName: ctx?.storeName,
-                    monthKey: ctx?.monthKey,
-                    dealCode: ctx?.dealCode,
-                    nonce,
-                  });
-                  setActiveTab('multi-platform-booking');
-                } else if (module === 'LIVESTREAM_DEAL') {
-                  setBookingNavFocus({
-                    tab: 'livestream-booking',
-                    storeName: ctx?.storeName,
-                    monthKey: ctx?.monthKey,
-                    dealCode: ctx?.dealCode,
-                    nonce,
-                  });
-                  setActiveTab('livestream-booking');
-                } else if (module === 'SELF_CHANNEL_CTV') {
-                  setBookingNavFocus({
-                    tab: 'self-channel-hub',
-                    storeName: ctx?.storeName,
-                    monthKey: ctx?.monthKey,
-                    dealCode: ctx?.dealCode,
-                    planId: ctx?.planId,
-                    nonce,
-                  });
-                  setActiveTab('self-channel-hub');
-                }
-              }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="brand-knowledge" currentTab={activeTab}>
-            <BrandProfilesView
-              currentUser={currentUser}
-              selectedBrand={selectedBrandContext}
-              brands={scopedBrands}
-              stores={scopedStores}
-              deals={scopedDeals}
-              monthlyPlans={scopedMonthlyPlans}
-              initialDetailTab={brandInitialDetailTab}
-              onNotify={showToast}
-              onOpenBooking={() => setActiveTab('koc-listing')}
-              onUpdateStore={handleUpdateStore}
-              onDrilldownToPlan={handleDrilldownToPlan}
-              onDrilldownToListing={handleDrilldownToListing}
-              onDrilldownToBooking={handleDrilldownToBooking}
-              onSelectDealForContract={openContractForDeal}
-              onNavigateToStoreProfile={(storeName) => {
-                if (storeName) {
-                  setSelectedStoreContext(storeName);
-                }
-                setActiveTab('master-data');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="content" currentTab={activeTab}>
-            <ContentView
-              kocs={kocs}
-              deals={scopedDeals}
-              currentUserName={currentUser.name}
-              currentUserRole={currentUser.role}
-              onNotify={showToast}
-              onScriptApprovedNotification={handleScriptApprovedNotification}
-              onNavigateToAngles={() => {
-                setBrandInitialDetailTab('PRODUCTS');
-                setActiveTab('brand-knowledge');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="partner-access" currentTab={activeTab}>
-            <CentralizedRbacHubView
-              currentUser={currentUser}
-              brands={brands}
-              kocs={kocs}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="koc-master" currentTab={activeTab}>
-            <KocMasterDataView
-              kocs={kocs}
-              allDeals={scopedDeals}
-              stores={scopedStores}
-              currentUser={currentUser}
-              selectedBrand={selectedBrandContext}
-              selectedKocId={selectedKocContext}
-              externalOpenTrigger={kocMasterOpenTrigger}
-              returnToSourceLabel={
-                kocMasterReturnTab === 'tiktok-crawler'
-                  ? 'Quay lại Crawl KOC Xu hướng'
-                  : kocMasterReturnTab === 'koc-hub'
-                    ? 'Quay lại Cổng KOC'
-                    : undefined
-              }
-              onReturnToSource={
-                kocMasterReturnTab
-                  ? () => {
-                      const target = kocMasterReturnTab;
-                      setKocMasterReturnTab(null);
-                      handleSelectTab(target);
-                    }
-                  : undefined
-              }
-              onSelectKocId={setSelectedKocContext}
-              onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
-              onOpenStaffBrandSheet={({ monthKey, storeName }) => {
-                setListingPlanContext({
-                  storeName,
-                  monthKey,
-                  openStaffSheet: true,
-                  nonce: Date.now(),
-                });
-                handleSelectTab('koc-listing');
-              }}
-              onKocCreated={handleKocCreated}
-              onKocUpdated={handleKocUpdated}
-              onOpenKocPortal={(kocId: string | null) => {
-                setSelectedKocContext(kocId);
-                handleSelectTab('koc-hub');
-              }}
-              onSelectDealForContract={openContractForDeal}
-              onCreateContractForKoc={openContractForKoc}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
-            <ContractManagementView
-              key={currentUser?.id || 'contracts-root'}
-              deals={scopedDeals}
-              kocs={kocs}
-              intent={contractIntent}
-              onNotify={showToast}
-              onSyncDealContractStatus={(dealId, patch) => {
-                setDeals(prev => prev.map(d => (d.id === dealId ? { ...d, ...patch } : d)));
-              }}
-              onSyncKocLegalProfileContract={(kocId, legalProfileId, frameworkData) => {
-                if (frameworkData.legalAttachments && frameworkData.legalAttachments.length > 0) {
-                  saveSyncedKocLegalAttachments(kocId, legalProfileId, frameworkData.legalAttachments);
-                }
-                setKocs(prev => {
-                  const updated = prev.map(k => {
-                    if (k.id !== kocId) return k;
-                    const profiles = getKocLegalProfiles(k);
-                    const updatedProfiles = profiles.map(p => {
-                      if (p.id === legalProfileId || (!legalProfileId && (p.isDefault || profiles.length === 1))) {
-                        const nextAttachments =
-                          frameworkData.legalAttachments && frameworkData.legalAttachments.length > 0
-                            ? mergeLegalDocAttachments(p.legalAttachments, frameworkData.legalAttachments)
-                            : p.legalAttachments;
-                        return {
-                          ...p,
-                          frameworkContractCode: frameworkData.contractCode || p.frameworkContractCode,
-                          frameworkContractStatus: frameworkData.status || p.frameworkContractStatus,
-                          frameworkContractSignedAt: frameworkData.signedAt || p.frameworkContractSignedAt,
-                          frameworkContractDriveUrl: frameworkData.driveUrl || p.frameworkContractDriveUrl,
-                          legalAttachments: nextAttachments,
-                          isOcrVerified: Boolean(
-                            p.isOcrVerified || (nextAttachments && nextAttachments.length > 0),
-                          ),
-                        };
-                      }
-                      return p;
-                    });
-                    return {
-                      ...k,
-                      legalProfiles: updatedProfiles,
-                      isOcrVerified: Boolean(
-                        k.isOcrVerified ||
-                          (frameworkData.legalAttachments && frameworkData.legalAttachments.length > 0),
-                      ),
-                      contractDriveUrl: frameworkData.driveUrl || k.contractDriveUrl,
-                    };
-                  });
-                  const matched = updated.filter(k => k.id === kocId);
-                  if (matched.length > 0) {
-                    syncCustomKocsIntoState(matched);
-                    void persistKocsToDatabase({ updated: matched });
-                  }
-                  return updated;
-                });
-
-                if (frameworkData.status) {
-                  setDeals(prev =>
-                    prev.map(d => {
-                      if (d.kocId === kocId && (!d.legalProfileId || !legalProfileId || d.legalProfileId === legalProfileId)) {
-                        return {
-                          ...d,
-                          masterContractCode: frameworkData.contractCode || d.masterContractCode,
-                          masterContractStatus: frameworkData.status === 'ĐÃ_KÝ' ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
-                          masterContractGoogleDocsUrl: frameworkData.googleDocsUrl || d.masterContractGoogleDocsUrl,
-                          masterContractSignedUrl: frameworkData.driveUrl || d.masterContractSignedUrl,
-                        };
-                      }
-                      return d;
-                    })
-                  );
-                }
-              }}
-              currentUserId={currentUser.id}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="manager" currentTab={activeTab}>
-            <ManagerView
-              currentUser={currentUser}
-              deals={scopedDeals}
-              onPingStaffNotification={handlePingStaffNotification}
-              planItems={detailedPlans}
-              onUpdatePlanItemStatus={handleUpdatePlanItemStatusFromLead}
-              onApproveEntirePlan={handleApproveEntirePlanFromLead}
-              onRequestPlanRevision={handleRequestPlanRevisionFromLead}
-              onGenerateDealsFromPlan={handleGenerateDealsFromGrowthDemand}
-              onConvertPlanToDeals={handleBatchConvertPlanToDeals}
-              staffAllocationsByMonth={staffAllocations}
-              onOpenInputPlan={() => setActiveTab('input-plan')}
-              onUpdateStaffAllocation={(month, updatedList) => {
-                setStaffAllocations(prev => ({ ...prev, [month]: updatedList }));
-                showToast(`Đã lưu phân bổ tháng ${month}`);
-              }}
-              brands={scopedBrands}
-              onUpdateBrand={handleUpdateBrand}
-              onAddBrand={handleAddBrand}
-              storePortfolios={scopedStores}
-              onUpdateStore={handleUpdateStore}
-              tasks={tasks}
-              onAddTask={handleAddTask}
-              onNavigateToTab={(tabKey) => handleSelectTab(tabKey as TabKey)}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="task-delegation" currentTab={activeTab}>
-            <TaskDelegationView
-              currentUser={currentUser}
-              tasks={tasks}
-              brands={scopedBrands}
-              storePortfolios={scopedStores}
-              onAddTask={handleAddTask}
-              onCompleteTask={handleCompleteTask}
-              onUpdateTask={handleUpdateTask}
-              onPingStaff={handlePingStaffNotification}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="koc-hub" currentTab={activeTab}>
-            <KocKolHubView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              initialKocs={kocs}
-              initialDeals={scopedDeals}
-              selectedKocId={selectedKocContext}
-              onKocUpdated={handleKocUpdated}
-              onUpdateDeal={handleUpdateDeal}
-              onOpenContractForDeal={openContractForDeal}
-              onOpenContractForKoc={openContractForKoc}
-              onOpenKocMaster={(kocId: string | null) => {
-                setSelectedKocContext(kocId);
-                setKocMasterReturnTab('koc-hub');
-                setKocMasterOpenTrigger((v) => v + 1);
-                handleSelectTab('koc-master', { keepReturnContext: true });
-              }}
-              onNotify={showToast}
-              onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="ads-report" currentTab={activeTab}>
-            <WeeklyAdsReportHubView
-              currentUser={currentUser}
-              kocs={kocs}
-              deals={scopedDeals}
-              onNotify={showToast}
-              onUpdateKocsWithAdsData={(updated) => {
-                setKocs(updated);
-                void persistKocsToDatabase({ updated });
-              }}
-              onUpdateDealsWithAdsData={(updated) => setDeals(updated)}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="api-settings" currentTab={activeTab}>
-            <ApiKeySetupView
-              currentUser={currentUser}
-              stores={scopedStores}
-              initialSheetSubTab={apiSettingsSheetSubTab}
-              onNotify={showToast}
-              onSelectStoreForListing={(storeName) => {
-                setSelectedStoreContext(storeName);
-                setActiveTab('koc-listing');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="knowledge-qa" currentTab={activeTab}>
-            <MarketingKnowledgeQaView
-              currentUser={currentUser}
-              brands={brands}
-              stores={storePortfolios}
-              kocs={kocs}
-              onNotify={showToast}
-              onNavigateToTab={(tab) => handleSelectTab(tab)}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="tiktok-crawler" currentTab={activeTab}>
-            <TikTokCrawlerHubView
-              currentUser={currentUser}
-              kocs={kocs}
-              stores={scopedStores}
-              deals={scopedDeals}
-              onSaveScrapedKocs={({ created, updated }) => {
-                if (created.length > 0 || updated.length > 0) {
-                  void persistKocsToDatabase({ created, updated });
-                  showToast(
-                    `Đã lưu vào CSDL Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
-                    'success'
-                  );
-                }
-              }}
-              onNotify={showToast}
-              onNavigateToKocMaster={(kocId?: string) => {
-                if (kocId) {
-                  setSelectedKocContext(kocId);
-                }
-                setKocMasterReturnTab('tiktok-crawler');
-                setKocMasterOpenTrigger((v) => v + 1);
-                handleSelectTab('koc-master', { keepReturnContext: true });
-              }}
-              onOpenStaffBrandSheet={({ monthKey, storeName }) => {
-                setListingPlanContext({
-                  storeName,
-                  monthKey,
-                  openStaffSheet: true,
-                  nonce: Date.now(),
-                });
-                handleSelectTab('koc-listing');
-              }}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="market-research" currentTab={activeTab}>
-            <BrandMarketResearchHubView
-              brands={scopedBrands}
-              kocs={kocs}
-              selectedBrand={selectedBrandContext}
-              onSaveScrapedKocs={({ created, updated }) => {
-                if (created.length > 0 || updated.length > 0) {
-                  void persistKocsToDatabase({ created, updated });
-                  showToast(
-                    `Đã lưu vào CSDL Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
-                    'success'
-                  );
-                }
-              }}
-              onNavigateToBrandProfile={(brandName) => {
-                if (brandName && brandName !== 'ALL') {
-                  setSelectedBrandContext(brandName);
-                }
-                setActiveTab('brand-knowledge');
-              }}
-              onNavigateToContentAngles={() => {
-                setBrandInitialDetailTab('PRODUCTS');
-                setActiveTab('brand-knowledge');
-              }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-            </>
           )}
         </main>
       </div>

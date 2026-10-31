@@ -33,6 +33,13 @@ export function formatCountShort(n: number): string {
   return formatNumber(v);
 }
 
+/** 2,50 · số chữ số thập phân cố định, dấu phẩy */
+export const formatDecimal = (n: number, digits = 1) =>
+  new Intl.NumberFormat('vi-VN', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n || 0);
+
+/** Làm tròn số để lưu, không dùng để hiển thị */
+export const roundTo = (n: number, digits = 1) => Number((n || 0).toFixed(digits));
+
 /** 76,5% */
 export const formatPercent = (ratio: number, digits = 1) => `${nf(digits).format((ratio || 0) * 100)}%`;
 

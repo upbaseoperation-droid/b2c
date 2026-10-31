@@ -1090,6 +1090,12 @@ export interface BookingDealItem {
   sequentialAcceptanceStage?: DealSequentialAcceptanceStage; // Nghiệm thu 2 tầng: (1) Video -> (2) Dịch vụ gia tăng & Quyền lợi
   stage1VideoVerifiedAt?: string; // Thời điểm hoàn tất nghiệm thu Asset Video (Tầng 1)
   stage2AddonsVerifiedAt?: string; // Thời điểm hoàn tất nghiệm thu Dịch vụ gia tăng / các phần khác (Tầng 2)
+  liveSessionsCount?: number; // Số buổi live nghiệm thu (đồng bộ sang 6.1 fldtnEqiJO)
+  liveCommittedMinutes?: number; // Thời lượng cam kết phiên Live (phút)
+  liveActualMinutes?: number; // Thời lượng thực tế phiên Live (phút)
+  liveTargetGmv?: number; // GMV mục tiêu phiên Live (VNĐ)
+  liveKpiType?: 'Tham chiếu' | 'Cam kết'; // Loại KPI GMV phiên Live
+  livePackageType?: 'Độc quyền' | 'Ghép giỏ (Add-in)' | 'Chỉ Hoa hồng'; // Gói hình thức phiên Live
 }
 
 export interface MasterTierQuota {

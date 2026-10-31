@@ -34,6 +34,14 @@ export interface SelfChannelCtvHubViewProps {
   ctvAccess?: CtvDirectoryAccess;
   /** Mở sẵn hồ sơ CTV này (điều hướng từ màn khác) */
   focusCtvId?: string | null;
+  navFocus?: {
+    tab: string;
+    storeName?: string;
+    monthKey?: string;
+    dealCode?: string;
+    planId?: string;
+    nonce: number;
+  } | null;
   onOpenLarkSettlement?: () => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -49,6 +57,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   onContributorUpdated,
   ctvAccess,
   focusCtvId,
+  navFocus,
   onOpenLarkSettlement,
   onNotify,
 }) => {
@@ -66,8 +75,30 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     }
   }
 
-  // Bấm "Mở" ở Tổng quan / Hàng chờ duyệt: chuyển sang Việc theo gian đúng kế hoạch
-  const [planFocus, setPlanFocus] = useState<{ planId: string; nonce: number; jobCode?: string } | null>(null);
+  // Bấm "Mở" ở Tổng quan / Hàng chờ duyệt hoặc từ Sổ ĐNTT Lark: chuyển sang Việc theo gian đúng kế hoạch
+  const [planFocus, setPlanFocus] = useState<{
+    planId: string;
+    nonce: number;
+    jobCode?: string;
+    storeName?: string;
+    monthKey?: string;
+  } | null>(null);
+  const [appliedNavNonce, setAppliedNavNonce] = useState<number | null>(null);
+  if (navFocus && navFocus.tab === 'self-channel-hub' && navFocus.nonce !== appliedNavNonce) {
+    setAppliedNavNonce(navFocus.nonce);
+    if (navFocus.planId || navFocus.dealCode || navFocus.storeName) {
+      setPlanFocus({
+        planId: navFocus.planId || '',
+        nonce: navFocus.nonce,
+        jobCode: navFocus.dealCode,
+        storeName: navFocus.storeName,
+        monthKey: navFocus.monthKey,
+      });
+      setActiveTab('WORK');
+    } else {
+      setActiveTab('SETTLEMENT');
+    }
+  }
   const openPlan = (planId: string, jobCode?: string) => {
     setPlanFocus({ planId, nonce: Date.now(), jobCode });
     setActiveTab('WORK');
@@ -113,14 +144,22 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     };
     const onNavigateTab = (e: Event) => {
       const detail = (
-        e as CustomEvent<{ tab?: string; planId?: string; dealCode?: string }>
+        e as CustomEvent<{
+          tab?: string;
+          planId?: string;
+          dealCode?: string;
+          storeName?: string;
+          monthKey?: string;
+        }>
       ).detail;
       if (detail?.tab !== 'self-channel-hub') return;
-      if (detail.planId) {
+      if (detail.planId || detail.dealCode || detail.storeName) {
         setPlanFocus({
-          planId: detail.planId,
+          planId: detail.planId || '',
           nonce: Date.now(),
           jobCode: detail.dealCode,
+          storeName: detail.storeName,
+          monthKey: detail.monthKey,
         });
         setActiveTab('WORK');
       } else {
@@ -170,7 +209,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               icon={Send}
               onClick={onOpenLarkSettlement}
             >
-              Sổ Nghiệm thu & ĐNTT Lark
+              Sổ ĐNTT Lark
             </Button>
           ) : undefined
         }

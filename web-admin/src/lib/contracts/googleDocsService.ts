@@ -60,7 +60,7 @@ export function parseClausesFromParagraphs(paragraphs: string[]): ContractClause
   };
 
   const clauseRegex = /^(Điều\s+\d+[\.:]?)\s*(.*)$/iu;
-  const signatureLineRegex = /^(ĐẠI DIỆN BÊN [AB]|BÊN A\s*\(|BÊN B\s*\(|\{\{SIGN_BEN_[AB]\}\})/iu;
+  const signatureLineRegex = /^(ĐẠI DIỆN BÊN [AB]|BÊN A\s*\(|BÊN B\s*\(|\{\{SIGN_(?:BEN_[AB]|PROVIDER|CLIENT)\}\})/iu;
 
   for (const rawP of paragraphs) {
     const p = rawP.trim();
@@ -289,7 +289,7 @@ export function stripClauseHeading(raw?: string): string {
     .split('\n')
     .map(l => l.trim())
     .filter(Boolean)
-    .filter(l => !/^(ĐẠI DIỆN BÊN [AB]|\{\{SIGN_BEN_[AB]\}\})/iu.test(l));
+    .filter(l => !/^(ĐẠI DIỆN BÊN [AB]|\{\{SIGN_(?:BEN_[AB]|PROVIDER|CLIENT)\}\})/iu.test(l));
   if (lines.length > 1 && /^(ĐIỀU|Điều)\s+\d+[\.:]/u.test(lines[0])) {
     return lines.slice(1).join('\n');
   }

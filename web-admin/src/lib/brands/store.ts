@@ -22,8 +22,9 @@ import type {
   ToneTag,
 } from './types';
 import { brandKey, emptyProfile } from './types';
+import { isPostgresStorageEnabled } from '../server/dbStorageMode';
 
-const local = () => !!process.env.BRAND_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.BRAND_STORAGE !== 'postgres');
+const local = () => !!process.env.BRAND_DATA_DIR || !isPostgresStorageEnabled('BRAND_STORAGE');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ process.env.BRAND_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.brand-data'));
 const file = () => path.join(directory(), 'profiles.json');
 

@@ -29,7 +29,7 @@ import {
 } from '../../lib/types';
 import { UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
-import { getVietnamDateTimeShort } from '../../lib/format';
+import { formatDecimal, getVietnamDateTimeShort, roundTo } from '../../lib/format';
 import {
   classifyMasterStaffMember,
   getSavedDeptAccessRules,
@@ -361,9 +361,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     const multiPlatformCoef = selectedSowPolicy?.supportsMultiPlatform
       ? MULTI_PLATFORM_TABLE_6.find(m => m.stores === Math.min(4, Math.max(1, formMultiStoreCount)))?.coef ?? 1.0
       : 1.0;
-    const totalCasePoints = Number(
-      (qty * stdPoint * scopeCoef * taskDiffCoef * timelineCoef * multiPlatformCoef).toFixed(2)
-    );
+    const totalCasePoints = roundTo(qty * stdPoint * scopeCoef * taskDiffCoef * timelineCoef * multiPlatformCoef, 2);
     return {
       qty,
       stdPoint,
@@ -438,9 +436,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
     assignees.forEach((slot, idx) => {
       const staffObj = allAssignableStaff.find(s => s.name === slot.staffName);
-      const personalWorkload = Number(
-        (modalFormulaPreview.totalCasePoints * (slot.weightPct / 100)).toFixed(2)
-      );
+      const personalWorkload = roundTo(modalFormulaPreview.totalCasePoints * (slot.weightPct / 100), 2);
 
       const newTask: SlaTask = {
         id: `task-del-${Date.now()}-${idx}`,
@@ -482,7 +478,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           formDeliverable.trim() || activeLevelConfig?.expectedDeliverable,
         assignmentRole: slot.role,
         contributionWeightPct: slot.weightPct,
-        baseWorkloadPoints: Number((modalFormulaPreview.qty * modalFormulaPreview.stdPoint).toFixed(2)),
+        baseWorkloadPoints: roundTo(modalFormulaPreview.qty * modalFormulaPreview.stdPoint, 2),
         calculatedWorkloadPoints: personalWorkload,
         platformsCount: formCategory === 'RESEARCH' ? formPlatformsCount : formMultiStoreCount,
         productLinesCount: formCategory === 'RESEARCH' ? formProductLinesCount : undefined,
@@ -652,7 +648,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       workflowTasksCount,
       directorTasksCount,
       criticalOpenCount,
-      totalStaffFinalPts: Number(totalStaffFinalPts.toFixed(1)),
+      totalStaffFinalPts: roundTo(totalStaffFinalPts, 1),
       passCount,
       totalStaffCount: computedStaffWorkloads.length,
     };
@@ -751,7 +747,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <div className="min-w-0">
               <div className="text-sm font-medium text-ink truncate">{t.pic}</div>
               <div className="text-xs text-ink-3 truncate">
-                {ROLE_LABEL_MAP[roleKey]} · <span className="font-mono tabular-nums">{weight}%</span>
+                {ROLE_LABEL_MAP[roleKey]} · <span className="tabular-nums">{weight}%</span>
               </div>
             </div>
           </div>
@@ -770,8 +766,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         const src = getTaskSource(t);
         return (
           <div className="text-right">
-            <div className="text-sm font-semibold font-mono tabular-nums text-ink">
-              {pts.toFixed(2).replace('.', ',')} <span className="text-xs font-normal text-ink-3">đ</span>
+            <div className="text-sm font-semibold tabular-nums text-ink">
+              {formatDecimal(pts, 2)} <span className="text-xs font-normal text-ink-3">đ</span>
             </div>
             <div className="text-xs text-ink-3 mt-0.5">
               {diffInfo.label} · {src === 'DIRECTOR_ASSIGNED' ? 'Quản lý giao' : 'Quy trình'}
@@ -802,7 +798,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         return (
           <div>
             <Status tone={tone}>{statusText}</Status>
-            <div className="text-xs text-ink-3 mt-0.5 font-mono tabular-nums">
+            <div className="text-xs text-ink-3 mt-0.5 tabular-nums">
               {t.urgency === 'done' ? 'Hoàn thành' : t.remainingText}
             </div>
           </div>
@@ -892,8 +888,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       align: 'right',
       width: 120,
       render: row => (
-        <div className="font-mono tabular-nums text-sm text-ink">
-          {row.workflowPts.toFixed(1).replace('.', ',')}
+        <div className="tabular-nums text-sm text-ink">
+          {formatDecimal(row.workflowPts, 1)}
         </div>
       ),
     },
@@ -903,8 +899,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       align: 'right',
       width: 130,
       render: row => (
-        <div className="font-mono tabular-nums text-sm font-medium text-ink">
-          {row.directorPts.toFixed(1).replace('.', ',')}
+        <div className="tabular-nums text-sm font-medium text-ink">
+          {formatDecimal(row.directorPts, 1)}
         </div>
       ),
     },
@@ -914,9 +910,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       width: 195,
       render: row => (
         <div>
-          <div className="flex items-center justify-between text-xs mb-1 font-mono tabular-nums">
+          <div className="flex items-center justify-between text-xs mb-1 tabular-nums">
             <span className="font-medium text-ink">
-              {row.actualHardRatioPct.toFixed(1).replace('.', ',')}%
+              {formatDecimal(row.actualHardRatioPct, 1)}%
             </span>
             <span className="text-ink-3">
               Chuẩn ≥{row.requiredHardRatioPct}%
@@ -937,9 +933,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       width: 185,
       render: row => (
         <div className="text-right">
-          <div className="text-sm font-semibold font-mono tabular-nums text-ink">
-            {row.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} <span className="text-xs font-normal text-ink-3">đ</span>
-            <span className="text-xs font-mono text-ink-3 ml-2">({row.loadPct}%)</span>
+          <div className="text-sm font-semibold tabular-nums text-ink">
+            {formatDecimal(row.finalMonthlyWorkloadPts, 1)} <span className="text-xs font-normal text-ink-3">đ</span>
+            <span className="text-xs text-ink-3 ml-2">({row.loadPct}%)</span>
           </div>
           <div className="mt-0.5 flex items-center justify-end gap-1">
             {row.meetsHardRatio ? (
@@ -1006,7 +1002,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         />
         <Stat
           label="Tổng quỹ điểm khối B2C"
-          value={metrics.totalStaffFinalPts.toLocaleString('vi-VN')}
+          value={formatDecimal(metrics.totalStaffFinalPts, 1)}
           tone={metrics.criticalOpenCount > 0 ? 'warning' : 'positive'}
           icon={BarChart3}
         />
@@ -1181,7 +1177,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       />
                       <span className="text-xs font-semibold text-ink">{col.title}</span>
                     </div>
-                    <span className="text-xs font-mono tabular-nums text-ink-3">
+                    <span className="text-xs tabular-nums text-ink-3">
                       {col.items.length}
                     </span>
                   </div>
@@ -1206,8 +1202,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 <strong className="font-medium text-ink-2">{t.brand}</strong> ·{' '}
                                 {t.sowName || CATEGORY_LABELS[cat]}
                               </span>
-                              <span className="font-mono tabular-nums font-semibold text-ink shrink-0">
-                                {pts.toFixed(2).replace('.', ',')} đ
+                              <span className="tabular-nums font-semibold text-ink shrink-0">
+                                {formatDecimal(pts, 2)} đ
                               </span>
                             </div>
 
@@ -1227,7 +1223,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 className="flex items-center gap-2 shrink-0"
                                 onClick={e => e.stopPropagation()}
                               >
-                                <span className="text-xs font-mono text-ink-3">
+                                <span className="text-xs text-ink-3">
                                   {t.urgency === 'done' ? 'Hoàn thành' : t.remainingText}
                                 </span>
                                 {t.urgency !== 'done' && (
@@ -1423,21 +1419,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Số lượng × Điểm chuẩn</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
+                  <div className="text-sm tabular-nums font-semibold text-ink mt-0.5">
                     {selectedTaskDetail.acceptedQuantity ?? 1} ×{' '}
-                    {(selectedTaskDetail.standardPoint ?? 2.0).toFixed(1).replace('.', ',')} đ
+                    {formatDecimal(selectedTaskDetail.standardPoint ?? 2.0, 1)} đ
                   </div>
                 </div>
                 <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Hệ số phạm vi</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
-                    ×{(selectedTaskDetail.scopeCoef ?? selectedTaskDetail.difficultyMultiplier ?? 1.0).toFixed(2).replace('.', ',')}
+                  <div className="text-sm tabular-nums font-semibold text-ink mt-0.5">
+                    ×{formatDecimal(selectedTaskDetail.scopeCoef ?? selectedTaskDetail.difficultyMultiplier ?? 1.0, 2)}
                   </div>
                 </div>
                 <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Hệ số độ khó</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
-                    ×{(selectedTaskDetail.taskDifficultyCoef ?? 1.0).toFixed(2).replace('.', ',')}
+                  <div className="text-sm tabular-nums font-semibold text-ink mt-0.5">
+                    ×{formatDecimal(selectedTaskDetail.taskDifficultyCoef ?? 1.0, 2)}
                   </div>
                 </div>
                 <div className="p-3 rounded-lg border border-line bg-surface">
@@ -1455,9 +1451,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           const diffC = selectedTaskDetail.taskDifficultyCoef ?? 1.0;
                           const multiC = selectedTaskDetail.multiPlatformCoef ?? 1.0;
                           const weightR = (selectedTaskDetail.contributionWeightPct ?? 100) / 100;
-                          const updatedPts = Number(
-                            (qty * stdPt * scopeC * diffC * nextCoef * multiC * weightR).toFixed(2)
-                          );
+                          const updatedPts = roundTo(qty * stdPt * scopeC * diffC * nextCoef * multiC * weightR, 2);
                           const updatedTask: SlaTask = {
                             ...selectedTaskDetail,
                             timelineStatus: nextStatus,
@@ -1467,21 +1461,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           setSelectedTaskDetail(updatedTask);
                           onUpdateTask(updatedTask);
                           onNotify?.(
-                            `Đã cập nhật hệ số tiến độ ×${nextCoef.toFixed(2).replace('.', ',')} → ${updatedPts.toFixed(2).replace('.', ',')} điểm`,
+                            `Đã cập nhật hệ số tiến độ ×${formatDecimal(nextCoef, 2)} → ${formatDecimal(updatedPts, 2)} điểm`,
                             'info'
                           );
                         }}
-                        className="w-full text-xs font-mono font-semibold text-ink bg-sunken border border-line rounded px-2 py-1 focus:outline-none focus:border-accent"
+                        className="w-full text-xs font-semibold text-ink bg-sunken border border-line rounded px-2 py-1 focus:outline-none focus:border-accent"
                       >
                         {TIMELINE_TABLE_5.map(item => (
                           <option key={item.status} value={item.status}>
-                            ×{item.coef.toFixed(2).replace('.', ',')} — {item.label}
+                            ×{formatDecimal(item.coef, 2)} — {item.label}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <div className="text-sm font-mono tabular-nums font-semibold text-ink">
-                        ×{(selectedTaskDetail.timelineCoef ?? 1.0).toFixed(2).replace('.', ',')}
+                      <div className="text-sm tabular-nums font-semibold text-ink">
+                        ×{formatDecimal(selectedTaskDetail.timelineCoef ?? 1.0, 2)}
                       </div>
                     )}
                   </div>
@@ -1526,14 +1520,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </div>
                 <div className="p-3 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Vai trò & Tỷ trọng</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
+                  <div className="text-sm tabular-nums font-semibold text-ink mt-0.5">
                     {ROLE_LABEL_MAP[selectedTaskDetail.assignmentRole || 'PIC_OWNER']} ({selectedTaskDetail.contributionWeightPct ?? 100}%)
                   </div>
                 </div>
                 <div className="p-3 rounded-lg border border-accent/30 bg-accent-soft sm:col-span-3 flex items-center justify-between">
                   <div className="text-xs text-accent font-medium">Điểm cá nhân ghi nhận</div>
-                  <div className="text-base font-mono tabular-nums font-semibold text-accent">
-                    {(selectedTaskDetail.calculatedWorkloadPoints ?? 2.0).toFixed(2).replace('.', ',')} điểm
+                  <div className="text-base tabular-nums font-semibold text-accent">
+                    {formatDecimal(selectedTaskDetail.calculatedWorkloadPoints ?? 2.0, 2)} điểm
                   </div>
                 </div>
               </div>
@@ -1683,20 +1677,20 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-lg border border-line bg-sunken">
                 <div className="text-xs text-ink-3">Điểm Quy trình</div>
-                <div className="text-base font-mono tabular-nums font-semibold text-ink mt-0.5">
-                  {inspectedStaffRow.workflowPts.toFixed(1).replace('.', ',')} đ
+                <div className="text-base tabular-nums font-semibold text-ink mt-0.5">
+                  {formatDecimal(inspectedStaffRow.workflowPts, 1)} đ
                 </div>
               </div>
               <div className="p-3 rounded-lg border border-line bg-sunken">
                 <div className="text-xs text-ink-3">Điểm Quản lý giao</div>
-                <div className="text-base font-mono tabular-nums font-semibold text-ink mt-0.5">
-                  {inspectedStaffRow.directorPts.toFixed(1).replace('.', ',')} đ
+                <div className="text-base tabular-nums font-semibold text-ink mt-0.5">
+                  {formatDecimal(inspectedStaffRow.directorPts, 1)} đ
                 </div>
               </div>
               <div className="p-3 rounded-lg border border-line bg-sunken">
                 <div className="text-xs text-ink-3">Tỷ lệ việc khó</div>
-                <div className="text-base font-mono tabular-nums font-semibold text-ink mt-0.5">
-                  {inspectedStaffRow.actualHardRatioPct.toFixed(1).replace('.', ',')}%{' '}
+                <div className="text-base tabular-nums font-semibold text-ink mt-0.5">
+                  {formatDecimal(inspectedStaffRow.actualHardRatioPct, 1)}%{' '}
                   <span className="text-xs font-normal text-ink-3">
                     / ≥{inspectedStaffRow.requiredHardRatioPct}%
                   </span>
@@ -1704,10 +1698,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </div>
               <div className="p-3 rounded-lg border border-accent/30 bg-accent-soft">
                 <div className="text-xs text-accent font-medium">
-                  Điểm tổng kết (×{inspectedStaffRow.structureCoef.toFixed(2).replace('.', ',')})
+                  Điểm tổng kết (×{formatDecimal(inspectedStaffRow.structureCoef, 2)})
                 </div>
-                <div className="text-base font-mono tabular-nums font-semibold text-accent mt-0.5">
-                  {inspectedStaffRow.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} đ
+                <div className="text-base tabular-nums font-semibold text-accent mt-0.5">
+                  {formatDecimal(inspectedStaffRow.finalMonthlyWorkloadPts, 1)} đ
                 </div>
               </div>
             </div>
@@ -1737,8 +1731,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-sm font-mono tabular-nums font-semibold text-ink">
-                          {(t.calculatedWorkloadPoints ?? 2.0).toFixed(2).replace('.', ',')} đ
+                        <div className="text-sm tabular-nums font-semibold text-ink">
+                          {formatDecimal(t.calculatedWorkloadPoints ?? 2.0, 2)} đ
                         </div>
                         <div className="text-xs text-ink-3">{t.remainingText}</div>
                       </div>
@@ -1763,8 +1757,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2 text-xs text-ink-2">
               <span>Tổng điểm công việc:</span>
-              <strong className="text-sm font-mono tabular-nums text-accent">
-                {modalFormulaPreview.totalCasePoints.toFixed(2).replace('.', ',')} điểm
+              <strong className="text-sm tabular-nums text-accent">
+                {formatDecimal(modalFormulaPreview.totalCasePoints, 2)} điểm
               </strong>
               <span className="text-ink-3">
                 ({modalFormulaPreview.qty} × {modalFormulaPreview.stdPoint}đ × HS {modalFormulaPreview.scopeCoef} × Độ khó {modalFormulaPreview.taskDiffCoef})
@@ -1887,7 +1881,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <option value="">Toàn bộ Brand / Đa sàn</option>
                 {brandStores.map(s => (
                   <option key={s.id} value={s.storeName}>
-                    {s.storeName} ({s.platform} · ×{normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier.toFixed(2).replace('.', ',')}
+                    {s.storeName} ({s.platform} · ×{formatDecimal(normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier, 2)}
                     {s.b2cOwnerName ? ` · PIC: ${s.b2cOwnerName}` : ''})
                   </option>
                 ))}
@@ -1912,7 +1906,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   max={720}
                   value={formDeadlineHours}
                   onChange={e => setFormDeadlineHours(Number(e.target.value) || 24)}
-                  className="w-20 font-mono tabular-nums"
+                  className="w-20 tabular-nums"
                   title="Số giờ SLA"
                 />
               </div>
@@ -1932,7 +1926,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 >
                   {sowPolicies.map(s => (
                     <option key={s.stt} value={s.stt}>
-                      #{s.stt} [{s.group}] {s.name} ({s.basePoint.toFixed(1).replace('.', ',')}đ)
+                      #{s.stt} [{s.group}] {s.name} ({formatDecimal(s.basePoint, 1)}đ)
                     </option>
                   ))}
                 </Select>
@@ -1953,7 +1947,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   >
                     {activeCategoryConfig.levels.map(lvl => (
                       <option key={lvl.id} value={lvl.id}>
-                        {lvl.levelCode} (×{lvl.multiplier.toFixed(2).replace('.', ',')})
+                        {lvl.levelCode} (×{formatDecimal(lvl.multiplier, 2)})
                       </option>
                     ))}
                   </Select>
@@ -1970,7 +1964,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   >
                     {STORE_SCOPE_TABLE_2.map(item => (
                       <option key={item.code} value={item.coef}>
-                        {item.label} (×{item.coef.toFixed(2).replace('.', ',')})
+                        {item.label} (×{formatDecimal(item.coef, 2)})
                       </option>
                     ))}
                   </Select>
@@ -1986,7 +1980,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   max={500}
                   value={formAcceptedQty}
                   onChange={e => setFormAcceptedQty(Math.max(1, Number(e.target.value) || 1))}
-                  className="font-mono tabular-nums"
+                  className="tabular-nums"
                 />
               </Field>
             </div>
@@ -2065,7 +2059,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   >
                     {MULTI_PLATFORM_TABLE_6.map(m => (
                       <option key={m.stores} value={m.stores}>
-                        {m.label} — Hệ số ×{m.coef.toFixed(2).replace('.', ',')}
+                        {m.label} — Hệ số ×{formatDecimal(m.coef, 2)}
                       </option>
                     ))}
                   </Select>
@@ -2094,7 +2088,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </span>
                 {assignees.length > 1 && (
                   <span
-                    className={`text-xs font-mono tabular-nums font-semibold ${
+                    className={`text-xs tabular-nums font-semibold ${
                       isWeightValid ? 'text-positive' : 'text-critical'
                     }`}
                   >
@@ -2127,9 +2121,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
             <div className="space-y-2">
               {assignees.map((slot, idx) => {
-                const personalPts = Number(
-                  (modalFormulaPreview.totalCasePoints * (slot.weightPct / 100)).toFixed(2)
-                );
+                const personalPts = roundTo(modalFormulaPreview.totalCasePoints * (slot.weightPct / 100), 2);
                 return (
                   <div
                     key={idx}
@@ -2194,13 +2186,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           };
                           setAssignees(next);
                         }}
-                        className="font-mono tabular-nums px-2 text-right"
+                        className="tabular-nums px-2 text-right"
                       />
                     </div>
 
                     <div className="sm:col-span-1 flex items-center justify-end gap-1">
-                      <span className="text-xs font-mono tabular-nums text-ink-2 hidden sm:inline">
-                        {personalPts.toFixed(1).replace('.', ',')}đ
+                      <span className="text-xs tabular-nums text-ink-2 hidden sm:inline">
+                        {formatDecimal(personalPts, 1)}đ
                       </span>
                       {assignees.length > 1 && (
                         <button

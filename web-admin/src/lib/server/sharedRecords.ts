@@ -3,12 +3,13 @@ import { mkdir, readFile, writeFile, rename, open, unlink, stat, readdir } from 
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import prisma from '../prisma';
+import { isPostgresStorageEnabled } from './dbStorageMode';
 
 export class RecordError extends Error {
   constructor(message: string, public status = 400) { super(message); }
 }
 export interface SharedRecord<T> { revision: number; data: T }
-const local = () => !!process.env.SHARED_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.SHARED_STORAGE !== 'postgres');
+const local = () => !!process.env.SHARED_DATA_DIR || !isPostgresStorageEnabled('SHARED_STORAGE');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ (process.env.SHARED_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.shared-data')));
 function file(key: string) {
   if (!/^[a-z][a-z0-9-]{0,80}$/.test(key)) throw new RecordError('Mã dữ liệu không hợp lệ.');
@@ -16,7 +17,7 @@ function file(key: string) {
 }
 
 const localRecordCache = new Map<string, { mtimeMs: number; size: number; record: SharedRecord<unknown> }>();
-const PG_CACHE_TTL_MS = 20_000;
+const PG_CACHE_TTL_MS = 60_000;
 const pgRecordCache = new Map<string, { expiresAt: number; record: SharedRecord<unknown> }>();
 const pgInflightReads = new Map<string, Promise<SharedRecord<unknown>>>();
 
@@ -52,25 +53,108 @@ export async function readRecord<T>(
   }
   let inflight = pgInflightReads.get(key);
   if (!inflight) {
-    inflight = prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`
-      .then((rows) => {
+    inflight = (async () => {
+      try {
+        // Nếu đã có bản ghi trong bộ nhớ đệm, chỉ truy vấn cột revision (4 bytes) trước để tránh tải lại hàng MB cột data khi chưa có thay đổi
+        if (cachedPg) {
+          const revRows = await prisma.$queryRaw<Array<{ revision: number }>>`
+            SELECT revision FROM "AppSharedRecord" WHERE key = ${key}
+          `;
+          const dbRevision = revRows[0]?.revision ?? 0;
+          if (dbRevision === cachedPg.record.revision) {
+            cachedPg.expiresAt = Date.now() + PG_CACHE_TTL_MS;
+            return cachedPg.record;
+          }
+          if (dbRevision === 0) {
+            const emptyRec: SharedRecord<unknown> = { revision: 0, data: fallback };
+            pgRecordCache.set(key, {
+              expiresAt: Date.now() + PG_CACHE_TTL_MS,
+              record: structuredClone(emptyRec),
+            });
+            return emptyRec;
+          }
+        }
+        const rows = await prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`;
         const record = rows[0] || { revision: 0, data: fallback };
         pgRecordCache.set(key, {
           expiresAt: Date.now() + PG_CACHE_TTL_MS,
           record: structuredClone(record),
         });
         return record as SharedRecord<unknown>;
-      })
-      .catch(() => {
-        return { revision: 0, data: fallback } as SharedRecord<unknown>;
-      })
-      .finally(() => {
+      } catch {
+        return (cachedPg?.record ?? { revision: 0, data: fallback }) as SharedRecord<unknown>;
+      } finally {
         pgInflightReads.delete(key);
-      });
+      }
+    })();
     pgInflightReads.set(key, inflight);
   }
   const resolved = await inflight;
   return (shouldClone ? structuredClone(resolved) : resolved) as SharedRecord<T>;
+}
+
+/**
+ * Chỉ đọc danh sách revision của các khóa (tiết kiệm tối đa băng thông Egress khi đối chiếu phiên bản với trình duyệt).
+ */
+export async function readRevisionsBatch(
+  keys: string[],
+  options?: { skipCache?: boolean }
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  const uniqueKeys = Array.from(new Set(keys));
+  if (uniqueKeys.length === 0) return result;
+
+  if (local()) {
+    const dir = directory();
+    const existingFiles = new Set<string>(await readdir(dir).catch(() => [] as string[]));
+    await Promise.all(
+      uniqueKeys.map(async (key) => {
+        if (!existingFiles.has(`${key}.json`)) {
+          result.set(key, 0);
+          return;
+        }
+        try {
+          const rec = await readRecord<unknown>(key, null, { clone: false });
+          result.set(key, rec.revision);
+        } catch {
+          result.set(key, 0);
+        }
+      })
+    );
+    return result;
+  }
+
+  const now = Date.now();
+  const keysToQuery: string[] = [];
+  for (const key of uniqueKeys) {
+    const cachedPg = pgRecordCache.get(key);
+    if (!options?.skipCache && cachedPg && now < cachedPg.expiresAt) {
+      result.set(key, cachedPg.record.revision);
+    } else {
+      keysToQuery.push(key);
+    }
+  }
+
+  if (keysToQuery.length > 0) {
+    const rows = await prisma.$queryRaw<Array<{ key: string; revision: number }>>`
+      SELECT key, revision FROM "AppSharedRecord" WHERE key = ANY(${keysToQuery})
+    `.catch(() => [] as Array<{ key: string; revision: number }>);
+    const dbRevByKey = new Map<string, number>();
+    for (const r of rows) {
+      dbRevByKey.set(r.key, r.revision);
+    }
+    const expiresAt = Date.now() + PG_CACHE_TTL_MS;
+    for (const key of keysToQuery) {
+      const rev = dbRevByKey.get(key) ?? 0;
+      result.set(key, rev);
+      const cachedPg = pgRecordCache.get(key);
+      if (cachedPg && cachedPg.record.revision === rev) {
+        cachedPg.expiresAt = expiresAt;
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -109,7 +193,9 @@ export async function readRecordsBatch<T>(
   }
 
   const now = Date.now();
-  const missingKeys: string[] = [];
+  const staleCachedKeys: string[] = [];
+  const uncachedKeys: string[] = [];
+
   for (const key of uniqueKeys) {
     const cachedPg = pgRecordCache.get(key);
     if (!options?.skipCache && cachedPg && now < cachedPg.expiresAt) {
@@ -117,21 +203,53 @@ export async function readRecordsBatch<T>(
         key,
         (shouldClone ? structuredClone(cachedPg.record) : cachedPg.record) as SharedRecord<T>
       );
+    } else if (cachedPg) {
+      staleCachedKeys.push(key);
     } else {
-      missingKeys.push(key);
+      uncachedKeys.push(key);
     }
   }
 
-  if (missingKeys.length > 0) {
+  // Đối với các khóa đã có sẵn trong bộ nhớ đệm nhưng hết hạn TTL, chỉ kiểm tra cột revision trước
+  if (staleCachedKeys.length > 0) {
+    const revRows = await prisma.$queryRaw<Array<{ key: string; revision: number }>>`
+      SELECT key, revision FROM "AppSharedRecord" WHERE key = ANY(${staleCachedKeys})
+    `.catch(() => null);
+
+    if (revRows) {
+      const dbRevByKey = new Map<string, number>();
+      for (const r of revRows) {
+        dbRevByKey.set(r.key, r.revision);
+      }
+      const expiresAt = Date.now() + PG_CACHE_TTL_MS;
+      for (const key of staleCachedKeys) {
+        const cachedPg = pgRecordCache.get(key);
+        const dbRev = dbRevByKey.get(key) ?? 0;
+        if (cachedPg && cachedPg.record.revision === dbRev) {
+          cachedPg.expiresAt = expiresAt;
+          result.set(
+            key,
+            (shouldClone ? structuredClone(cachedPg.record) : cachedPg.record) as SharedRecord<T>
+          );
+        } else {
+          uncachedKeys.push(key);
+        }
+      }
+    } else {
+      uncachedKeys.push(...staleCachedKeys);
+    }
+  }
+
+  if (uncachedKeys.length > 0) {
     const rows = await prisma.$queryRaw<Array<{ key: string; revision: number; data: T }>>`
-      SELECT key, revision, data FROM "AppSharedRecord" WHERE key = ANY(${missingKeys})
+      SELECT key, revision, data FROM "AppSharedRecord" WHERE key = ANY(${uncachedKeys})
     `.catch(() => [] as Array<{ key: string; revision: number; data: T }>);
     const foundByKey = new Map<string, SharedRecord<T>>();
     for (const row of rows) {
       foundByKey.set(row.key, { revision: row.revision, data: row.data });
     }
     const expiresAt = Date.now() + PG_CACHE_TTL_MS;
-    for (const key of missingKeys) {
+    for (const key of uncachedKeys) {
       const record = foundByKey.get(key) || { revision: 0, data: fallback };
       pgRecordCache.set(key, {
         expiresAt,
@@ -171,8 +289,14 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
       return next;
     } finally { await lock.close(); await unlink(lockPath); }
   }
-  const rows = await prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`;
-  const current = rows[0] || { revision: 0, data: fallback };
+  const cachedPg = pgRecordCache.get(key);
+  let current: SharedRecord<T>;
+  if (cachedPg && cachedPg.record.revision === expected) {
+    current = structuredClone(cachedPg.record) as SharedRecord<T>;
+  } else {
+    const rows = await prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`;
+    current = rows[0] || { revision: 0, data: fallback };
+  }
   if (current.revision !== expected) { pgRecordCache.delete(key); throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409); }
   const nextData = await transform(current.data);
   const nextRevision = expected + 1;

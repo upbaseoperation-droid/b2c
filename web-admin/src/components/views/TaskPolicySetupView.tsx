@@ -44,6 +44,7 @@ import {
   Status,
   Textarea,
 } from '../ui';
+import { formatDecimal } from '../../lib/format';
 
 export interface TaskPolicySetupViewProps {
   sowPolicies: SowPointPolicyItem[];
@@ -202,7 +203,7 @@ export function TaskPolicySetupView({
       key: 'stt',
       header: 'STT',
       width: 52,
-      className: 'font-mono tabular-nums',
+      className: 'tabular-nums',
       render: (r) => <span className="text-ink-3 font-medium">#{r.stt}</span>,
     },
     {
@@ -223,10 +224,10 @@ export function TaskPolicySetupView({
       header: 'Điểm chuẩn',
       align: 'right',
       width: 105,
-      className: 'font-mono tabular-nums',
+      className: 'tabular-nums',
       render: (r) => (
         <span className="font-semibold text-ink">
-          {r.basePoint.toFixed(1).replace('.', ',')} pts
+          {formatDecimal(r.basePoint, 1)} pts
         </span>
       ),
     },
@@ -318,7 +319,7 @@ export function TaskPolicySetupView({
       render: (r) => (
         <div>
           <div className="font-medium text-ink">{r.levelCode}</div>
-          <div className="text-2xs text-ink-3 font-mono">
+          <div className="text-2xs text-ink-3 font-code">
             Mã: {r.id}
           </div>
         </div>
@@ -329,10 +330,10 @@ export function TaskPolicySetupView({
       header: 'Hệ số nhân',
       align: 'right',
       width: 110,
-      className: 'font-mono tabular-nums',
+      className: 'tabular-nums',
       render: (r) => (
         <span className="font-semibold text-accent">
-          ×{r.multiplier.toFixed(2).replace('.', ',')}
+          ×{formatDecimal(r.multiplier, 2)}
         </span>
       ),
     },
@@ -341,7 +342,7 @@ export function TaskPolicySetupView({
       header: 'SLA chuẩn',
       align: 'right',
       width: 115,
-      className: 'font-mono tabular-nums',
+      className: 'tabular-nums',
       render: (r) => (
         <span className="text-ink-2">
           {r.defaultSlaHours}h ({Math.round((r.defaultSlaHours / 24) * 10) / 10}d)
@@ -465,7 +466,7 @@ export function TaskPolicySetupView({
             />
             <Stat
               label="Điểm chuẩn bình quân"
-              value={`${sowSummaryStats.avgBase.toFixed(1).replace('.', ',')} pts`}
+              value={`${formatDecimal(sowSummaryStats.avgBase, 1)} pts`}
             />
           </StatRow>
 
@@ -634,7 +635,7 @@ export function TaskPolicySetupView({
                 <div className="text-2xs font-medium text-ink-3">
                   1. Điểm nhiệm vụ cá nhân
                 </div>
-                <div className="font-mono font-semibold text-ink">
+                <div className="font-semibold text-ink">
                   Điểm cá nhân = SL nghiệm thu × Điểm chuẩn (Bảng 1) × HS phạm vi (Bảng 2/2b) × HS độ khó (Bảng 3) × HS tiến độ (Bảng 5) × HS đa sàn (Bảng 6) × Tỷ trọng vai trò (%)
                 </div>
               </div>
@@ -642,7 +643,7 @@ export function TaskPolicySetupView({
                 <div className="text-2xs font-medium text-ink-3">
                   2. Tổng điểm nhân sự cuối tháng
                 </div>
-                <div className="font-mono font-semibold text-ink">
+                <div className="font-semibold text-ink">
                   Tổng điểm tháng = Tổng điểm quy đổi trong kỳ × Hệ số cơ cấu việc khó theo Level (Bảng 4: Đạt ×1,00 | Không đạt ×0,70)
                 </div>
               </div>
@@ -655,28 +656,15 @@ export function TaskPolicySetupView({
               flush
               title="Bảng 2 · Hệ số quy mô & Độ phức tạp gian hàng"
             >
-              <div className="w-full overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
-                    <tr>
-                      <th className="py-3 px-4 font-medium">Nhóm gian hàng</th>
-                      <th className="py-3 px-3 font-medium text-right">Hệ số</th>
-                      <th className="py-3 px-4 font-medium">Tiêu chí nhận diện</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {STORE_SCOPE_TABLE_2.map((r) => (
-                      <tr key={r.code} className="hover:bg-canvas">
-                        <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
-                        <td className="py-3 px-3 text-right font-mono font-semibold text-accent">
-                          ×{r.coef.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="py-3 px-4 text-ink-2">{r.note}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable<typeof STORE_SCOPE_TABLE_2[number]>
+                rows={STORE_SCOPE_TABLE_2}
+                columns={[
+                  { key: 'label', header: 'Nhóm gian hàng', render: (r) => <span className="font-medium text-ink">{r.label}</span> },
+                  { key: 'coef', header: 'Hệ số', align: 'right', render: (r) => <span className="font-semibold text-accent">×{formatDecimal(r.coef, 2)}</span> },
+                  { key: 'note', header: 'Tiêu chí nhận diện', render: (r) => <span className="text-ink-2">{r.note}</span> },
+                ]}
+                rowKey={(r) => r.code}
+              />
             </Panel>
 
             {/* Bảng 3 & Bảng 6 */}
@@ -685,54 +673,29 @@ export function TaskPolicySetupView({
                 flush
                 title="Bảng 3 · Hệ số độ khó theo lần thực hiện"
               >
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
-                      <tr>
-                        <th className="py-3 px-4 font-medium">Mức độ</th>
-                        <th className="py-3 px-3 font-medium text-right">Hệ số</th>
-                        <th className="py-3 px-4 font-medium">Khi áp dụng</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {TASK_DIFFICULTY_TABLE_3.map((r) => (
-                        <tr key={r.tier} className="hover:bg-canvas">
-                          <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
-                          <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
-                            ×{r.coef.toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="py-3 px-4 text-ink-2">{r.criteria}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable<typeof TASK_DIFFICULTY_TABLE_3[number]>
+                  rows={TASK_DIFFICULTY_TABLE_3}
+                  columns={[
+                    { key: 'label', header: 'Mức độ', render: (r) => <span className="font-medium text-ink">{r.label}</span> },
+                    { key: 'coef', header: 'Hệ số', align: 'right', render: (r) => <span className="font-semibold text-ink">×{formatDecimal(r.coef, 2)}</span> },
+                    { key: 'criteria', header: 'Khi áp dụng', render: (r) => <span className="text-ink-2">{r.criteria}</span> },
+                  ]}
+                  rowKey={(r) => r.tier}
+                />
               </Panel>
 
               <Panel
                 flush
                 title="Bảng 6 · Hệ số mở rộng đa sàn (Việc cấp Brand)"
               >
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
-                      <tr>
-                        <th className="py-3 px-4 font-medium">Quy mô đa sàn</th>
-                        <th className="py-3 px-4 font-medium text-right">Hệ số nhân</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {MULTI_PLATFORM_TABLE_6.map((r) => (
-                        <tr key={r.stores} className="hover:bg-canvas">
-                          <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
-                          <td className="py-3 px-4 text-right font-mono font-semibold text-accent">
-                            ×{r.coef.toFixed(1).replace('.', ',')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable<typeof MULTI_PLATFORM_TABLE_6[number]>
+                  rows={MULTI_PLATFORM_TABLE_6}
+                  columns={[
+                    { key: 'label', header: 'Quy mô đa sàn', render: (r) => <span className="font-medium text-ink">{r.label}</span> },
+                    { key: 'coef', header: 'Hệ số nhân', align: 'right', render: (r) => <span className="font-semibold text-accent">×{formatDecimal(r.coef, 1)}</span> },
+                  ]}
+                  rowKey={(r) => String(r.stores)}
+                />
               </Panel>
             </div>
           </div>
@@ -743,36 +706,16 @@ export function TaskPolicySetupView({
               flush
               title="Bảng 4 · Yêu cầu tỷ trọng việc khó theo Level nhân sự"
             >
-              <div className="w-full overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
-                    <tr>
-                      <th className="py-3 px-4 font-medium">Level nhân sự</th>
-                      <th className="py-3 px-3 font-medium">Tỷ trọng việc khó tối thiểu</th>
-                      <th className="py-3 px-3 font-medium text-right">Đạt chuẩn</th>
-                      <th className="py-3 px-4 font-medium text-right">Không đạt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {STAFF_LEVEL_TABLE_4.map((r) => (
-                      <tr key={r.level} className="hover:bg-canvas">
-                        <td className="py-3 px-4 font-mono font-semibold text-ink">
-                          {r.level}
-                        </td>
-                        <td className="py-3 px-3 font-mono text-ink-2">
-                          ≥ {r.minHardRatioPct}%
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono text-positive font-semibold">
-                          ×{r.passCoef.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono text-warning font-semibold">
-                          ×{r.failCoef.toFixed(2).replace('.', ',')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable<typeof STAFF_LEVEL_TABLE_4[number]>
+                rows={STAFF_LEVEL_TABLE_4}
+                columns={[
+                  { key: 'level', header: 'Level nhân sự', render: (r) => <span className="font-semibold text-ink">{r.level}</span> },
+                  { key: 'min', header: 'Tỷ trọng việc khó tối thiểu', render: (r) => <span className="text-ink-2">≥ {r.minHardRatioPct}%</span> },
+                  { key: 'pass', header: 'Đạt chuẩn', align: 'right', render: (r) => <span className="font-semibold text-positive">×{formatDecimal(r.passCoef, 2)}</span> },
+                  { key: 'fail', header: 'Không đạt', align: 'right', render: (r) => <span className="font-semibold text-warning">×{formatDecimal(r.failCoef, 2)}</span> },
+                ]}
+                rowKey={(r) => r.level}
+              />
             </Panel>
 
             {/* Bảng 5 & Vai trò */}
@@ -781,56 +724,30 @@ export function TaskPolicySetupView({
                 flush
                 title="Bảng 5 · Hệ số tiến độ hoàn thành (Timeline SLA)"
               >
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
-                      <tr>
-                        <th className="py-3 px-4 font-medium">Mức độ hoàn thành</th>
-                        <th className="py-3 px-3 font-medium text-right">Hệ số</th>
-                        <th className="py-3 px-4 font-medium">Điều kiện áp dụng</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {TIMELINE_TABLE_5.map((r) => (
-                        <tr key={r.status} className="hover:bg-canvas">
-                          <td className="py-3 px-4 font-medium text-ink">{r.label}</td>
-                          <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
-                            ×{r.coef.toFixed(1).replace('.', ',')}
-                          </td>
-                          <td className="py-3 px-4 text-ink-2">{r.condition}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable<typeof TIMELINE_TABLE_5[number]>
+                  rows={TIMELINE_TABLE_5}
+                  columns={[
+                    { key: 'label', header: 'Mức độ hoàn thành', render: (r) => <span className="font-medium text-ink">{r.label}</span> },
+                    { key: 'coef', header: 'Hệ số', align: 'right', render: (r) => <span className="font-semibold text-ink">×{formatDecimal(r.coef, 1)}</span> },
+                    { key: 'condition', header: 'Điều kiện áp dụng', render: (r) => <span className="text-ink-2">{r.condition}</span> },
+                  ]}
+                  rowKey={(r) => r.status}
+                />
               </Panel>
 
               <Panel
                 flush
                 title="Quy tắc phân chia tỷ trọng theo vai trò phối hợp"
               >
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
-                      <tr>
-                        <th className="py-3 px-4 font-medium">Vai trò</th>
-                        <th className="py-3 px-3 font-medium text-right">Khung gợi ý</th>
-                        <th className="py-3 px-4 font-medium">Trách nhiệm chính</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {TASK_ROLE_WEIGHT_RULES.map((r) => (
-                        <tr key={r.roleKey} className="hover:bg-canvas">
-                          <td className="py-3 px-4 font-medium text-ink">{r.roleLabel}</td>
-                          <td className="py-3 px-3 text-right font-mono font-semibold text-accent">
-                            {r.suggestedWeightRange}
-                          </td>
-                          <td className="py-3 px-4 text-ink-2">{r.responsibilities}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable<typeof TASK_ROLE_WEIGHT_RULES[number]>
+                  rows={TASK_ROLE_WEIGHT_RULES}
+                  columns={[
+                    { key: 'role', header: 'Vai trò', render: (r) => <span className="font-medium text-ink">{r.roleLabel}</span> },
+                    { key: 'range', header: 'Khung gợi ý', align: 'right', render: (r) => <span className="font-semibold text-accent">{r.suggestedWeightRange}</span> },
+                    { key: 'resp', header: 'Trách nhiệm chính', render: (r) => <span className="text-ink-2">{r.responsibilities}</span> },
+                  ]}
+                  rowKey={(r) => r.roleKey}
+                />
               </Panel>
             </div>
           </div>

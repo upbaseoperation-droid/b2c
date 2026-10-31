@@ -5,7 +5,7 @@ import type {
   PlanMultiPlatformKey,
   StorePortfolioItem,
 } from './types';
-import { pushSharedStateToDb } from './sharedStateClient';
+import { getInMemorySharedState, pushSharedStateToDb } from './sharedStateClient';
 
 export const MULTI_PLATFORM_STORAGE_KEY = 'upbase_b2c_multi_platform_listing_v2';
 export const MULTI_PLATFORM_CUSTOM_FIELDS_KEY = 'upbase_b2c_multi_platform_custom_fields_v1';
@@ -1089,6 +1089,10 @@ export function loadMultiPlatformListingItems(
   kocs: KocItem[]
 ): MultiPlatformListingItem[] {
   if (typeof window !== 'undefined') {
+    const hydratedMem = getInMemorySharedState<MultiPlatformListingItem[]>('multi-platform-listings-v1');
+    if (Array.isArray(hydratedMem) && hydratedMem.length > 0) {
+      return hydratedMem.slice();
+    }
     try {
       const raw =
         window.localStorage.getItem(MULTI_PLATFORM_STORAGE_KEY) ||
@@ -1107,12 +1111,11 @@ export function loadMultiPlatformListingItems(
 export function saveMultiPlatformListingItems(items: MultiPlatformListingItem[]): void {
   if (typeof window === 'undefined') return;
   try {
-    const serialized = JSON.stringify(items);
-    window.localStorage.setItem(MULTI_PLATFORM_STORAGE_KEY, serialized);
-    window.localStorage.setItem('upbase_b2c_multi_platform_listings_v1', serialized);
-    pushSharedStateToDb('multi-platform-listings-v1', items);
-    window.dispatchEvent(new CustomEvent('upbase:multi-platform-listings-updated', { detail: items }));
+    window.localStorage.removeItem('upbase_b2c_multi_platform_listings_v1');
+    window.localStorage.setItem(MULTI_PLATFORM_STORAGE_KEY, JSON.stringify(items));
   } catch {
-    // ignore quota errors
+    // ignore quota errors; data is persisted in IndexedDB + PostgreSQL via pushSharedStateToDb
   }
+  pushSharedStateToDb('multi-platform-listings-v1', items);
+  window.dispatchEvent(new CustomEvent('upbase:multi-platform-listings-updated', { detail: items }));
 }

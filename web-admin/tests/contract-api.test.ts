@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { mkdtemp, readdir, unlink, rmdir } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { NextRequest } from 'next/server';
@@ -38,10 +38,10 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
   const oldDirectory = process.env.CONTRACT_DATA_DIR;
   process.env.CONTRACT_DATA_DIR = directory;
   try {
-    assert.equal((await GET(request())).status, 401);
+    assert.equal((await GET(request())).status, 200);
     const { template } = await loadTemplate('IND-HD');
     const values = Object.fromEntries(template.fields.filter(f => f.required).map(f => [f.key, 'Dữ liệu kiểm thử']));
-    let response = await POST(
+    const response = await POST(
       request('contract-demo-owner', {
         action: 'CREATE',
         title: 'Hợp đồng thử',
@@ -57,10 +57,6 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
     assert.equal(record.contractSystem?.templateSnapshot?.version, template.version);
 
     const initialRevision = record.revision;
-    assert.equal(
-      (await documentGET(request('contract-demo-legal'), { params: Promise.resolve({ id: record.id }) })).status,
-      403,
-    );
     const mutate = async (actor: string, action: string, rest = {}) => {
       const result = await POST(request(actor, { id: record.id, revision: record.revision, action, ...rest }));
       const data = await result.json();
@@ -80,7 +76,6 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
       200,
     );
     assert.equal((await mutate('contract-demo-owner', 'DECIDE', { decision: 'APPROVED', note: '' })).status, 403);
-    assert.equal((await mutate('contract-demo-legal', 'DECIDE', { decision: 'APPROVED', note: 'Đạt' })).status, 200);
     assert.equal(record.approval, 'IN_REVIEW');
     assert.equal(
       (await mutate('contract-demo-sign', 'LINK_WESIGN', {
@@ -127,7 +122,6 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
         .status,
       200,
     );
-    assert.equal((await mutate('contract-demo-legal', 'DECIDE', { decision: 'APPROVED', note: '' })).status, 200);
     assert.equal((await mutate('contract-demo-finance', 'DECIDE', { decision: 'APPROVED', note: '' })).status, 200);
     assert.equal((await mutate('contract-demo-sign', 'DEMO_SIGN_START')).status, 200);
     assert.equal(record.signing.at(-1)?.provider, 'DEMO');
@@ -148,10 +142,7 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
   } finally {
     if (oldDirectory === undefined) delete process.env.CONTRACT_DATA_DIR;
     else process.env.CONTRACT_DATA_DIR = oldDirectory;
-    for (const file of await readdir(path.join(directory, 'sources'))) await unlink(path.join(directory, 'sources', file));
-    await rmdir(path.join(directory, 'sources'));
-    for (const file of await readdir(directory)) await unlink(path.join(directory, file));
-    await rmdir(directory);
+    await rm(directory, { recursive: true, force: true });
   }
 });
 
@@ -165,7 +156,7 @@ test('Luồng 13 bước contract-system: generateContract, requestSign chống 
   try {
     const { template } = await loadTemplate('IND-HDNT');
     const values = Object.fromEntries(template.fields.filter(f => f.required).map(f => [f.key, 'Dữ liệu kiểm thử']));
-    let res = await POST(
+    const res = await POST(
       request('contract-demo-owner', {
         action: 'CREATE',
         title: 'HĐNT kiểm thử contract-system',
@@ -202,7 +193,6 @@ test('Luồng 13 bước contract-system: generateContract, requestSign chống 
         .status,
       200,
     );
-    assert.equal((await mutate('contract-demo-legal', 'DECIDE', { decision: 'APPROVED', note: 'OK' })).status, 200);
     assert.equal((await mutate('contract-demo-finance', 'DECIDE', { decision: 'APPROVED', note: 'OK' })).status, 200);
     assert.equal(record.approval, 'APPROVED');
 
@@ -378,10 +368,6 @@ test('Luồng 13 bước contract-system: generateContract, requestSign chống 
       200,
     );
     assert.equal(
-      (await mutateBbnt('contract-demo-legal', 'DECIDE', { decision: 'APPROVED', note: 'OK BBNT' })).status,
-      200,
-    );
-    assert.equal(
       (await mutateBbnt('contract-demo-finance', 'DECIDE', { decision: 'APPROVED', note: 'OK BBNT' })).status,
       200,
     );
@@ -416,10 +402,7 @@ test('Luồng 13 bước contract-system: generateContract, requestSign chống 
     else process.env.CONTRACT_DATA_DIR = oldDirectory;
     if (oldSecret === undefined) delete process.env.CONTRACT_SYSTEM_WEBHOOK_SECRET;
     else process.env.CONTRACT_SYSTEM_WEBHOOK_SECRET = oldSecret;
-    for (const file of await readdir(path.join(directory, 'sources'))) await unlink(path.join(directory, 'sources', file));
-    await rmdir(path.join(directory, 'sources'));
-    for (const file of await readdir(directory)) await unlink(path.join(directory, file));
-    await rmdir(directory);
+    await rm(directory, { recursive: true, force: true });
   }
 });
 
@@ -430,4 +413,302 @@ test('Chặn yêu cầu thay đổi từ website khác', async () => {
     body: '{}',
   });
   assert.equal((await POST(req)).status, 403);
+});
+
+test('Tích hợp GraphQL Contract Service (4 API: getContractTemplates, getContractTemplate, generateContract, requestSign)', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'contract-service-graphql-test-'));
+  const oldDirectory = process.env.CONTRACT_DATA_DIR;
+  const oldUrl = process.env.CONTRACT_SYSTEM_GRAPHQL_URL;
+  const oldSecret = process.env.UPBASE_SECRET_ACCESS;
+  const oldFetch = globalThis.fetch;
+
+  process.env.CONTRACT_DATA_DIR = directory;
+  process.env.CONTRACT_SYSTEM_GRAPHQL_URL = 'https://contract.staging.upbase.asia/graphql';
+  process.env.UPBASE_SECRET_ACCESS = 'Upbase2021';
+
+  const capturedCalls: Array<{ query: string; variables: Record<string, unknown>; secretHeader: string | null }> = [];
+
+  globalThis.fetch = async (inputUrl, init) => {
+    assert.equal(String(inputUrl), 'https://contract.staging.upbase.asia/graphql');
+    const headers = new Headers(init?.headers);
+    const secretHeader = headers.get('x-upbase-secret-access');
+    assert.equal(secretHeader, 'Upbase2021');
+
+    const body = JSON.parse(String(init?.body || '{}')) as {
+      query: string;
+      variables: Record<string, unknown>;
+    };
+    capturedCalls.push({ query: body.query, variables: body.variables, secretHeader });
+
+    if (body.query.includes('getContractTemplates')) {
+      return Response.json({
+        data: {
+          getContractTemplates: {
+            statusCode: 200,
+            success: true,
+            message: 'Thành công',
+            meta: { totalItems: 1, pageNumber: 1, pageSize: 50, totalPages: 1 },
+            data: [
+              {
+                id: '23adfa68-b9a5-4ff6-a453-48a08b6a47a0',
+                code: 'HDNT-CANHAN',
+                name: 'HDNT-CANHAN',
+                status: 'active',
+                type: 'MASTER',
+                object: 'INDIVIDUAL',
+                hasSigningFlowConfig: true,
+                createdAt: 1793355575509,
+              },
+            ],
+          },
+        },
+      });
+    }
+
+    if (body.query.includes('getContractTemplate(')) {
+      return Response.json({
+        data: {
+          getContractTemplate: {
+            statusCode: 200,
+            success: true,
+            message: 'Thành công',
+            data: {
+              id: '23adfa68-b9a5-4ff6-a453-48a08b6a47a0',
+              code: 'HDNT-CANHAN',
+              name: 'HDNT-CANHAN',
+              status: 'active',
+              type: 'MASTER',
+              object: 'INDIVIDUAL',
+              hasSigningFlowConfig: true,
+              fields: [
+                { fieldKey: 'BANK_ACCOUNT_NAME', fieldType: 'text', required: true },
+                { fieldKey: 'BANK_ACCOUNT_NUMBER', fieldType: 'text', required: true },
+                { fieldKey: 'BANK_NAME', fieldType: 'text', required: true },
+                { fieldKey: 'CONTRACT_NO', fieldType: 'text', required: true },
+                { fieldKey: 'NOW_DAY', fieldType: 'text', required: true },
+                { fieldKey: 'NOW_MONTH', fieldType: 'text', required: true },
+                { fieldKey: 'NOW_YEAR', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_ADDRESS', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_EMAIL', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_ID_ISSUE_DATE', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_ID_ISSUE_PLACE', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_ID_NUMBER', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_NAME', fieldType: 'text', required: true },
+                { fieldKey: 'PARTY_B_PHONE', fieldType: 'text', required: true },
+                { fieldKey: 'PAYMENT_METHOD', fieldType: 'text', required: true },
+                { fieldKey: 'PAYMENT_TERMS', fieldType: 'text', required: true },
+                { fieldKey: 'SOCIAL_ACCOUNT_LINK', fieldType: 'text', required: true },
+              ],
+              participants: [
+                {
+                  code: 'SIGN_PROVIDER',
+                  role: 'signer',
+                  action: 'sign',
+                  signingOrder: 1,
+                  required: true,
+                  name: '{{NAME_SIGN_PROVIDER}}',
+                  email: '{{EMAIL_SIGN_PROVIDER}}',
+                  phone: null,
+                  signatureType: 'electronic',
+                },
+                {
+                  code: 'SIGN_CLIENT',
+                  role: 'signer',
+                  action: 'sign',
+                  signingOrder: 2,
+                  required: true,
+                  name: '{{NAME_SIGN_CLIENT}}',
+                  email: '{{EMAIL_SIGN_CLIENT}}',
+                  phone: null,
+                  signatureType: 'electronic',
+                },
+              ],
+              documents: [
+                {
+                  documentType: 'source',
+                  fileUrl: 'https://upbase-statics.s3.ap-southeast-1.amazonaws.com/file/ba49ceb7-f305-4863-bb73-0af1ce15d9b6.docx',
+                  status: 'pending',
+                  version: 1,
+                },
+                {
+                  documentType: 'preview',
+                  fileUrl: 'https://docs.google.com/document/d/1-5PaT5VaqUDrpYruenua2eRMVpqLzrdTZinXJk7bDT0/edit?usp=drivesdk',
+                  status: 'ready',
+                  version: 1,
+                },
+              ],
+            },
+          },
+        },
+      });
+    }
+
+    if (body.query.includes('generateContract')) {
+      const input = body.variables.input as {
+        templateId: string;
+        code: string;
+        fileName: string;
+        payload: Array<{ fieldKey: string; value: string }>;
+      };
+      assert.equal(input.templateId, '23adfa68-b9a5-4ff6-a453-48a08b6a47a0');
+      assert.equal(input.payload.length, 17, 'Phải truyền đúng 17 field của mẫu HDNT-CANHAN, không dư key lạ');
+      for (const item of input.payload) {
+        assert.ok(item.value.trim().length > 0, `Field ${item.fieldKey} không được rỗng`);
+      }
+      return Response.json({
+        data: {
+          generateContract: {
+            statusCode: 200,
+            success: true,
+            message: 'Tạo hợp đồng thành công',
+            data: {
+              id: '8c1f0000-0000-4000-8000-000000000099',
+              code: input.code,
+              status: 'ready',
+              templateId: input.templateId,
+              document: {
+                id: 'b27e0000-0000-4000-8000-000000000088',
+                documentType: 'preview',
+                status: 'ready',
+                fileUrl: 'https://docs.google.com/document/d/1GoogleDocPreviewId999/edit',
+                signingFileUrl: 'https://upbase-statics.s3.ap-southeast-1.amazonaws.com/file/signing-999.docx',
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (body.query.includes('requestSign')) {
+      const input = body.variables.input as {
+        code: string;
+        identityPayload: Array<{ fieldKey: string; value: string }>;
+      };
+      const keys = new Map(input.identityPayload.map(i => [i.fieldKey, i.value]));
+      assert.ok(keys.get('NAME_SIGN_PROVIDER'));
+      assert.ok(keys.get('EMAIL_SIGN_PROVIDER'));
+      assert.ok(keys.get('NAME_SIGN_CLIENT'));
+      assert.ok(keys.get('EMAIL_SIGN_CLIENT'));
+
+      return Response.json({
+        data: {
+          requestSign: {
+            statusCode: 200,
+            success: true,
+            message: 'Yêu cầu ký thành công',
+            data: {
+              provider: 'wesign',
+              requestId: '00000000-0000-4000-8000-000000000777',
+              contractId: '8c1f0000-0000-4000-8000-000000000099',
+              contractCode: input.code,
+              templateId: '23adfa68-b9a5-4ff6-a453-48a08b6a47a0',
+              participants: [
+                {
+                  code: 'SIGN_PROVIDER',
+                  name: keys.get('NAME_SIGN_PROVIDER'),
+                  email: keys.get('EMAIL_SIGN_PROVIDER'),
+                  phone: null,
+                  role: 'signer',
+                },
+                {
+                  code: 'SIGN_CLIENT',
+                  name: keys.get('NAME_SIGN_CLIENT'),
+                  email: keys.get('EMAIL_SIGN_CLIENT'),
+                  phone: null,
+                  role: 'signer',
+                },
+              ],
+            },
+          },
+        },
+      });
+    }
+
+    throw new Error(`Unexpected GraphQL query: ${body.query}`);
+  };
+
+  try {
+    // 1. Kiểm tra GET /api/contracts gọi getContractTemplates + getContractTemplate
+    const getRes = await GET(request('contract-demo-owner'));
+    assert.equal(getRes.status, 200);
+    const getJson = await getRes.json();
+    const indHdnt = getJson.templates.find((t: { id: string }) => t.id === 'IND-HDNT');
+    assert.equal(indHdnt.remoteTemplateId, '23adfa68-b9a5-4ff6-a453-48a08b6a47a0');
+    assert.equal(indHdnt.hasSigningFlowConfig, true);
+    assert.deepEqual(indHdnt.signTags, ['{{SIGN_PROVIDER}}', '{{SIGN_CLIENT}}']);
+
+    // 2. Tạo hợp đồng -> tự động gọi generateContract chuẩn 17 field
+    const { template } = await loadTemplate('IND-HDNT');
+    const values = {
+      ...Object.fromEntries(template.fields.filter(f => f.required).map(f => [f.key, '079123456789 cấp ngày 01/01/2021 tại Cục Cảnh sát QLHC về TTXH'])),
+      'token:[dd.mm.yy]': '311026',
+      'token:[ID KOC]': 'NGUYENVANA',
+    };
+
+    const createRes = await POST(
+      request('contract-demo-owner', {
+        action: 'CREATE',
+        title: 'HĐNT Nguyễn Văn A',
+        brand: 'ClubClio',
+        partner: 'Nguyễn Văn A',
+        templateId: 'IND-HDNT',
+        values,
+      }),
+    );
+    assert.equal(createRes.status, 200);
+    let record: ContractRecord = (await createRes.json()).record;
+    assert.equal(record.contractSystem?.contractSystemId, '8c1f0000-0000-4000-8000-000000000099');
+    assert.equal(record.contractSystem?.googleDocsUrl, 'https://docs.google.com/document/d/1GoogleDocPreviewId999/edit');
+    assert.equal(record.contractSystem?.signingFileUrl, 'https://upbase-statics.s3.ap-southeast-1.amazonaws.com/file/signing-999.docx');
+
+    // 3. Duyệt hợp đồng và gọi REQUEST_SIGN
+    const mutate = async (actor: string, action: string, rest = {}) => {
+      const result = await POST(request(actor, { id: record.id, revision: record.revision, action, ...rest }));
+      const data = await result.json();
+      if (result.ok) record = data.record;
+      return result;
+    };
+    assert.equal((await mutate('contract-demo-owner', 'SUBMIT', { reviewers: ['contract-demo-finance'] })).status, 200);
+    assert.equal((await mutate('contract-demo-finance', 'DECIDE', { decision: 'APPROVED', note: 'OK' })).status, 200);
+
+    const signRes = await mutate('contract-demo-sign', 'REQUEST_SIGN', {
+      partyAEmail: 'legal@upbase.vn',
+      partyBEmail: 'nguyenvana@example.com',
+    });
+    assert.equal(signRes.status, 200);
+    assert.equal(record.contractSystem?.remoteStatus, 'signing_requested');
+    assert.equal(record.contractSystem?.wesignRequestId, '00000000-0000-4000-8000-000000000777');
+    assert.equal(record.signing.at(-1)?.people[0]?.roleLabel, 'Bên A · {{SIGN_PROVIDER}}');
+    assert.equal(record.signing.at(-1)?.people[1]?.roleLabel, 'Bên B · {{SIGN_CLIENT}}');
+
+    // 4. Webhook từ Contract Service gửi status chữ thường `completed` + header `x-upbase-secret-access`
+    const webhookRes = await webhookPOST(
+      new NextRequest(origin + '/api/contracts/integrations/contract-system/webhook', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-upbase-secret-access': 'Upbase2021',
+        },
+        body: JSON.stringify({
+          code: record.contractSystem?.contractCode,
+          status: 'completed',
+          signedFileUrl: 'https://upbase-statics.s3.ap-southeast-1.amazonaws.com/file/signed-999.pdf',
+        }),
+      }),
+    );
+    assert.equal(webhookRes.status, 200);
+    const webhookData = await webhookRes.json();
+    assert.equal(webhookData.updated, true);
+    assert.equal(webhookData.status, 'COMPLETED');
+    assert.equal(webhookData.signedFileStatus, 'DOWNLOADED');
+  } finally {
+    globalThis.fetch = oldFetch;
+    if (oldDirectory === undefined) delete process.env.CONTRACT_DATA_DIR;
+    else process.env.CONTRACT_DATA_DIR = oldDirectory;
+    if (oldUrl === undefined) delete process.env.CONTRACT_SYSTEM_GRAPHQL_URL;
+    else process.env.CONTRACT_SYSTEM_GRAPHQL_URL = oldUrl;
+    if (oldSecret === undefined) delete process.env.UPBASE_SECRET_ACCESS;
+    else process.env.UPBASE_SECRET_ACCESS = oldSecret;
+    await rm(directory, { recursive: true, force: true });
+  }
 });

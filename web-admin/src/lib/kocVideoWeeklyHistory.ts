@@ -191,6 +191,19 @@ export const STANDARD_WEEK_OPTIONS: Array<{
   },
 ];
 
+export function sanitizeSystemText(raw?: string | null, maxLen = 180): string {
+  if (!raw) return '';
+  let text = String(raw).trim();
+  if (!text) return '';
+  if (text.length > 50) {
+    text = text.replace(/(.{3,45}?)\1{2,}/g, '$1');
+  }
+  if (text.length > maxLen) {
+    text = text.slice(0, maxLen).trim();
+  }
+  return text;
+}
+
 export function normalizeChannelHandle(raw?: string | null): string {
   if (!raw) return '';
   return raw
@@ -288,6 +301,7 @@ export function buildInitialSystemVideoRegistry(
       kocByHandle.get(handle) ||
       kocByNormName.get(normalizeCreatorLookupKey(rec.channelId));
 
+    const prodName = sanitizeSystemText(rec.productName, 180) || 'Sản phẩm chủ lực';
     registry[videoId] = {
       videoId,
       dealCode: rec.code,
@@ -296,9 +310,9 @@ export function buildInitialSystemVideoRegistry(
       kocStageName: matchedKoc?.stageName || rec.channelId,
       brandName: rec.brandName,
       storeName: rec.storeName,
-      productName: rec.productName || 'Sản phẩm chủ lực',
-      campaignName: `Booking ${rec.brandName} (${rec.weekLabel || 'T10/2026'})`,
-      videoTitle: `${rec.videoType || 'Review'} - ${rec.productName || rec.brandName} (${rec.code})`,
+      productName: prodName,
+      campaignName: sanitizeSystemText(`Booking ${rec.brandName} (${rec.weekLabel || 'T10/2026'})`, 180),
+      videoTitle: sanitizeSystemText(`${rec.videoType || 'Review'} - ${prodName || rec.brandName} (${rec.code})`, 220),
       linkAir: rec.linkAir,
       airDate: rec.airDate || '2026-10-05',
       weekLabel: rec.weekLabel || 'W41 [02.10-08.10]',
@@ -333,10 +347,10 @@ export function buildInitialSystemVideoRegistry(
       kocStageName: existing?.kocStageName || matchedKoc?.stageName || cr.tiktokAccount,
       brandName: existing?.brandName || cr.brandName,
       storeName: existing?.storeName || cr.storeName,
-      productName: existing?.productName || cr.campaignName.replace(/^PGM_/, ''),
+      productName: sanitizeSystemText(existing?.productName || cr.campaignName.replace(/^PGM_/, ''), 180),
       productId: cr.productId || existing?.productId,
-      campaignName: cr.campaignName || existing?.campaignName || 'PGM Campaign',
-      videoTitle: cr.videoTitle || existing?.videoTitle || `Video ${videoId}`,
+      campaignName: sanitizeSystemText(cr.campaignName || existing?.campaignName || 'PGM Campaign', 180),
+      videoTitle: sanitizeSystemText(cr.videoTitle || existing?.videoTitle || `Video ${videoId}`, 220),
       linkAir:
         existing?.linkAir ||
         `https://www.tiktok.com/@${(matchedKoc?.channelId || cr.tiktokAccount).replace(/^@/, '').replace(/\s+/g, '')}/video/${videoId}`,
@@ -357,6 +371,7 @@ export function buildInitialSystemVideoRegistry(
     if (!candidateId || !/^\d{12,22}$/.test(candidateId)) continue;
     if (registry[candidateId]) continue;
 
+    const prodName = sanitizeSystemText(d.productName || d.campaignTitle, 180) || 'Sản phẩm chiến dịch';
     registry[candidateId] = {
       videoId: candidateId,
       dealCode: d.dealCode,
@@ -365,9 +380,9 @@ export function buildInitialSystemVideoRegistry(
       kocStageName: d.kocStageName,
       brandName: d.brandName,
       storeName: d.storeName || `${d.brandName}_TikTok_E2E-C`,
-      productName: d.productName || d.campaignTitle,
-      campaignName: d.campaignTitle || `Chiến dịch ${d.brandName}`,
-      videoTitle: d.contentHook || `${d.productName || d.brandName} - ${d.kocStageName}`,
+      productName: prodName,
+      campaignName: sanitizeSystemText(d.campaignTitle || `Chiến dịch ${d.brandName}`, 180),
+      videoTitle: sanitizeSystemText(d.contentHook || `${prodName || d.brandName} - ${d.kocStageName}`, 220),
       linkAir: d.tiktokVideoUrl || d.videoUrl || `https://www.tiktok.com/@${(d.kocChannelId || 'koc').replace(/^@/, '')}/video/${candidateId}`,
       airDate: d.postedDate || d.deadlinePost || '2026-10-06',
       weekLabel: 'W41 [02.10-08.10]',
@@ -617,10 +632,11 @@ export function ingestWeeklyRowsBySystemVideoId(
   matchedCount: number;
   newlyRegisteredVideosCount: number;
 } {
+  const sanitizedStore = sanitizeWeeklyHistoryStore(store).store;
   const nowIso = new Date().toISOString();
   const weekMeta = resolveWeekMeta(params.weekKey, params.weekLabel);
-  const nextRegistered = { ...store.registeredVideosById };
-  const nextSnapshots = { ...store.snapshotsByKey };
+  const nextRegistered = { ...sanitizedStore.registeredVideosById };
+  const nextSnapshots = { ...sanitizedStore.snapshotsByKey };
 
   // Tạo chỉ mục phụ theo dealCode để hỗ trợ trường hợp dòng dữ liệu truyền mã BO thay vì videoId
   const videoByDealCode = new Map<string, SystemRegisteredVideo>();
@@ -654,13 +670,15 @@ export function ingestWeeklyRowsBySystemVideoId(
         dealCode: row.dealCode || `BO2610_${videoId.slice(-5)}`,
         kocId: `koc-${cleanHandle}`,
         kocChannelId: cleanHandle,
-        kocStageName: row.tiktokAccount || cleanHandle,
+        kocStageName: sanitizeSystemText(row.tiktokAccount, 120) || cleanHandle,
         brandName: row.brandName || params.defaultBrandName || 'Cathy Doll',
         storeName: row.storeName || params.defaultStoreName || 'Cathy Doll_TikTok_E2E-C',
-        productName: row.productName || (row.campaignName || 'Sản phẩm chiến dịch').replace(/^PGM_/, ''),
+        productName:
+          sanitizeSystemText(row.productName || (row.campaignName || 'Sản phẩm chiến dịch').replace(/^PGM_/, ''), 180) ||
+          'Sản phẩm chiến dịch',
         productId: row.productId,
-        campaignName: row.campaignName || 'Chiến dịch Tuần',
-        videoTitle: row.videoTitle || `Video ${videoId}`,
+        campaignName: sanitizeSystemText(row.campaignName, 180) || 'Chiến dịch Tuần',
+        videoTitle: sanitizeSystemText(row.videoTitle, 220) || `Video ${videoId}`,
         linkAir: row.videoUrl || `https://www.tiktok.com/@${cleanHandle}/video/${videoId}`,
         airDate: nowIso.slice(0, 10),
         weekLabel: weekMeta.weekLabel,
@@ -710,9 +728,9 @@ export function ingestWeeklyRowsBySystemVideoId(
       kocStageName: sysVideo.kocStageName,
       brandName: row.brandName || sysVideo.brandName,
       storeName: row.storeName || sysVideo.storeName,
-      productName: row.productName || sysVideo.productName,
-      campaignName: row.campaignName || sysVideo.campaignName,
-      videoTitle: row.videoTitle || sysVideo.videoTitle,
+      productName: sanitizeSystemText(row.productName || sysVideo.productName, 180) || 'Sản phẩm chiến dịch',
+      campaignName: sanitizeSystemText(row.campaignName || sysVideo.campaignName, 180) || 'Chiến dịch Tuần',
+      videoTitle: sanitizeSystemText(row.videoTitle || sysVideo.videoTitle, 220) || `Video ${videoId}`,
       linkAir: sysVideo.linkAir,
       bookingCostNet: sysVideo.bookingCostNet,
       adsSpend,
@@ -761,7 +779,9 @@ export function ingestWeeklyRowsBySystemVideoId(
 
   const nextBatches = [
     batchLog,
-    ...store.batches.filter((b) => !(b.weekKey === batchLog.weekKey && b.fileName === batchLog.fileName)),
+    ...(sanitizedStore.batches || []).filter(
+      (b) => !(b.weekKey === batchLog.weekKey && b.fileName === batchLog.fileName)
+    ),
   ].slice(0, 30);
 
   return {
@@ -809,41 +829,156 @@ export function convertParsedAdsReportToWeeklyRows(
   }));
 }
 
+let cachedCleanDealsByCode: Map<string, BookingDealItem> | null = null;
+function getCleanDealsByCode(): Map<string, BookingDealItem> {
+  if (!cachedCleanDealsByCode) {
+    cachedCleanDealsByCode = new Map<string, BookingDealItem>();
+    for (const d of INITIAL_DEALS) {
+      if (d.dealCode) {
+        cachedCleanDealsByCode.set(d.dealCode.toUpperCase(), d);
+      }
+    }
+  }
+  return cachedCleanDealsByCode;
+}
+
+/**
+ * Làm sạch kho `koc-video-weekly-history-store-v1`:
+ * - Xóa trường mảng trùng lặp `registeredVideos` (tiết kiệm ~5.6 MB)
+ * - Khôi phục hoặc cắt gọn các chuỗi `productName` / `videoTitle` bị lặp 32.767 ký tự từ Excel (tiết kiệm ~5.8 MB)
+ */
+export function sanitizeWeeklyHistoryStore(
+  rawStore: KocVideoWeeklyHistoryStoreData | null | undefined
+): { store: KocVideoWeeklyHistoryStoreData; changed: boolean } {
+  if (!rawStore || typeof rawStore !== 'object') {
+    return { store: buildInitialWeeklyHistoryStore(), changed: false };
+  }
+
+  let changed = false;
+  const rawAny = rawStore as unknown as Record<string, unknown>;
+  if ('registeredVideos' in rawAny) {
+    changed = true;
+  }
+
+  const dealsByCode = getCleanDealsByCode();
+  const nextRegisteredById: Record<string, SystemRegisteredVideo> = {};
+  const rawReg = rawStore.registeredVideosById || {};
+
+  for (const [vid, item] of Object.entries(rawReg)) {
+    if (!item || typeof item !== 'object') continue;
+    const cleanDeal = item.dealCode ? dealsByCode.get(item.dealCode.toUpperCase()) : undefined;
+    const rawProd = item.productName || '';
+    const rawTitle = item.videoTitle || '';
+    const rawCamp = item.campaignName || '';
+
+    const cleanProd =
+      rawProd.length > 180 && cleanDeal?.productName
+        ? sanitizeSystemText(cleanDeal.productName, 180)
+        : sanitizeSystemText(rawProd, 180) || 'Sản phẩm chiến dịch';
+    const cleanTitle =
+      rawTitle.length > 220 && cleanDeal?.productName
+        ? sanitizeSystemText(`${cleanDeal.productName} - ${item.kocStageName || item.kocChannelId}`, 220)
+        : sanitizeSystemText(rawTitle, 220) || `Video ${vid}`;
+    const cleanCamp = sanitizeSystemText(rawCamp, 180) || `Chiến dịch ${item.brandName || ''}`.trim();
+
+    if (cleanProd !== rawProd || cleanTitle !== rawTitle || cleanCamp !== rawCamp) {
+      changed = true;
+      nextRegisteredById[vid] = {
+        ...item,
+        productName: cleanProd,
+        videoTitle: cleanTitle,
+        campaignName: cleanCamp,
+      };
+    } else {
+      nextRegisteredById[vid] = item;
+    }
+  }
+
+  const nextSnapshotsByKey: Record<string, VideoWeeklySnapshotItem> = {};
+  const rawSnaps = rawStore.snapshotsByKey || {};
+  for (const [snapKey, snap] of Object.entries(rawSnaps)) {
+    if (!snap || typeof snap !== 'object') continue;
+    const rawProd = snap.productName || '';
+    const rawTitle = snap.videoTitle || '';
+    const rawCamp = snap.campaignName || '';
+    const sysVid = nextRegisteredById[snap.videoId];
+
+    const cleanProd =
+      rawProd.length > 180 && sysVid?.productName
+        ? sysVid.productName
+        : sanitizeSystemText(rawProd, 180) || sysVid?.productName || 'Sản phẩm chiến dịch';
+    const cleanTitle =
+      rawTitle.length > 220 && sysVid?.videoTitle
+        ? sysVid.videoTitle
+        : sanitizeSystemText(rawTitle, 220) || sysVid?.videoTitle || `Video ${snap.videoId}`;
+    const cleanCamp = sanitizeSystemText(rawCamp, 180) || sysVid?.campaignName || 'Chiến dịch Tuần';
+
+    if (cleanProd !== rawProd || cleanTitle !== rawTitle || cleanCamp !== rawCamp) {
+      changed = true;
+      nextSnapshotsByKey[snapKey] = {
+        ...snap,
+        productName: cleanProd,
+        videoTitle: cleanTitle,
+        campaignName: cleanCamp,
+      };
+    } else {
+      nextSnapshotsByKey[snapKey] = snap;
+    }
+  }
+
+  if (!changed) {
+    return { store: rawStore, changed: false };
+  }
+
+  return {
+    store: {
+      registeredVideosById: nextRegisteredById,
+      snapshotsByKey: nextSnapshotsByKey,
+      batches: Array.isArray(rawStore.batches) ? rawStore.batches.slice(0, 30) : [],
+      updatedAt: rawStore.updatedAt || new Date().toISOString(),
+    },
+    changed: true,
+  };
+}
+
+export type RegisterSystemVideoPayload = {
+  videoId?: string;
+  linkAir?: string;
+  dealCode?: string;
+  kocId?: string;
+  kocChannelId: string;
+  kocStageName?: string;
+  brandName: string;
+  storeName: string;
+  productName?: string;
+  campaignName?: string;
+  videoTitle?: string;
+  airDate?: string;
+  weekKey?: string;
+  pic?: string;
+  klGrade?: string;
+  bookingCostNet?: number;
+  sparkAdsCode?: string;
+  authorizationType?: string;
+  initialAdsSpend?: number;
+  initialGmv?: number;
+  initialOrders?: number;
+  initialViews?: number;
+  source?: SystemRegisteredVideo['source'];
+};
+
 /**
  * Đăng ký một Video mới phát sinh (`videoId`) vào Sổ đăng ký Video hệ thống
  */
 export function registerNewSystemVideo(
   store: KocVideoWeeklyHistoryStoreData,
-  payload: {
-    videoId?: string;
-    linkAir?: string;
-    dealCode?: string;
-    kocId?: string;
-    kocChannelId: string;
-    kocStageName?: string;
-    brandName: string;
-    storeName: string;
-    productName?: string;
-    campaignName?: string;
-    videoTitle?: string;
-    airDate?: string;
-    weekKey?: string;
-    pic?: string;
-    klGrade?: string;
-    bookingCostNet?: number;
-    sparkAdsCode?: string;
-    authorizationType?: string;
-    initialAdsSpend?: number;
-    initialGmv?: number;
-    initialOrders?: number;
-    initialViews?: number;
-    source?: SystemRegisteredVideo['source'];
-  }
+  payload: RegisterSystemVideoPayload
 ): {
   nextStore: KocVideoWeeklyHistoryStoreData;
   registeredVideo: SystemRegisteredVideo;
   initialSnapshot?: VideoWeeklySnapshotItem;
 } {
+  const sanitizedStore = sanitizeWeeklyHistoryStore(store).store;
   const nowIso = new Date().toISOString();
   const extractedId = extractSystemVideoId(payload.videoId || payload.linkAir);
   if (!extractedId) {
@@ -858,12 +993,12 @@ export function registerNewSystemVideo(
     dealCode: payload.dealCode?.trim() || `BO2610_${extractedId.slice(-5)}`,
     kocId: payload.kocId || `koc-${cleanHandle}`,
     kocChannelId: cleanHandle,
-    kocStageName: payload.kocStageName?.trim() || cleanHandle,
+    kocStageName: sanitizeSystemText(payload.kocStageName, 120) || cleanHandle,
     brandName: payload.brandName.trim(),
     storeName: payload.storeName.trim(),
-    productName: payload.productName?.trim() || 'Sản phẩm chiến dịch',
-    campaignName: payload.campaignName?.trim() || `Booking ${payload.brandName.trim()}`,
-    videoTitle: payload.videoTitle?.trim() || `Video @${cleanHandle} - ${payload.brandName.trim()}`,
+    productName: sanitizeSystemText(payload.productName, 180) || 'Sản phẩm chiến dịch',
+    campaignName: sanitizeSystemText(payload.campaignName, 180) || `Booking ${payload.brandName.trim()}`,
+    videoTitle: sanitizeSystemText(payload.videoTitle, 220) || `Video @${cleanHandle} - ${payload.brandName.trim()}`,
     linkAir:
       payload.linkAir?.trim() ||
       `https://www.tiktok.com/@${cleanHandle}/video/${extractedId}`,
@@ -879,10 +1014,10 @@ export function registerNewSystemVideo(
   };
 
   const nextRegistered = {
-    ...store.registeredVideosById,
+    ...sanitizedStore.registeredVideosById,
     [extractedId]: registeredVideo,
   };
-  const nextSnapshots = { ...store.snapshotsByKey };
+  const nextSnapshots = { ...sanitizedStore.snapshotsByKey };
   let initialSnapshot: VideoWeeklySnapshotItem | undefined;
 
   if (
@@ -940,13 +1075,44 @@ export function registerNewSystemVideo(
 
   return {
     nextStore: {
-      ...store,
       registeredVideosById: nextRegistered,
       snapshotsByKey: nextSnapshots,
+      batches: sanitizedStore.batches || [],
       updatedAt: nowIso,
     },
     registeredVideo,
     initialSnapshot,
+  };
+}
+
+/**
+ * Đăng ký hàng loạt Video phát sinh trong 1 lần ghi DB duy nhất (tránh N request song song làm bùng nổ Egress)
+ */
+export function registerNewSystemVideosBatch(
+  store: KocVideoWeeklyHistoryStoreData,
+  payloads: RegisterSystemVideoPayload[]
+): {
+  nextStore: KocVideoWeeklyHistoryStoreData;
+  registeredVideos: SystemRegisteredVideo[];
+} {
+  let workingStore = sanitizeWeeklyHistoryStore(store).store;
+  const registeredVideos: SystemRegisteredVideo[] = [];
+
+  for (const item of payloads) {
+    const extractedId = extractSystemVideoId(item.videoId || item.linkAir);
+    if (!extractedId) continue;
+    try {
+      const res = registerNewSystemVideo(workingStore, item);
+      workingStore = res.nextStore;
+      registeredVideos.push(res.registeredVideo);
+    } catch {
+      // Bỏ qua dòng thiếu dữ liệu hợp lệ
+    }
+  }
+
+  return {
+    nextStore: workingStore,
+    registeredVideos,
   };
 }
 

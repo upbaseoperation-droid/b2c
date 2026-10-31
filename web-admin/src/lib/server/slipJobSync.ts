@@ -101,8 +101,12 @@ async function applySlipToMultiPlatformListings(slip: LarkPaymentRequestSlip): P
           if (!Array.isArray(prev)) return [];
           return prev.map((row) => {
             const codeKey = (row.boCode || `MP-DEAL-${row.id}`).trim().toUpperCase();
+            const mpFallbackKey = `MP-DEAL-${row.id}`.trim().toUpperCase();
             const idKey = (row.id || '').trim().toUpperCase();
-            const matchedLine = lineByDealCode.get(codeKey) || lineByDealCode.get(idKey);
+            const matchedLine =
+              lineByDealCode.get(codeKey) ||
+              lineByDealCode.get(mpFallbackKey) ||
+              lineByDealCode.get(idKey);
             if (!matchedLine) return row;
 
             touched++;

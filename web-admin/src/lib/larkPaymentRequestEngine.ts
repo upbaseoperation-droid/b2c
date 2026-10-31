@@ -139,6 +139,10 @@ export interface DealPaymentLineBreakdown {
   contractMandatoryReason: string;
   isBbntMandatory: boolean;
   bbntMandatoryReason: string;
+  liveSessionsCount?: number;
+  liveCommittedMinutes?: number;
+  liveActualMinutes?: number;
+  liveActualGmv?: number;
   isEligible: boolean;
   issues: PaymentValidationIssue[];
 }
@@ -178,6 +182,8 @@ export interface LarkPaymentRequestSlip {
     grossTotal: number;
     netTransferTotal: number;
     amountInWords: string;
+    totalLiveSessions?: number;
+    totalLiveNmv?: number;
   };
   larkSync: {
     approvalInstanceCode: string;
@@ -297,10 +303,14 @@ export function buildVietQrImageUrl(params: {
 
 /**
  * Kiểm tra link bài đăng chuẩn trên Bảng 3.2:
- * - Bắt buộc là link đầy đủ có Video ID / Post ID
+ * - Bắt buộc là link đầy đủ có Video ID / Post ID (đối với Video)
+ * - Đối với Phiên Livestream (isLivestream = true): chấp nhận Folder Google Drive, Lark Drive, Google Sheets, hoặc Link Replay TikTok/Shopee/Facebook
  * - Chặn cứng link rút gọn vt.tiktok.com / vm.tiktok.com chưa giải mã
  */
-export function validateStandardAirLink(rawUrl?: string): {
+export function validateStandardAirLink(
+  rawUrl?: string,
+  isLivestream = false
+): {
   valid: boolean;
   reason?: string;
 } {
@@ -308,13 +318,30 @@ export function validateStandardAirLink(rawUrl?: string): {
   if (!url) {
     return {
       valid: false,
-      reason: 'Chưa có Link bài đăng (linkAir) trên Bảng 3.2.',
+      reason: isLivestream
+        ? 'Chưa có Link Folder Bằng chứng / Replay Phiên Live (Google Drive / Lark / TikTok) trên Bảng 3.2.'
+        : 'Chưa có Link bài đăng (linkAir) trên Bảng 3.2.',
     };
   }
   if (/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) {
     return {
       valid: false,
       reason: 'Link đang ở dạng rút gọn (vt.tiktok.com). Kế toán yêu cầu dán link dài chuẩn có chứa Video ID (tiktok.com/@.../video/...).',
+    };
+  }
+  if (isLivestream) {
+    const isDriveProof = /^https?:\/\/drive\.google\.com\/(drive\/folders\/|file\/d\/|open\?id=)/i.test(url);
+    const isGoogleDocsProof = /^https?:\/\/docs\.google\.com\/(spreadsheets|document|presentation)\//i.test(url);
+    const isLarkProof = /^https?:\/\/([a-z0-9-]+\.)*larksuite\.com\/(drive\/folder\/|docx\/|sheets\/|base\/|wiki\/|file\/)/i.test(url);
+    const isTikTokLiveOrVideo = /^https?:\/\/(www\.|m\.)?tiktok\.com\/.+/i.test(url);
+    const isShopeeLive = /^https?:\/\/([a-z0-9-]+\.)?shopee\.vn\/.+/i.test(url);
+    const isFbLive = /^https?:\/\/(www\.|m\.|web\.)?(facebook\.com|fb\.watch)\/.+/i.test(url);
+    if (isDriveProof || isGoogleDocsProof || isLarkProof || isTikTokLiveOrVideo || isShopeeLive || isFbLive) {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      reason: 'Link nghiệm thu Phiên Live phải là link Folder Google Drive, Lark Drive, Google Sheets hoặc link Replay phiên Live hợp lệ.',
     };
   }
   const isTikTokFull = /^https?:\/\/(www\.|m\.)?tiktok\.com\/@[^/]+\/(video|photo)\/\d+/i.test(url);
@@ -687,16 +714,39 @@ export function evaluateDealForPaymentRequest(
     });
   }
 
-  // NHÓM 3: NGHIỆM THU KỸ THUẬT VIDEO & ADS (Bắt buộc khi lập ĐNTT Tất toán)
+  const isLivestreamDeal =
+    deal.bookingFormat === 'Booking Livestream KOC' ||
+    deal.bookingFormat === 'Phiên Livestream' ||
+    /^LIVE[-_]/i.test(deal.dealCode || '');
+
+  // NHÓM 3: NGHIỆM THU KỸ THUẬT VIDEO / LIVESTREAM & ADS (Bắt buộc khi lập ĐNTT Tất toán)
   if (requestType === 'SETTLEMENT') {
-    const linkCheck = validateStandardAirLink(linkAir);
+    const linkCheck = validateStandardAirLink(linkAir, isLivestreamDeal);
     if (!linkCheck.valid) {
       issues.push({
         code: 'INVALID_AIR_LINK',
         group: 'ACCEPTANCE_TECH',
         fieldKey: 'linkAir',
-        fieldLabel: 'Link bài đăng chuẩn (linkAir)',
+        fieldLabel: isLivestreamDeal
+          ? 'Link Folder Bằng chứng / Replay Phiên Live (linkAir)'
+          : 'Link bài đăng chuẩn (linkAir)',
         message: linkCheck.reason || 'Thiếu link bài đăng chuẩn có Video ID.',
+        canQuickFix: true,
+      });
+    }
+
+    if (
+      isLivestreamDeal &&
+      (deal.liveCommittedMinutes || 0) > 0 &&
+      (deal.liveActualMinutes || 0) > 0 &&
+      (deal.liveActualMinutes || 0) / (deal.liveCommittedMinutes || 1) < 0.5
+    ) {
+      issues.push({
+        code: 'LIVESTREAM_UNDER_50PCT_DURATION',
+        group: 'ACCEPTANCE_TECH',
+        fieldKey: 'linkAir',
+        fieldLabel: 'Thời lượng thực tế phiên Live (BR-LIVE-02)',
+        message: `Phiên Live ${deal.dealCode} chỉ đạt ${deal.liveActualMinutes}/${deal.liveCommittedMinutes} phút (< 50% cam kết). Bắt buộc sắp xếp lịch Live bù hoặc có phê duyệt ngoại lệ từ Giám đốc Marketing trước khi lập ĐNTT.`,
         canQuickFix: true,
       });
     }
@@ -884,6 +934,10 @@ export function evaluateDealForPaymentRequest(
     contractMandatoryReason: ruleEval.contractMandatoryReason,
     isBbntMandatory: isBbntRequiredForSubject,
     bbntMandatoryReason: bbntReasonText,
+    liveSessionsCount: isLivestreamDeal ? Math.max(1, Number(deal.liveSessionsCount) || 1) : undefined,
+    liveCommittedMinutes: isLivestreamDeal ? deal.liveCommittedMinutes : undefined,
+    liveActualMinutes: isLivestreamDeal ? deal.liveActualMinutes : undefined,
+    liveActualGmv: isLivestreamDeal ? Math.max(0, Number(deal.gmv30 || deal.affiliateGmv) || 0) : undefined,
     isEligible: issues.length === 0,
     issues,
   };
@@ -1029,6 +1083,8 @@ export function buildLarkPaymentRequestSlip(params: {
   const pitTax10PctTotal = lineItems.reduce((s, i) => s + i.pitDeductionAmount, 0);
   const grossTotal = lineItems.reduce((s, i) => s + i.grossContractAmount, 0);
   const netTransferTotal = lineItems.reduce((s, i) => s + i.netTransferAmount, 0);
+  const totalLiveSessions = lineItems.reduce((s, i) => s + (i.liveSessionsCount || 0), 0);
+  const totalLiveNmv = lineItems.reduce((s, i) => s + (i.liveActualGmv || 0), 0);
 
   const larkPaymentCategory: LarkPaymentCategory =
     lineItems[0]?.larkPaymentCategory ||
@@ -1078,6 +1134,8 @@ export function buildLarkPaymentRequestSlip(params: {
       grossTotal,
       netTransferTotal,
       amountInWords: numberToVietnameseWords(netTransferTotal),
+      totalLiveSessions: totalLiveSessions > 0 ? totalLiveSessions : undefined,
+      totalLiveNmv: totalLiveNmv > 0 ? totalLiveNmv : undefined,
     },
   };
 }

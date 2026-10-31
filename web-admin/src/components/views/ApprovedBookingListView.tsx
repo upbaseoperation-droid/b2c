@@ -55,6 +55,7 @@ import {
   buildDefaultAddonServicesForDeal,
   computeAirSlaStatus,
   computeDealSowJobSubtotal,
+  computeLivestreamDurationEvaluation,
   computeWeekLabelFromDate,
   downloadApprovedBookingListCsv,
   ensureDealJobsForApprovedItem,
@@ -67,6 +68,7 @@ import {
   generateMasterContractCode,
   isApprovedDealDataLocked,
   isLivestreamBookingItem,
+  isValidLivestreamProofUrl,
   loadApprovedBookingList,
   recalculateApprovedBookingItem,
   saveApprovedBookingList,
@@ -132,7 +134,7 @@ export interface ApprovedBookingListViewProps {
   bookingScope?: 'ALL' | 'TIKTOK_VIDEO' | 'LIVESTREAM';
   initialStoreName?: string;
   initialMonthKey?: string;
-  focusDealCode?: string;
+  focusDeal?: { code: string; nonce: number } | null;
   onCreateOrUpdateDeals?: (newOrUpdatedDeals: BookingDealItem[]) => void;
   onOpenContractForDeal?: (deal: BookingDealItem, document?: 'HDNT' | 'SOW' | 'BBNT') => void;
   onNavigateTab?: (tab: 'koc-listing' | 'booking', context?: { storeName?: string; monthKey?: string }) => void;
@@ -174,7 +176,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   bookingScope = 'ALL',
   initialStoreName,
   initialMonthKey,
-  focusDealCode,
+  focusDeal,
   onCreateOrUpdateDeals,
   onOpenContractForDeal,
   onNavigateTab,
@@ -455,19 +457,17 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     updater: (prev: ApprovedBookingListItem[]) => ApprovedBookingListItem[],
     changedItemsForSheetSync?: ApprovedBookingListItem[]
   ) => {
-    setItems((prev) => {
-      const next = updater(prev);
-      saveApprovedBookingList(next, false);
-      if (changedItemsForSheetSync && changedItemsForSheetSync.length > 0) {
-        syncApprovedItemsBackToStaffBrandSheets(
-          changedItemsForSheetSync,
-          kocs,
-          stores,
-          deals
-        );
-      }
-      return next;
-    });
+    const next = updater(items);
+    setItems(next);
+    saveApprovedBookingList(next, false);
+    if (changedItemsForSheetSync && changedItemsForSheetSync.length > 0) {
+      syncApprovedItemsBackToStaffBrandSheets(
+        changedItemsForSheetSync,
+        kocs,
+        stores,
+        deals
+      );
+    }
   };
 
   // Lọc danh sách hiển thị
@@ -489,13 +489,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     setIsDrawerOpen(true);
   };
 
-  const handledFocusDealRef = useRef<string | null>(null);
+  const handledFocusNonceRef = useRef<number | null>(null);
   useEffect(() => {
-    const code = (focusDealCode || '').trim().toUpperCase();
-    if (!code || handledFocusDealRef.current === code) return;
+    const code = (focusDeal?.code || '').trim().toUpperCase();
+    if (!code || !focusDeal || handledFocusNonceRef.current === focusDeal.nonce) return;
     const matched = items.find((it) => it.maBooking.trim().toUpperCase() === code);
     if (matched) {
-      handledFocusDealRef.current = code;
+      handledFocusNonceRef.current = focusDeal.nonce;
       if (matched.storeName) setSelectedStore(matched.storeName);
       if (matched.thangPlan) setSelectedMonth(matched.thangPlan);
       setSearchQuery(matched.maBooking);
@@ -503,7 +503,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       setDrawerInitialTab('ACCEPTANCE');
       setIsDrawerOpen(true);
     }
-  }, [focusDealCode, items]);
+  }, [focusDeal, items]);
 
   useEffect(() => {
     const handleNavigateEvent = (evt: Event) => {
@@ -523,7 +523,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         setSearchQuery(detail.dealCode.trim());
         const matched = items.find((it) => it.maBooking.trim().toUpperCase() === cleanCode);
         if (matched) {
-          handledFocusDealRef.current = cleanCode;
+          handledFocusNonceRef.current = Date.now();
           setSelectedDrawerItemId(matched.id);
           setDrawerInitialTab('ACCEPTANCE');
           setIsDrawerOpen(true);
@@ -1995,8 +1995,150 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     return `${sampleUrl} | ${sampleSpark} | ${sampleViews} | ${sampleGmv} | ${sampleOrders} | ${sampleDate}`;
   };
 
+  // ============================================================================
+  // HỘP THOẠI NGHIỆM THU PHIÊN LIVESTREAM (BẢNG 3.2 — 3 KHỐI BR-LIVE-01..08)
+  // ============================================================================
+  const [isLiveAcceptanceModalOpen, setIsLiveAcceptanceModalOpen] = useState(false);
+  const [liveAccTargetId, setLiveAccTargetId] = useState<string>('');
+  const [liveAccProofUrl, setLiveAccProofUrl] = useState<string>('');
+  const [liveAccActualDate, setLiveAccActualDate] = useState<string>(() => getVietnamDateYmd());
+  const [liveAccStartTime, setLiveAccStartTime] = useState<string>('20:00');
+  const [liveAccEndTime, setLiveAccEndTime] = useState<string>('22:00');
+  const [liveAccSessionsCount, setLiveAccSessionsCount] = useState<number>(1);
+  const [liveAccCommittedMinutes, setLiveAccCommittedMinutes] = useState<number>(120);
+  const [liveAccActualMinutes, setLiveAccActualMinutes] = useState<number>(120);
+  const [liveAccActualGmv, setLiveAccActualGmv] = useState<number>(0);
+  const [liveAccActualOrders, setLiveAccActualOrders] = useState<number>(0);
+  const [liveAccActualViews, setLiveAccActualViews] = useState<number>(0);
+  const [liveAccBonusAmount, setLiveAccBonusAmount] = useState<number>(0);
+  const [liveAccCustomPenalty, setLiveAccCustomPenalty] = useState<string>('');
+  const [liveAccNote, setLiveAccNote] = useState<string>('');
+
+  const populateLiveAcceptanceFromItem = (target: ApprovedBookingListItem) => {
+    setLiveAccTargetId(target.id);
+    setLiveAccProofUrl(target.linkAir || '');
+    setLiveAccActualDate(
+      target.actualAirDate || target.plannedAirDate || getVietnamDateYmd()
+    );
+    setLiveAccStartTime(target.liveStartTime || '20:00');
+    setLiveAccEndTime(target.liveEndTime || '22:00');
+    setLiveAccSessionsCount(Math.max(1, Number(target.liveSessionsCount) || 1));
+    setLiveAccCommittedMinutes(Math.max(30, Number(target.liveCommittedMinutes) || 120));
+    setLiveAccActualMinutes(
+      target.liveActualMinutes && target.liveActualMinutes > 0
+        ? target.liveActualMinutes
+        : Math.max(30, Number(target.liveCommittedMinutes) || 120)
+    );
+    setLiveAccActualGmv(Math.max(0, Number(target.gmv30d) || 0));
+    setLiveAccActualOrders(Math.max(0, Number(target.orders30d) || 0));
+    setLiveAccActualViews(Math.max(0, Number(target.views30d) || 0));
+    setLiveAccBonusAmount(Math.max(0, Number(target.liveBonusAmount) || 0));
+    setLiveAccCustomPenalty(
+      target.livePenaltyDeduction !== undefined && target.livePenaltyDeduction > 0
+        ? String(target.livePenaltyDeduction)
+        : ''
+    );
+    setLiveAccNote(target.ghiChu || '');
+  };
+
+  const handleSaveLivestreamAcceptance = (openLarkModalAfter = false) => {
+    const targetItem = items.find((i) => i.id === liveAccTargetId);
+    if (!targetItem) {
+      onNotify?.('Vui lòng chọn Phiên Livestream cần nghiệm thu.', 'warning');
+      return;
+    }
+    const cleanUrl = liveAccProofUrl.trim();
+    if (!isValidLivestreamProofUrl(cleanUrl)) {
+      onNotify?.(
+        'Vui lòng nhập Link Folder Bằng chứng hợp lệ (Google Drive Folder, Lark Drive Folder, Google Sheets hoặc Link Replay TikTok/Shopee).',
+        'warning'
+      );
+      return;
+    }
+    if (!liveAccActualDate) {
+      onNotify?.('Vui lòng chọn Ngày phát sóng thực tế của phiên Live.', 'warning');
+      return;
+    }
+    const durationEval = computeLivestreamDurationEvaluation(
+      liveAccCommittedMinutes,
+      liveAccActualMinutes,
+      targetItem.chiPhiBookingNetCuoi
+    );
+    if (openLarkModalAfter && durationEval.status === 'FAIL_HOLD') {
+      onNotify?.(
+        `Phiên Live chỉ đạt ${liveAccActualMinutes}/${liveAccCommittedMinutes} phút (< 50% cam kết — BR-LIVE-02). Hệ thống giữ thanh toán chờ lịch Live bù hoặc phê duyệt ngoại lệ từ Giám đốc Marketing.`,
+        'warning'
+      );
+      return;
+    }
+
+    const effectivePenalty =
+      liveAccCustomPenalty.trim() !== ''
+        ? Math.max(0, Number(liveAccCustomPenalty.replace(/\D/g, '')) || 0)
+        : durationEval.autoDeductionVnd;
+
+    let savedItem: ApprovedBookingListItem | null = null;
+    updateItemsAndSync((prev) =>
+      prev.map((it) => {
+        if (it.id !== targetItem.id) return it;
+        const updated = recalculateApprovedBookingItem({
+          ...it,
+          linkAir: cleanUrl,
+          actualAirDate: liveAccActualDate,
+          ngayDienLinkAir: getVietnamDateYmd(),
+          liveStartTime: liveAccStartTime,
+          liveEndTime: liveAccEndTime,
+          liveSessionsCount: Math.max(1, Number(liveAccSessionsCount) || 1),
+          liveCommittedMinutes: Math.max(15, Number(liveAccCommittedMinutes) || 120),
+          liveActualMinutes: Math.max(0, Number(liveAccActualMinutes) || 0),
+          gmv30d: Math.max(0, Number(liveAccActualGmv) || 0),
+          orders30d: Math.max(0, Number(liveAccActualOrders) || 0),
+          views30d: Math.max(0, Number(liveAccActualViews) || 0),
+          gmv14d: Math.max(0, Number(liveAccActualGmv) || 0),
+          orders14d: Math.max(0, Number(liveAccActualOrders) || 0),
+          views14d: Math.max(0, Number(liveAccActualViews) || 0),
+          liveBonusAmount: Math.max(0, Number(liveAccBonusAmount) || 0),
+          livePenaltyDeduction: effectivePenalty,
+          ghiChu: liveAccNote || it.ghiChu,
+          acceptanceStatus: 'DA_NGHIEM_THU',
+          trangThaiPhieuThanhToan:
+            it.trangThaiPhieuThanhToan === 'Chờ nghiệm thu'
+              ? 'Đủ điều kiện ĐNTT'
+              : it.trangThaiPhieuThanhToan,
+        });
+        savedItem = updated;
+        return updated;
+      })
+    );
+
+    if (savedItem && onCreateOrUpdateDeals) {
+      onCreateOrUpdateDeals([buildBookingDealFromApprovedItem(savedItem)]);
+    }
+
+    setIsLiveAcceptanceModalOpen(false);
+    onNotify?.(
+      `Đã nghiệm thu Phiên Live ${targetItem.maBooking} (@${targetItem.idKenh}) · Thời lượng ${liveAccActualMinutes}/${liveAccCommittedMinutes}p · GMV ${formatVnd(liveAccActualGmv)}.`,
+      'success'
+    );
+
+    if (openLarkModalAfter && savedItem) {
+      openLarkPaymentModalForItem(savedItem, 'SETTLEMENT');
+    }
+  };
+
   // Mở hộp thoại nghiệm thu (có thể truyền sẵn 1 dòng BO cụ thể hoặc mở trống để dán nhiều link)
   const openAcceptanceModalForRow = (row?: ApprovedBookingListItem) => {
+    if (bookingScope === 'LIVESTREAM' || (row && isLivestreamBookingItem(row))) {
+      const targetLive =
+        row ||
+        filteredItems.find((i) => isLivestreamBookingItem(i)) ||
+        filteredItems[0];
+      if (targetLive) {
+        populateLiveAcceptanceFromItem(targetLive);
+      }
+      setIsLiveAcceptanceModalOpen(true);
+      return;
+    }
     setRowManualBoMap({});
     setRowFieldOverrides({});
     setStage2AddonEdits({});
@@ -2398,35 +2540,40 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       onCreateOrUpdateDeals(dealsToSync);
     }
 
-    // Tự động đăng ký các videoId vừa nghiệm thu vào Kho lịch sử Video Ads & KOC tuần (/api/koc-video-history)
-    result.updatedApprovedItems.forEach((it) => {
-      if (!it.videoId && !it.linkAir) return;
+    // Tự động đăng ký hàng loạt các videoId vừa nghiệm thu vào Kho lịch sử Video Ads & KOC tuần (/api/koc-video-history) trong 1 request
+    const videosToRegister = result.updatedApprovedItems
+      .filter((it) => Boolean(it.videoId || it.linkAir))
+      .map((it) => ({
+        videoId: it.videoId,
+        linkAir: it.linkAir,
+        dealCode: it.maBooking,
+        kocChannelId: it.idKenh,
+        kocStageName: it.tenKenh,
+        brandName: it.brandName,
+        storeName: it.storeName,
+        productName: it.sanPham,
+        airDate: it.actualAirDate,
+        weekKey: it.tuanReal ? `2026-${it.tuanReal}` : '2026-W42',
+        pic: it.nguoiPhuTrach,
+        klGrade: it.klGrade,
+        bookingCostNet: it.chiPhiBookingNetCuoi,
+        sparkAdsCode: it.sparkAdsCode,
+        initialGmv: it.gmv30d,
+        initialOrders: it.orders30d,
+        initialViews: it.views30d,
+        source: 'SYSTEM_BOOKING',
+      }));
+    if (videosToRegister.length > 0) {
       void fetch('/api/koc-video-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'REGISTER_NEW_VIDEO',
-          videoId: it.videoId,
-          linkAir: it.linkAir,
-          dealCode: it.maBooking,
-          kocChannelId: it.idKenh,
-          kocStageName: it.tenKenh,
-          brandName: it.brandName,
-          storeName: it.storeName,
-          productName: it.sanPham,
-          airDate: it.actualAirDate,
-          weekKey: it.tuanReal ? `2026-${it.tuanReal}` : '2026-W42',
-          pic: it.nguoiPhuTrach,
-          klGrade: it.klGrade,
-          bookingCostNet: it.chiPhiBookingNetCuoi,
-          sparkAdsCode: it.sparkAdsCode,
-          initialGmv: it.gmv30d,
-          initialOrders: it.orders30d,
-          initialViews: it.views30d,
-          source: 'SYSTEM_BOOKING',
+          action: 'REGISTER_VIDEOS_BATCH',
+          compactResponse: true,
+          videos: videosToRegister,
         }),
       }).catch(() => {});
-    });
+    }
 
     setIsAcceptanceModalOpen(false);
     onNotify?.(
@@ -5511,6 +5658,365 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             </div>
           </div>
         </div>
+      </Modal>
+
+      {/* Hộp thoại Nghiệm thu Phiên Livestream chuyên biệt (Bảng 3.2 — 3 Khối BR-LIVE-01..08) */}
+      <Modal
+        open={isLiveAcceptanceModalOpen}
+        onClose={() => setIsLiveAcceptanceModalOpen(false)}
+        title="Nghiệm thu Phiên Livestream & Quyết toán Cát-xê (Bảng 3.2 → 6.1)"
+        size="xl"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setIsLiveAcceptanceModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="secondary"
+              icon={Check}
+              onClick={() => handleSaveLivestreamAcceptance(false)}
+            >
+              Lưu nghiệm thu Live
+            </Button>
+            <Button
+              variant="primary"
+              icon={Send}
+              onClick={() => handleSaveLivestreamAcceptance(true)}
+            >
+              Lưu &amp; Lập ĐNTT Lark (6.1)
+            </Button>
+          </>
+        }
+      >
+        {(() => {
+          const liveTarget =
+            items.find((i) => i.id === liveAccTargetId) ||
+            filteredItems.find((i) => isLivestreamBookingItem(i)) ||
+            filteredItems[0];
+          const agreedNet = liveTarget?.chiPhiBookingNetCuoi || 0;
+          const advancePaid = liveTarget?.soTienTamUngTruoc || 0;
+          const targetGmv = liveTarget?.liveTargetGmv || 0;
+          const kpiType = liveTarget?.liveKpiType || 'Tham chiếu';
+          const durationEval = computeLivestreamDurationEvaluation(
+            liveAccCommittedMinutes,
+            liveAccActualMinutes,
+            agreedNet
+          );
+          const effectivePenalty =
+            liveAccCustomPenalty.trim() !== ''
+              ? Math.max(0, Number(liveAccCustomPenalty.replace(/\D/g, '')) || 0)
+              : durationEval.autoDeductionVnd;
+          const remainingPayable = Math.max(
+            0,
+            agreedNet + liveAccBonusAmount - effectivePenalty - advancePaid
+          );
+          const gmvAchievementPct =
+            targetGmv > 0 ? Math.round((liveAccActualGmv / targetGmv) * 100) : 0;
+          const roiActual =
+            agreedNet > 0 ? (liveAccActualGmv / agreedNet).toFixed(2) : '0.00';
+          const proofValid = isValidLivestreamProofUrl(liveAccProofUrl);
+
+          return (
+            <div className="space-y-4">
+              {/* Chọn Phiên Live mục tiêu */}
+              <div className="p-3 rounded-lg bg-sunken border border-line grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                <div className="md:col-span-7">
+                  <Field label="Chọn Phiên Livestream cần nghiệm thu (Bảng 3.2)">
+                    <Select
+                      value={liveTarget?.id || ''}
+                      onChange={(e) => {
+                        const found = items.find((x) => x.id === e.target.value);
+                        if (found) populateLiveAcceptanceFromItem(found);
+                      }}
+                    >
+                      {filteredItems
+                        .filter((x) => isLivestreamBookingItem(x) || bookingScope === 'LIVESTREAM')
+                        .map((bo) => (
+                          <option key={bo.id} value={bo.id}>
+                            [{bo.maBooking || 'LIVE'}] @{bo.idKenh} ({bo.tenKenh}) — {bo.brandName} · Cát-xê {formatVnd(bo.chiPhiBookingNetCuoi)}
+                          </option>
+                        ))}
+                    </Select>
+                  </Field>
+                </div>
+                <div className="md:col-span-5 flex flex-wrap items-center justify-end gap-2">
+                  <Status tone="info">
+                    {liveTarget?.livePackageType || 'Phiên Livestream'}
+                  </Status>
+                  <Status tone={kpiType === 'Cam kết' ? 'warning' : 'neutral'}>
+                    KPI {kpiType}: {formatVndShort(targetGmv)}
+                  </Status>
+                  <Status tone="positive">
+                    HH {liveTarget?.liveCommissionPct ?? 15}%
+                  </Status>
+                </div>
+              </div>
+
+              {/* Khối 1: Bằng chứng Folder & Đối soát Thời lượng (BR-LIVE-02) */}
+              <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+                  <span className="text-xs font-semibold text-ink">
+                    1. Bằng chứng Nghiệm thu (Google Drive / Lark Folder) &amp; Đối soát Thời lượng (BR-LIVE-02)
+                  </span>
+                  <Status
+                    tone={
+                      durationEval.status === 'PASS_100'
+                        ? 'positive'
+                        : durationEval.status === 'PARTIAL_DEDUCT'
+                          ? 'warning'
+                          : durationEval.status === 'FAIL_HOLD'
+                            ? 'critical'
+                            : 'neutral'
+                    }
+                  >
+                    {durationEval.statusLabel}
+                  </Status>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                  <div className="md:col-span-8">
+                    <Field label="Link Folder Bằng chứng / Replay (Google Drive Folder · Lark Folder · Google Sheets · TikTok)">
+                      <Input
+                        value={liveAccProofUrl}
+                        onChange={(e) => setLiveAccProofUrl(e.target.value)}
+                        placeholder="https://drive.google.com/drive/folders/... hoặc https://upbase.sg.larksuite.com/drive/folder/..."
+                      />
+                    </Field>
+                  </div>
+                  <div className="md:col-span-4">
+                    <Field label="Ngày lên sóng thực tế">
+                      <Input
+                        type="date"
+                        value={liveAccActualDate}
+                        onChange={(e) => setLiveAccActualDate(e.target.value)}
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <Field label="Khung giờ phát sóng">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <Input
+                          aria-label="Giờ bắt đầu"
+                          value={liveAccStartTime}
+                          onChange={(e) => setLiveAccStartTime(e.target.value)}
+                          placeholder="20:00"
+                        />
+                        <Input
+                          aria-label="Giờ kết thúc"
+                          value={liveAccEndTime}
+                          onChange={(e) => setLiveAccEndTime(e.target.value)}
+                          placeholder="22:00"
+                        />
+                      </div>
+                    </Field>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <Field label="Số buổi live (Đồng bộ 6.1)">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={liveAccSessionsCount}
+                        onChange={(e) =>
+                          setLiveAccSessionsCount(Math.max(1, Number(e.target.value) || 1))
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <Field label="Phút cam kết">
+                      <Input
+                        type="number"
+                        min={15}
+                        step={15}
+                        value={liveAccCommittedMinutes}
+                        onChange={(e) =>
+                          setLiveAccCommittedMinutes(Math.max(15, Number(e.target.value) || 0))
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <Field label="Phút thực tế đã live">
+                      <Input
+                        type="number"
+                        min={0}
+                        step={5}
+                        value={liveAccActualMinutes}
+                        onChange={(e) =>
+                          setLiveAccActualMinutes(Math.max(0, Number(e.target.value) || 0))
+                        }
+                      />
+                    </Field>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-2xs px-2.5 py-2 rounded bg-sunken">
+                  <span className="text-ink-2">
+                    Trạng thái Link bằng chứng:{' '}
+                    <strong className={proofValid ? 'text-positive' : 'text-warning'}>
+                      {proofValid
+                        ? 'Hợp lệ (Đã mở khóa kiểm tra Link trên Phiếu 6.1)'
+                        : 'Chưa nhập hoặc chưa đúng định dạng URL'}
+                    </strong>
+                  </span>
+                  {liveAccProofUrl.trim() && proofValid && (
+                    <a
+                      href={liveAccProofUrl.trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent font-semibold hover:underline inline-flex items-center gap-1"
+                    >
+                      Mở Folder bằng chứng <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Khối 2: Doanh số Phiên Live (GMV, Đơn hàng, Lượt xem) & Đối soát KPI (BR-LIVE-03, BR-LIVE-07) */}
+              <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+                  <span className="text-xs font-semibold text-ink">
+                    2. Chỉ số Doanh thu Phiên Live (Ghi nhận vào 3.2 &amp; Đồng bộ Tổng NMV sang 6.1)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Status
+                      tone={
+                        targetGmv <= 0 || gmvAchievementPct >= 100
+                          ? 'positive'
+                          : kpiType === 'Cam kết'
+                            ? 'critical'
+                            : 'warning'
+                      }
+                    >
+                      Đạt {gmvAchievementPct}% KPI GMV ({roiActual}x ROI)
+                    </Status>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Field label="Doanh thu GMV / NMV thực tế phiên Live (VNĐ)">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1000000}
+                      value={liveAccActualGmv}
+                      onChange={(e) =>
+                        setLiveAccActualGmv(Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                  </Field>
+                  <Field label="Số đơn hàng phát sinh trong phiên">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={liveAccActualOrders}
+                      onChange={(e) =>
+                        setLiveAccActualOrders(Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                  </Field>
+                  <Field label="Tổng lượt xem Live (Views / Peak PCU)">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={liveAccActualViews}
+                      onChange={(e) =>
+                        setLiveAccActualViews(Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                  </Field>
+                </div>
+
+                {liveTarget?.liveGmvBonusTier && (
+                  <div className="text-2xs text-ink-2 px-2.5 py-1.5 rounded bg-sunken">
+                    Chính sách thưởng GMV trên SOW: <strong className="text-ink">{liveTarget.liveGmvBonusTier}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Khối 3: Quyết toán Cát-xê Net, Thưởng GMV & Khấu trừ (BR-LIVE-02, BR-LIVE-04) */}
+              <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+                  <span className="text-xs font-semibold text-ink">
+                    3. Bảng tính Quyết toán Cát-xê Phiên Live
+                  </span>
+                  <span className="text-xs font-semibold text-positive tabular-nums">
+                    Cần thanh toán Net: {formatVnd(remainingPayable)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Field label="Thưởng nóng vượt mốc GMV (VNĐ)">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={500000}
+                      value={liveAccBonusAmount}
+                      onChange={(e) =>
+                        setLiveAccBonusAmount(Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                  </Field>
+                  <Field label="Khấu trừ thiếu giờ / vi phạm SOW (VNĐ)">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={500000}
+                      value={
+                        liveAccCustomPenalty !== ''
+                          ? liveAccCustomPenalty
+                          : String(durationEval.autoDeductionVnd)
+                      }
+                      onChange={(e) => setLiveAccCustomPenalty(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Ghi chú nghiệm thu / Giải trình">
+                    <Input
+                      value={liveAccNote}
+                      onChange={(e) => setLiveAccNote(e.target.value)}
+                      placeholder="Ghi chú đối soát giỏ hàng, thời lượng..."
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 text-xs tabular-nums">
+                  <div className="p-2 rounded border border-line bg-canvas">
+                    <div className="text-2xs text-ink-3">Cát-xê cứng Net</div>
+                    <div className="font-semibold text-ink">{formatVnd(agreedNet)}</div>
+                  </div>
+                  <div className="p-2 rounded border border-line bg-canvas">
+                    <div className="text-2xs text-ink-3">+ Thưởng GMV</div>
+                    <div className="font-semibold text-positive">
+                      +{formatVnd(liveAccBonusAmount)}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded border border-line bg-canvas">
+                    <div className="text-2xs text-ink-3">- Khấu trừ</div>
+                    <div className="font-semibold text-critical">
+                      -{formatVnd(effectivePenalty)}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded border border-line bg-canvas">
+                    <div className="text-2xs text-ink-3">- Đã tạm ứng</div>
+                    <div className="font-semibold text-ink-2">
+                      -{formatVnd(advancePaid)}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded border border-line bg-positive-soft/40">
+                    <div className="text-2xs text-ink-2">Còn thanh toán Net</div>
+                    <div className="font-semibold text-positive">
+                      {formatVnd(remainingPayable)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* Hộp thoại Đối soát sâu 5 tiêu chí Brief, Kịch bản 4 bước, Hook 3s & Giỏ hàng TikTok Shop */}

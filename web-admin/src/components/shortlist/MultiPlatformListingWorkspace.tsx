@@ -80,6 +80,7 @@ interface MultiPlatformListingWorkspaceProps {
   onChangeMonth: (month: string) => void;
   selectedStore: string;
   onChangeStore: (storeName: string) => void;
+  focusDeal?: { code: string; nonce: number } | null;
   focusDealCode?: string | null;
   onOpenLarkSettlement?: () => void;
   onCreateOrUpdateDeals?: (newOrUpdatedDeals: BookingDealItem[]) => void;
@@ -149,6 +150,7 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
   onChangeMonth,
   selectedStore,
   onChangeStore,
+  focusDeal,
   focusDealCode,
   onCreateOrUpdateDeals,
   onNotify,
@@ -1332,23 +1334,30 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
     setActiveDraftJobIdx(0);
   };
 
-  const handledFocusDealRef = useRef<string | null>(null);
+  const handledFocusNonceRef = useRef<number | string | null>(null);
   useEffect(() => {
-    const code = (focusDealCode || '').trim().toUpperCase();
-    if (!code || handledFocusDealRef.current === code) return;
+    const code = (focusDeal?.code || focusDealCode || '').trim().toUpperCase();
+    const token = focusDeal ? focusDeal.nonce : code;
+    if (!code || !token || handledFocusNonceRef.current === token) return;
     const matched = items.find(
       it =>
         (it.boCode && it.boCode.trim().toUpperCase() === code) ||
         `MP-DEAL-${it.id}`.toUpperCase() === code
     );
     if (matched) {
-      handledFocusDealRef.current = code;
+      handledFocusNonceRef.current = token;
+      if (matched.monthKey && matched.monthKey !== selectedMonth) {
+        onChangeMonth(matched.monthKey);
+      }
+      if (matched.storeName && matched.storeName !== selectedStore) {
+        onChangeStore(matched.storeName);
+      }
       setWorkspaceMode('ACCEPTANCE');
       setActivePlatform(matched.platform);
       setSearchQuery(matched.boCode || matched.channelHandle);
       openDealJobModal(matched);
     }
-  }, [focusDealCode, items]);
+  }, [focusDeal, focusDealCode, items, selectedMonth, selectedStore, onChangeMonth, onChangeStore]);
 
   useEffect(() => {
     const handleNavigateEvent = (evt: Event) => {
@@ -1357,6 +1366,8 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
         | undefined;
       if (!detail || detail.tab !== 'multi-platform-booking') return;
       setWorkspaceMode('ACCEPTANCE');
+      if (detail.monthKey) onChangeMonth(detail.monthKey);
+      if (detail.storeName) onChangeStore(detail.storeName);
       if (detail.dealCode) {
         const cleanCode = detail.dealCode.trim().toUpperCase();
         const matched = items.find(
@@ -1365,7 +1376,9 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
             `MP-DEAL-${it.id}`.toUpperCase() === cleanCode
         );
         if (matched) {
-          handledFocusDealRef.current = cleanCode;
+          handledFocusNonceRef.current = Date.now();
+          if (matched.monthKey) onChangeMonth(matched.monthKey);
+          if (matched.storeName) onChangeStore(matched.storeName);
           setActivePlatform(matched.platform);
           setSearchQuery(matched.boCode || matched.channelHandle);
           openDealJobModal(matched);
@@ -1376,7 +1389,7 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
     };
     window.addEventListener('upbase-navigate-tab', handleNavigateEvent);
     return () => window.removeEventListener('upbase-navigate-tab', handleNavigateEvent);
-  }, [items]);
+  }, [items, onChangeMonth, onChangeStore]);
 
   const handleAddDraftJob = () => {
     if (!dealJobTargetItem) return;
