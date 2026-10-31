@@ -3,7 +3,7 @@
  * Sheet Listing Brand (staff-brand-listing-sheets-v1) và Quản lý Deal & Booking (approved-booking-list-v2)
  * vào bảng AppSharedRecord trong PostgreSQL (hoặc kho .shared-data khi chạy độc lập).
  */
-import { readRecord, readRecordsBatch, upsertRecord } from './sharedRecords';
+import { readRecord, readRecordsBatch, readRevisionsBatch, upsertRecord } from './sharedRecords';
 import { listingBoardKey } from './boardKeys';
 import {
   REAL_LARK_LISTINGS_BY_BOARD_KEY,
@@ -242,67 +242,86 @@ export async function ensureLarkListingsSyncedToDb(options?: {
       }
 
       const boardKeys = Array.from(targetBoards.keys());
-      const existingBoardRecords = await readRecordsBatch<{ items: KocListingItem[] }>(
-        boardKeys,
-        { items: [] }
-      );
+      const allCheckKeys = [
+        ...boardKeys,
+        'staff-brand-listing-sheets-v1',
+        'approved-booking-list-v2',
+      ];
+      // Chỉ truy vấn cột revision (vài byte mỗi khóa) thay vì tải toàn bộ dữ liệu của 59 bảng Listing + 2 bảng lớn
+      const existingRevs = await readRevisionsBatch(allCheckKeys);
+      const missingBoardKeys = options?.force
+        ? boardKeys
+        : boardKeys.filter((bKey) => (existingRevs.get(bKey) ?? 0) === 0);
 
       let totalListingItems = 0;
-      const CHUNK_SIZE = 15;
-      for (let i = 0; i < boardKeys.length; i += CHUNK_SIZE) {
-        const chunk = boardKeys.slice(i, i + CHUNK_SIZE);
-        await Promise.all(
-          chunk.map(async (bKey) => {
-            const larkItems = targetBoards.get(bKey) || [];
-            totalListingItems += larkItems.length;
-            const cur = existingBoardRecords.get(bKey);
-            const curItems = cur?.data?.items || [];
-            const hasLegacyLstPrefix = curItems.some(
-              (it) => it && typeof it.id === 'string' && it.id.startsWith('LST-')
-            );
-            if (
-              !options?.force &&
-              cur &&
-              cur.revision > 0 &&
-              curItems.length === larkItems.length &&
-              !hasLegacyLstPrefix
-            ) {
-              return;
-            }
-            await upsertRecord<{ items: KocListingItem[] }>(
-              bKey,
-              { items: [] },
-              (prev) => ({
-                items: mergeBoardItems(prev?.items, larkItems),
-              })
-            );
-          })
-        );
+      for (const items of targetBoards.values()) {
+        totalListingItems += items.length;
       }
 
-      // 2. Đồng bộ staff-brand-listing-sheets-v1 (59 Sheet, 2.561 dòng đã làm giàu KOC Master) vào AppSharedRecord
+      if (missingBoardKeys.length > 0) {
+        const existingBoardRecords = await readRecordsBatch<{ items: KocListingItem[] }>(
+          missingBoardKeys,
+          { items: [] }
+        );
+        const CHUNK_SIZE = 15;
+        for (let i = 0; i < missingBoardKeys.length; i += CHUNK_SIZE) {
+          const chunk = missingBoardKeys.slice(i, i + CHUNK_SIZE);
+          await Promise.all(
+            chunk.map(async (bKey) => {
+              const larkItems = targetBoards.get(bKey) || [];
+              const cur = existingBoardRecords.get(bKey);
+              const curItems = cur?.data?.items || [];
+              const hasLegacyLstPrefix = curItems.some(
+                (it) => it && typeof it.id === 'string' && it.id.startsWith('LST-')
+              );
+              if (
+                !options?.force &&
+                cur &&
+                cur.revision > 0 &&
+                curItems.length === larkItems.length &&
+                !hasLegacyLstPrefix
+              ) {
+                return;
+              }
+              await upsertRecord<{ items: KocListingItem[] }>(
+                bKey,
+                { items: [] },
+                (prev) => ({
+                  items: mergeBoardItems(prev?.items, larkItems),
+                })
+              );
+            })
+          );
+        }
+      }
+
+      // 2. Đồng bộ staff-brand-listing-sheets-v1 vào AppSharedRecord (chỉ khi chưa tồn tại hoặc force)
       const seededStaffSheets = loadStaffSheetCollection(
         INITIAL_KOCS,
         INITIAL_STORE_PORTFOLIOS,
         INITIAL_DEALS
       );
-      await upsertRecord<StaffBrandSheetCollection>(
-        'staff-brand-listing-sheets-v1',
-        { sheets: {}, googleSheetUrls: {} },
-        (prev) => mergeStaffSheetCollections(prev, seededStaffSheets)
-      );
+      if (options?.force || (existingRevs.get('staff-brand-listing-sheets-v1') ?? 0) === 0) {
+        await upsertRecord<StaffBrandSheetCollection>(
+          'staff-brand-listing-sheets-v1',
+          { sheets: {}, googleSheetUrls: {} },
+          (prev) => mergeStaffSheetCollections(prev, seededStaffSheets)
+        );
+      }
 
-      // 3. Đồng bộ approved-booking-list-v2 (917 KOC đã được Brand duyệt Yes) vào AppSharedRecord
+      // 3. Đồng bộ approved-booking-list-v2 vào AppSharedRecord (chỉ khi chưa tồn tại hoặc force)
       const seededApprovedBookings = loadApprovedBookingList(
         INITIAL_KOCS,
         INITIAL_STORE_PORTFOLIOS,
         INITIAL_DEALS
       );
-      await upsertRecord<ApprovedBookingListItem[]>(
-        'approved-booking-list-v2',
-        [],
-        (prev) => mergeApprovedBookings(prev, seededApprovedBookings)
-      );
+      if (options?.force || (existingRevs.get('approved-booking-list-v2') ?? 0) === 0) {
+        await upsertRecord<ApprovedBookingListItem[]>(
+          'approved-booking-list-v2',
+          [],
+          (prev) => mergeApprovedBookings(prev, seededApprovedBookings)
+        );
+      }
 
       // 4. Lưu dấu mốc hoàn tất đồng bộ vào AppSharedRecord
       const meta: ListingSyncMeta = {

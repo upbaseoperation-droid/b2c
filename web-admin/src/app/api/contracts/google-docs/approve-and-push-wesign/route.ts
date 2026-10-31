@@ -40,7 +40,12 @@ export async function POST(req: NextRequest) {
       'Chỉ Kế toán được duyệt chốt bản cuối và đẩy WeSign.',
       403,
     );
-    requireCondition(Boolean(record.googleDocsUrl), 'Hồ sơ không theo luồng Google Doc.');
+    const effectiveGDocUrl = record.googleDocsUrl || record.contractSystem?.googleDocsUrl;
+    requireCondition(Boolean(effectiveGDocUrl), 'Hồ sơ không theo luồng Google Doc.');
+    if (!record.googleDocsUrl && effectiveGDocUrl) {
+      record.googleDocsUrl = effectiveGDocUrl;
+      record.googleDocsId = record.contractSystem?.googleDocsId || extractGoogleDocId(effectiveGDocUrl) || undefined;
+    }
     requireCondition(
       record.approval === 'IN_REVIEW',
       'Hồ sơ không ở trạng thái chờ duyệt.',
@@ -99,7 +104,8 @@ export async function POST(req: NextRequest) {
     );
 
     // Chưa có API WeSign: tạo lượt trình ký với bằng chứng là nội dung Google Doc đã chốt, file đẩy lên WeSign là DOCX/PDF vừa xuất.
-    const { template } = await loadTemplate(updated.templateId, updated.templateHash);
+    const isKocFlow = Boolean(updated.isKocOwnForm || updated.googleDocsSource === 'KOC_CUSTOM_DOC');
+    const { template } = await loadTemplate(updated.templateId, updated.templateHash, { skipRemote: isKocFlow });
     const { meta, attempt, reusedExisting } = await requestSignOnSystem({
       record: updated,
       actor,

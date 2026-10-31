@@ -5,14 +5,35 @@
  */
 
 import type {
+  ContractCategory,
+  ContractField,
   ContractRecord,
   ContractServiceTemplateField,
+  ContractServiceTemplateObject,
   ContractServiceTemplateParticipant,
+  ContractServiceTemplateType,
   ContractSystemSyncMeta,
+  DocBlock,
+  FieldGroup,
+  FieldKind,
   FieldSource,
   LegalTemplate,
   SigningAttempt,
 } from './types';
+
+export const CONTRACT_SERVICE_TYPE_LABELS: Record<ContractServiceTemplateType, string> = {
+  MASTER: 'Hợp đồng nguyên tắc (MASTER)',
+  SERVICE: 'Hợp đồng dịch vụ lẻ (SERVICE)',
+  APPENDIX: 'Phụ lục hợp đồng / SOW (APPENDIX)',
+  VIDEO_ACCEPTANCE: 'Biên bản nghiệm thu Video (VIDEO_ACCEPTANCE)',
+  LIVESTREAM_ACCEPTANCE: 'Biên bản nghiệm thu Livestream (LIVESTREAM_ACCEPTANCE)',
+};
+
+export const CONTRACT_SERVICE_OBJECT_LABELS: Record<ContractServiceTemplateObject, string> = {
+  INDIVIDUAL: 'Cá nhân (INDIVIDUAL)',
+  BUSINESS: 'Hộ kinh doanh (BUSINESS)',
+  COMPANY: 'Công ty / Doanh nghiệp (COMPANY)',
+};
 
 export const DEFAULT_SIGN_TAGS = ['{{SIGN_PROVIDER}}', '{{SIGN_CLIENT}}'] as const;
 
@@ -277,11 +298,329 @@ export function enrichTemplateWithSignFlow(template: LegalTemplate): LegalTempla
     ...template,
     remoteTemplateId: template.remoteTemplateId || criteria.fallbackUuid,
     remoteTemplateCode: template.remoteTemplateCode || criteria.preferredCodes[0],
+    contractType: template.contractType || criteria.type,
+    contractObject: template.contractObject || criteria.object,
     hasSigningFlowConfig: template.hasSigningFlowConfig ?? true,
     remoteFields: template.remoteFields || DEFAULT_HDNT_CANHAN_FIELDS,
     remoteParticipants: template.remoteParticipants || DEFAULT_HDNT_CANHAN_PARTICIPANTS,
     signTags,
     signingFlowConfig,
+  };
+}
+
+const REMOTE_FIELD_DICTIONARY: Record<
+  string,
+  { title: string; group: FieldGroup; kind: FieldKind; source?: FieldSource }
+> = {
+  CONTRACT_NO: { title: 'Số hợp đồng / phụ lục', group: 'NUMBER', kind: 'text' },
+  NOW_DAY: { title: 'Ngày ký (DD)', group: 'DATE', kind: 'text', source: 'signDay' },
+  NOW_MONTH: { title: 'Tháng ký (MM)', group: 'DATE', kind: 'text', source: 'signMonth' },
+  NOW_YEAR: { title: 'Năm ký (YYYY)', group: 'DATE', kind: 'text', source: 'signYearDigit' },
+  PARTY_B_NAME: { title: 'Họ và tên / Tên đơn vị Bên B', group: 'PARTY', kind: 'text', source: 'partyName' },
+  PARTY_B_REPRESENTATIVE: { title: 'Người đại diện Bên B', group: 'PARTY', kind: 'text', source: 'representative' },
+  PARTY_B_PHONE: { title: 'Số điện thoại Bên B', group: 'PARTY', kind: 'text', source: 'phone' },
+  PARTY_B_EMAIL: { title: 'Email nhận hợp đồng & ký số Bên B', group: 'PARTY', kind: 'text', source: 'email' },
+  PARTY_B_ADDRESS: { title: 'Địa chỉ thường trú / Trụ sở Bên B', group: 'PARTY', kind: 'text', source: 'address' },
+  PARTY_B_ID_NUMBER: { title: 'Số CCCD / CMND Bên B', group: 'PARTY', kind: 'text', source: 'cccd' },
+  PARTY_B_ID_ISSUE_DATE: { title: 'Ngày cấp CCCD', group: 'PARTY', kind: 'date' },
+  PARTY_B_ID_ISSUE_PLACE: { title: 'Nơi cấp CCCD', group: 'PARTY', kind: 'text' },
+  PARTY_B_TAX_CODE: { title: 'Mã số thuế Bên B', group: 'PARTY', kind: 'text', source: 'taxCode' },
+  SOCIAL_ACCOUNT_LINK: { title: 'Link kênh mạng xã hội (TikTok / Kênh chính)', group: 'PARTY', kind: 'text', source: 'channelLink' },
+  BANK_ACCOUNT_NAME: { title: 'Tên chủ tài khoản ngân hàng', group: 'MONEY', kind: 'text', source: 'bankAccountName' },
+  BANK_ACCOUNT_NUMBER: { title: 'Số tài khoản ngân hàng', group: 'MONEY', kind: 'text', source: 'bankAccountNumber' },
+  BANK_NAME: { title: 'Tên ngân hàng & Chi nhánh', group: 'MONEY', kind: 'text', source: 'bankName' },
+  PAYMENT_METHOD: { title: 'Hình thức thanh toán', group: 'MONEY', kind: 'text' },
+  PAYMENT_TERMS: { title: 'Điều khoản & Thời hạn thanh toán', group: 'MONEY', kind: 'long' },
+  PRODUCT_NAME: { title: 'Sản phẩm / Nhãn hàng quảng bá', group: 'SCOPE', kind: 'text', source: 'product' },
+  AIR_DATE: { title: 'Ngày đăng bài dự kiến (Air Date)', group: 'SCOPE', kind: 'date', source: 'airDate' },
+  QUANTITY: { title: 'Số lượng hạng mục', group: 'SCOPE', kind: 'number', source: 'quantity' },
+  UNIT_PRICE: { title: 'Đơn giá dịch vụ (VNĐ)', group: 'MONEY', kind: 'money', source: 'unitPrice' },
+  LINE_TOTAL: { title: 'Thành tiền dịch vụ (VNĐ)', group: 'MONEY', kind: 'money', source: 'lineTotal' },
+  NET_TOTAL: { title: 'Tổng giá trị thực nhận Net (VNĐ)', group: 'MONEY', kind: 'money', source: 'netTotal' },
+  GROSS_TOTAL: { title: 'Tổng giá trị hợp đồng Gross (VNĐ)', group: 'MONEY', kind: 'money', source: 'grossTotal' },
+  PIT_AMOUNT: { title: 'Thuế TNCN khấu trừ tại nguồn (VNĐ)', group: 'MONEY', kind: 'money', source: 'pitAmount' },
+  VAT_AMOUNT: { title: 'Thuế GTGT / VAT (VNĐ)', group: 'MONEY', kind: 'money', source: 'vatAmount' },
+  ADVANCE_AMOUNT: { title: 'Số tiền tạm ứng lần 1 (VNĐ)', group: 'MONEY', kind: 'money', source: 'advanceAmount' },
+  REMAINING_AMOUNT: { title: 'Số tiền thanh toán còn lại (VNĐ)', group: 'MONEY', kind: 'money', source: 'remainingAmount' },
+  AMOUNT_IN_WORDS: { title: 'Số tiền bằng chữ', group: 'MONEY', kind: 'text', source: 'amountInWords' },
+};
+
+/**
+ * Chuyển đổi 1 field từ API 2 (`getContractTemplate`) sang `ContractField` của giao diện B2C Portal.
+ */
+export function describeRemoteTemplateField(
+  rf: ContractServiceTemplateField,
+  index: number,
+): ContractField {
+  const key = rf.fieldKey.trim();
+  const upper = key.toUpperCase();
+  const dict = REMOTE_FIELD_DICTIONARY[upper];
+  const rawType = (rf.fieldType || 'text').toLowerCase();
+
+  const kind: FieldKind =
+    dict?.kind ||
+    (rawType === 'number'
+      ? /PRICE|AMOUNT|TOTAL|FEE|COST|MONEY|TAX|VAT|PIT/i.test(upper)
+        ? 'money'
+        : 'number'
+      : rawType === 'date'
+        ? 'date'
+        : /TERMS|DESCRIPTION|NOTE|ADDRESS/i.test(upper)
+          ? 'long'
+          : 'text');
+
+  const group: FieldGroup =
+    dict?.group ||
+    (/CONTRACT_NO|CODE|APPENDIX_NO/i.test(upper)
+      ? 'NUMBER'
+      : /NOW_|SIGN_DAY|SIGN_MONTH|SIGN_YEAR|DOC_DATE/i.test(upper)
+        ? 'DATE'
+        : /PARTY_B|KOC|REPRESENTATIVE|CCCD|ID_NUMBER|ID_ISSUE|TAX_CODE|SOCIAL|CHANNEL|PHONE|EMAIL|ADDRESS/i.test(upper)
+          ? 'PARTY'
+          : /BANK|PAYMENT|AMOUNT|TOTAL|PRICE|FEE|VAT|PIT|TAX|MONEY/i.test(upper)
+            ? 'MONEY'
+            : /PRODUCT|SCOPE|VIDEO|LIVESTREAM|AIR_DATE|QUANTITY|DELIVERABLE/i.test(upper)
+              ? 'SCOPE'
+              : 'OTHER');
+
+  const humanizedTitle =
+    dict?.title ||
+    key
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+
+  return {
+    key,
+    label: `{{${key}}}`,
+    title: humanizedTitle,
+    context: `${humanizedTitle} ({{${key}}})`,
+    required: Boolean(rf.required),
+    part: 'word/document.xml',
+    paragraph: index + 1,
+    group,
+    kind,
+    source: dict?.source,
+  };
+}
+
+/**
+ * Ánh xạ mã mẫu từ API 1 (`getContractTemplates`) sang mã định danh trên B2C Portal.
+ * Giữ tương thích với cả mã chuẩn (`HDNT-CANHAN` <-> `IND-HDNT`) lẫn các mẫu mới tạo trên Contract Service.
+ */
+export function mapRemoteTemplateToB2cId(
+  remote: { id: string; code: string; type?: string; object?: string },
+  usedIds?: Set<string>,
+): string {
+  const code = (remote.code || '').trim().toUpperCase();
+  const type = (remote.type || '').trim().toUpperCase();
+  const object = (remote.object || '').trim().toUpperCase();
+
+  const prefix = object === 'BUSINESS' ? 'HKD' : object === 'COMPANY' ? 'COM' : 'IND';
+  let canonical = code;
+
+  if (code === 'HDNT-CANHAN' || code === 'IND-HDNT') {
+    canonical = 'IND-HDNT';
+  } else if (code === 'HDNT-HKD' || code === 'HKD-HDNT') {
+    canonical = 'HKD-HDNT';
+  } else if (code === 'HDNT-CONGTY' || code === 'COM-HDNT') {
+    canonical = 'COM-HDNT';
+  } else if (/^(SOW|PL|APPENDIX)[-_]/i.test(code)) {
+    canonical = `${prefix}-SOW`;
+  } else if (/^BBNT[-_]LIVE/i.test(code)) {
+    canonical = `${prefix}-LIVE-BBNT`;
+  } else if (/^BBNT/i.test(code)) {
+    canonical = `${prefix}-VID-BBNT`;
+  } else if (/^(HDDV|HD[-_](CANHAN|HKD|CONGTY))$/i.test(code)) {
+    canonical = `${prefix}-HD`;
+  }
+
+  if (usedIds && usedIds.has(canonical)) {
+    return code || remote.id;
+  }
+  return canonical || code || remote.id;
+}
+
+/**
+ * Chuyển đổi trực tiếp dữ liệu mẫu lấy từ API 1 (`getContractTemplates`) & API 2 (`getContractTemplate`)
+ * thành đối tượng `LegalTemplate` để `web-admin` hiển thị và vận hành mà không cần lưu sẵn file `.docx` cục bộ.
+ */
+export function convertRemoteTemplateToLegalTemplate(
+  summary: {
+    id: string;
+    code: string;
+    name: string;
+    description?: string | null;
+    status?: string;
+    type?: string;
+    object?: string;
+    hasSigningFlowConfig?: boolean;
+    createdAt?: number | null;
+    updatedAt?: number | null;
+  },
+  detail?: {
+    id?: string;
+    code?: string;
+    name?: string;
+    status?: string;
+    type?: string;
+    object?: string;
+    hasSigningFlowConfig?: boolean;
+    fields?: ContractServiceTemplateField[];
+    participants?: ContractServiceTemplateParticipant[];
+    documents?: Array<{
+      documentType: string;
+      fileUrl: string;
+      status: string;
+      version: number;
+    }>;
+  } | null,
+  preferredB2cId?: string,
+): LegalTemplate {
+  const type = (detail?.type || summary.type || 'MASTER').toUpperCase();
+  const object = (detail?.object || summary.object || 'INDIVIDUAL').toUpperCase();
+  const b2cId = preferredB2cId || mapRemoteTemplateToB2cId({ id: summary.id, code: summary.code, type, object });
+
+  const subject =
+    object === 'BUSINESS'
+      ? 'Hộ kinh doanh'
+      : object === 'COMPANY'
+        ? 'Công ty'
+        : 'Cá nhân';
+
+  const kind: 'CONTRACT' | 'ACCEPTANCE' =
+    type === 'VIDEO_ACCEPTANCE' || type === 'LIVESTREAM_ACCEPTANCE' || b2cId.endsWith('-BBNT')
+      ? 'ACCEPTANCE'
+      : 'CONTRACT';
+
+  const category: ContractCategory =
+    kind === 'ACCEPTANCE'
+      ? 'ACCEPTANCE_SETTLEMENT'
+      : type === 'APPENDIX' || b2cId.includes('LIVE')
+        ? 'LIVESTREAM_APPENDIX'
+        : 'BOOKING_VIDEO';
+
+  const remoteFields =
+    detail?.fields && detail.fields.length > 0
+      ? detail.fields
+      : DEFAULT_HDNT_CANHAN_FIELDS;
+
+  const remoteParticipants =
+    detail?.participants && detail.participants.length > 0
+      ? detail.participants
+      : DEFAULT_HDNT_CANHAN_PARTICIPANTS;
+
+  const fields = remoteFields.map((rf, idx) => describeRemoteTemplateField(rf, idx));
+  const sourceDoc = detail?.documents?.find(d => d.documentType === 'source');
+  const previewDoc = detail?.documents?.find(d => d.documentType === 'preview');
+  const docVersionNum = sourceDoc?.version || previewDoc?.version || 1;
+  const versionLabel = `v${docVersionNum} (${summary.code})`;
+
+  const deterministicHash = (() => {
+    const seed = `contract-service:${summary.id}:${summary.code}:v${docVersionNum}:${remoteFields.map(f => f.fieldKey).join(',')}`;
+    let h1 = 0xdeadbeef ^ seed.length;
+    let h2 = 0x41c6ce57 ^ seed.length;
+    for (let i = 0; i < seed.length; i++) {
+      const ch = seed.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    const hexPart = ((h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0'));
+    return hexPart.repeat(4).slice(0, 64);
+  })();
+
+  const signTags =
+    remoteParticipants.length > 0
+      ? remoteParticipants.map(p => (p.code.startsWith('{{') ? p.code : `{{${p.code}}}`))
+      : [...DEFAULT_SIGN_TAGS];
+
+  const paragraphs: string[] = [
+    (detail?.name || summary.name || 'HỢP ĐỒNG').toUpperCase(),
+    `Mã biểu mẫu Contract Service: ${summary.code} (UUID: ${summary.id})`,
+    ...fields.map(f => `${f.title || f.key}: {{${f.key}}}`),
+    `Đại diện Bên A: ${signTags[0] || '{{SIGN_PROVIDER}}'} | Đại diện Bên B: ${signTags[1] || '{{SIGN_CLIENT}}'}`,
+  ];
+
+  const blocks: DocBlock[] = paragraphs.map((text, idx) => ({
+    kind: 'p' as const,
+    part: 'word/document.xml',
+    paragraph: idx,
+    text,
+    bold: idx === 0,
+    align: idx === 0 ? ('center' as const) : ('left' as const),
+  }));
+
+  const updatedIso =
+    typeof summary.updatedAt === 'number' && summary.updatedAt > 0
+      ? new Date(summary.updatedAt > 1e12 ? summary.updatedAt : summary.updatedAt * 1000).toISOString()
+      : new Date().toISOString();
+
+  return {
+    id: b2cId,
+    name: detail?.name || summary.name,
+    filename: `${summary.code}.docx`,
+    subject,
+    kind,
+    category,
+    version: versionLabel,
+    hash: deterministicHash,
+    fields,
+    paragraphs,
+    blocks,
+    description:
+      summary.description ||
+      `Biểu mẫu lấy trực tiếp từ Contract Service (${summary.code} · Đối tượng: ${subject}).`,
+    active: (detail?.status || summary.status || 'active') === 'active',
+    defaultReviewRoles: kind === 'ACCEPTANCE' ? ['FINANCE'] : ['FINANCE', 'LEAD'],
+    exemptLegalReview: true,
+    scope: 'GLOBAL',
+    updatedAt: updatedIso,
+    updatedBy: 'Contract Service (API)',
+    fieldCount: fields.length,
+    requiredFieldCount: fields.filter(f => f.required).length,
+    history: [
+      {
+        version: versionLabel,
+        hash: deterministicHash,
+        filename: `${summary.code}.docx`,
+        updatedAt: updatedIso,
+        updatedBy: 'Contract Service',
+        note: previewDoc?.fileUrl
+          ? `Đồng bộ trực tiếp từ Contract Service (Google Docs Preview: ${previewDoc.fileUrl})`
+          : 'Đồng bộ trực tiếp từ Contract Service (API 1 & API 2)',
+      },
+    ],
+    remoteTemplateId: summary.id,
+    remoteTemplateCode: summary.code,
+    contractType: (['MASTER', 'SERVICE', 'APPENDIX', 'LIVESTREAM_ACCEPTANCE', 'VIDEO_ACCEPTANCE'].includes(type)
+      ? type
+      : 'SERVICE') as ContractServiceTemplateType,
+    contractObject: (['INDIVIDUAL', 'BUSINESS', 'COMPANY'].includes(object)
+      ? object
+      : 'INDIVIDUAL') as ContractServiceTemplateObject,
+    hasSigningFlowConfig: detail?.hasSigningFlowConfig ?? summary.hasSigningFlowConfig ?? true,
+    remoteFields,
+    remoteParticipants,
+    sourceFileUrl: sourceDoc?.fileUrl,
+    previewFileUrl: previewDoc?.fileUrl,
+    signTags,
+    signingFlowConfig: {
+      mode: 'SEQUENTIAL',
+      deadlineDays: 15,
+      signers: remoteParticipants
+        .filter(p => !p.action || p.action === 'sign')
+        .sort((a, b) => (a.signingOrder ?? 99) - (b.signingOrder ?? 99))
+        .map((p, idx) => ({
+          order: p.signingOrder || idx + 1,
+          role:
+            /PROVIDER|BEN_A/i.test(p.code)
+              ? 'Đại diện Bên A (UpBase)'
+              : `Đại diện Bên B (${subject})`,
+          signTag: p.code.startsWith('{{') ? p.code : `{{${p.code}}}`,
+        })),
+    },
   };
 }
 

@@ -1303,6 +1303,20 @@ export function prefill(
     'BRAND';
 
   const source = (f: ContractField): string => {
+    const upperKey = f.key.toUpperCase();
+    if (upperKey === 'CONTRACT_NO') {
+      const kocRef = getUniqueKocIdToken() || 'KOC';
+      return `${docDateStr.replace(/\D/g, '')}/HDNT/UPBASE-${kocRef.toUpperCase().replace(/[^A-Z0-9_-]/g, '')}`;
+    }
+    if (upperKey === 'NOW_YEAR') return String(d.getFullYear());
+    if (upperKey === 'PARTY_B_ID_ISSUE_DATE') return resolvedIssueDate || '01/01/2022';
+    if (upperKey === 'PARTY_B_ID_ISSUE_PLACE') return resolvedIssuePlace || 'Cục Cảnh sát QLHC về TTXH';
+    if (upperKey === 'PAYMENT_METHOD') return 'Chuyển khoản';
+    if (upperKey === 'PAYMENT_TERMS') {
+      return advanceAmount > 0
+        ? `Tạm ứng ${money(advanceAmount)} VNĐ và thanh toán phần còn lại trong vòng 07 ngày làm việc sau nghiệm thu`
+        : 'Thanh toán chuyển khoản trong vòng 07 ngày làm việc kể từ ngày ký Biên bản nghiệm thu';
+    }
     const title = (f.title || f.label || '').toLowerCase();
     const context = (f.context || '').toLowerCase();
 

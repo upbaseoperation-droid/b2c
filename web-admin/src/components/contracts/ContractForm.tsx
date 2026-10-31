@@ -426,9 +426,9 @@ export function ContractForm({
   // Luồng "mẫu của KOC": hợp đồng nằm trên Google Doc KOC gửi, không có trường của mẫu Upbase.
   const isKocGoogleDoc = sourceMode === 'GOOGLE_DOCS' && googleDocsSource === 'KOC_CUSTOM_DOC';
   const isKocForm = isKocOwnForm || isKocGoogleDoc;
-  // Mẫu Upbase có chỉnh sửa: vẫn điền theo mẫu, câu chữ sửa trên Google Doc rồi dán link để so với mẫu gốc.
+  // Mẫu Upbase có chỉnh sửa: chọn mẫu chuẩn Upbase (từ API 1/2) để đối chiếu điều khoản, bản hợp đồng soạn trên Google Doc bên thứ 3 (không gọi API 3 sinh file).
   const isAmendedGoogleDoc = sourceMode === 'GOOGLE_DOCS' && googleDocsSource === 'TEMPLATE_AMENDED';
-  const usesTemplateFields = !isKocForm;
+  const usesTemplateFields = !isKocForm && !isAmendedGoogleDoc;
   const activeSourceTab: 'UPBASE_TEMPLATE' | 'UPBASE_AMENDED' | 'GOOGLE_DOCS' =
     isKocGoogleDoc || isKocOwnForm
       ? 'GOOGLE_DOCS'
@@ -605,7 +605,7 @@ export function ContractForm({
 
   // Tải mẫu (kèm vị trí ô). Hồ sơ đang sửa dùng đúng bản mẫu đã khóa của hồ sơ.
   useEffect(() => {
-    if (!templateId) return;
+    if (!templateId || isKocGoogleDoc || isKocOwnForm) return;
     let cancelled = false;
     contractApi<{ template: LegalTemplate }>(`/api/contracts/templates/${templateId}${record ? `?record=${encodeURIComponent(record.id)}` : ''}`)
       .then(r => {
@@ -626,7 +626,7 @@ export function ContractForm({
     return () => { cancelled = true; };
     // Chỉ tải lại khi đổi mẫu; đổi booking/KOC được xử lý ở chooseDeal/chooseKocDirectly/chooseLegalProfile.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateId]);
+  }, [templateId, isKocGoogleDoc, isKocOwnForm]);
 
   const fields = uniqueFields(template);
   // Mẫu đã tự điền theo hồ sơ pháp lý: mặc định chỉ hiện các ô cần xem lại.
@@ -1395,7 +1395,7 @@ export function ContractForm({
   const templates = data.templates.filter(
     t =>
       t.active !== false &&
-      (t.scope === 'KOC_CUSTOM' || official11Set.has(t.id) || t.id === templateId) &&
+      (t.scope === 'KOC_CUSTOM' || Boolean(t.remoteTemplateId) || official11Set.has(t.id) || t.id === templateId) &&
       t.kind === kind,
   );
   // SOW phải gắn với hợp đồng nguyên tắc gốc của KOC
@@ -1714,7 +1714,7 @@ export function ContractForm({
   const numericTotal = useMemo(() => {
     const netField = fields.find(f => f.source === 'netTotal') || fields.find(f => f.source === 'lineTotal');
     const raw =
-      (isKocForm ? customContractValue : '') ||
+      (isKocForm || isAmendedGoogleDoc ? customContractValue : '') ||
       (netField ? values[netField.key] : '') ||
       values['token:[Tổng tiền trước thuế/sau thuế]'] ||
       values['token:[Thù lao trọn gói]'] ||
@@ -1726,7 +1726,7 @@ export function ContractForm({
       deal?.totalValue || dealRecord?.paymentAmount || dealRecord?.contractAmount || 0
     );
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackAmount;
-  }, [values, fields, deal, isKocForm, customContractValue]);
+  }, [values, fields, deal, isKocForm, isAmendedGoogleDoc, customContractValue]);
 
   const numericAdvance = useMemo(() => {
     const advField = fields.find(f => f.source === 'advanceAmount');
@@ -1762,7 +1762,7 @@ export function ContractForm({
 
   const canSubmitForm =
     !busy &&
-    Boolean(template) &&
+    (isKocForm || Boolean(template)) &&
     Boolean(title.trim()) &&
     (isHdnt || Boolean(brand.trim())) &&
     Boolean(partner.trim()) &&
@@ -1828,7 +1828,7 @@ export function ContractForm({
                 sowAdvanceAmount: String(paymentScheduleOption === 'TWO_TIMES' ? draftAdvanceAmount : 0),
               }
             : values;
-        const nextValues = isKocForm && customContractValue.trim()
+        const nextValues = (isKocForm || isAmendedGoogleDoc) && customContractValue.trim()
           ? { ...baseValues, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
           : baseValues;
         onSave({
@@ -1892,7 +1892,7 @@ export function ContractForm({
               ]}
             />
           )}
-          {isKocGoogleDoc ? (
+          {isKocGoogleDoc || isAmendedGoogleDoc ? (
             <Status tone={googleDocIdValid ? 'positive' : 'warning'}>
               {googleDocIdValid ? 'Đã có link Google Doc' : 'Chưa có link Google Doc'}
             </Status>
@@ -2561,9 +2561,19 @@ export function ContractForm({
                             <Field label="Mẫu hợp đồng" htmlFor="ct-template">
                               <div
                                 id="ct-template"
-                                className="h-9 px-3 rounded-lg border border-line bg-sunken/70 flex items-center text-xs"
+                                className="h-9 px-3 rounded-lg border border-line bg-sunken/70 flex items-center justify-between gap-2 text-xs"
                               >
                                 <span className="font-semibold text-ink truncate">{template?.name || templateId}</span>
+                                {(template?.previewFileUrl || template?.sourceFileUrl) && (
+                                  <a
+                                    href={template?.previewFileUrl || template?.sourceFileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-2xs font-medium text-accent hover:underline shrink-0"
+                                  >
+                                    Mở mẫu gốc
+                                  </a>
+                                )}
                               </div>
                             </Field>
                           )}
@@ -2582,6 +2592,19 @@ export function ContractForm({
                             </Field>
                           )}
                         </div>
+
+                        {isAmendedGoogleDoc && (
+                          <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-amended-total">
+                            <Input
+                              id="ct-amended-total"
+                              inputMode="numeric"
+                              className="tabular-nums"
+                              value={customContractValue}
+                              onChange={e => setCustomContractValue(formatMoneyInput(e.target.value))}
+                              placeholder="Giá trị ghi trên hợp đồng"
+                            />
+                          </Field>
+                        )}
 
                         {usesTemplateFields && template && (
                           <Field label="Tên hồ sơ *" htmlFor="ct-title">

@@ -1257,6 +1257,33 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-066 — Bùng Nổ Băng Thông Ra (Egress 272.93 GB / 5 GB Quota) Trên Supabase PostgreSQL Do Đọc/Ghi Nguyên Cục JSONB Nhiều MB Mỗi Lần Đồng Bộ
+- **Ngày phát hiện:** 31/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/server/sharedRecords.ts`, `web-admin/src/lib/sharedStateClient.ts`, `web-admin/src/app/api/shared-state/route.ts`, `web-admin/src/lib/linkAirCheckServer.ts`, `web-admin/src/app/api/integrations/zalo-bot/webhook/route.ts`, `web-admin/src/lib/server/zaloBot.ts`, `web-admin/src/lib/server/larkListingDbSync.ts`, `web-admin/src/lib/kocVideoWeeklyHistory.ts`, `web-admin/src/app/api/koc-video-history/route.ts`, `web-admin/src/app/api/extension/koc-sync/route.ts`, `web-admin/src/components/views/ApprovedBookingListView.tsx`, `web-admin/src/components/shortlist/MultiPlatformListingWorkspace.tsx`, `web-admin/src/lib/server/monthlyPlanStore.ts`, `web-admin/src/lib/contracts/store.ts`, `web-admin/src/components/PartnerDiscussion.tsx`, `web-admin/src/app/page.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Vòng lặp Long-Polling 350ms của VN TikTok Cart Bridge (`linkAirCheckServer.ts`, `webhook/route.ts`, `zaloBot.ts`):**
+     - Từ ngày 29–31/10/2026, endpoint `GET /api/integrations/zalo-bot/webhook?vnBridgePoll=1&longPoll=1` chạy vòng lặp `while` gọi `getVnCartBridgeState()` mỗi **350ms** (22 lần / 7.5 giây = ~2.93 lần/giây) với `{ skipCache: true }`, đồng thời lưu cả `SNAPSHOT_TIKTOK_FRAMES` và 8 ảnh base64 (~2 MB) trong bản ghi `tiktok-vn-cart-cache-v1` và gọi `upsertRecord` mỗi lần có `vnBridgeUrl`. Riêng vòng lặp này ngốn tới ~50–185 GB Egress/ngày khi daemon chạy nền.
+  2. **Bản ghi `koc-video-weekly-history-store-v1` phình lên 13.23 MB và được ghi lặp hàng trăm lần (`revision: 371`):**
+     - `VERIFY_SPARK_ADS_CODES` trong `/api/extension/koc-sync/route.ts` lưu thêm mảng `registeredVideos: Object.values(nextRegisteredById)` trùng lặp hoàn toàn với `registeredVideosById` (~5.6 MB thừa).
+     - 96 video trong `registeredVideosById` và `snapshotsByKey` chứa chuỗi `productName` và `videoTitle` lặp lại `32.767` ký tự (`DDVSDDVSDDVS...`, `LKMLKMLKM...`) từ ô Excel bị lỗi (~5.8 MB thừa).
+     - Khi nghiệm thu hàng loạt trên `ApprovedBookingListView.tsx`, vòng lặp `result.updatedApprovedItems.forEach(...)` bắn `N` request `POST /api/koc-video-history` song song; mỗi request tải và ghi lại nguyên cục 13.23 MB từ PostgreSQL.
+  3. **Truy vấn `SELECT key, revision, data FROM "AppSharedRecord"` tải lại toàn bộ cột `data` (JSONB nhiều MB) mỗi khi hết TTL 20 giây hoặc trước mỗi lệnh `UPDATE`:**
+     - `sharedRecords.ts` hết hạn cache sau 20 giây sẽ tải lại toàn bộ cột `data` từ PostgreSQL dù `revision` không đổi; hàm `updateRecord` luôn gọi `SELECT revision, data` trước khi `UPDATE` dù bản ghi cùng `revision` đã có sẵn trong bộ nhớ đệm.
+     - `GET /api/shared-state` luôn trả toàn bộ 28 khóa (~15 MB) về trình duyệt mà không đối chiếu `revision` phía client; `PUT /api/shared-state` gọi `readRecord` (tải toàn bộ `data`) chỉ để kiểm tra `existing.revision > 0` và trả ngược toàn bộ `saved.data` về client.
+     - `ensureLarkListingsSyncedToDb` (`larkListingDbSync.ts`) tải toàn bộ 59 bảng Listing và ghi đè `staff-brand-listing-sheets-v1` (3.87 MB) + `approved-booking-list-v2` (4.79 MB); `MultiPlatformListingWorkspace.tsx` tự gọi `pushSharedStateToDb` ngay khi vừa mount.
+  4. **Tải toàn bộ bảng `MonthlyPlan` và `ContractHubRecord` khi chỉ cần kiểm tra danh sách ID hoặc đọc 1 hồ sơ:**
+     - `allPlanIdsForSync()` trong `monthlyPlanStore.ts` gọi `loadAllStoredPlans()` (tải toàn bộ ~6–9 MB JSONB + `versionSnapshots` + `discussions`) chỉ để lấy `.map(r => r.plan.id)`.
+     - `listContracts()` và `getContract(id)` trong `contracts/store.ts` không có bộ nhớ đệm RAM và luôn thực thi `SELECT data FROM "ContractHubRecord"` quét toàn bảng.
+- **Cách khắc phục:**
+  1. Tách `SNAPSHOT_TIKTOK_FRAMES` khỏi bản ghi PostgreSQL `tiktok-vn-cart-cache-v1` via `compactVnCartBridgeItemsForDb` (chỉ ghép trong bộ nhớ qua `hydrateStaticSnapshotFramesInMemory`, giới hạn tối đa 2 ảnh động trong 15 phút và tự động thu gọn bản ghi DB cũ), chỉ gọi `upsertRecord` khi `vnBridgeUrl` thực sự thay đổi, và nới chu kỳ kiểm tra revision nhẹ (`SELECT revision` — 4 bytes) lên `2000ms` tại `webhook/route.ts` và `1200ms` tại `zaloBot.ts`.
+  2. Xây dựng `sanitizeWeeklyHistoryStore` & `sanitizeSystemText` (`kocVideoWeeklyHistory.ts`) xóa bỏ mảng trùng `registeredVideos`, thu gọn chuỗi lặp 32.767 ký tự (giảm dung lượng bản ghi từ **13.23 MB xuống ~2.2 MB**), tự động làm sạch khi đọc/ghi tại `/api/koc-video-history` và `/api/extension/koc-sync`, đồng thời gộp vòng lặp `.forEach` trên `ApprovedBookingListView.tsx` thành 1 request `REGISTER_VIDEOS_BATCH` duy nhất.
+  3. Nâng cấp `sharedRecords.ts` với `readRevisionsBatch` và cơ chế kiểm tra nhẹ `SELECT revision` / `SELECT key, revision` (chỉ vài chục byte) khi TTL 60 giây hết hạn: chỉ tải cột `data` từ PostgreSQL cho các khóa có `revision` thay đổi; tái sử dụng bản ghi trong `pgRecordCache` khi `updateRecord` khớp `expectedRevision`.
+  4. Bổ sung Delta Sync theo `clientRevs` giữa `sharedStateClient.ts` và `GET /api/shared-state` (trả `{ unchanged: true, data: null }` khi `revision` khớp), chặn gửi `PUT` trùng lặp khi payload không đổi, dùng `readRevisionsBatch` trong `PUT /api/shared-state` và `larkListingDbSync.ts`, và chặn `pushSharedStateToDb` lúc vừa mount trên `MultiPlatformListingWorkspace.tsx`.
+  5. Tối ưu `monthlyPlanStore.ts` (`allPlanIdsForSync` chỉ `SELECT id`, `syncRealLarkPlans` dùng `select: { id: true }`, `loadAllStoredPlans` và `getStoredPlanByIdFast` kiểm tra nhẹ `id, revision, _count` trước khi tải `planInclude`) và bổ sung `pgContractCache` (TTL 60s + kiểm tra `id, revision`) cho `contracts/store.ts`; giảm tần suất polling ngầm tại `PartnerDiscussion.tsx` và `page.tsx`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các bảng PostgreSQL lưu JSONB (`AppSharedRecord`, `MonthlyPlan`, `ContractHubRecord`).
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

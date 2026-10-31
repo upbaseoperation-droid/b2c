@@ -68,6 +68,13 @@ export interface DocTable {
 }
 export type DocBlock = DocParagraph | DocTable;
 export type ContractCategory = 'BOOKING_VIDEO' | 'ACCEPTANCE_SETTLEMENT' | 'CTV_FRAMEWORK' | 'LIVESTREAM_APPENDIX';
+export type ContractServiceTemplateType =
+  | 'MASTER'
+  | 'SERVICE'
+  | 'APPENDIX'
+  | 'LIVESTREAM_ACCEPTANCE'
+  | 'VIDEO_ACCEPTANCE';
+export type ContractServiceTemplateObject = 'INDIVIDUAL' | 'BUSINESS' | 'COMPANY';
 
 /** Danh sách 11 biểu mẫu chuẩn thế hệ mới (HĐNT -> Phụ lục SOW -> BBNT) áp dụng cho vận hành Booking B2C */
 export const OFFICIAL_3STAGE_TEMPLATE_IDS = [
@@ -149,6 +156,10 @@ export interface LegalTemplate {
   remoteTemplateId?: string;
   /** Mã code mẫu hợp đồng trên Contract Service (ví dụ: HDNT-CANHAN). */
   remoteTemplateCode?: string;
+  /** Phân loại hợp đồng gốc từ API 1 Contract Service: MASTER | SERVICE | APPENDIX | LIVESTREAM_ACCEPTANCE | VIDEO_ACCEPTANCE. */
+  contractType?: ContractServiceTemplateType;
+  /** Đối tượng ký gốc từ API 1 Contract Service: INDIVIDUAL | BUSINESS | COMPANY. */
+  contractObject?: ContractServiceTemplateObject;
   /** Cờ xác nhận mẫu đã cấu hình luồng ký trên Contract Service (chỉ true mới gọi được requestSign). */
   hasSigningFlowConfig?: boolean;
   /** Danh sách field placeholder {{KEY}} khai báo trên Contract Service. */

@@ -8,6 +8,7 @@ export { OFFICIAL_3STAGE_TEMPLATE_IDS };
 import { requireCondition } from './domain';
 import prisma from '../prisma';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
+import { loadTemplateFromContractService } from './contractSystemClient';
 const SOURCES = [
   ['IND-HD', 'Hợp đồng video · Cá nhân', 'Cá nhân', 'CONTRACT', '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'],
   ['IND-BBNT', 'Nghiệm thu video · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '1.1.2. BM.BBNT.VID.IND.Ver052026 booking Video.docx'],
@@ -396,7 +397,7 @@ async function readSourceBuffer(id: string, override?: CatalogOverride): Promise
 }
 
 export async function archiveTemplate(id: string, hash: string) {
-  const { template, zip } = await loadTemplate(id); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
+  const { template, zip } = await loadTemplate(id, hash); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
   const overrides = await readCatalogOverrides();
   let buffer: Buffer;
   try {
@@ -404,7 +405,7 @@ export async function archiveTemplate(id: string, hash: string) {
     buffer = loaded.buffer;
     requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
   } catch (e) {
-    if (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !overrides[id]?.customFile && OFFICIAL_TEMPLATES_SNAPSHOT[id].hash === hash) {
+    if (template.remoteTemplateId || (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !overrides[id]?.customFile && OFFICIAL_TEMPLATES_SNAPSHOT[id].hash === hash)) {
       buffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
     } else {
       throw e;
@@ -602,10 +603,29 @@ function buildFallbackZipFromSnapshot(snap: LegalTemplate): JSZip {
   return fallbackZip;
 }
 
-export async function loadTemplate(id: string, expectedHash?: string): Promise<{ template: LegalTemplate; zip: JSZip }> {
+export async function loadTemplate(id: string, expectedHash?: string, options?: { skipRemote?: boolean }): Promise<{ template: LegalTemplate; zip: JSZip }> {
   const overrides = await readCatalogOverrides();
   const override = overrides[id];
   const source = SOURCES.find(s => s[0] === id);
+  if (!options?.skipRemote && !override?.customFile && !process.env.CONTRACT_TEMPLATE_DIR) {
+    const remoteTpl = await loadTemplateFromContractService(id);
+    if (remoteTpl) {
+      const merged: LegalTemplate = {
+        ...remoteTpl,
+        name: override?.name || remoteTpl.name,
+        subject: override?.subject || remoteTpl.subject,
+        kind: override?.kind || remoteTpl.kind,
+        category: override?.category || remoteTpl.category,
+        description: override?.description || remoteTpl.description,
+        active: override?.active !== undefined ? override.active : remoteTpl.active,
+        defaultReviewRoles: override?.defaultReviewRoles?.length ? override.defaultReviewRoles : remoteTpl.defaultReviewRoles,
+        exemptLegalReview: override?.exemptLegalReview !== undefined ? override.exemptLegalReview : remoteTpl.exemptLegalReview,
+        legalNotes: override?.legalNotes || remoteTpl.legalNotes,
+        hash: expectedHash || remoteTpl.hash,
+      };
+      return { zip: buildFallbackZipFromSnapshot(merged), template: merged };
+    }
+  }
   requireCondition(source || override, 'Không tìm thấy mẫu pháp chế.', 404);
   const name = override?.name || source![1];
   const filename = override?.filename || source![4];
@@ -1169,7 +1189,15 @@ export async function renderTemplate(
       const paragraphIndex = index++;
       const fields = template.fields.filter(f => f.part === part && f.paragraph === paragraphIndex).sort((a, b) => (b.start || 0) - (a.start || 0));
       let next = paragraph;
-      for (const field of fields) { const value = values[field.key]; if (value?.trim()) next = replaceRange(next, field.start || 0, field.end || 0, value); }
+      for (const field of fields) {
+        const value = values[field.key];
+        if (!value?.trim()) continue;
+        if (field.start !== undefined && field.end !== undefined) {
+          next = replaceRange(next, field.start, field.end, value);
+        } else {
+          next = next.split(`{{${field.key}}}`).join(encodeXml(value));
+        }
+      }
       return next;
     });
     if (part === 'word/document.xml' && (paymentOpt === 'ONE_TIME' || paymentOpt === 'TWO_TIMES' || paymentOpt === 'BY_SOW')) {

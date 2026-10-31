@@ -628,14 +628,26 @@ test('Tích hợp GraphQL Contract Service (4 API: getContractTemplates, getCont
   };
 
   try {
-    // 1. Kiểm tra GET /api/contracts gọi getContractTemplates + getContractTemplate
+    // 1. Kiểm tra GET /api/contracts gọi getContractTemplates + getContractTemplate (không cần lưu sẵn trên web-admin)
     const getRes = await GET(request('contract-demo-owner'));
     assert.equal(getRes.status, 200);
     const getJson = await getRes.json();
     const indHdnt = getJson.templates.find((t: { id: string }) => t.id === 'IND-HDNT');
     assert.equal(indHdnt.remoteTemplateId, '23adfa68-b9a5-4ff6-a453-48a08b6a47a0');
+    assert.equal(indHdnt.remoteTemplateCode, 'HDNT-CANHAN');
     assert.equal(indHdnt.hasSigningFlowConfig, true);
+    assert.equal(indHdnt.fieldCount, 17);
+    assert.equal(
+      indHdnt.previewFileUrl,
+      'https://docs.google.com/document/d/1-5PaT5VaqUDrpYruenua2eRMVpqLzrdTZinXJk7bDT0/edit?usp=drivesdk',
+    );
     assert.deepEqual(indHdnt.signTags, ['{{SIGN_PROVIDER}}', '{{SIGN_CLIENT}}']);
+
+    // Kiểm tra loadTemplate trực tiếp bằng mã remote (HDNT-CANHAN) hoặc UUID từ API 1 & API 2
+    const loadedByRemoteCode = await loadTemplate('HDNT-CANHAN');
+    assert.equal(loadedByRemoteCode.template.remoteTemplateId, '23adfa68-b9a5-4ff6-a453-48a08b6a47a0');
+    assert.equal(loadedByRemoteCode.template.fields.length, 17);
+    assert.ok(loadedByRemoteCode.template.fields.some(f => f.key === 'PARTY_B_NAME' && f.source === 'partyName'));
 
     // 2. Tạo hợp đồng -> tự động gọi generateContract chuẩn 17 field
     const { template } = await loadTemplate('IND-HDNT');
@@ -701,6 +713,45 @@ test('Tích hợp GraphQL Contract Service (4 API: getContractTemplates, getCont
     assert.equal(webhookData.updated, true);
     assert.equal(webhookData.status, 'COMPLETED');
     assert.equal(webhookData.signedFileStatus, 'DOWNLOADED');
+
+    // 5. Luồng 2 (UPBASE_AMENDED — bản Google Doc bên thứ 3): có lấy template (API 1/2) nhưng KHÔNG gọi API 3 (generateContract)
+    const callsBeforeAmended = capturedCalls.filter(c => c.query.includes('generateContract')).length;
+    const amendedRes = await POST(
+      request('contract-demo-owner', {
+        action: 'CREATE',
+        title: 'HĐNT có sửa điều khoản trên Google Doc',
+        brand: 'ClubClio',
+        partner: 'Nguyễn Văn B',
+        templateId: 'IND-HDNT',
+        hasCustomTerms: true,
+        googleDocsUrl: 'https://docs.google.com/document/d/1ThirdPartyAmendedDocId123/edit',
+        googleDocsSource: 'TEMPLATE_AMENDED',
+        values: {},
+      }),
+    );
+    assert.equal(amendedRes.status, 200);
+    const amendedRecord: ContractRecord = (await amendedRes.json()).record;
+    const callsAfterAmended = capturedCalls.filter(c => c.query.includes('generateContract')).length;
+    assert.equal(callsAfterAmended, callsBeforeAmended, 'Luồng 2 (UPBASE_AMENDED) tuyệt đối không gọi generateContract (API 3)');
+    assert.equal(amendedRecord.contractSystem, undefined);
+
+    // 6. Luồng 3 (KOC_CUSTOM_DOC — mẫu riêng của KOC): KHÔNG lấy template từ Contract Service (API 1/2) và KHÔNG gọi generateContract (API 3)
+    const totalCallsBeforeKoc = capturedCalls.length;
+    const kocRes = await POST(
+      request('contract-demo-owner', {
+        action: 'CREATE',
+        title: 'Hợp đồng theo mẫu riêng của KOC',
+        brand: 'ClubClio',
+        partner: 'KOC C',
+        templateId: 'IND-HDNT',
+        hasCustomTerms: true,
+        googleDocsUrl: 'https://docs.google.com/document/d/1KocCustomDocId456/edit',
+        googleDocsSource: 'KOC_CUSTOM_DOC',
+        values: {},
+      }),
+    );
+    assert.equal(kocRes.status, 200);
+    assert.equal(capturedCalls.length, totalCallsBeforeKoc, 'Luồng 3 (KOC_CUSTOM_DOC) không gọi API lấy template hay generateContract');
   } finally {
     globalThis.fetch = oldFetch;
     if (oldDirectory === undefined) delete process.env.CONTRACT_DATA_DIR;

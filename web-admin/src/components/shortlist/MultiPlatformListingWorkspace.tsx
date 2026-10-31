@@ -238,17 +238,22 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
   const [larkModalTargetItem, setLarkModalTargetItem] =
     useState<MultiPlatformListingItem | null>(null);
 
+  const skipNextItemsPushRef = useRef(true);
+  const skipNextReupsPushRef = useRef(true);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onHydratedItems = (ev: Event) => {
       const detail = (ev as CustomEvent<MultiPlatformListingItem[]>).detail;
       if (Array.isArray(detail)) {
+        skipNextItemsPushRef.current = true;
         setItems(detail.filter(i => !isSyntheticMultiPlatformSeedItem(i)));
       }
     };
     const onHydratedReups = (ev: Event) => {
       const detail = (ev as CustomEvent<MultiPlatformReupRecord[]>).detail;
       if (Array.isArray(detail)) {
+        skipNextReupsPushRef.current = true;
         setReupRecords(detail.filter(r => !isSyntheticMultiPlatformSeedReup(r)));
       }
     };
@@ -264,6 +269,10 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
     if (typeof window === 'undefined') return;
     try {
       window.localStorage.setItem(MULTI_PLATFORM_STORAGE_KEY, JSON.stringify(items));
+      if (skipNextItemsPushRef.current) {
+        skipNextItemsPushRef.current = false;
+        return;
+      }
       pushSharedStateToDb('multi-platform-listings-v1', items, 500);
     } catch {
       // ignore
@@ -274,6 +283,10 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
     if (typeof window === 'undefined') return;
     try {
       window.localStorage.setItem(MULTI_PLATFORM_REUP_STORAGE_KEY, JSON.stringify(reupRecords));
+      if (skipNextReupsPushRef.current) {
+        skipNextReupsPushRef.current = false;
+        return;
+      }
       pushSharedStateToDb('multi-platform-reups-v1', reupRecords, 500);
     } catch {
       // ignore

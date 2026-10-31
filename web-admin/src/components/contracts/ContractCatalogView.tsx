@@ -160,7 +160,7 @@ export function ContractCatalogView({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const official11Set = useMemo(() => new Set<string>(OFFICIAL_3STAGE_TEMPLATE_IDS), []);
   const activeCatalogTemplates = useMemo(
-    () => data.templates.filter(t => t.scope === 'KOC_CUSTOM' || official11Set.has(t.id)),
+    () => data.templates.filter(t => t.scope === 'KOC_CUSTOM' || Boolean(t.remoteTemplateId) || official11Set.has(t.id)),
     [data.templates, official11Set],
   );
 

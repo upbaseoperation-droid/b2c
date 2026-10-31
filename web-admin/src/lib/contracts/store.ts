@@ -81,7 +81,7 @@ export async function listContracts(): Promise<ContractRecord[]> {
       const nextById = new Map<string, ContractRecord>(pgContractCache.byId);
       if (changedIds.length > 0) {
         const changedRows = await prisma.$queryRaw<Array<{ id: string; data: ContractRecord }>>`
-          SELECT id, data FROM "ContractHubRecord" WHERE id = ANY(${changedIds}::text[])
+          SELECT id, data FROM "ContractHubRecord" WHERE id = ANY(${changedIds})
         `;
         for (const r of changedRows) {
           if (r.data && r.id) nextById.set(r.id, r.data);

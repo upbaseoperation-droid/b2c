@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { USERS } from '@/lib/mockData';
-import { readRecord, readRecordsBatch, readRevisionsBatch, upsertRecord, RecordError } from '@/lib/server/sharedRecords';
+import { readRecordsBatch, readRevisionsBatch, upsertRecord, RecordError } from '@/lib/server/sharedRecords';
 import { ensureLarkListingsSyncedToDb } from '@/lib/server/larkListingDbSync';
 import {
   isSyntheticMultiPlatformSeedItem,

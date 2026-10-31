@@ -22,15 +22,18 @@ import {
   buildRequestSignPayload,
   buildStableContractCode,
   canAdvanceSigningStatus,
+  convertRemoteTemplateToLegalTemplate,
   createStandaloneContractSystemMeta,
   createStandaloneRequestSignAttempt,
   DEFAULT_HDNT_CANHAN_FIELDS,
   DEFAULT_HDNT_CANHAN_PARTICIPANTS,
   DEFAULT_HDNT_CANHAN_TEMPLATE_ID,
   DEFAULT_SIGN_TAGS,
+  describeRemoteTemplateField,
   enrichTemplateWithSignFlow,
   formatContractServiceFieldValue,
   mapRecordValuesToTemplateVariables,
+  mapRemoteTemplateToB2cId,
   normalizeContractServiceStatus,
   parseCompositeIdField,
   resolveContractDocStage,
@@ -42,15 +45,18 @@ export {
   buildRequestSignPayload,
   buildStableContractCode,
   canAdvanceSigningStatus,
+  convertRemoteTemplateToLegalTemplate,
   createStandaloneContractSystemMeta,
   createStandaloneRequestSignAttempt,
   DEFAULT_HDNT_CANHAN_FIELDS,
   DEFAULT_HDNT_CANHAN_PARTICIPANTS,
   DEFAULT_HDNT_CANHAN_TEMPLATE_ID,
   DEFAULT_SIGN_TAGS,
+  describeRemoteTemplateField,
   enrichTemplateWithSignFlow,
   formatContractServiceFieldValue,
   mapRecordValuesToTemplateVariables,
+  mapRemoteTemplateToB2cId,
   normalizeContractServiceStatus,
   parseCompositeIdField,
   resolveContractDocStage,
@@ -126,10 +132,12 @@ export interface GetContractTemplatesInput {
 }
 
 const templateDetailCache = new Map<string, { detail: RemoteContractTemplateDetail; expiresAt: number }>();
+let templateListCache: { items: RemoteContractTemplateSummary[]; expiresAt: number } | null = null;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function clearContractTemplateCache(): void {
   templateDetailCache.clear();
+  templateListCache = null;
 }
 
 function extractGoogleDocIdFromUrl(url?: string | null): string | undefined {
@@ -310,7 +318,77 @@ export async function fetchContractTemplateDetailFromService(
 }
 
 /**
- * Bước 1 & 2: Đồng bộ danh sách mẫu của B2C Portal với `getContractTemplates` và `getContractTemplate` từ Contract Service.
+ * Tải trực tiếp một mẫu hợp đồng từ Contract Service theo UUID, mã code (`HDNT-CANHAN`) hoặc mã định danh B2C (`IND-HDNT`)
+ * thông qua API 1 (`getContractTemplates`) và API 2 (`getContractTemplate`), không phụ thuộc file `.docx` lưu sẵn trên `web-admin`.
+ */
+export async function loadTemplateFromContractService(
+  idOrCodeOrB2cId: string,
+): Promise<LegalTemplate | null> {
+  if (!contractSystemConfigured()) return null;
+  const target = (idOrCodeOrB2cId || '').trim();
+  if (!target) return null;
+
+  try {
+    // 1. Nếu truyền trực tiếp UUID của Contract Service -> gọi thẳng API 2 getContractTemplate
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)) {
+      const detail = await fetchContractTemplateDetailFromService(target);
+      return convertRemoteTemplateToLegalTemplate(
+        {
+          id: detail.id,
+          code: detail.code,
+          name: detail.name,
+          status: detail.status,
+          type: detail.type,
+          object: detail.object,
+          hasSigningFlowConfig: detail.hasSigningFlowConfig,
+        },
+        detail,
+      );
+    }
+
+    // 2. Lấy danh sách mẫu từ API 1 (getContractTemplates)
+    let remoteList: RemoteContractTemplateSummary[];
+    if (templateListCache && templateListCache.expiresAt > Date.now()) {
+      remoteList = templateListCache.items;
+    } else {
+      const res = await fetchContractTemplatesFromService({
+        pageNumber: 1,
+        pageSize: 50,
+        status: 'active',
+        sortBy: 'createdAt',
+        sortType: 'DESC',
+      });
+      remoteList = res.items || [];
+      templateListCache = { items: remoteList, expiresAt: Date.now() + CACHE_TTL_MS };
+    }
+
+    if (remoteList.length === 0) return null;
+
+    const upperTarget = target.toUpperCase();
+    const criteria = resolveExpectedRemoteTemplateCriteria(target);
+
+    // Ưu tiên khớp chính xác theo code trên Contract Service (ví dụ: HDNT-CANHAN)
+    let matched =
+      remoteList.find(item => item.code.toUpperCase() === upperTarget) ||
+      remoteList.find(item => item.id.toLowerCase() === target.toLowerCase()) ||
+      remoteList.find(item => mapRemoteTemplateToB2cId(item).toUpperCase() === upperTarget) ||
+      remoteList.find(item => criteria.preferredCodes.some(c => c.toUpperCase() === item.code.toUpperCase()));
+
+    if (!matched) return null;
+
+    const detail = await fetchContractTemplateDetailFromService(matched.id).catch(() => null);
+    const preferredB2cId =
+      matched.code.toUpperCase() === upperTarget ? matched.code : target;
+    return convertRemoteTemplateToLegalTemplate(matched, detail, preferredB2cId);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Bước 1 & 2: Lấy danh sách mẫu trực tiếp từ API 1 (`getContractTemplates`) và chi tiết `fields` / `participants` / `documents`
+ * từ API 2 (`getContractTemplate`) trên Contract Service làm nguồn dữ liệu chính cho `web-admin`.
+ * Các mẫu nội bộ (`localTemplates`) chỉ đóng vai trò dự phòng (Zero-Crash Standalone) khi chưa cấu hình API hoặc mẫu chưa có trên dịch vụ.
  */
 export async function syncTemplatesWithContractSystem(
   localTemplates: LegalTemplate[],
@@ -333,76 +411,22 @@ export async function syncTemplatesWithContractSystem(
       return enrichedLocal;
     }
 
-    const byCode = new Map(remoteList.map(item => [item.code.toUpperCase(), item]));
-    const byId = new Map(remoteList.map(item => [item.id.toLowerCase(), item]));
+    templateListCache = { items: remoteList, expiresAt: Date.now() + CACHE_TTL_MS };
 
-    return await Promise.all(
-      enrichedLocal.map(async tpl => {
-        const criteria = resolveExpectedRemoteTemplateCriteria(tpl.id, tpl.kind, tpl.subject);
-        let matched: RemoteContractTemplateSummary | undefined;
-
-        if (tpl.remoteTemplateId && byId.has(tpl.remoteTemplateId.toLowerCase())) {
-          matched = byId.get(tpl.remoteTemplateId.toLowerCase());
-        }
-        if (!matched) {
-          for (const candidateCode of criteria.preferredCodes) {
-            const hit = byCode.get(candidateCode.toUpperCase());
-            if (hit) {
-              matched = hit;
-              break;
-            }
-          }
-        }
-        if (!matched) {
-          matched = remoteList.find(
-            item => item.type === criteria.type && item.object === criteria.object && item.status === 'active',
-          );
-        }
-        if (!matched && criteria.fallbackUuid && byId.has(criteria.fallbackUuid.toLowerCase())) {
-          matched = byId.get(criteria.fallbackUuid.toLowerCase());
-        }
-
-        if (!matched) return tpl;
-
-        let detail: RemoteContractTemplateDetail | null = null;
-        try {
-          detail = await fetchContractTemplateDetailFromService(matched.id);
-        } catch {
-          detail = null;
-        }
-
-        const participants = detail?.participants || tpl.remoteParticipants || DEFAULT_HDNT_CANHAN_PARTICIPANTS;
-        const signTags =
-          participants.length > 0
-            ? participants.map(p => (p.code.startsWith('{{') ? p.code : `{{${p.code}}}`))
-            : tpl.signTags || [...DEFAULT_SIGN_TAGS];
-
-        return {
-          ...tpl,
-          remoteTemplateId: matched.id,
-          remoteTemplateCode: matched.code,
-          hasSigningFlowConfig: detail?.hasSigningFlowConfig ?? matched.hasSigningFlowConfig,
-          remoteFields: detail?.fields && detail.fields.length > 0 ? detail.fields : tpl.remoteFields,
-          remoteParticipants: participants,
-          signTags,
-          signingFlowConfig: {
-            mode: 'SEQUENTIAL',
-            deadlineDays: 15,
-            signers: participants
-              .filter(p => !p.action || p.action === 'sign')
-              .sort((a, b) => (a.signingOrder ?? 99) - (b.signingOrder ?? 99))
-              .map((p, idx) => ({
-                order: p.signingOrder || idx + 1,
-                role:
-                  /PROVIDER|BEN_A/i.test(p.code)
-                    ? 'Đại diện Bên A (UpBase)'
-                    : `Đại diện Bên B (${tpl.subject || 'KOC'})`,
-                signTag: p.code.startsWith('{{') ? p.code : `{{${p.code}}}`,
-              })),
-          },
-        };
+    // 1. Chuyển đổi trực tiếp toàn bộ mẫu trả về từ API 1 + API 2 thành LegalTemplate
+    const usedIds = new Set<string>();
+    const remoteConverted: LegalTemplate[] = await Promise.all(
+      remoteList.map(async item => {
+        const detail = await fetchContractTemplateDetailFromService(item.id).catch(() => null);
+        const b2cId = mapRemoteTemplateToB2cId(item, usedIds);
+        usedIds.add(b2cId);
+        return convertRemoteTemplateToLegalTemplate(item, detail, b2cId);
       }),
     );
+
+    // 2. Giữ lại các mẫu tùy chỉnh KOC (KOC_CUSTOM) hoặc các chặng SOW/BBNT chưa đưa lên Contract Service để luồng 3 bước không đứt gãy
+    const remainingLocal = enrichedLocal.filter(tpl => !usedIds.has(tpl.id));
+    return [...remoteConverted, ...remainingLocal];
   } catch {
     return enrichedLocal;
   }
@@ -651,9 +675,22 @@ export async function requestSignOnSystem(params: {
   }
 
   const evidenceHash = createHash('sha256').update(renderedParagraphs.join('\n')).digest('hex');
-  const meta = record.contractSystem || (await generateContractOnSystem(record, template));
+  const isKocFlow = Boolean(record.isKocOwnForm || record.googleDocsSource === 'KOC_CUSTOM_DOC');
+  const isAmendedFlow =
+    !isKocFlow &&
+    Boolean(
+      record.googleDocsUrl ||
+        record.hasCustomTerms ||
+        record.googleDocsSource === 'TEMPLATE_AMENDED',
+    );
+  const isStandardTemplateFlow = !isKocFlow && !isAmendedFlow;
+  const meta =
+    record.contractSystem ||
+    (isStandardTemplateFlow
+      ? await generateContractOnSystem(record, template)
+      : createStandaloneContractSystemMeta(record, template));
 
-  if (!contractSystemConfigured()) {
+  if (!contractSystemConfigured() || (!isStandardTemplateFlow && !record.contractSystem?.contractSystemId)) {
     const attempt = createStandaloneRequestSignAttempt(record, actor.id, evidenceHash, {
       partyAEmail,
       partyBEmail,
@@ -661,7 +698,7 @@ export async function requestSignOnSystem(params: {
     return { meta, attempt, reusedExisting: false };
   }
 
-  const { detail } = await resolveTemplateDetailForRecord(record, template);
+  const { detail } = isKocFlow ? { detail: null } : await resolveTemplateDetailForRecord(record, template);
   if (detail && detail.hasSigningFlowConfig === false) {
     throw new ContractError(
       'Template của hợp đồng chưa được cấu hình luồng ký (hasSigningFlowConfig = false).',

@@ -1607,28 +1607,113 @@ export const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
   pending: {},
 };
 
-export async function getVnCartBridgeState(vnBridgeUrl?: string): Promise<VnCartBridgeState> {
+let hasCompactedBridgeDbInProcess = false;
+
+export function compactVnCartBridgeItemsForDb(
+  rawItems?: Record<string, VnCartBridgeItem>
+): Record<string, VnCartBridgeItem> {
+  const merged = { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(rawItems || {}) };
+  const nextItems: Record<string, VnCartBridgeItem> = {};
+  const now = Date.now();
+
+  for (const [vid, item] of Object.entries(merged)) {
+    if (!item) continue;
+    const isStaticSnapshotFrame =
+      Boolean(item.frameJpegBase64) &&
+      SNAPSHOT_TIKTOK_FRAMES[vid] === item.frameJpegBase64;
+    if (isStaticSnapshotFrame) {
+      const { frameJpegBase64: _omitStatic, ...rest } = item;
+      nextItems[vid] = rest;
+    } else {
+      nextItems[vid] = { ...item };
+    }
+  }
+
+  // Chỉ giữ frameJpegBase64 động cho tối đa 2 video mới nhất trong vòng 15 phút để bản ghi JSONB luôn nhỏ gọn (< 150KB)
+  const dynamicWithFrames = Object.values(nextItems)
+    .filter((it) => Boolean(it?.frameJpegBase64))
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+    );
+
+  for (let i = 0; i < dynamicWithFrames.length; i++) {
+    const vid = dynamicWithFrames[i]?.videoId;
+    if (!vid || !nextItems[vid]) continue;
+    const ageMs = now - new Date(nextItems[vid].updatedAt || 0).getTime();
+    if (i >= 2 || (Number.isFinite(ageMs) && ageMs > 15 * 60 * 1000)) {
+      const { frameJpegBase64: _dropped, ...rest } = nextItems[vid];
+      nextItems[vid] = rest;
+    }
+  }
+
+  return nextItems;
+}
+
+function hydrateStaticSnapshotFramesInMemory(
+  rawItems?: Record<string, VnCartBridgeItem>
+): Record<string, VnCartBridgeItem> {
+  const merged = { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(rawItems || {}) };
+  for (const [vid, snapB64] of Object.entries(SNAPSHOT_TIKTOK_FRAMES)) {
+    if (merged[vid] && !merged[vid].frameJpegBase64 && snapB64) {
+      merged[vid] = { ...merged[vid], frameJpegBase64: snapB64 };
+    }
+  }
+  return merged;
+}
+
+export async function getVnCartBridgeState(
+  vnBridgeUrl?: string,
+  options?: { checkRevision?: boolean }
+): Promise<VnCartBridgeState> {
   try {
-    if (vnBridgeUrl?.trim()) {
+    const rec = await readRecord<VnCartBridgeState>(
+      TIKTOK_VN_CART_CACHE_KEY,
+      DEFAULT_VN_CART_BRIDGE_STATE,
+      { skipCache: Boolean(options?.checkRevision), clone: false }
+    );
+
+    const trimmedUrl = vnBridgeUrl?.trim();
+    if (trimmedUrl && rec.data?.vnBridgeUrl !== trimmedUrl) {
       const updated = await upsertRecord<VnCartBridgeState>(
         TIKTOK_VN_CART_CACHE_KEY,
         DEFAULT_VN_CART_BRIDGE_STATE,
         (cur) => ({
-          vnBridgeUrl: vnBridgeUrl.trim(),
-          items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
+          vnBridgeUrl: trimmedUrl,
+          items: compactVnCartBridgeItemsForDb(cur?.items),
           pending: { ...(cur?.pending || {}) },
         })
       );
-      return updated.data;
+      hasCompactedBridgeDbInProcess = true;
+      return {
+        vnBridgeUrl: updated.data?.vnBridgeUrl,
+        items: hydrateStaticSnapshotFramesInMemory(updated.data?.items),
+        pending: { ...(updated.data?.pending || {}) },
+      };
     }
-    const rec = await readRecord<VnCartBridgeState>(
-      TIKTOK_VN_CART_CACHE_KEY,
-      DEFAULT_VN_CART_BRIDGE_STATE,
-      { skipCache: true, clone: false }
-    );
+
+    // Tự động thu gọn bản ghi DB cũ nếu trước đây từng lưu SNAPSHOT_TIKTOK_FRAMES hoặc >2 ảnh base64 trong PostgreSQL
+    if (!hasCompactedBridgeDbInProcess && rec.revision > 0 && rec.data?.items) {
+      hasCompactedBridgeDbInProcess = true;
+      const frameCountInDb = Object.values(rec.data.items).filter((it) =>
+        Boolean(it?.frameJpegBase64)
+      ).length;
+      if (frameCountInDb > 2) {
+        await upsertRecord<VnCartBridgeState>(
+          TIKTOK_VN_CART_CACHE_KEY,
+          DEFAULT_VN_CART_BRIDGE_STATE,
+          (cur) => ({
+            vnBridgeUrl: cur?.vnBridgeUrl,
+            items: compactVnCartBridgeItemsForDb(cur?.items),
+            pending: { ...(cur?.pending || {}) },
+          })
+        ).catch(() => {});
+      }
+    }
+
     return {
       vnBridgeUrl: rec.data?.vnBridgeUrl,
-      items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(rec.data?.items || {}) },
+      items: hydrateStaticSnapshotFramesInMemory(rec.data?.items),
       pending: { ...(rec.data?.pending || {}) },
     };
   } catch {
@@ -1699,24 +1784,9 @@ export async function saveVnCartBridgeResolvedItems(
         }
       }
 
-      // Giới hạn dung lượng base64 ảnh trong bản ghi JSONB (chỉ giữ frameJpegBase64 cho 8 video mới nhất để tránh phình >3MB làm chậm truy vấn):
-      const sortedWithFrames = Object.values(nextItems)
-        .filter((it) => Boolean(it?.frameJpegBase64) && !SNAPSHOT_TIKTOK_FRAMES[it.videoId])
-        .sort(
-          (a, b) =>
-            new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
-        );
-      for (let i = 8; i < sortedWithFrames.length; i++) {
-        const oldVid = sortedWithFrames[i]?.videoId;
-        if (oldVid && nextItems[oldVid]) {
-          const { frameJpegBase64: _dropped, ...rest } = nextItems[oldVid];
-          nextItems[oldVid] = rest;
-        }
-      }
-
       return {
         vnBridgeUrl: vnBridgeUrl?.trim() || cur?.vnBridgeUrl,
-        items: nextItems,
+        items: compactVnCartBridgeItemsForDb(nextItems),
         pending: nextPending,
       };
     }

@@ -33,15 +33,15 @@ export async function GET(req: NextRequest) {
     const vnBridgeUrl = req.nextUrl.searchParams.get('vnBridgeUrl') || undefined;
     const isLongPoll = req.nextUrl.searchParams.get('longPoll') === '1';
 
-    let state = await getVnCartBridgeState(vnBridgeUrl);
+    let state = await getVnCartBridgeState(vnBridgeUrl, { checkRevision: true });
     let pending = Object.values(state.pending || {});
 
-    // Long-Polling: Giữ kết nối tối đa 7.5s nếu chưa có video chờ để trả về ngay khi có link (chu kỳ 350ms)
+    // Long-Polling: Giữ kết nối tối đa 6s với chu kỳ kiểm tra revision nhẹ (2000ms, chỉ truy vấn 4 bytes revision)
     if (isLongPoll && pending.length === 0) {
-      const waitDeadline = Date.now() + 7500;
+      const waitDeadline = Date.now() + 6000;
       while (Date.now() < waitDeadline && pending.length === 0) {
-        await new Promise((r) => setTimeout(r, 350));
-        state = await getVnCartBridgeState();
+        await new Promise((r) => setTimeout(r, 2000));
+        state = await getVnCartBridgeState(undefined, { checkRevision: true });
         pending = Object.values(state.pending || {});
       }
     }

@@ -77,7 +77,10 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
   requireCondition(title && title.length <= 180 && brand && brand.length <= 120 && partner && partner.length <= 180, 'Cần nhập tiêu đề, nhãn hàng và đối tác hợp lệ.');
   requireCondition(typeof body.templateId === 'string', 'Cần chọn mẫu pháp chế.');
   if (existing) requireCondition(body.templateId === existing.templateId, 'Không thể đổi mẫu của hồ sơ đã tạo.');
-  const { template } = await loadTemplate(body.templateId, existing?.templateHash);
+  const isKocOwnForm = typeof body.isKocOwnForm === 'boolean' ? body.isKocOwnForm : Boolean(existing?.isKocOwnForm);
+  const googleDocsSourceInput = body.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'KOC_CUSTOM_DOC' : (body.googleDocsUrl ? 'TEMPLATE_AMENDED' : existing?.googleDocsSource);
+  const isKocFlowInput = Boolean(isKocOwnForm || googleDocsSourceInput === 'KOC_CUSTOM_DOC');
+  const { template } = await loadTemplate(body.templateId, existing?.templateHash, { skipRemote: isKocFlowInput });
   requireCondition(typeof body.values === 'object' && body.values && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
   const fields = new Set(template.fields.map(f => f.key));
   const allowedSpecialKeys = new Set(['sowAdvanceAmount', 'KOC_ID', 'LEGAL_PROFILE_ID', 'CHANNEL_ID', 'partnerEmail']);
@@ -91,7 +94,6 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
   }
   const ref = (v: unknown) => { if (v === undefined || v === null || v === '') return undefined; requireCondition(typeof v === 'string' && /^[\w.@-]{1,80}$/.test(v), 'Mã booking hoặc KOC không hợp lệ.'); return v; };
 
-  const isKocOwnForm = typeof body.isKocOwnForm === 'boolean' ? body.isKocOwnForm : Boolean(existing?.isKocOwnForm);
   let customFile = existing?.customFile;
   if (typeof body.customFileBase64 === 'string' && body.customFileBase64.trim()) {
     const filename = typeof body.customFilename === 'string' && body.customFilename.trim() ? body.customFilename.trim() : 'hop-dong-koc.docx';
@@ -161,11 +163,18 @@ export async function POST(req: NextRequest) {
         }
       }
       const draft = createContract(input, actor);
-      const { template } = await loadTemplate(input.templateId, input.templateHash);
-      draft.contractSystem = await generateContractOnSystem(draft, template, parentContractCode).catch(() =>
-        createStandaloneContractSystemMeta(draft, template, parentContractCode),
-      );
-      await archiveTemplate(input.templateId, input.templateHash);
+      const isKocFlow = Boolean(draft.isKocOwnForm || draft.googleDocsSource === 'KOC_CUSTOM_DOC');
+      const isAmendedFlow = !isKocFlow && Boolean(draft.googleDocsUrl || draft.hasCustomTerms || draft.googleDocsSource === 'TEMPLATE_AMENDED');
+      if (!isKocFlow) {
+        const { template } = await loadTemplate(input.templateId, input.templateHash);
+        if (!isAmendedFlow) {
+          // Chỉ Luồng 1 (Mẫu chuẩn UpBase giữ nguyên) mới gọi API 3 (generateContract) để sinh file hợp đồng final trước khi ký
+          draft.contractSystem = await generateContractOnSystem(draft, template, parentContractCode).catch(() =>
+            createStandaloneContractSystemMeta(draft, template, parentContractCode),
+          );
+        }
+        await archiveTemplate(input.templateId, input.templateHash);
+      }
       if (draft.googleDocsUrl && body.submitGoogleDocsDraft === true) await markGoogleDocsDraft(draft, actor);
       else if (draft.googleDocsUrl) {
         const initCap = await captureGoogleDocForRecord(draft, actor.name).catch(() => null);
@@ -191,12 +200,16 @@ export async function POST(req: NextRequest) {
     let next: ContractRecord = structuredClone(record);
     if (body.action === 'EDIT') {
       next = editContract(record, actor, await parseInput(body, actor, record));
-      const { template } = await loadTemplate(next.templateId, next.templateHash);
-      const parentRec = next.parentId ? await getContract(next.parentId).catch(() => null) : null;
-      const parentCode = parentRec ? (parentRec.contractSystem?.contractCode || buildStableContractCode(parentRec)) : undefined;
-      next.contractSystem = await generateContractOnSystem(next, template, parentCode).catch(() =>
-        createStandaloneContractSystemMeta(next, template, parentCode),
-      );
+      const isKocFlow = Boolean(next.isKocOwnForm || next.googleDocsSource === 'KOC_CUSTOM_DOC');
+      const isAmendedFlow = !isKocFlow && Boolean(next.googleDocsUrl || next.hasCustomTerms || next.googleDocsSource === 'TEMPLATE_AMENDED');
+      if (!isKocFlow && !isAmendedFlow) {
+        const { template } = await loadTemplate(next.templateId, next.templateHash);
+        const parentRec = next.parentId ? await getContract(next.parentId).catch(() => null) : null;
+        const parentCode = parentRec ? (parentRec.contractSystem?.contractCode || buildStableContractCode(parentRec)) : undefined;
+        next.contractSystem = await generateContractOnSystem(next, template, parentCode).catch(() =>
+          createStandaloneContractSystemMeta(next, template, parentCode),
+        );
+      }
       if (next.googleDocsUrl && !next.googleDocsAuditTrail?.initialSnapshot) {
         const initCap = await captureGoogleDocForRecord(next, actor.name).catch(() => null);
         if (initCap) {
@@ -220,9 +233,11 @@ export async function POST(req: NextRequest) {
       await markGoogleDocsDraft(next, actor);
     }
     else if (body.action === 'SUBMIT') {
-      const { template } = await loadTemplate(record.templateId, record.templateHash);
+      const isKocFlow = Boolean(record.isKocOwnForm || record.googleDocsSource === 'KOC_CUSTOM_DOC');
+      const isAmendedFlow = !isKocFlow && Boolean(record.googleDocsUrl || record.hasCustomTerms || record.googleDocsSource === 'TEMPLATE_AMENDED');
+      const { template } = await loadTemplate(record.templateId, record.templateHash, { skipRemote: isKocFlow });
       requireCondition(template.hash === record.templateHash, 'Mẫu nguồn đã thay đổi.', 409);
-      if (!record.isKocOwnForm && record.googleDocsSource !== 'KOC_CUSTOM_DOC') {
+      if (!isKocFlow && !isAmendedFlow) {
         const payOption = resolvePaymentScheduleOption(record.values, record.templateId, template.fields);
         const requiredFields = template.fields.filter(f => f.required && (payOption === 'TWO_TIMES' || !isTwoTimePaymentField(f)));
         requireCondition(requiredFields.every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
@@ -363,6 +378,9 @@ export async function POST(req: NextRequest) {
       next.checks.push(await checkContract(record)); event(next, actor, aiConfigured() ? 'AI_CHECK' : 'RULE_CHECK');
     } else if (body.action === 'GENERATE_CONTRACT_SYSTEM') {
       requireCondition(inScope(record.brand, actor), 'Không có quyền đồng bộ bản hợp đồng.', 403);
+      const isKocFlow = Boolean(record.isKocOwnForm || record.googleDocsSource === 'KOC_CUSTOM_DOC');
+      const isAmendedFlow = !isKocFlow && Boolean(record.googleDocsUrl || record.hasCustomTerms || record.googleDocsSource === 'TEMPLATE_AMENDED');
+      requireCondition(!isKocFlow && !isAmendedFlow, 'Chỉ luồng Mẫu chuẩn UpBase giữ nguyên mới gọi API sinh file hợp đồng final trước khi ký.', 400);
       const { template } = await loadTemplate(record.templateId, record.templateHash);
       const parentRec = next.parentId ? await getContract(next.parentId).catch(() => null) : null;
       const parentCode = parentRec ? (parentRec.contractSystem?.contractCode || buildStableContractCode(parentRec)) : undefined;

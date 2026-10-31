@@ -1209,14 +1209,24 @@ export async function POST(req: NextRequest) {
         note: body.note || `Ảnh chụp từ Upbase B2C Extension (${sourceMode === 'FULL_SCREEN' ? 'Màn hình bài đăng' : 'Khung hình SP'})`,
       };
 
-      await upsertRecord<any[]>(
+      interface VideoAcceptanceScreenshotBucket {
+        key: string;
+        dealCode?: string;
+        videoId?: string;
+        authorHandle?: string;
+        videoUrl?: string;
+        updatedAt: string;
+        items: Array<typeof screenshotItem>;
+      }
+
+      await upsertRecord<VideoAcceptanceScreenshotBucket[]>(
         'video-acceptance-screenshots-v1',
         [],
         (current) => {
           const list = Array.isArray(current) ? [...current] : [];
           const primaryKey = dealCode || videoId || handle;
           const bucketIdx = list.findIndex(
-            (b: any) =>
+            (b) =>
               b.key === primaryKey ||
               (dealCode && b.dealCode === dealCode) ||
               (videoId && b.videoId === videoId)

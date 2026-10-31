@@ -5,6 +5,7 @@ import React from 'react';
 import { ImageResponse } from 'next/og';
 import {
   checkSingleLinkServerless,
+  compactVnCartBridgeItemsForDb,
   formatVnDateTimeFromUnixSec,
   getVnCartBridgeState,
   DEFAULT_VN_CART_BRIDGE_STATE,
@@ -1398,10 +1399,10 @@ async function storeCapturedFrameBuffer(
               k.startsWith('FRMV3-') &&
               v &&
               typeof v.base64 === 'string' &&
-              now - (v.createdAt || 0) < 30 * 60 * 1000
+              now - (v.createdAt || 0) < 10 * 60 * 1000
           )
           .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0))
-          .slice(0, 10);
+          .slice(0, 3);
         return Object.fromEntries(entries);
       }
     );
@@ -1428,7 +1429,7 @@ export async function getCachedFrameBuffer(
     const shared = await readRecord<SharedFrameCacheMap>(
       ZALO_FRAMES_SHARED_KEY,
       {},
-      { skipCache: true, clone: false }
+      { clone: false }
     );
     const entry = shared?.data?.[frameId];
     if (entry?.base64 && Date.now() - (entry.createdAt || 0) < 60 * 60 * 1000) {
@@ -2483,7 +2484,7 @@ export async function captureTikTokProductFrameBuffer(params: {
             };
             return {
               vnBridgeUrl: cur?.vnBridgeUrl,
-              items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
+              items: compactVnCartBridgeItemsForDb(cur?.items),
               pending: nextPending,
             };
           }
@@ -2491,8 +2492,8 @@ export async function captureTikTokProductFrameBuffer(params: {
 
         const deadline = Date.now() + 4800;
         while (Date.now() < deadline) {
-          await new Promise((r) => setTimeout(r, 300));
-          bridgeState = await getVnCartBridgeState();
+          await new Promise((r) => setTimeout(r, 1200));
+          bridgeState = await getVnCartBridgeState(undefined, { checkRevision: true });
           bridgeItem = bridgeState.items?.[vidFromUrl];
           if (
             bridgeItem?.cartAnchorTitle &&
