@@ -1023,7 +1023,7 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
     .filter(i => !i.id.startsWith('WB-'))
     .map(i => ({ ...i }));
 
-  // 1. Đồng bộ KOC trả phí KL1 -> KL7
+  // 1. Đồng bộ KOC trả phí KL1 -> KL7 (Luôn hiển thị đầy đủ cả 7 bậc KL1–KL7 kể cả khi bằng 0 để nhìn rõ bậc nào đang trống)
   for (const k of TIER_KEYS) {
     const { qty, budget } = t.tiers[k];
     const matching = nextItems.filter(it => it.channel === 'TIKTOK' && it.tierCode.toUpperCase() === k);
@@ -1037,7 +1037,7 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
         r.contentFormat = normalizeContentFormat(r.contentFormat, 'Review trực tiếp (Direct Review / Swatch)');
         if (!r.assignedStaff && staff) r.assignedStaff = staff;
       });
-    } else if (qty > 0 || budget > 0) {
+    } else {
       const unitCost = qty > 0 ? Math.round(budget / qty) : TIER_RANGE[k].base;
       nextItems.push({
         id: `row-tt-${k.toLowerCase()}`,
@@ -1059,7 +1059,7 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
     }
   }
 
-  // 2. Đồng bộ FOC 0đ
+  // 2. Đồng bộ FOC 0đ (Luôn hiển thị dòng FOC kể cả khi = 0)
   const focMatching = nextItems.filter(
     it =>
       it.tierCode.includes('TAP') ||
@@ -1076,7 +1076,7 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
         r.assignedStaff = focStaff;
       }
     });
-  } else if (t.focQty > 0) {
+  } else {
     nextItems.push({
       id: 'row-tt-tap',
       channel: 'TIKTOK',
@@ -1096,7 +1096,7 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
     });
   }
 
-  // 3. Đồng bộ Video kênh Brand (Self-channel) theo đúng từng định dạng trong bảng tuần
+  // 3. Đồng bộ Video kênh Brand (Self-channel) — Luôn hiển thị đủ 5 định dạng Kênh Brand kể cả khi = 0
   const selfFormatDefs: Array<{
     key: Exclude<keyof PlanWeekRow['self'], 'budgetNet'>;
     id: string;
@@ -1176,7 +1176,7 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
         if (!g.assignedStaff && selfStaff) g.assignedStaff = selfStaff;
       });
       scaleExistingRowsInPlace(group, targetGroupQty, 0, group[0].unitCost || def.benchmarkCost);
-    } else if (targetGroupQty > 0) {
+    } else {
       nextItems.push({
         id: def.id,
         channel: 'SELF_CHANNEL',
@@ -1196,30 +1196,8 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
     }
   }
 
-  // Nếu có dòng SELF_CHANNEL cũ không khớp tên định dạng nào và tổng selfQty > 0 nhưng 5 định dạng trống
-  const allSelfRows = nextItems.filter(it => it.channel === 'SELF_CHANNEL');
-  if (allSelfRows.length === 0 && (t.selfQty > 0 || t.selfBudget > 0)) {
-    const item: InputPlanRowItem = {
-      id: 'row-self-voice',
-      channel: 'SELF_CHANNEL',
-      platform: 'Kênh Tự Xây',
-      category: 'SELF_CHANNEL',
-      tierCode: 'Review voice',
-      tierLabel: 'Sản xuất video kênh Brand (Review voice)',
-      contentFormat: 'Review voice (Thu âm giọng đọc thật)',
-      qty: t.selfQty,
-      unitCost: t.selfQty > 0 ? Math.round(t.selfBudget / t.selfQty) : 250000,
-      benchmarkCost: 250000,
-      totalBudget: t.selfBudget,
-      expectedRoiMultiplier: 6.0,
-      targetGmv: Math.round(t.selfBudget * 6.0),
-      assignedStaff: selfStaff,
-    };
-    nextItems.push(item);
-    allSelfRows.push(item);
-  }
-
   // Phân bổ tổng ngân sách selfBudget theo tỷ trọng số lượng video của các dòng Kênh Brand đang hoạt động
+  const allSelfRows = nextItems.filter(it => it.channel === 'SELF_CHANNEL');
   const activeSelf = allSelfRows.filter(it => it.qty > 0);
   if (activeSelf.length > 0) {
     const totalActiveSelfQty = activeSelf.reduce((s, it) => s + it.qty, 0);
@@ -1240,15 +1218,16 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
     allSelfRows[0].totalBudget = t.selfBudget;
   }
 
-  // 4. Đồng bộ Livestream
+  // 4. Đồng bộ Livestream (Luôn hiển thị dòng Livestream kể cả khi = 0 để thấy rõ nếu 4.1 giao nhưng 4.1.1 đang trống)
   const liveMatching = nextItems.filter(it => it.channel === 'LIVESTREAM');
   if (liveMatching.length > 0) {
     scaleExistingRowsInPlace(liveMatching, t.liveSessions, t.liveBudget, 1200000);
     liveMatching.forEach(r => {
+      r.tierLabel = `Phiên livestream (${t.liveSessions} phiên)`;
       r.contentFormat = normalizeContentFormat(r.contentFormat, 'Livestream Daily (Ca live thường nhật)');
       if (!r.assignedStaff && liveStaff) r.assignedStaff = liveStaff;
     });
-  } else if (t.liveSessions > 0 || t.liveBudget > 0) {
+  } else {
     nextItems.push({
       id: 'row-live-daily',
       channel: 'LIVESTREAM',
@@ -1267,7 +1246,22 @@ export function mergeBreakdownItems(plan: InputPlanBreakdownState, rows: PlanWee
     });
   }
 
-  return nextItems;
+  // Sắp xếp chuẩn thứ tự hạng mục: KL1 -> KL7 -> FOC -> 5 Kênh Brand -> Đa sàn -> Livestream
+  const rowOrderRank = (it: InputPlanRowItem): number => {
+    const upper = (it.tierCode || '').toUpperCase();
+    const klIdx = TIER_KEYS.indexOf(upper as PlanTierKey);
+    if (it.channel === 'TIKTOK' && klIdx >= 0) return 10 + klIdx;
+    if (it.tierCode.includes('TAP') || it.id === 'row-tt-tap' || (it.channel === 'TIKTOK' && it.unitCost === 0)) return 20;
+    if (it.channel === 'SELF_CHANNEL') {
+      const sIdx = selfFormatDefs.findIndex(d => d.match(it));
+      return 30 + (sIdx >= 0 ? sIdx : 9);
+    }
+    if (['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel)) return 40;
+    if (it.channel === 'LIVESTREAM') return 50;
+    return 60;
+  };
+
+  return nextItems.sort((a, b) => rowOrderRank(a) - rowOrderRank(b));
 }
 
 /** Tỷ trọng tuần chuẩn theo kịch bản phân bổ. */

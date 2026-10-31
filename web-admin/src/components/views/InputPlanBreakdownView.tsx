@@ -1354,9 +1354,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     setIsAllocationModalOpen(false);
   };
 
-  // Visible items based on activeTab & focusedStaffFilter: Chia tách rõ 4 đầu việc B2C + lọc theo nhân sự phụ trách
+  // Visible items based on activeTab & focusedStaffFilter: Hiển thị đầy đủ các hạng mục (kể cả dòng đang trống = 0) để thấy rõ hạng mục nào chưa phân bổ
   const visibleItems = (() => {
-    let base = planState.items.filter(it => it.channel !== 'LIVESTREAM');
+    let base = planState.items;
     if (activeTab === 'AFFILIATE_PAID') base = planState.items.filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP'));
     else if (activeTab === 'TAP_FREECAST') base = planState.items.filter(it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap');
     else if (activeTab === 'SELF_CHANNEL') base = planState.items.filter(it => it.channel === 'SELF_CHANNEL');

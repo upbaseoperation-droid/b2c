@@ -1541,10 +1541,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 </div>
               )}
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-surface px-3 py-1 font-medium text-ink-2 hover:bg-sunken">
-                <input type="checkbox" checked={hideEmptyRows} onChange={e => setHideEmptyRows(e.target.checked)} />
-                <span>Ẩn dòng trống</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-surface px-3 py-1 font-medium text-ink-2 hover:bg-sunken">
                 <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
                 <span>Nhập theo Gross</span>
               </label>
@@ -1554,14 +1550,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           {/* 1. BẢNG VIDEO CAST TRẢ PHÍ (KL1–KL7): MA TRẬN 2 CỘT/TUẦN (SL + NET) CÓ SỌC PHÂN TÁCH TUẦN & THANH TỶ TRỌNG */}
           {(activeTab === 'ALL' || activeTab === 'CAST_KL') && (() => {
             const section = 'Video Cast trả phí';
-            const allSectionDefs = ROWS.filter(r => r.section === section);
-            const filteredDefs = allSectionDefs.filter(r => {
-              if (!hideEmptyRows) return true;
-              const t = totalCell(r);
-              return t.qty > 0 || t.budget > 0 || (getRowRef41Qty(r) || 0) > 0;
-            });
-            const defs = filteredDefs.length > 0 ? filteredDefs : allSectionDefs;
-            const hiddenCount = allSectionDefs.length - defs.length;
+            const defs = ROWS.filter(r => r.section === section);
             const sub = subtotal(section);
             const qtyRef = cmp('cast');
             const budgetRef = cmp('affBudget');
@@ -1576,9 +1565,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     <span className="rounded bg-surface px-2 py-0 text-ink-3 border border-line/70">
                       PIC: {rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—'}
                     </span>
-                    {hiddenCount > 0 && (
-                      <span className="text-ink-3">· Đã ẩn {hiddenCount} bậc trống</span>
-                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 tabular-nums text-ink-2">
                     <span>
@@ -1828,14 +1814,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               {/* CỘT TRÁI: SUẤT FOC (0Đ) */}
               {(activeTab === 'ALL' || activeTab === 'FOC_SAMPLE') && (() => {
                 const section = 'Suất FOC (0đ)';
-                const allSectionDefs = ROWS.filter(r => r.section === section);
-                const filteredDefs = allSectionDefs.filter(r => {
-                  if (!hideEmptyRows) return true;
-                  const t = totalCell(r);
-                  return t.qty > 0 || (getRowRef41Qty(r) || 0) > 0;
-                });
-                const defs = filteredDefs.length > 0 ? filteredDefs : allSectionDefs;
-                const hiddenCount = allSectionDefs.length - defs.length;
+                const defs = ROWS.filter(r => r.section === section);
                 const sub = subtotal(section);
                 const qtyRef = cmp('foc');
                 const secQty = sub.reduce((s, x) => s + x.qty, 0);
@@ -1856,9 +1835,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           <span className="rounded bg-surface px-2 py-0 text-ink-3 border border-line/70">
                             PIC: {focPicsText}
                           </span>
-                          {hiddenCount > 0 && (
-                            <span className="text-ink-3">· Ẩn {hiddenCount} dòng trống</span>
-                          )}
                         </div>
                         <div className="flex items-center gap-2 tabular-nums text-ink-2">
                           <span>
@@ -2006,14 +1982,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               {/* CỘT PHẢI: KÊNH BRAND (VIDEO SELF CHANNEL) */}
               {(activeTab === 'ALL' || activeTab === 'SELF_CHANNEL') && (() => {
                 const section = 'Video self channel';
-                const allVideoDefs = ROWS.filter(r => r.section === section && r.kind === 'self');
-                const filteredVideoDefs = allVideoDefs.filter(r => {
-                  if (!hideEmptyRows) return true;
-                  const t = totalCell(r);
-                  return t.qty > 0;
-                });
-                const videoDefs = filteredVideoDefs.length > 0 ? filteredVideoDefs : allVideoDefs;
-                const hiddenCount = allVideoDefs.length - videoDefs.length;
+                const videoDefs = ROWS.filter(r => r.section === section && r.kind === 'self');
                 const budgetDef = ROWS.find(r => r.id === 'self-budget')!;
                 const budgetRowIndex = ROWS.indexOf(budgetDef);
                 const sub = subtotal(section);
@@ -2035,9 +2004,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           <span className="rounded bg-surface px-2 py-0 text-ink-3 border border-line/70">
                             PIC: {selfPicsText}
                           </span>
-                          {hiddenCount > 0 && (
-                            <span className="text-ink-3">· Ẩn {hiddenCount} dòng trống</span>
-                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 tabular-nums text-ink-2">
                           <span>
