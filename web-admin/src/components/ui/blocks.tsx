@@ -472,7 +472,7 @@ export function ConfirmDialog({
 export function Field({ label, error, htmlFor, children, className, labelClassName, noWrap }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string; labelClassName?: string; noWrap?: boolean }) {
   const parenMatch = !noWrap ? label.match(/^(.*?\s)(\([^()]+\)(?:\s*\*)?)$/) : null;
   return (
-    <div className={cx('grid grid-cols-[minmax(0,1fr)] content-start gap-1.5 min-w-0 [&>select]:w-full [&_[data-select-root]]:w-full', className)}>
+    <div className={cx('grid grid-cols-[minmax(0,1fr)] content-start gap-1.5 min-w-0 [&>select:not(.sr-only)]:w-full [&_[data-select-root]]:w-full', className)}>
       <label htmlFor={htmlFor} className={cx('text-ctl font-medium text-ink text-pretty', noWrap && 'whitespace-nowrap', labelClassName)}>
         {parenMatch ? <>{parenMatch[1]}<span className="whitespace-nowrap">{parenMatch[2]}</span></> : label}
       </label>

@@ -17,6 +17,11 @@ export { TrendChart, ScatterPlot, CorrelationMatrix, BarList, StackBar, HeatGrid
 export type { ChannelKey } from './data';
 export type { TrendPoint, ScatterPoint, AxisScale, BarItem, StackPart } from './charts';
 export { Combobox } from './Combobox';
+export { StepBar } from './StepBar';
+export { BulkBar } from './BulkBar';
+export { PeriodPicker } from './PeriodPicker';
+export type { PeriodOption } from './PeriodPicker';
+export type { StepItem } from './StepBar';
 export type { ComboboxOption, ComboboxProps } from './Combobox';
 export { BrandAvatar } from './BrandAvatar';
 export type { BrandAvatarProps } from './BrandAvatar';

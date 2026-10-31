@@ -251,14 +251,14 @@ export type BrandSection =
   | 'DOCUMENTS';
 
 export const SECTION_LABEL: Record<BrandSection, string> = {
-  POSITIONING: 'Định vị & chiến lược nội dung',
+  POSITIONING: 'Định vị thương hiệu',
   ENTITY: 'Pháp nhân',
-  WORKFLOW_RULES: 'Quy tắc vận hành & phê duyệt',
-  PRODUCTS: 'Sản phẩm chủ lực',
+  WORKFLOW_RULES: 'Quy tắc làm việc & phê duyệt',
+  PRODUCTS: 'Sản phẩm',
   CONTENT_RULES: 'Quy chuẩn nội dung',
-  FAQS: 'Câu hỏi khó',
+  FAQS: 'Câu hỏi thường gặp',
   LEGAL: 'Pháp lý',
-  RATECARD: 'Trần thù lao',
+  RATECARD: 'Khung giá booking KOC',
   DOCUMENTS: 'Tài liệu',
 };
 

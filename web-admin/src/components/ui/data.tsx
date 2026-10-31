@@ -40,7 +40,7 @@ export function initialsOf(name: string) {
 /** Ảnh đại diện: ảnh Lark nếu có, nếu không thì chữ viết tắt trên màu cố định theo tên. */
 export function Avatar({ name, src, size = 24, className }: { name: string; src?: string; size?: number; className?: string }) {
   const tone = AVATAR_TONES[hashName(name) % AVATAR_TONES.length];
-  const style: React.CSSProperties = { width: size, height: size, fontSize: Math.max(10, Math.round(size * 0.4)) };
+  const style: React.CSSProperties = { width: size, height: size, fontSize: Math.max(12, Math.round(size * 0.4)) };
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={src} alt="" className={cx('rounded-full object-cover shrink-0', className)} style={style} />;
