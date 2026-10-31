@@ -16,7 +16,7 @@ import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../
 import { formatDate } from '../../lib/format';
 import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Select, Stat, StatRow, Status, Tabs } from '../ui';
 import type { Column } from '../ui';
-import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
+import { ApiError, contractApi, getCachedContractBootstrap, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
 import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, resolveActiveLegalProfile } from '../contracts/contractUi';
 import { ContractCatalogView } from '../contracts/ContractCatalogView';
@@ -98,11 +98,33 @@ export function ContractManagementView({
       ? deals.map(d => (d.id === intent.deal!.id ? intent.deal! : d))
       : [intent.deal, ...deals];
   }, [deals, intent]);
-  const [data, setData] = useState<ContractBootstrap | null>(null);
+  const [data, setData] = useState<ContractBootstrap | null>(() => getCachedContractBootstrap(currentUserId));
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
-  const [screen, setScreen] = useState<Screen>({ mode: 'list' });
-  const [activeSidebarSubView, setActiveSidebarSubView] = useState<'RECORDS' | 'DEAL_DOCS' | 'BBNT' | 'APPROVAL_PORTAL'>('RECORDS');
+  const [screen, setScreen] = useState<Screen>(() => {
+    const cached = getCachedContractBootstrap(currentUserId);
+    if (!intent && cached?.actor?.roles) {
+      if (cached.actor.roles.includes('LEGAL') && !cached.actor.roles.includes('LEAD')) {
+        return { mode: 'legal_portal' };
+      }
+      if (cached.actor.roles.includes('FINANCE') && !cached.actor.roles.includes('LEAD')) {
+        return { mode: 'finance_portal' };
+      }
+    }
+    return { mode: 'list' };
+  });
+  const [activeSidebarSubView, setActiveSidebarSubView] = useState<'RECORDS' | 'DEAL_DOCS' | 'BBNT' | 'APPROVAL_PORTAL'>(() => {
+    const cached = getCachedContractBootstrap(currentUserId);
+    if (!intent && cached?.actor?.roles) {
+      if (
+        (cached.actor.roles.includes('LEGAL') || cached.actor.roles.includes('FINANCE')) &&
+        !cached.actor.roles.includes('LEAD')
+      ) {
+        return 'APPROVAL_PORTAL';
+      }
+    }
+    return 'RECORDS';
+  });
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
 

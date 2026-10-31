@@ -2,8 +2,7 @@ import { resolveStoreBookingLeader } from './larkPaymentRequestEngine';
 ﻿import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
 import { 
   INITIAL_INPUT_PLAN_ITEMS, 
-  autoBalancePlanItems, 
-  MOCK_PLAN_SCENARIOS 
+  autoBalancePlanItems,  
 } from './inputPlanDefaults';
 import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from './realB2cPlanData';

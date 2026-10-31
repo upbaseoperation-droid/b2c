@@ -78,7 +78,10 @@ import {
   getPlanVersionSnapshots,
   enrichPlanWithVersions,
 } from '../../lib/monthlyPlanData';
-import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
+import {
+  getCachedClientMonthlyPlans,
+  useMonthlyPlanSync,
+} from '../../lib/useMonthlyPlanSync';
 import { filterScopedPlans, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
 import { canEditPlanContent, planPositionsOf } from '../../lib/storePositions';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
@@ -243,7 +246,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [editingCampaignForModal, setEditingCampaignForModal] = useState<CampaignItem | null>(null);
 
   // Master Monthly Plans State
-  const [monthlyPlans, setMonthlyPlans] = useState<InputPlanBreakdownState[]>(INITIAL_MONTHLY_PLANS);
+  const [monthlyPlans, setMonthlyPlans] = useState<InputPlanBreakdownState[]>(() => {
+    const cached = getCachedClientMonthlyPlans();
+    if (cached && cached.length > 0) {
+      return cached.map((p, idx) =>
+        p.versionSnapshots && p.versionSnapshots.length > 1 ? p : enrichPlanWithVersions(p, idx)
+      );
+    }
+    return INITIAL_MONTHLY_PLANS;
+  });
   const scopedStudioPlans = useMemo(
     () => filterScopedPlans(monthlyPlans, currentUser, storePortfolios),
     [monthlyPlans, currentUser, storePortfolios]
@@ -264,7 +275,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   }, []);
 
   // Main Plan State (default from Fresh balanced scenario or active plan)
-  const [planState, setPlanState] = useState<InputPlanBreakdownState>(INITIAL_MONTHLY_PLANS[0]);
+  const [planState, setPlanState] = useState<InputPlanBreakdownState>(
+    () => monthlyPlans[0] || INITIAL_MONTHLY_PLANS[0]
+  );
 
   // Khi người dùng drill-down từ Hồ sơ Gian hàng hoặc Hồ sơ Thương hiệu sang Kế hoạch tháng
   const [handledDrilldownNonce, setHandledDrilldownNonce] = useState<number>(0);
@@ -438,7 +451,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       const enriched = plans.map((p, idx) =>
         p.versionSnapshots && p.versionSnapshots.length > 1 ? p : enrichPlanWithVersions(p, idx)
       );
-      setMonthlyPlans(enriched);
+      setMonthlyPlans(prev =>
+        prev.length === enriched.length && prev.every((p, i) => p === enriched[i]) ? prev : enriched
+      );
       setPlanState(prev => enriched.find(p => p.id === prev.id) || enriched[0] || prev);
       return enriched;
     },
@@ -1767,10 +1782,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   return (
     <div className="space-y-2 animate-in fade-in duration-200 pb-2">
       {/* ========================================================================= */}
-      {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG, PHIÊN BẢN & 5 BƯỚC LÊN TOPHEADER CẠNH TIÊU ĐỀ */}
+      {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG & PHIÊN BẢN LÊN TOPHEADER CẠNH TIÊU ĐỀ        */}
       {/* ========================================================================= */}
-      <div className="bg-surface border border-line rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 sm:gap-2 shrink-0">
+      <PageHeaderNav>
+        <div className="flex items-center gap-2 pl-2 border-l border-line shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -1778,10 +1793,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               setIsShowingStudio(false);
               if (planSync.isPersistent) void planSync.saveNow();
             }}
-            className="h-8 px-2 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
+            className="h-7 px-2 shrink-0 inline-flex items-center gap-1 rounded-md bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
             title="Quay lại danh sách kế hoạch tháng"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Danh sách</span>
           </button>
 
@@ -1794,7 +1809,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[180px] xl:max-w-[220px] truncate"
+            className="h-7 px-2 rounded-md bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[140px] sm:max-w-[200px] xl:max-w-[240px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {scopedStudioPlans.map(p => (
@@ -1804,7 +1819,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             ))}
           </select>
 
-          <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-sunken border border-line shrink-0">
+          <div className="inline-flex items-center gap-0.5 p-0.5 rounded-md bg-sunken border border-line shrink-0">
             {studioVersionSnapshots.map((snap) => {
               const isCurrent = snap.versionCode === activeVersionCode;
               return (
@@ -1812,7 +1827,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   key={snap.versionCode}
                   type="button"
                   onClick={() => handleSwitchVersionInStudio(snap)}
-                  className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-2xs font-semibold transition cursor-pointer ${
                     isCurrent
                       ? 'bg-accent text-white shadow-2xs'
                       : 'text-ink-2 hover:text-ink hover:bg-surface'
@@ -1826,7 +1841,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <button
               type="button"
               onClick={() => setIsVersionHistoryModalOpen(true)}
-              className="px-2 py-0.5 rounded-md text-2xs font-semibold text-accent hover:bg-surface transition inline-flex items-center gap-1 cursor-pointer"
+              className="px-2 py-0.5 rounded text-2xs font-semibold text-accent hover:bg-surface transition inline-flex items-center gap-1 cursor-pointer"
               title="So sánh các phiên bản hoặc tạo phiên bản mới trong tháng"
             >
               <Layers className="w-3.5 h-3.5" />
@@ -1834,7 +1849,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </PageHeaderNav>
 
       {/* 1B. ĐẨY CÁC THAO TÁC TOÀN CỤC LÊN TOPHEADER (PAGE ACTIONS) */}
       <PageActions>

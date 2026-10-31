@@ -32,7 +32,8 @@ import {
   INITIAL_CAMPAIGNS,
 } from '../lib/mockData';
 import { useCtvDirectory } from '../lib/useCtvDirectory';
-import { INITIAL_MONTHLY_PLANS } from '../lib/monthlyPlanData';
+import { INITIAL_MONTHLY_PLANS, enrichPlanWithVersions } from '../lib/monthlyPlanData';
+import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../lib/useMonthlyPlanSync';
 import {
   UserProfile,
   BookingDealItem,
@@ -404,7 +405,37 @@ export function useWorkspaceAppState({
 
   // Monthly KOC Listings (Batch 10, 20, 30 with parallel Brand/KOC approval and Air Video tracking)
   const [kocListings, setKocListings] = useState<KocListingItem[]>(INITIAL_KOC_LISTINGS);
-  const [sharedMonthlyPlans, setSharedMonthlyPlans] = useState<InputPlanBreakdownState[]>(INITIAL_MONTHLY_PLANS);
+  const [sharedMonthlyPlans, setSharedMonthlyPlans] = useState<InputPlanBreakdownState[]>(() => {
+    const cached = getCachedClientMonthlyPlans();
+    if (cached && cached.length > 0) {
+      return cached.map((p, idx) =>
+        p.versionSnapshots && p.versionSnapshots.length > 1 ? p : enrichPlanWithVersions(p, idx)
+      );
+    }
+    return INITIAL_MONTHLY_PLANS;
+  });
+
+  // Tự động đồng bộ kế hoạch tháng từ cơ sở dữ liệu Supabase (/api/monthly-plans) qua bộ đệm dùng chung
+  useEffect(() => {
+    let cancelled = false;
+    fetchClientMonthlyPlans()
+      .then((storedList) => {
+        if (cancelled || !Array.isArray(storedList) || storedList.length === 0) return;
+        const enriched = storedList.map((s, idx) => {
+          const raw = s.plan ? s.plan : (s as unknown as InputPlanBreakdownState);
+          return raw.versionSnapshots && raw.versionSnapshots.length > 1
+            ? raw
+            : enrichPlanWithVersions(raw, idx);
+        });
+        setSharedMonthlyPlans(enriched);
+      })
+      .catch(() => {
+        // Dự phòng về dữ liệu sẵn có nếu ngoại tuyến
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Phân quyền dữ liệu theo phạm vi quản lý của nhân sự Growth và B2C (chỉ cho xem các gian hàng, brand thuộc quản lý)
   const scopedStores = useMemo(() => filterScopedStores(storePortfolios, currentUser), [storePortfolios, currentUser]);

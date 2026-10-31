@@ -92,7 +92,7 @@ import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector
 import type { ContractRecord } from '../../lib/contracts/types';
 import { extractSowPaymentScheduleAndAdvance } from '../../lib/contracts/contractRules';
 import { documentOfTemplate } from '../../lib/planDealLink';
-import { contractApi, type ContractBootstrap } from '../contracts/api';
+import { contractApi, getCachedContractBootstrap, type ContractBootstrap } from '../contracts/api';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import { DealDetailDrawer } from '../booking/DealDetailDrawer';
@@ -208,7 +208,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(20);
-  const [contractRecords, setContractRecords] = useState<ContractRecord[]>([]);
+  const [contractRecords, setContractRecords] = useState<ContractRecord[]>(
+    () => getCachedContractBootstrap()?.records || []
+  );
 
   const [rawItems, setItems] = useState<ApprovedBookingListItem[]>(() =>
     loadApprovedBookingList(kocs, stores, deals, currentUserName)

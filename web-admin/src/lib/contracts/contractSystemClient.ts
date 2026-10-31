@@ -385,6 +385,12 @@ export async function loadTemplateFromContractService(
   }
 }
 
+let syncedRemoteTemplatesCache: {
+  items: LegalTemplate[];
+  usedIds: Set<string>;
+  expiresAt: number;
+} | null = null;
+
 /**
  * Bước 1 & 2: Lấy danh sách mẫu trực tiếp từ API 1 (`getContractTemplates`) và chi tiết `fields` / `participants` / `documents`
  * từ API 2 (`getContractTemplate`) trên Contract Service làm nguồn dữ liệu chính cho `web-admin`.
@@ -398,20 +404,33 @@ export async function syncTemplatesWithContractSystem(
     return enrichedLocal;
   }
 
+  const now = Date.now();
+  if (syncedRemoteTemplatesCache && syncedRemoteTemplatesCache.expiresAt > now) {
+    const remainingLocal = enrichedLocal.filter(tpl => !syncedRemoteTemplatesCache!.usedIds.has(tpl.id));
+    return [...syncedRemoteTemplatesCache.items, ...remainingLocal];
+  }
+
   try {
-    const { items: remoteList } = await fetchContractTemplatesFromService({
-      pageNumber: 1,
-      pageSize: 50,
-      status: 'active',
-      sortBy: 'createdAt',
-      sortType: 'DESC',
-    });
+    let remoteList: RemoteContractTemplateSummary[];
+    if (templateListCache && templateListCache.expiresAt > now) {
+      remoteList = templateListCache.items;
+    } else {
+      const res = await fetchContractTemplatesFromService({
+        pageNumber: 1,
+        pageSize: 50,
+        status: 'active',
+        sortBy: 'createdAt',
+        sortType: 'DESC',
+      });
+      remoteList = res.items || [];
+      if (remoteList.length > 0) {
+        templateListCache = { items: remoteList, expiresAt: now + CACHE_TTL_MS };
+      }
+    }
 
     if (!remoteList || remoteList.length === 0) {
       return enrichedLocal;
     }
-
-    templateListCache = { items: remoteList, expiresAt: Date.now() + CACHE_TTL_MS };
 
     // 1. Chuyển đổi trực tiếp toàn bộ mẫu trả về từ API 1 + API 2 thành LegalTemplate
     const usedIds = new Set<string>();
@@ -423,6 +442,12 @@ export async function syncTemplatesWithContractSystem(
         return convertRemoteTemplateToLegalTemplate(item, detail, b2cId);
       }),
     );
+
+    syncedRemoteTemplatesCache = {
+      items: remoteConverted,
+      usedIds,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    };
 
     // 2. Giữ lại các mẫu tùy chỉnh KOC (KOC_CUSTOM) hoặc các chặng SOW/BBNT chưa đưa lên Contract Service để luồng 3 bước không đứt gãy
     const remainingLocal = enrichedLocal.filter(tpl => !usedIds.has(tpl.id));
@@ -444,36 +469,45 @@ async function resolveTemplateDetailForRecord(
 }> {
   const enrichedTpl = template ? enrichTemplateWithSignFlow(template) : undefined;
   const criteria = resolveExpectedRemoteTemplateCriteria(record.templateId, template?.kind, template?.subject);
-  const candidateUuid =
+  const explicitUuid =
     record.contractSystem?.remoteTemplateId ||
     enrichedTpl?.remoteTemplateId ||
-    criteria.fallbackUuid ||
-    DEFAULT_HDNT_CANHAN_TEMPLATE_ID;
+    criteria.fallbackUuid;
+
+  if (explicitUuid) {
+    try {
+      const detail = await fetchContractTemplateDetailFromService(explicitUuid);
+      return { templateUuid: detail.id, detail };
+    } catch {
+      // Nếu UUID không tìm thấy trên dịch vụ, tiếp tục dò trong danh sách getContractTemplates bên dưới
+    }
+  }
 
   try {
-    const detail = await fetchContractTemplateDetailFromService(candidateUuid);
-    return { templateUuid: detail.id, detail };
-  } catch {
-    // Nếu UUID mặc định không khớp, thử tìm từ danh sách getContractTemplates
-    try {
-      const { items } = await fetchContractTemplatesFromService({
-        pageNumber: 1,
-        pageSize: 50,
-        status: 'active',
-      });
-      const matched =
-        items.find(i => criteria.preferredCodes.some(c => c.toUpperCase() === i.code.toUpperCase())) ||
-        items.find(i => i.type === criteria.type && i.object === criteria.object) ||
-        items[0];
-      if (matched) {
-        const detail = await fetchContractTemplateDetailFromService(matched.id).catch(() => null);
-        return { templateUuid: matched.id, detail };
-      }
-    } catch {
-      // Bỏ qua và dùng candidateUuid
+    const { items } = await fetchContractTemplatesFromService({
+      pageNumber: 1,
+      pageSize: 50,
+      status: 'active',
+    });
+    const matched =
+      items.find(i => criteria.preferredCodes.some(c => c.toUpperCase() === i.code.toUpperCase())) ||
+      items.find(i => i.type === criteria.type && i.object === criteria.object);
+    if (matched) {
+      const detail = await fetchContractTemplateDetailFromService(matched.id).catch(() => null);
+      return { templateUuid: matched.id, detail };
     }
-    return { templateUuid: candidateUuid, detail: null };
+  } catch {
+    // Bỏ qua lỗi mạng tạm thời
   }
+
+  if (explicitUuid) {
+    return { templateUuid: explicitUuid, detail: null };
+  }
+
+  throw new ContractError(
+    `Mẫu hợp đồng ${record.templateId} (${criteria.type} · ${criteria.object}) chưa được cấu hình trên Contract Service.`,
+    400,
+  );
 }
 
 interface GenerateContractMutationResult {
@@ -521,13 +555,24 @@ export async function generateContractOnSystem(
   const remoteParticipants =
     detail?.participants || enrichedTpl?.remoteParticipants || DEFAULT_HDNT_CANHAN_PARTICIPANTS;
 
+  const initialPayload = buildContractServicePayload({
+    record,
+    template: enrichedTpl,
+    remoteFields,
+    contractCode: baseContractCode,
+  });
+  const currentPayloadHash = createHash('sha256').update(JSON.stringify(initialPayload)).digest('hex');
+
   const executeMutation = async (codeToUse: string): Promise<GenerateContractMutationResult> => {
-    const payload = buildContractServicePayload({
-      record,
-      template: enrichedTpl,
-      remoteFields,
-      contractCode: codeToUse,
-    });
+    const payload =
+      codeToUse === baseContractCode
+        ? initialPayload
+        : buildContractServicePayload({
+            record,
+            template: enrichedTpl,
+            remoteFields,
+            contractCode: codeToUse,
+          });
     const fileName = `${codeToUse} - ${record.partner || record.title}`.slice(0, 180);
 
     const raw = await callContractSystemGraphQL<{
@@ -566,22 +611,25 @@ export async function generateContractOnSystem(
   } catch (err) {
     // Theo mục 4 tài liệu:
     // - Lỗi 409 (code hợp đồng đã tồn tại) hoặc lỗi 500 (đồng bộ Google Drive thất bại):
-    //   nếu hồ sơ đã có sẵn metadata cùng code và chưa nâng version thì giữ nguyên để gọi requestSign;
-    //   nếu là bản sửa mới hoặc thử lại sau lỗi 500 thì sinh mã code kèm hậu tố phiên bản để không bị kẹt.
+    //   Chỉ tái sử dụng bản ghi cũ nếu dữ liệu payload (payloadHash) hoàn toàn không đổi;
+    //   nếu người dùng đã sửa dữ liệu hợp đồng hoặc gọi sinh lại bản mới thì tạo mã code kèm hậu tố phiên bản để sinh file mới.
     if (err instanceof ContractError && (err.status === 409 || err.status === 500)) {
       if (
         err.status === 409 &&
         record.contractSystem?.contractSystemId &&
         record.contractSystem?.googleDocsUrl &&
-        record.contractSystem?.contractCode === baseContractCode
+        record.contractSystem?.contractCode === baseContractCode &&
+        record.contractSystem?.payloadHash === currentPayloadHash
       ) {
         return {
           ...record.contractSystem,
+          lastError: undefined,
           lastSyncedAt: now,
         };
       }
-      const retrySuffix = record.version > 1 ? `V${record.version}` : String(Date.now()).slice(-4);
-      const retryCode = `${baseContractCode}-${retrySuffix}`;
+      const cleanRootCode = buildStableContractCode(record);
+      const retrySuffix = `V${record.version}-${String(Date.now()).slice(-4)}`;
+      const retryCode = `${cleanRootCode}-${retrySuffix}`;
       generated = await executeMutation(retryCode);
     } else {
       throw err;
@@ -624,6 +672,8 @@ export async function generateContractOnSystem(
     },
     lastSyncedAt: now,
     lastWebhookTimestamp: record.contractSystem?.lastWebhookTimestamp,
+    payloadHash: currentPayloadHash,
+    lastError: undefined,
   };
 }
 
@@ -684,11 +734,14 @@ export async function requestSignOnSystem(params: {
         record.googleDocsSource === 'TEMPLATE_AMENDED',
     );
   const isStandardTemplateFlow = !isKocFlow && !isAmendedFlow;
-  const meta =
-    record.contractSystem ||
-    (isStandardTemplateFlow
-      ? await generateContractOnSystem(record, template)
-      : createStandaloneContractSystemMeta(record, template));
+  const needsFreshGenerate =
+    isStandardTemplateFlow &&
+    (!record.contractSystem?.contractSystemId ||
+      record.contractSystem.remoteStatus === 'failed' ||
+      (contractSystemConfigured() && record.contractSystem.contractSystemId.startsWith('cs-')));
+  const meta = needsFreshGenerate
+    ? await generateContractOnSystem(record, template)
+    : record.contractSystem || createStandaloneContractSystemMeta(record, template);
 
   if (!contractSystemConfigured() || (!isStandardTemplateFlow && !record.contractSystem?.contractSystemId)) {
     const attempt = createStandaloneRequestSignAttempt(record, actor.id, evidenceHash, {

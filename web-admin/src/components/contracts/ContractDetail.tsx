@@ -357,7 +357,10 @@ export function ContractDetail({
     const vatField = allFields.find(f => f.source === 'vatAmount');
     const remField = allFields.find(f => f.source === 'remainingAmount');
     const customTokenNum = parseNum(
-      shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
+      shownValues['NET_TOTAL'] ||
+        shownValues['GROSS_TOTAL'] ||
+        shownValues['LINE_TOTAL'] ||
+        shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
         shownValues['token:[Thù lao trọn gói]'] ||
         shownValues['token:[Thành tiền (VNĐ)]'],
     );
@@ -392,6 +395,7 @@ export function ContractDetail({
     const advField = allFields.find(f => f.source === 'advanceAmount');
     const parsedAdvance =
       (advField ? parseNum(shownValues[advField.key]) : 0) ||
+      parseNum(shownValues['ADVANCE_AMOUNT']) ||
       parseNum(shownValues['token:[Số tiền tạm ứng đợt 1]']) ||
       linkedDeal?.advanceAmount ||
       0;
@@ -1180,16 +1184,21 @@ export function ContractDetail({
                       tone={
                         record.contractSystem?.remoteStatus === 'completed'
                           ? 'positive'
-                          : record.contractSystem?.remoteStatus === 'signing_requested'
-                            ? 'warning'
-                            : record.contractSystem?.contractSystemId
-                              ? 'info'
-                              : 'neutral'
+                          : record.contractSystem?.remoteStatus === 'failed'
+                            ? 'critical'
+                            : record.contractSystem?.remoteStatus === 'signing_requested'
+                              ? 'warning'
+                              : record.contractSystem?.contractSystemId
+                                ? 'info'
+                                : 'neutral'
                       }
                     >
                       {record.contractSystem?.remoteStatus || (record.contractSystem?.contractSystemId ? 'ready' : 'Chưa sinh file')}
                     </Status>
                   </div>
+                  {record.contractSystem?.lastError && (
+                    <p className="text-2xs text-critical font-medium">{record.contractSystem.lastError}</p>
+                  )}
                   {record.contractSystem ? (
                     <dl className="grid gap-1.5 text-2xs">
                       <div className="flex items-center justify-between gap-2">

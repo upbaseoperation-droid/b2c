@@ -29,21 +29,24 @@ export async function GET(req: NextRequest) {
   try {
     const actor = actorFromRequest(req);
     const actors = configuredActors();
-    const rawTemplates = await templateCatalog();
-    const templates = await syncTemplatesWithContractSystem(rawTemplates);
+    const [templates, allRecords, googleShareEmail] = await Promise.all([
+      templateCatalog().then(syncTemplatesWithContractSystem),
+      listContracts(),
+      googleDocsShareEmail().catch(() => ''),
+    ]);
     return NextResponse.json(
       {
         actor,
         reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))),
         demoActors: process.env.NODE_ENV !== 'production' ? DEMO_ACTORS : [],
         templates,
-        records: (await listContracts()).filter(r => canRead(r, actor)),
+        records: allRecords.filter(r => canRead(r, actor)),
         config: {
           storage: storageMode(),
           ai: aiConfigured(),
           wesign: wesignConfigured(),
           contractSystem: contractSystemConfigured(),
-          googleShareEmail: await googleDocsShareEmail().catch(() => ''),
+          googleShareEmail,
         },
       },
       { headers: { 'Cache-Control': 'no-store' } },
@@ -136,9 +139,22 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
           .filter((item) => item && typeof item.fileKey === 'string' && item.fileKey.trim().length > 0 && typeof item.url === 'string')
           .slice(0, 20)
       : existing?.legalAttachments,
-    googleDocsUrl: typeof body.googleDocsUrl === 'string' && body.googleDocsUrl.trim() ? body.googleDocsUrl.trim() : existing?.googleDocsUrl,
-    googleDocsId: typeof body.googleDocsId === 'string' && body.googleDocsId.trim() ? body.googleDocsId.trim() : existing?.googleDocsId,
-    googleDocsSource: body.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'KOC_CUSTOM_DOC' : (body.googleDocsUrl ? 'TEMPLATE_AMENDED' : existing?.googleDocsSource),
+    googleDocsUrl:
+      typeof body.googleDocsUrl === 'string'
+        ? body.googleDocsUrl.trim() || undefined
+        : existing?.googleDocsUrl,
+    googleDocsId:
+      typeof body.googleDocsId === 'string'
+        ? body.googleDocsId.trim() || undefined
+        : existing?.googleDocsId,
+    googleDocsSource:
+      body.googleDocsSource === 'KOC_CUSTOM_DOC'
+        ? 'KOC_CUSTOM_DOC'
+        : typeof body.googleDocsUrl === 'string'
+          ? body.googleDocsUrl.trim()
+            ? 'TEMPLATE_AMENDED'
+            : undefined
+          : existing?.googleDocsSource,
     googleDocsReviewRouting: (typeof body.googleDocsReviewRouting === 'object' && body.googleDocsReviewRouting !== null ? body.googleDocsReviewRouting : existing?.googleDocsReviewRouting) as ContractRecord['googleDocsReviewRouting'],
     googleDocsComments: (Array.isArray(body.googleDocsComments) ? body.googleDocsComments : existing?.googleDocsComments) as ContractRecord['googleDocsComments'],
     googleDocsAuditTrail: (typeof body.googleDocsAuditTrail === 'object' && body.googleDocsAuditTrail !== null ? body.googleDocsAuditTrail : existing?.googleDocsAuditTrail) as ContractRecord['googleDocsAuditTrail'],
@@ -169,9 +185,17 @@ export async function POST(req: NextRequest) {
         const { template } = await loadTemplate(input.templateId, input.templateHash);
         if (!isAmendedFlow) {
           // Chỉ Luồng 1 (Mẫu chuẩn UpBase giữ nguyên) mới gọi API 3 (generateContract) để sinh file hợp đồng final trước khi ký
-          draft.contractSystem = await generateContractOnSystem(draft, template, parentContractCode).catch(() =>
-            createStandaloneContractSystemMeta(draft, template, parentContractCode),
-          );
+          draft.contractSystem = await generateContractOnSystem(draft, template, parentContractCode).catch(err => ({
+            ...createStandaloneContractSystemMeta(draft, template, parentContractCode),
+            ...(contractSystemConfigured()
+              ? {
+                  remoteStatus: 'failed',
+                  googleDocsUrl: undefined,
+                  signingFileUrl: undefined,
+                  lastError: err instanceof Error ? err.message : 'Không thể sinh file hợp đồng trên Contract Service.',
+                }
+              : {}),
+          }));
         }
         await archiveTemplate(input.templateId, input.templateHash);
       }
@@ -206,9 +230,20 @@ export async function POST(req: NextRequest) {
         const { template } = await loadTemplate(next.templateId, next.templateHash);
         const parentRec = next.parentId ? await getContract(next.parentId).catch(() => null) : null;
         const parentCode = parentRec ? (parentRec.contractSystem?.contractCode || buildStableContractCode(parentRec)) : undefined;
-        next.contractSystem = await generateContractOnSystem(next, template, parentCode).catch(() =>
-          createStandaloneContractSystemMeta(next, template, parentCode),
-        );
+        next.contractSystem = await generateContractOnSystem(next, template, parentCode).catch(err => ({
+          ...createStandaloneContractSystemMeta(next, template, parentCode),
+          ...(contractSystemConfigured()
+            ? {
+                remoteStatus: 'failed',
+                googleDocsUrl: undefined,
+                signingFileUrl: undefined,
+                lastError: err instanceof Error ? err.message : 'Không thể sinh file hợp đồng trên Contract Service.',
+              }
+            : {}),
+        }));
+      } else if ((isKocFlow || isAmendedFlow) && !next.signing.length) {
+        // Nếu chuyển từ Luồng 1 sang Luồng 2 / Luồng 3 khi chưa ký thì xóa metadata API 3 cũ
+        next.contractSystem = undefined;
       }
       if (next.googleDocsUrl && !next.googleDocsAuditTrail?.initialSnapshot) {
         const initCap = await captureGoogleDocForRecord(next, actor.name).catch(() => null);

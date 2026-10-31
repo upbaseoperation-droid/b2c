@@ -631,12 +631,12 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     if (effectiveReadOnly) {
       return (
         <div
-          className={`flex h-8 w-full items-center justify-end px-2 text-right text-xs tabular-nums ${
+          className={`flex h-7 w-full items-center justify-end px-2 text-right text-xs tabular-nums ${
             shown > 0
               ? sub === 0
                 ? 'font-semibold text-ink'
                 : 'font-medium text-ink-2'
-              : 'text-slate-300'
+              : 'text-ink-3/40'
           } ${tone}`}
         >
           {shown > 0 ? fmt(shown) : '—'}
@@ -668,7 +668,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
             focusCell(r - 1, c);
           }
         }}
-        className={`h-8 w-full border-0 bg-transparent px-2 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-canvas/80 focus:bg-accent-soft/50 focus:ring-1 focus:ring-inset focus:ring-accent ${
+        className={`h-7 w-full border-0 bg-transparent px-2 text-right text-xs tabular-nums outline-none transition placeholder:text-ink-3/40 hover:bg-canvas/80 focus:bg-accent-soft/50 focus:ring-1 focus:ring-inset focus:ring-accent ${
           sub === 0 ? 'font-semibold text-ink' : 'font-medium text-ink-2'
         } ${tone}`}
       />
@@ -683,12 +683,12 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     if (effectiveReadOnly) {
       return (
         <div
-          className={`flex h-8 w-full items-center justify-end px-3 text-right text-xs tabular-nums ${
+          className={`flex h-7 w-full items-center justify-end px-3 text-right text-xs tabular-nums ${
             value > 0
               ? isBold
                 ? 'font-semibold text-ink'
                 : 'font-medium text-ink-2'
-              : 'text-slate-300'
+              : 'text-ink-3/40'
           }`}
         >
           {value > 0 ? fmt(value) : '—'}
@@ -702,7 +702,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         value={value ? fmt(value) : ''}
         placeholder="—"
         onChange={e => onChangeVal(parseNumber(e.target.value))}
-        className={`h-8 w-full border-0 bg-transparent px-3 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-canvas/80 focus:bg-accent-soft/50 focus:ring-1 focus:ring-inset focus:ring-accent ${
+        className={`h-7 w-full border-0 bg-transparent px-3 text-right text-xs tabular-nums outline-none transition placeholder:text-ink-3/40 hover:bg-canvas/80 focus:bg-accent-soft/50 focus:ring-1 focus:ring-inset focus:ring-accent ${
           isBold ? 'font-semibold text-ink' : 'font-medium text-ink-2'
         }`}
       />
@@ -735,9 +735,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   const getRowRef41Qty = (def: RowDef): number | null => {
     if (!ref41) return null;
     if (def.kind === 'tier' && def.tier && ref41.tiers) {
+      const hasAnyTierRef = TIER_KEYS.some(k => (ref41.tiers?.[k] || 0) > 0);
+      if (!hasAnyTierRef) return null;
       return ref41.tiers[def.tier] ?? 0;
     }
     if (def.kind === 'foc' && def.focKey && ref41.focBreakdown) {
+      const hasAnyFocRef = Object.values(ref41.focBreakdown).some(v => (v || 0) > 0);
+      if (!hasAnyFocRef) return null;
       return ref41.focBreakdown[def.focKey] ?? 0;
     }
     return null;
@@ -754,9 +758,9 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   };
 
   const renderInlineDiff = (planned: number, reference: number | null) => {
-    if (reference === null || reference === undefined) return <span className="text-slate-300">—</span>;
+    if (reference === null || reference === undefined) return <span className="text-ink-3/40">—</span>;
     const diff = planned - reference;
-    if (diff === 0 && reference === 0 && planned === 0) return <span className="text-slate-300">—</span>;
+    if (diff === 0 && reference === 0 && planned === 0) return <span className="text-ink-3/40">—</span>;
     if (diff === 0) return <span className="font-semibold text-positive">Khớp</span>;
     return (
       <span className={`font-semibold ${diff > 0 ? 'text-critical' : 'text-warning'}`}>
@@ -779,7 +783,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
       <th
         key={r.week}
         colSpan={2}
-        className="group border-b border-l border-line bg-canvas px-2 py-2 text-center align-middle"
+        className="group border-b border-l border-line bg-canvas px-2 py-1.5 text-center align-middle"
       >
         <div className="flex items-center justify-center gap-1">
           <span className="text-xs font-semibold text-ink">{code}</span>
@@ -974,6 +978,37 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     );
   }, [overviewMatrixRows]);
 
+  const gmvSummary = useMemo(() => {
+    const gt = ref41?.gmvTargets;
+    const l1 = plan.coreMetricsLayer1;
+    const nmvPlan = gt?.nmvPlan || l1?.targetNmvTotal || plan.targetGmv || 0;
+    const videoAff = gt?.videoAff ?? l1?.targetGmvAffiliate ?? 0;
+    const videoSelf = gt?.videoSelf ?? l1?.targetGmvSelfChannel ?? 0;
+    const liveTotal = gt
+      ? (gt.liveInhouse || 0) + (gt.liveCtv || 0)
+      : l1?.targetGmvLivestream ?? 0;
+    const lastMonth30d = gt?.lastMonth30d || 0;
+    const thisMonth30d = gt?.thisMonth30d || 0;
+    const activeBudget = overviewGrandTotals.plannedBudgetNet > 0 ? overviewGrandTotals.plannedBudgetNet : overviewGrandTotals.refBudgetNet;
+    const cirPct = nmvPlan > 0 ? (activeBudget / nmvPlan) * 100 : 0;
+    const roiVal = activeBudget > 0 ? nmvPlan / activeBudget : 0;
+    const gmvSum = videoAff + videoSelf + liveTotal;
+    const baseGmv = Math.max(nmvPlan, gmvSum, 1);
+    return {
+      nmvPlan,
+      videoAff,
+      videoSelf,
+      liveTotal,
+      lastMonth30d,
+      thisMonth30d,
+      cirPct,
+      roiVal,
+      affPct: nmvPlan > 0 || gmvSum > 0 ? Math.min(100, (videoAff / baseGmv) * 100) : 0,
+      selfPct: nmvPlan > 0 || gmvSum > 0 ? Math.min(100, (videoSelf / baseGmv) * 100) : 0,
+      livePct: nmvPlan > 0 || gmvSum > 0 ? Math.min(100, (liveTotal / baseGmv) * 100) : 0,
+    };
+  }, [ref41, plan.coreMetricsLayer1, plan.targetGmv, overviewGrandTotals]);
+
   const handleSelectWorkstreamFromOverview = (tab: WorkstreamTab) => {
     setActiveTab(prev => (prev === tab ? 'ALL' : tab));
     if (detailAnchorRef.current) {
@@ -984,19 +1019,19 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   let flatIndex = -1;
 
   return (
-    <div className="space-y-4">
-      {/* TẦNG 1: BẢNG TỔNG QUAN 4.1 & 4.1.1 (FULL WIDTH + DẢI NHÂN SỰ GỌN) */}
-      <div className="rounded-xl border border-line bg-white shadow-2xs overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-canvas/80 px-4 py-2">
+    <div className="space-y-2.5">
+      {/* TẦNG 1: KHỐI BENTO ĐỐI CHIẾU 4.1 & 4.1.1 (CỘT TRÁI: MA TRẬN 5 HẠNG MỤC · CỘT PHẢI: CHỈ TIÊU DOANH SỐ & HIỆU QUẢ) */}
+      <div className="rounded-xl border border-line bg-surface shadow-2xs overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-canvas/80 px-3.5 py-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-xs font-semibold text-ink">
               Tổng quan 4.1 &amp; 4.1.1
             </h4>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(staffSlices.length > 0 || !effectiveReadOnly) && (
-              <div className="flex flex-wrap items-center gap-1 rounded-lg border border-line bg-white p-0.5 text-2xs">
+              <div className="flex flex-wrap items-center gap-1 rounded-lg border border-line bg-surface p-0.5 text-2xs">
                 <button
                   type="button"
                   onClick={() => setSelectedStaffSlice('ALL_STORE')}
@@ -1017,7 +1052,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                       key={slice.staffName}
                       type="button"
                       onClick={() => setSelectedStaffSlice(isSelected ? 'ALL_STORE' : slice.staffName)}
-                      className={`inline-flex items-center gap-2 rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
                         isSelected
                           ? 'bg-accent text-white'
                           : isMainPic
@@ -1027,12 +1062,12 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     >
                       {slice.isCompleted && (
                         <CheckCircle2
-                          className={`h-3 w-3 shrink-0 ${isSelected ? 'text-emerald-200' : 'text-positive'}`}
+                          className={`h-3 w-3 shrink-0 ${isSelected ? 'text-white' : 'text-positive'}`}
                         />
                       )}
                       <span>{slice.staffName}</span>
                       <span
-                        className={`rounded px-2 py-0 text-2xs font-medium ${
+                        className={`rounded px-1.5 py-0 text-2xs font-medium ${
                           isSelected
                             ? 'bg-white/20 text-white'
                             : isMainPic
@@ -1092,10 +1127,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleSliceComplete(activeSliceObj.staffName)}
-                className={`inline-flex items-center gap-1 rounded-md border px-3 py-1 text-2xs font-semibold transition cursor-pointer ${
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-2xs font-semibold transition cursor-pointer ${
                   activeSliceObj.isCompleted
                     ? 'border-positive/30 bg-positive-soft text-positive hover:bg-positive-soft'
-                    : 'border-line-strong bg-white text-ink-2 hover:bg-sunken'
+                    : 'border-line-strong bg-surface text-ink-2 hover:bg-sunken'
                 }`}
               >
                 <CheckCircle2 className={`h-3.5 w-3.5 ${activeSliceObj.isCompleted ? 'text-positive' : 'text-ink-3'}`} />
@@ -1115,7 +1150,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('ALL')}
-                className="rounded-md border border-accent/30 bg-accent-soft px-3 py-1 text-2xs font-semibold text-accent-hover hover:bg-accent-soft transition cursor-pointer"
+                className="rounded-md border border-accent/30 bg-accent-soft px-2.5 py-1 text-2xs font-semibold text-accent-hover hover:bg-accent-soft transition cursor-pointer"
               >
                 Xem tất cả
               </button>
@@ -1153,7 +1188,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   </div>
                   <div className="shrink-0 text-right">
                     {isEmpty ? (
-                      <span className="text-2xs text-slate-300">—</span>
+                      <span className="text-2xs text-ink-3/50">—</span>
                     ) : isAllMatched ? (
                       <span className="inline-flex items-center gap-1 text-2xs font-semibold text-positive">
                         <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
@@ -1173,15 +1208,15 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-2xs tabular-nums pt-0.5">
-                  <div className="rounded-lg bg-canvas border border-line/80 px-3 py-2 flex items-center justify-between">
+                  <div className="rounded-lg bg-canvas border border-line/80 px-3 py-1.5 flex items-center justify-between">
                     <span className="text-ink-3">SL (4.1 / 4.1.1):</span>
                     <span>
                       <span className="text-ink-2">{fmt(row.refQty)}</span>
-                      <span className="text-slate-300 mx-1">/</span>
+                      <span className="text-ink-3/40 mx-1">/</span>
                       <strong className="text-accent-hover">{fmt(row.plannedQty)}</strong>
                     </span>
                   </div>
-                  <div className="rounded-lg bg-accent-soft/30 border border-accent-soft px-3 py-2 flex items-center justify-between">
+                  <div className="rounded-lg bg-accent-soft/30 border border-accent-soft px-3 py-1.5 flex items-center justify-between">
                     <span className="text-ink-3">Net:</span>
                     <strong className="text-accent-hover">
                       {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : '0đ'}
@@ -1199,227 +1234,253 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           </div>
         </div>
 
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-line bg-canvas/50 text-2xs font-semibold text-ink-3">
-                <th className="px-4 py-2 text-left">Hạng mục</th>
-                <th className="px-3 py-2 text-left">Phụ trách</th>
-                <th className="border-l border-line px-3 py-2 text-right w-[120px]">SL 4.1</th>
-                <th className="px-3 py-2 text-right w-[120px] bg-accent-soft/30 text-accent-hover">SL 4.1.1</th>
-                <th className="border-l border-line px-3 py-2 text-right w-[150px]">Net 4.1</th>
-                <th className="px-3 py-2 text-right w-[150px] bg-accent-soft/30 text-accent-hover">Net 4.1.1</th>
-                <th className="border-l border-line px-4 py-2 text-right w-[140px]">Đối soát</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {overviewMatrixRows.map(row => {
-                const qtyDiff = row.plannedQty - row.refQty;
-                const budDiff = row.plannedBudgetNet - row.refBudgetNet;
-                const isQtyMatched = qtyDiff === 0;
-                const isBudMatched = Math.abs(budDiff) <= Math.max(1000, row.refBudgetNet * 0.005);
-                const isAllMatched = isQtyMatched && isBudMatched;
-                const isEmpty = row.plannedQty === 0 && row.refQty === 0 && row.plannedBudgetNet === 0 && row.refBudgetNet === 0;
-                const isFocused = activeTab === row.id;
+        {/* DESKTOP (>= 768px): BỐ CỤC SPLIT 2 CỘT (TRÁI: MA TRẬN 5 HẠNG MỤC · PHẢI: CHỈ TIÊU DOANH SỐ GMV & HIỆU QUẢ) */}
+        <div className="hidden md:grid md:grid-cols-12">
+          <div className="md:col-span-12 xl:col-span-8 overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-line bg-canvas/50 text-2xs font-semibold text-ink-3">
+                  <th className="px-3.5 py-1.5 text-left">Hạng mục</th>
+                  <th className="px-3 py-1.5 text-left">Phụ trách</th>
+                  <th className="border-l border-line px-2.5 py-1.5 text-right w-[96px]">SL 4.1</th>
+                  <th className="px-2.5 py-1.5 text-right w-[96px] bg-accent-soft/30 text-accent-hover">SL 4.1.1</th>
+                  <th className="border-l border-line px-3 py-1.5 text-right w-[124px]">Net 4.1</th>
+                  <th className="px-3 py-1.5 text-right w-[124px] bg-accent-soft/30 text-accent-hover">Net 4.1.1</th>
+                  <th className="border-l border-line px-3.5 py-1.5 text-right w-[124px]">Đối soát</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {overviewMatrixRows.map(row => {
+                  const qtyDiff = row.plannedQty - row.refQty;
+                  const budDiff = row.plannedBudgetNet - row.refBudgetNet;
+                  const isQtyMatched = qtyDiff === 0;
+                  const isBudMatched = Math.abs(budDiff) <= Math.max(1000, row.refBudgetNet * 0.005);
+                  const isAllMatched = isQtyMatched && isBudMatched;
+                  const isEmpty = row.plannedQty === 0 && row.refQty === 0 && row.plannedBudgetNet === 0 && row.refBudgetNet === 0;
+                  const isFocused = activeTab === row.id;
 
-                return (
-                  <tr
-                    key={row.id}
-                    onClick={() => handleSelectWorkstreamFromOverview(row.id)}
-                    className={`cursor-pointer transition ${
-                      isFocused
-                        ? 'border-l-2 border-l-accent bg-accent-soft/70'
-                        : 'hover:bg-canvas/70'
-                    }`}
-                  >
-                    <td className="px-4 py-2 align-middle">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-ink">{row.title}</span>
-                        {row.extraTag && (
-                          <span className="rounded bg-sunken px-2 py-0.5 text-2xs font-medium text-ink-2">
-                            {row.extraTag}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      <span className="text-ink-2 font-medium">{row.picText}</span>
-                    </td>
-                    <td className="border-l border-line px-3 py-2 text-right align-middle tabular-nums text-ink-2">
-                      {row.refQty > 0 ? (
-                        <>
-                          <span className="font-semibold text-ink">{fmt(row.refQty)}</span>{' '}
-                          <span className="text-2xs text-ink-3">{row.unitLabel}</span>
-                        </>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right align-middle tabular-nums bg-accent-soft/20">
-                      {row.plannedQty > 0 ? (
-                        <>
-                          <span className="font-semibold text-ink">{fmt(row.plannedQty)}</span>{' '}
-                          <span className="text-2xs text-ink-3">{row.unitLabel}</span>
-                        </>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
-                    </td>
-                    <td className="border-l border-line px-3 py-2 text-right align-middle tabular-nums text-ink-2">
-                      {row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-3 py-2 text-right align-middle tabular-nums font-semibold text-accent-hover bg-accent-soft/20">
-                      {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : <span className="text-slate-300 font-normal">—</span>}
-                    </td>
-                    <td className="border-l border-line px-4 py-2 text-right align-middle tabular-nums">
-                      {isEmpty ? (
-                        <span className="text-slate-300">—</span>
-                      ) : isAllMatched ? (
-                        <span className="inline-flex items-center gap-1 text-2xs font-semibold text-positive">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
-                        </span>
-                      ) : (
-                        <div className="inline-flex flex-col items-end gap-0.5 text-2xs font-semibold">
-                          <div className="inline-flex flex-wrap items-center justify-end gap-2">
-                            {!isQtyMatched && (
-                              <span className={qtyDiff > 0 ? 'text-critical' : 'text-warning'}>
-                                {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)} {row.unitLabel}
-                              </span>
-                            )}
-                            {!isBudMatched && (
-                              <span className={budDiff > 0 ? 'text-critical' : 'text-warning'}>
-                                {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
-                              </span>
-                            )}
-                          </div>
-                          {!isBudMatched && isPreVatPitIncludedBudget(row.plannedBudgetNet, row.refBudgetNet) && (
-                            <span className="rounded bg-warning-soft border border-warning/30 px-2 py-0.5 text-2xs font-medium text-warning">
-                              Giá trước VAT (chưa trừ 10% TNCN)
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => handleSelectWorkstreamFromOverview(row.id)}
+                      className={`cursor-pointer transition ${
+                        isFocused
+                          ? 'border-l-2 border-l-accent bg-accent-soft/70'
+                          : 'hover:bg-canvas/70'
+                      }`}
+                    >
+                      <td className="px-3.5 py-1.5 align-middle">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-ink">{row.title}</span>
+                          {row.extraTag && (
+                            <span className="rounded bg-sunken px-1.5 py-0.5 text-2xs font-medium text-ink-2">
+                              {row.extraTag}
                             </span>
                           )}
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr
-                onClick={() => setActiveTab('ALL')}
-                className="cursor-pointer border-t border-line bg-canvas/90 font-semibold text-ink hover:bg-sunken/80 transition"
-              >
-                <td className="px-4 py-2" colSpan={2}>
-                  Tổng cộng
-                </td>
-                <td className="border-l border-line px-3 py-2 text-right tabular-nums">
-                  {fmt(overviewGrandTotals.refQty)}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums text-accent-hover bg-accent-soft/40">
-                  {fmt(overviewGrandTotals.plannedQty)}
-                </td>
-                <td className="border-l border-line px-3 py-2 text-right tabular-nums">
-                  {fmt(overviewGrandTotals.refBudgetNet)}đ
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums text-accent-hover bg-accent-soft/40">
-                  {fmt(overviewGrandTotals.plannedBudgetNet)}đ
-                </td>
-                <td className="border-l border-line px-4 py-2 text-right tabular-nums">
-                  {overviewGrandTotals.plannedQty === overviewGrandTotals.refQty &&
-                  Math.abs(overviewGrandTotals.plannedBudgetNet - overviewGrandTotals.refBudgetNet) <= 2000 ? (
-                    <span className="inline-flex items-center gap-1 text-positive">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
-                    </span>
-                  ) : (
-                    <span className="text-warning inline-flex items-center gap-1">
-                      <AlertTriangle className="h-3.5 w-3.5" /> Lệch
-                    </span>
-                  )}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+                      </td>
+                      <td className="px-3 py-1.5 align-middle">
+                        <span className="text-ink-2 font-medium">{row.picText}</span>
+                      </td>
+                      <td className="border-l border-line px-2.5 py-1.5 text-right align-middle tabular-nums text-ink-2">
+                        {row.refQty > 0 ? (
+                          <>
+                            <span className="font-semibold text-ink">{fmt(row.refQty)}</span>{' '}
+                            <span className="text-2xs text-ink-3">{row.unitLabel}</span>
+                          </>
+                        ) : (
+                          <span className="text-ink-3/40">—</span>
+                        )}
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right align-middle tabular-nums bg-accent-soft/20">
+                        {row.plannedQty > 0 ? (
+                          <>
+                            <span className="font-semibold text-ink">{fmt(row.plannedQty)}</span>{' '}
+                            <span className="text-2xs text-ink-3">{row.unitLabel}</span>
+                          </>
+                        ) : (
+                          <span className="text-ink-3/40">—</span>
+                        )}
+                      </td>
+                      <td className="border-l border-line px-3 py-1.5 text-right align-middle tabular-nums text-ink-2">
+                        {row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : <span className="text-ink-3/40">—</span>}
+                      </td>
+                      <td className="px-3 py-1.5 text-right align-middle tabular-nums font-semibold text-accent-hover bg-accent-soft/20">
+                        {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : <span className="text-ink-3/40 font-normal">—</span>}
+                      </td>
+                      <td className="border-l border-line px-3.5 py-1.5 text-right align-middle tabular-nums">
+                        {isEmpty ? (
+                          <span className="text-ink-3/40">—</span>
+                        ) : isAllMatched ? (
+                          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-positive">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
+                          </span>
+                        ) : (
+                          <div className="inline-flex flex-col items-end gap-0.5 text-2xs font-semibold">
+                            <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                              {!isQtyMatched && (
+                                <span className={qtyDiff > 0 ? 'text-critical' : 'text-warning'}>
+                                  {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)} {row.unitLabel}
+                                </span>
+                              )}
+                              {!isBudMatched && (
+                                <span className={budDiff > 0 ? 'text-critical' : 'text-warning'}>
+                                  {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
+                                </span>
+                              )}
+                            </div>
+                            {!isBudMatched && isPreVatPitIncludedBudget(row.plannedBudgetNet, row.refBudgetNet) && (
+                              <span className="rounded bg-warning-soft border border-warning/30 px-1.5 py-0 text-2xs font-medium text-warning">
+                                Giá trước VAT
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr
+                  onClick={() => setActiveTab('ALL')}
+                  className="cursor-pointer border-t border-line bg-canvas/90 font-semibold text-ink hover:bg-sunken/80 transition"
+                >
+                  <td className="px-3.5 py-1.5" colSpan={2}>
+                    Tổng cộng
+                  </td>
+                  <td className="border-l border-line px-2.5 py-1.5 text-right tabular-nums">
+                    {fmt(overviewGrandTotals.refQty)}
+                  </td>
+                  <td className="px-2.5 py-1.5 text-right tabular-nums text-accent-hover bg-accent-soft/40">
+                    {fmt(overviewGrandTotals.plannedQty)}
+                  </td>
+                  <td className="border-l border-line px-3 py-1.5 text-right tabular-nums">
+                    {fmt(overviewGrandTotals.refBudgetNet)}đ
+                  </td>
+                  <td className="px-3 py-1.5 text-right tabular-nums text-accent-hover bg-accent-soft/40">
+                    {fmt(overviewGrandTotals.plannedBudgetNet)}đ
+                  </td>
+                  <td className="border-l border-line px-3.5 py-1.5 text-right tabular-nums">
+                    {overviewGrandTotals.plannedQty === overviewGrandTotals.refQty &&
+                    Math.abs(overviewGrandTotals.plannedBudgetNet - overviewGrandTotals.refBudgetNet) <= 2000 ? (
+                      <span className="inline-flex items-center gap-1 text-positive">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
+                      </span>
+                    ) : (
+                      <span className="text-warning inline-flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Lệch
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
 
-        {ref41?.gmvTargets && (
-          <div className="border-t border-line bg-canvas/60 px-4 py-2">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-2xs">
-              <div className="rounded-lg border border-line bg-white px-3 py-2">
-                <div className="text-ink-3">NMV mục tiêu</div>
-                <div className="font-semibold tabular-nums text-ink">
-                  {ref41.gmvTargets.nmvPlan > 0 ? `${fmt(ref41.gmvTargets.nmvPlan)}đ` : '—'}
+          {/* CỘT PHẢI (4/12): CHỈ TIÊU DOANH SỐ GMV & HIỆU QUẢ ĐẦU TƯ 4.1 */}
+          <div className="md:col-span-12 xl:col-span-4 border-t xl:border-t-0 xl:border-l border-line bg-canvas/40 p-3 flex flex-col justify-between gap-2 text-2xs">
+            <div className="flex items-start justify-between gap-2 pb-2 border-b border-line">
+              <div>
+                <div className="text-ink-3 font-medium">NMV mục tiêu (4.1)</div>
+                <div className="text-sm font-semibold tabular-nums text-ink mt-0.5">
+                  {gmvSummary.nmvPlan > 0 ? `${fmt(gmvSummary.nmvPlan)}đ` : '—'}
                 </div>
               </div>
-              <div className="rounded-lg border border-line bg-white px-3 py-2">
-                <div className="text-ink-3">GMV Affiliate</div>
-                <div className="font-semibold tabular-nums text-positive">
-                  {ref41.gmvTargets.videoAff > 0 ? `${fmt(ref41.gmvTargets.videoAff)}đ` : '—'}
+              <div className="flex items-center gap-1.5 text-right">
+                <div className="rounded-md bg-surface border border-line px-2 py-1">
+                  <span className="text-ink-3 block">CIR dự kiến</span>
+                  <strong className={`tabular-nums ${gmvSummary.cirPct > 35 ? 'text-warning' : 'text-ink'}`}>
+                    {gmvSummary.cirPct > 0 ? `${gmvSummary.cirPct.toFixed(1)}%` : '—'}
+                  </strong>
                 </div>
-              </div>
-              <div className="rounded-lg border border-line bg-white px-3 py-2">
-                <div className="text-ink-3">GMV Kênh Brand</div>
-                <div className="font-semibold tabular-nums text-accent-hover">
-                  {ref41.gmvTargets.videoSelf > 0 ? `${fmt(ref41.gmvTargets.videoSelf)}đ` : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border border-line bg-white px-3 py-2">
-                <div className="text-ink-3">GMV Live Brand</div>
-                <div className="font-semibold tabular-nums text-positive">
-                  {ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv > 0
-                    ? `${fmt(ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv)}đ`
-                    : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border border-warning/30 bg-warning-soft/50 px-3 py-2">
-                <div className="text-warning">GMV 30 ngày trước</div>
-                <div className="font-semibold tabular-nums text-warning">
-                  {ref41.gmvTargets.lastMonth30d > 0 ? `${fmt(ref41.gmvTargets.lastMonth30d)}đ` : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border border-positive/30 bg-positive-soft/50 px-3 py-2">
-                <div className="text-positive">GMV 30 ngày này</div>
-                <div className="font-semibold tabular-nums text-positive">
-                  {ref41.gmvTargets.thisMonth30d > 0 ? `${fmt(ref41.gmvTargets.thisMonth30d)}đ` : '—'}
+                <div className="rounded-md bg-surface border border-line px-2 py-1">
+                  <span className="text-ink-3 block">ROI mục tiêu</span>
+                  <strong className="tabular-nums text-positive">
+                    {gmvSummary.roiVal > 0 ? `${gmvSummary.roiVal.toFixed(2)}x` : '—'}
+                  </strong>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* TẦNG 2: BẢNG CHI TIẾT PHÂN RÃ TUẦN 4.1.1 (CHUẨN SPREADSHEET) */}
-      <div ref={detailAnchorRef} className="space-y-3">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {!effectiveReadOnly && (
-              <div className="flex flex-wrap items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleDistributeFromStep2('EVEN')}
-                  className="rounded-lg border border-line bg-white px-3 py-1 text-2xs font-semibold text-ink-2 hover:bg-canvas transition cursor-pointer"
-                >
-                  Chia đều
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
-                  className="rounded-lg border border-line bg-white px-3 py-1 text-2xs font-semibold text-ink-2 hover:bg-canvas transition cursor-pointer"
-                >
-                  Dồn W2–W3
-                </button>
+            {/* Phân bổ GMV theo kênh (Thanh tỷ trọng + lưới 3 cột gọn) */}
+            <div className="space-y-1.5">
+              <div className="h-1.5 w-full rounded-full bg-sunken overflow-hidden flex">
+                {gmvSummary.affPct > 0 && (
+                  <div
+                    className="h-full bg-positive"
+                    style={{ width: `${gmvSummary.affPct}%` }}
+                    title={`GMV Affiliate: ${fmt(gmvSummary.videoAff)}đ`}
+                  />
+                )}
+                {gmvSummary.selfPct > 0 && (
+                  <div
+                    className="h-full bg-accent"
+                    style={{ width: `${gmvSummary.selfPct}%` }}
+                    title={`GMV Kênh Brand: ${fmt(gmvSummary.videoSelf)}đ`}
+                  />
+                )}
+                {gmvSummary.livePct > 0 && (
+                  <div
+                    className="h-full bg-warning"
+                    style={{ width: `${gmvSummary.livePct}%` }}
+                    title={`GMV Live Brand: ${fmt(gmvSummary.liveTotal)}đ`}
+                  />
+                )}
               </div>
-            )}
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-1 text-2xs font-medium text-ink-2">
-              <input type="checkbox" checked={hideEmptyRows} onChange={e => setHideEmptyRows(e.target.checked)} />
-              Ẩn dòng trống
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-1 text-2xs font-medium text-ink-2">
-              <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
-              Nhập theo Gross
-            </label>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="rounded-lg border border-line bg-surface px-2.5 py-1.5">
+                  <div className="flex items-center gap-1 text-ink-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-positive shrink-0" />
+                    <span className="truncate">GMV Affiliate</span>
+                  </div>
+                  <div className="font-semibold tabular-nums text-positive mt-0.5 truncate">
+                    {gmvSummary.videoAff > 0 ? `${fmt(gmvSummary.videoAff)}đ` : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-line bg-surface px-2.5 py-1.5">
+                  <div className="flex items-center gap-1 text-ink-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" />
+                    <span className="truncate">GMV Brand</span>
+                  </div>
+                  <div className="font-semibold tabular-nums text-accent-hover mt-0.5 truncate">
+                    {gmvSummary.videoSelf > 0 ? `${fmt(gmvSummary.videoSelf)}đ` : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-line bg-surface px-2.5 py-1.5">
+                  <div className="flex items-center gap-1 text-ink-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-warning shrink-0" />
+                    <span className="truncate">GMV Live</span>
+                  </div>
+                  <div className="font-semibold tabular-nums text-ink mt-0.5 truncate">
+                    {gmvSummary.liveTotal > 0 ? `${fmt(gmvSummary.liveTotal)}đ` : '—'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Đối chiếu GMV 30 ngày & Định mức KL4+ trên 1 dòng gọn */}
+            <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-line/80">
+              <div className="rounded-lg border border-warning/30 bg-warning-soft/40 px-2.5 py-1 flex items-center justify-between gap-1">
+                <span className="text-warning truncate">GMV 30N trước</span>
+                <strong className="tabular-nums text-warning shrink-0">
+                  {gmvSummary.lastMonth30d > 0 ? `${fmt(gmvSummary.lastMonth30d)}đ` : '—'}
+                </strong>
+              </div>
+              <div className="rounded-lg border border-positive/30 bg-positive-soft/40 px-2.5 py-1 flex items-center justify-between gap-1">
+                <span className="text-positive truncate">GMV 30N này</span>
+                <strong className="tabular-nums text-positive shrink-0">
+                  {gmvSummary.thisMonth30d > 0 ? `${fmt(gmvSummary.thisMonth30d)}đ` : '—'}
+                </strong>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
+      {/* TẦNG 2: BẢNG CHI TIẾT PHÂN RÃ TUẦN 4.1.1 (THANH CÔNG CỤ GỘP TRỰC TIẾP VÀO ĐẦU BẢNG) */}
+      <div ref={detailAnchorRef} className="space-y-2.5">
         {!effectiveReadOnly && isEmptyBreakdown && hasStep2Items && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent-soft/70 px-4 py-2 text-xs text-accent-hover">
             <span className="font-medium">Chưa có số phân rã tuần</span>
@@ -1434,7 +1495,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               <button
                 type="button"
                 onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
-                className="rounded-md border border-accent/30 bg-white px-3 py-1 text-2xs font-semibold text-accent-hover hover:bg-accent-soft transition cursor-pointer"
+                className="rounded-md border border-accent/30 bg-surface px-3 py-1 text-2xs font-semibold text-accent-hover hover:bg-accent-soft transition cursor-pointer"
               >
                 Dồn W2–W3
               </button>
@@ -1442,60 +1503,113 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           </div>
         )}
 
-        {visibleSections.length > 0 && (
-          <div className="space-y-2">
-            {(activeTab === 'ALL' || activeTab === 'CAST_KL') && ref41 && (ref41.kl4PlusTarget || 0) > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent-soft/60 px-3 py-2 text-xs text-accent-hover">
-                <span className="font-semibold">Video KL4–KL7</span>
-                <span className="font-semibold tabular-nums">
-                  {fmt(kl4PlusPlanned)} / {fmt(ref41.kl4PlusTarget || 0)} video (
-                  {kl4PlusPlanned >= (ref41.kl4PlusTarget || 0) ? (
-                    <span className="text-positive">Đạt</span>
-                  ) : (
-                    <span className="text-warning">
-                      Thiếu {fmt((ref41.kl4PlusTarget || 0) - kl4PlusPlanned)}
-                    </span>
-                  )}
-                  )
-                </span>
+        <div className="rounded-xl border border-line bg-surface shadow-2xs overflow-hidden">
+          {/* Header tích hợp của Bảng Phân Rã Tuần: Trái = Tabs chọn nhanh hạng mục + KL4+ · Phải = Công cụ chia tuần & lọc hiển thị */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-canvas/80 px-3.5 py-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className="inline-flex flex-wrap items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5 text-2xs">
+                {(
+                  [
+                    { key: 'ALL', label: 'Tất cả hạng mục' },
+                    { key: 'CAST_KL', label: '1. Cast trả phí' },
+                    { key: 'FOC_SAMPLE', label: '2. Mẫu FOC' },
+                    { key: 'SELF_CHANNEL', label: '3. Kênh Brand' },
+                    { key: 'MULTI_PLATFORM', label: '4. Đa sàn' },
+                    { key: 'LIVE_GMV', label: '5. Livestream' },
+                  ] as { key: WorkstreamTab; label: string }[]
+                ).map(t => {
+                  const on = activeTab === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setActiveTab(t.key)}
+                      className={`rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
+                        on ? 'bg-primary text-white' : 'text-ink-2 hover:bg-sunken'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
               </div>
-            )}
 
-            <div className="overflow-x-auto touch-pan-x rounded-xl border border-line bg-white shadow-2xs">
+              {ref41 && (ref41.kl4PlusTarget || 0) > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-accent/30 bg-accent-soft/60 px-2.5 py-0.5 text-2xs font-semibold text-accent-hover tabular-nums">
+                  <span>KL4–KL7: {fmt(kl4PlusPlanned)}/{fmt(ref41.kl4PlusTarget || 0)} video</span>
+                  <span className={kl4PlusPlanned >= (ref41.kl4PlusTarget || 0) ? 'text-positive' : 'text-warning'}>
+                    ({kl4PlusPlanned >= (ref41.kl4PlusTarget || 0) ? 'Đạt' : `Thiếu ${fmt((ref41.kl4PlusTarget || 0) - kl4PlusPlanned)}`})
+                  </span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 text-2xs">
+              {!effectiveReadOnly && (
+                <div className="flex flex-wrap items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleDistributeFromStep2('EVEN')}
+                    className="rounded-md border border-line bg-surface px-2.5 py-1 font-semibold text-ink-2 hover:bg-sunken transition cursor-pointer"
+                  >
+                    Chia đều
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
+                    className="rounded-md border border-line bg-surface px-2.5 py-1 font-semibold text-ink-2 hover:bg-sunken transition cursor-pointer"
+                  >
+                    Dồn W2–W3
+                  </button>
+                </div>
+              )}
+              <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 font-medium text-ink-2 hover:bg-sunken">
+                <input type="checkbox" checked={hideEmptyRows} onChange={e => setHideEmptyRows(e.target.checked)} />
+                <span>Ẩn dòng trống</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 font-medium text-ink-2 hover:bg-sunken">
+                <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
+                <span>Nhập theo Gross</span>
+              </label>
+            </div>
+          </div>
+
+          {visibleSections.length > 0 && (
+            <div className="overflow-x-auto touch-pan-x">
               <table className="w-full min-w-[1100px] border-collapse text-xs">
                 <thead>
                   <tr>
                     <th
                       rowSpan={2}
-                      className="sticky left-0 z-20 min-w-[105px] max-w-[115px] sm:min-w-[190px] sm:max-w-none border-b border-r border-line bg-canvas px-2 sm:px-3 py-2 text-left font-semibold text-ink"
+                      className="sticky left-0 z-20 min-w-[105px] max-w-[115px] sm:min-w-[180px] sm:max-w-none border-b border-r border-line bg-canvas px-2 sm:px-3 py-1.5 text-left font-semibold text-ink"
                     >
                       Hạng mục
                     </th>
                     <th
                       rowSpan={2}
-                      className="min-w-[88px] border-b border-r border-line bg-canvas px-2 py-2 text-right font-semibold text-ink-3 text-2xs"
+                      className="min-w-[84px] border-b border-r border-line bg-canvas px-2 py-1.5 text-right font-semibold text-ink-3 text-2xs"
                     >
                       Đơn giá TB
                     </th>
                     {rows.map((r, wi) => weekHeader(r, wi))}
                     <th
                       colSpan={2}
-                      className="border-b border-l border-line bg-accent-soft/60 px-2 py-2 text-center font-semibold text-accent-hover"
+                      className="border-b border-l border-line bg-accent-soft/60 px-2 py-1.5 text-center font-semibold text-accent-hover"
                     >
                       Tổng 4.1.1
                     </th>
                     {hasRef && (
                       <th
                         colSpan={2}
-                        className="border-b border-l border-line bg-sunken/80 px-2 py-2 text-center font-semibold text-ink-2"
+                        className="border-b border-l border-line bg-sunken/80 px-2 py-1.5 text-center font-semibold text-ink-2"
                       >
-                        Chỉ tiêu 4.1
+                        Chỉ tiêu 4.1 / Tỷ trọng
                       </th>
                     )}
                     {hasRef && (
                       <th
                         rowSpan={2}
-                        className="min-w-[90px] border-b border-l border-line bg-canvas px-3 py-2 text-right font-semibold text-ink-2"
+                        className="min-w-[90px] border-b border-l border-line bg-canvas px-3 py-1.5 text-right font-semibold text-ink-2"
                       >
                         Đối soát
                       </th>
@@ -1504,26 +1618,26 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   <tr className="border-b border-line bg-canvas/70 text-2xs font-semibold text-ink-3">
                     {rows.map(r => (
                       <React.Fragment key={`sub-${r.week}`}>
-                        <th className="w-[52px] min-w-[52px] border-l border-line px-2 py-1 text-right">
+                        <th className="w-[50px] min-w-[50px] border-l border-line px-2 py-1 text-right">
                           SL
                         </th>
-                        <th className="w-[96px] min-w-[96px] border-l border-line px-2 py-1 text-right">
+                        <th className="w-[92px] min-w-[92px] border-l border-line px-2 py-1 text-right">
                           {grossMode ? 'Gross' : 'Net'}
                         </th>
                       </React.Fragment>
                     ))}
-                    <th className="w-[56px] min-w-[56px] border-l border-line bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
+                    <th className="w-[52px] min-w-[52px] border-l border-line bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
                       SL
                     </th>
-                    <th className="w-[104px] min-w-[104px] border-l border-accent-soft bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
+                    <th className="w-[100px] min-w-[100px] border-l border-accent-soft bg-accent-soft/40 px-2 py-1 text-right text-accent-hover">
                       Net
                     </th>
                     {hasRef && (
                       <>
-                        <th className="w-[56px] min-w-[56px] border-l border-line bg-sunken/50 px-2 py-1 text-right">
+                        <th className="w-[52px] min-w-[52px] border-l border-line bg-sunken/50 px-2 py-1 text-right">
                           SL
                         </th>
-                        <th className="w-[104px] min-w-[104px] border-l border-line/60 bg-sunken/50 px-2 py-1 text-right">
+                        <th className="w-[100px] min-w-[100px] border-l border-line/60 bg-sunken/50 px-2 py-1 text-right">
                           Net
                         </th>
                       </>
@@ -1551,7 +1665,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         <tr className="bg-sunken/80 border-y border-line">
                           <td
                             colSpan={totalColSpan}
-                            className="sticky left-0 px-3 py-2 text-2xs font-semibold text-ink-2"
+                            className="sticky left-0 px-3 py-1 text-2xs font-semibold text-ink-2"
                           >
                             {section}
                           </td>
@@ -1565,13 +1679,20 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                             def.hasQty && def.hasBudget && t.qty > 0 && t.budget > 0
                               ? Math.round(t.budget / t.qty)
                               : 0;
+                          const qtySharePct = secQty > 0 && t.qty > 0 ? Math.round((t.qty / secQty) * 100) : 0;
+                          const budSharePct = secBudget > 0 && t.budget > 0 ? Math.round((t.budget / secBudget) * 100) : 0;
+                          const tierOutRange =
+                            def.kind === 'tier' && def.tier && avgUnit > 0
+                              ? avgUnit < TIER_RANGE[def.tier].min ||
+                                (TIER_RANGE[def.tier].max !== null && avgUnit > TIER_RANGE[def.tier].max!)
+                              : false;
 
                           return (
                             <tr key={def.id} className="border-b border-line hover:bg-canvas/40">
-                              <td className="sticky left-0 z-10 max-w-[115px] sm:max-w-none truncate border-r border-line bg-white px-2 sm:px-3 py-1 font-medium text-ink" title={def.label}>
+                              <td className="sticky left-0 z-10 max-w-[115px] sm:max-w-none truncate border-r border-line bg-surface px-2 sm:px-3 py-0.5 font-medium text-ink" title={def.label}>
                                 {def.label}
                               </td>
-                              <td className="border-r border-line px-2 py-1 text-right tabular-nums text-2xs text-ink-3">
+                              <td className="border-r border-line px-2 py-0.5 text-right tabular-nums text-2xs text-ink-3">
                                 {avgUnit > 0 ? `${fmt(avgUnit)}đ` : '—'}
                               </td>
                               {rows.map((row, wi) => (
@@ -1580,34 +1701,52 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                                     {def.hasQty ? (
                                       renderInput(r, def, wi, 0)
                                     ) : (
-                                      <span className="block h-8 bg-canvas/40" />
+                                      <span className="block h-7 bg-canvas/40" />
                                     )}
                                   </td>
                                   <td className="border-l border-line p-0 align-middle">
                                     {def.hasBudget ? (
                                       renderInput(r, def, wi, 1)
                                     ) : (
-                                      <span className="block h-8 bg-canvas/40" />
+                                      <span className="block h-7 bg-canvas/40" />
                                     )}
                                   </td>
                                 </React.Fragment>
                               ))}
-                              <td className="border-l border-line bg-accent-soft/20 px-2 py-1 text-right tabular-nums font-semibold text-ink">
-                                {def.hasQty ? (t.qty > 0 ? fmt(t.qty) : <span className="text-slate-300 font-normal">—</span>) : ''}
+                              <td className="border-l border-line bg-accent-soft/20 px-2 py-0.5 text-right tabular-nums font-semibold text-ink">
+                                {def.hasQty ? (t.qty > 0 ? fmt(t.qty) : <span className="text-ink-3/40 font-normal">—</span>) : ''}
                               </td>
-                              <td className="border-l border-accent-soft/70 bg-accent-soft/20 px-2 py-1 text-right tabular-nums font-semibold text-accent-hover">
-                                {def.hasBudget ? (t.budget > 0 ? fmt(t.budget) : <span className="text-slate-300 font-normal">—</span>) : ''}
+                              <td className="border-l border-accent-soft/70 bg-accent-soft/20 px-2 py-0.5 text-right tabular-nums font-semibold text-accent-hover">
+                                {def.hasBudget ? (t.budget > 0 ? fmt(t.budget) : <span className="text-ink-3/40 font-normal">—</span>) : ''}
                               </td>
                               {hasRef && (
                                 <>
-                                  <td className="border-l border-line bg-canvas/50 px-2 py-1 text-right tabular-nums text-ink-2">
-                                    {rowRefQty !== null ? (rowRefQty > 0 ? fmt(rowRefQty) : <span className="text-slate-300">—</span>) : ''}
+                                  <td className="border-l border-line bg-canvas/50 px-2 py-0.5 text-right tabular-nums text-ink-2">
+                                    {rowRefQty !== null ? (
+                                      rowRefQty > 0 ? fmt(rowRefQty) : <span className="text-ink-3/40">—</span>
+                                    ) : qtySharePct > 0 ? (
+                                      <span className="text-2xs text-ink-3" title="Tỷ trọng số lượng trong nhóm">{qtySharePct}%</span>
+                                    ) : (
+                                      <span className="text-ink-3/40">—</span>
+                                    )}
                                   </td>
-                                  <td className="border-l border-line bg-canvas/50 px-2 py-1 text-right tabular-nums text-ink-3">
-                                    —
+                                  <td className="border-l border-line bg-canvas/50 px-2 py-0.5 text-right tabular-nums text-ink-3">
+                                    {budSharePct > 0 ? (
+                                      <span className="text-2xs text-ink-3" title="Tỷ trọng ngân sách trong nhóm">{budSharePct}%</span>
+                                    ) : (
+                                      <span className="text-ink-3/40">—</span>
+                                    )}
                                   </td>
-                                  <td className="border-l border-line px-3 py-1 text-right tabular-nums">
-                                    {renderInlineDiff(t.qty, rowRefQty)}
+                                  <td className="border-l border-line px-3 py-0.5 text-right tabular-nums">
+                                    {rowRefQty !== null ? (
+                                      renderInlineDiff(t.qty, rowRefQty)
+                                    ) : tierOutRange ? (
+                                      <span className="text-2xs font-medium text-warning">Lệch khung</span>
+                                    ) : t.qty > 0 || t.budget > 0 ? (
+                                      <span className="text-2xs text-positive">Đạt khung</span>
+                                    ) : (
+                                      <span className="text-ink-3/40">—</span>
+                                    )}
                                   </td>
                                 </>
                               )}
@@ -1616,37 +1755,37 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         })}
                         {defs.length > 1 ? (
                           <tr className="border-b border-line bg-canvas/90 font-semibold text-ink">
-                            <td className="sticky left-0 z-10 border-r border-line bg-canvas px-3 py-2">
+                            <td className="sticky left-0 z-10 border-r border-line bg-canvas px-3 py-1.5">
                               Cộng {section.toLowerCase()}
                             </td>
-                            <td className="border-r border-line px-2 py-2 text-right tabular-nums text-2xs font-normal text-ink-3">
+                            <td className="border-r border-line px-2 py-1.5 text-right tabular-nums text-2xs font-normal text-ink-3">
                               {secQty > 0 && secBudget > 0 ? `${fmt(Math.round(secBudget / secQty))}đ` : '—'}
                             </td>
                             {sub.map((x, wi) => (
                               <React.Fragment key={rows[wi].week}>
-                                <td className="border-l border-line px-2 py-2 text-right tabular-nums">
-                                  {x.qty > 0 ? fmt(x.qty) : <span className="text-slate-300 font-normal">—</span>}
+                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums">
+                                  {x.qty > 0 ? fmt(x.qty) : <span className="text-ink-3/40 font-normal">—</span>}
                                 </td>
-                                <td className="border-l border-line px-2 py-2 text-right tabular-nums">
-                                  {x.budget > 0 ? fmt(x.budget) : <span className="text-slate-300 font-normal">—</span>}
+                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums">
+                                  {x.budget > 0 ? fmt(x.budget) : <span className="text-ink-3/40 font-normal">—</span>}
                                 </td>
                               </React.Fragment>
                             ))}
-                            <td className="border-l border-line bg-accent-soft/50 px-2 py-2 text-right tabular-nums text-accent-hover">
+                            <td className="border-l border-line bg-accent-soft/50 px-2 py-1.5 text-right tabular-nums text-accent-hover">
                               {fmt(secQty)}
                             </td>
-                            <td className="border-l border-accent-soft bg-accent-soft/50 px-2 py-2 text-right tabular-nums text-accent-hover">
+                            <td className="border-l border-accent-soft bg-accent-soft/50 px-2 py-1.5 text-right tabular-nums text-accent-hover">
                               {section === 'Suất FOC (0đ)' ? '0' : fmt(secBudget)}
                             </td>
                             {hasRef && (
                               <>
-                                <td className="border-l border-line bg-sunken/60 px-2 py-2 text-right tabular-nums text-ink-2">
+                                <td className="border-l border-line bg-sunken/60 px-2 py-1.5 text-right tabular-nums text-ink-2">
                                   {qtyRef ? fmt(qtyRef.reference) : '—'}
                                 </td>
-                                <td className="border-l border-line/60 bg-sunken/60 px-2 py-2 text-right tabular-nums text-ink-2">
+                                <td className="border-l border-line/60 bg-sunken/60 px-2 py-1.5 text-right tabular-nums text-ink-2">
                                   {budgetRef ? fmt(budgetRef.reference) : '—'}
                                 </td>
-                                <td className="border-l border-line px-3 py-2 text-right tabular-nums">
+                                <td className="border-l border-line px-3 py-1.5 text-right tabular-nums">
                                   {diffCell(refKeys.qtyKey || refKeys.budgetKey)}
                                 </td>
                               </>
@@ -1659,8 +1798,8 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {(activeTab === 'ALL' || activeTab === 'MULTI_PLATFORM') && (
           <div className="space-y-3">

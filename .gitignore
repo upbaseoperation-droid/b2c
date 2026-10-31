@@ -65,3 +65,15 @@ web-admin/*.xml
 web-admin/tmp-*
 
 .aider*
+
+# Local data and scripts scratch
+.shared-data/
+brand_booking_sheets/
+*.ndjson
+diagrams_ba/
+diagrams_png/
+*.png
+scripts/*.json
+scripts/*.csv
+scripts/*.md
+scripts/

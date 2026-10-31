@@ -7,12 +7,13 @@
  * - Từ danh sách hoặc từ chi tiết thương hiệu có thể drill-down trực tiếp sang Kế hoạch tháng (Plan), Đề xuất KOC, Quản lý Booking hoặc Hồ sơ gian hàng.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileSpreadsheet, HardDrive, Layers, Loader2 } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BookOpen, FileSpreadsheet, HardDrive, Layers, Loader2 } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
 import { UPBASE_BRANDS_MASTER, UPBASE_STORES_MASTER } from '../../lib/importedMasterData';
+import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import {
   buildBrandMonthlyPlanReport,
   type BrandMonthlyPlanReport,
@@ -192,15 +193,41 @@ export function BrandProfilesView({
     return reportMap;
   }, [allStores, rows, selectedMonth, monthlyPlans, deals]);
 
+  // Đồng bộ số lượng sản phẩm giữa bảng danh sách và màn chi tiết (RULE-SYNC-01 & RULE-PERF-01)
+  const productCountByKey = useMemo(() => {
+    const pushByBrandKey = new Map<string, Set<string>>();
+    for (const p of INITIAL_PUSH_PRODUCTS) {
+      const k = brandKey(p.brandName || '');
+      if (!k) continue;
+      let set = pushByBrandKey.get(k);
+      if (!set) {
+        set = new Set<string>();
+        pushByBrandKey.set(k, set);
+      }
+      const idKey = (p.sku || p.productName || p.id || '').trim().toLowerCase();
+      if (idKey) set.add(idKey);
+    }
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const known = new Set<string>(pushByBrandKey.get(r.key) || []);
+      for (const bp of r.profile.products) {
+        const idKey = (bp.skuCode || bp.name || bp.id || '').trim().toLowerCase();
+        if (idKey) known.add(idKey);
+      }
+      counts.set(r.key, known.size);
+    }
+    return counts;
+  }, [rows]);
+
   const matches: Record<Filter, (r: BrandRow) => boolean> = useMemo(() => ({
     ALL: () => true,
     MINE: r => {
       if (!currentUser) return false;
       return isBrandManagedByUser(r.name, currentUser, allStores);
     },
-    HAS_PRODUCTS: r => r.profile.products.length > 0,
+    HAS_PRODUCTS: r => (productCountByKey.get(r.key) || 0) > 0,
     HAS_DOCS: r => r.profile.documents.length > 0 || r.profile.legal.length > 0,
-  }), [currentUser, allStores]);
+  }), [currentUser, allStores, productCountByKey]);
 
   const searched = useMemo(() => rows.filter(r => {
     if (!search.trim()) return true;
@@ -242,23 +269,26 @@ export function BrandProfilesView({
     }
   }
 
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+
   useEffect(() => {
     const onSubView = (e: Event) => {
-      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string; fromUserClick?: boolean }>).detail;
       if (detail?.tab !== 'brand-knowledge') return;
       if (detail.subView === 'PRODUCTS') {
         setDetailTab('PRODUCTS');
-        if (!openKey && visible.length > 0) {
-          setOpenKey(visible[0].key);
-        }
+        setOpenKey(prev => prev || visibleRef.current[0]?.key || null);
       } else if (detail.subView === 'OVERVIEW') {
         setDetailTab('OVERVIEW');
-        setOpenKey(null);
+        if (detail.fromUserClick !== false) {
+          setOpenKey(null);
+        }
       }
     };
     window.addEventListener('upbase-sidebar-subview', onSubView);
     return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
-  }, [openKey, visible]);
+  }, []);
 
   if (loadError && !profiles) {
     return (
@@ -274,8 +304,10 @@ export function BrandProfilesView({
 
   // Danh sách ↔ hồ sơ: ảnh và tên thương hiệu bay giữa hàng bảng và đầu hồ sơ (DESIGN_SYSTEM.md §9).
   const openBrand = (key: string, tab?: BrandDetailTab) => {
-    setDetailTab(tab);
-    openShared(key, () => setOpenKey(key));
+    openShared(key, () => {
+      setDetailTab(tab ?? 'OVERVIEW');
+      setOpenKey(key);
+    });
   };
   const closeBrand = (key: string) => closeShared(key, () => setOpenKey(null));
 
@@ -416,11 +448,12 @@ export function BrandProfilesView({
       width: 150,
       render: r => {
         if (isSyncing) return <Skeleton className="w-20" />;
+        const prodCount = productCountByKey.get(r.key) ?? r.profile.products.length;
         return (
           <div className="leading-tight">
             <div className="text-xs font-medium text-ink flex items-center gap-1.5">
               <HardDrive className="w-3.5 h-3.5 text-ink-3/70" />
-              <span>{r.profile.products.length} sản phẩm · {r.profile.documents.length} tệp</span>
+              <span>{prodCount} sản phẩm · {r.profile.documents.length} tệp</span>
             </div>
           </div>
         );
@@ -429,10 +462,19 @@ export function BrandProfilesView({
     {
       key: 'drilldown',
       header: 'Thao tác',
-      width: 150,
+      width: 210,
       align: 'right',
       render: r => (
-        <div className="inline-flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+        <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 h-6 px-2 rounded text-2xs font-medium text-ink bg-surface hover:bg-sunken border border-line-strong transition-colors shadow-2xs"
+            title={`Mở Hồ sơ thương hiệu của ${r.name}`}
+            onClick={() => openBrand(r.key, 'OVERVIEW')}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-accent" />
+            <span>Hồ sơ</span>
+          </button>
           <button
             type="button"
             className="inline-flex items-center gap-1 h-6 px-2 rounded text-2xs font-medium text-ink bg-surface hover:bg-sunken border border-line-strong transition-colors shadow-2xs"

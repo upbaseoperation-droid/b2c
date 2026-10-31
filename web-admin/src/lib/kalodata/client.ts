@@ -54,7 +54,7 @@ export class KalodataClient {
   ): Promise<KalodataCreatorDetail> {
     const cleanHandle = handle.trim().toLowerCase().replace('@', '');
 
-    // Nếu chưa có API Key, sử dụng bộ dữ liệu thử nghiệm Sandbox
+    // Nếu chưa có API Key, báo lỗi rõ ràng thay vì sinh số liệu ảo
     if (this.config.isSandbox || !this.config.apiKey) {
       if (MOCK_KALODATA_CREATORS[cleanHandle]) {
         const cached = MOCK_KALODATA_CREATORS[cleanHandle];
@@ -68,7 +68,7 @@ export class KalodataClient {
           syncedAt: new Date().toISOString()
         };
       }
-      return generateRealisticMockCreator(cleanHandle, period);
+      throw new Error(`Hệ thống chưa kết nối khóa API Kalodata Enterprise để tra cứu số liệu tự động cho kênh @${cleanHandle}.`);
     }
 
     // Luồng gọi Open API chính thức khi đã có API Key
@@ -92,24 +92,14 @@ export class KalodataClient {
       if (!response.ok) {
         const errorText = await response.text();
         console.warn(`[Kalodata API] Yêu cầu thất bại (${response.status}): ${errorText}`);
-        // Fallback về sandbox để không làm gián đoạn trải nghiệm người dùng
-        const fallback = generateRealisticMockCreator(cleanHandle, period);
-        return {
-          ...fallback,
-          dataSource: 'SANDBOX'
-        };
+        throw new Error(`Dịch vụ Kalodata phản hồi lỗi (${response.status}): ${errorText || 'Không tìm thấy dữ liệu'}`);
       }
 
       const raw = await response.json();
       return this.transformOpenApiResponse(raw, cleanHandle, period);
     } catch (err) {
       console.error('[Kalodata API] Lỗi kết nối máy chủ Kalodata:', err);
-      // Chuyển sang dữ liệu ước tính an toàn
-      const fallback = generateRealisticMockCreator(cleanHandle, period);
-      return {
-        ...fallback,
-        dataSource: 'SANDBOX'
-      };
+      throw err instanceof Error ? err : new Error(String(err));
     }
   }
 
@@ -118,12 +108,7 @@ export class KalodataClient {
    */
   public async discoverCreators(filter: KalodataDiscoverFilter = {}): Promise<KalodataCreatorDetail[]> {
     if (this.config.isSandbox || !this.config.apiKey) {
-      // Sandbox: Trả về danh sách kênh mẫu sẵn có
-      const list = Object.values(MOCK_KALODATA_CREATORS);
-      if (filter.minFollowers) {
-        return list.filter((item) => item.profile.followers >= filter.minFollowers!);
-      }
-      return list;
+      return [];
     }
 
     try {
@@ -148,7 +133,7 @@ export class KalodataClient {
       });
 
       if (!response.ok) {
-        return Object.values(MOCK_KALODATA_CREATORS);
+        return [];
       }
 
       const raw = await response.json();
@@ -156,7 +141,7 @@ export class KalodataClient {
       return items.map((item) => this.transformOpenApiResponse(item, String(item.handle || ''), '30d'));
     } catch (err) {
       console.error('[Kalodata API] Lỗi tìm kiếm creator:', err);
-      return Object.values(MOCK_KALODATA_CREATORS);
+      return [];
     }
   }
 

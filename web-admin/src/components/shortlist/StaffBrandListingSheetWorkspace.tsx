@@ -239,6 +239,32 @@ export interface SheetTabDetailItem {
   index: number;
 }
 
+let cachedServerListingSummary: Record<string, number> | null = null;
+let inflightServerListingSummary: Promise<Record<string, number>> | null = null;
+
+function fetchCachedServerListingSummary(): Promise<Record<string, number>> {
+  if (cachedServerListingSummary) return Promise.resolve(cachedServerListingSummary);
+  if (inflightServerListingSummary) return inflightServerListingSummary;
+  const p = fetch('/api/listing-board?summary=true', { cache: 'no-store' })
+    .then((r) => r.json())
+    .then((data) => {
+      const counts: Record<string, number> = {};
+      if (data?.summary) {
+        for (const [k, v] of Object.entries(data.summary as Record<string, { count: number }>)) {
+          counts[k] = v.count;
+        }
+      }
+      cachedServerListingSummary = counts;
+      return counts;
+    })
+    .catch(() => ({}))
+    .finally(() => {
+      inflightServerListingSummary = null;
+    });
+  inflightServerListingSummary = p;
+  return p;
+}
+
 export const StaffBrandListingSheetWorkspace: React.FC<
   StaffBrandListingSheetWorkspaceProps
 > = ({
@@ -368,21 +394,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     [activeMonth, activeStoreName]
   );
 
-  const [serverSummary, setServerSummary] = useState<Record<string, number>>({});
+  const [serverSummary, setServerSummary] = useState<Record<string, number>>(
+    () => cachedServerListingSummary || {}
+  );
 
   useEffect(() => {
-    fetch('/api/listing-board?summary=true', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.summary) {
-          const counts: Record<string, number> = {};
-          for (const [k, v] of Object.entries(data.summary as Record<string, { count: number }>)) {
-            counts[k] = v.count;
-          }
-          setServerSummary(counts);
-        }
-      })
-      .catch(() => {});
+    if (cachedServerListingSummary) return;
+    let cancelled = false;
+    fetchCachedServerListingSummary().then((counts) => {
+      if (!cancelled && Object.keys(counts).length > 0) {
+        setServerSummary(counts);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const fetchedSheetsRef = useRef<Set<string>>(new Set());

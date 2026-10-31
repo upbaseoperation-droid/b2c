@@ -239,12 +239,12 @@ export default function App() {
     let timerId: number | undefined;
     let timerId2: number | undefined;
     const prefetchIdle = () => {
-      void import('../components/views/InputPlanBreakdownView');
-      void import('../components/views/KocListingBatchHubView');
+      prefetchViewTab('input-plan');
+      prefetchViewTab('koc-listing');
       timerId2 = window.setTimeout(() => {
-        void import('../components/views/ContractManagementView');
-        void import('../components/views/MasterDataHubView');
-      }, 400);
+        prefetchViewTab('contracts');
+        prefetchViewTab('master-data');
+      }, 300);
     };
     if (typeof idleCallback === 'function') {
       cancelId = idleCallback(prefetchIdle, { timeout: 600 });

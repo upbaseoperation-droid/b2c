@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CockpitView } from './views/CockpitView';
 import { DASHBOARD_EXEC_TAB_KEYS } from '../lib/navGroups';
 import { PageActiveContext } from './ui';
+import { prefetchContractBootstrap } from './contracts/api';
+import { fetchClientMonthlyPlans } from '../lib/useMonthlyPlanSync';
 import {
   getKocLegalProfiles,
   mergeLegalDocAttachments,
@@ -164,14 +166,24 @@ export function prefetchViewTab(tab: TabKey) {
       break;
     case 'input-plan':
       void import('./views/InputPlanBreakdownView');
+      void fetchClientMonthlyPlans().catch(() => undefined);
       break;
     case 'koc-listing':
+      void import('./views/KocListingBatchHubView');
+      void import('./shortlist/StaffBrandListingSheetWorkspace');
+      void import('./views/ApprovedBookingListView');
+      break;
     case 'multi-platform-booking':
+      void import('./views/KocListingBatchHubView');
+      void import('./shortlist/MultiPlatformListingWorkspace');
+      break;
     case 'livestream-booking':
       void import('./views/KocListingBatchHubView');
+      void import('./shortlist/LivestreamListingWorkspace');
       break;
     case 'contracts':
       void import('./views/ContractManagementView');
+      void prefetchContractBootstrap().catch(() => undefined);
       break;
     case 'brand-knowledge':
       void import('./views/BrandProfilesView');
@@ -242,10 +254,12 @@ const FrozenTabBody = React.memo(
 function KeepAliveTab({
   tabKey,
   currentTab,
+  idlePreMountDelayMs,
   children,
 }: {
   tabKey: TabKey;
   currentTab: TabKey;
+  idlePreMountDelayMs?: number;
   children: React.ReactNode;
 }) {
   const isActive = tabKey === currentTab;
@@ -253,6 +267,39 @@ function KeepAliveTab({
   if (isActive && !hasMounted) {
     setHasMounted(true);
   }
+
+  useEffect(() => {
+    if (hasMounted || idlePreMountDelayMs === undefined || typeof window === 'undefined') return;
+    let cancelIdleId: number | undefined;
+    const idleCb = (
+      window as unknown as {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+    const timerId = window.setTimeout(() => {
+      if (typeof idleCb === 'function') {
+        cancelIdleId = idleCb(
+          () => {
+            React.startTransition(() => {
+              setHasMounted(true);
+            });
+          },
+          { timeout: 1000 }
+        );
+      } else {
+        React.startTransition(() => {
+          setHasMounted(true);
+        });
+      }
+    }, idlePreMountDelayMs);
+
+    return () => {
+      window.clearTimeout(timerId);
+      const cancelIdle = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+      if (cancelIdle && cancelIdleId !== undefined) cancelIdle(cancelIdleId);
+    };
+  }, [hasMounted, idlePreMountDelayMs]);
 
   if (!hasMounted) return null;
   return (
@@ -547,7 +594,7 @@ export function WorkspaceViewRouter(props: WorkspaceViewRouterProps) {
         />
       </KeepAliveTab>
 
-      <KeepAliveTab tabKey="input-plan" currentTab={activeTab}>
+      <KeepAliveTab tabKey="input-plan" currentTab={activeTab} idlePreMountDelayMs={900}>
         <InputPlanBreakdownView
           currentUser={currentUser}
           storePortfolios={scopedStores}
@@ -590,7 +637,12 @@ export function WorkspaceViewRouter(props: WorkspaceViewRouterProps) {
               ? 'LIVESTREAM'
               : 'TIKTOK';
         return (
-          <KeepAliveTab key={tabKey} tabKey={tabKey} currentTab={activeTab}>
+          <KeepAliveTab
+            key={tabKey}
+            tabKey={tabKey}
+            currentTab={activeTab}
+            idlePreMountDelayMs={tabKey === 'koc-listing' ? 1400 : undefined}
+          >
             <KocListingBatchHubView
               bookingMode={mode}
               listings={kocListings}
@@ -829,7 +881,7 @@ export function WorkspaceViewRouter(props: WorkspaceViewRouterProps) {
         />
       </KeepAliveTab>
 
-      <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
+      <KeepAliveTab tabKey="contracts" currentTab={activeTab} idlePreMountDelayMs={1900}>
         <ContractManagementView
           key={currentUser?.id || 'contracts-root'}
           deals={scopedDeals}

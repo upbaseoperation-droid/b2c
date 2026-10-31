@@ -45,6 +45,7 @@ export interface SidebarSubViewEventDetail {
   tab: TabKey;
   subView?: string;
   navId?: string;
+  fromUserClick?: boolean;
 }
 
 interface NavItem {
@@ -131,6 +132,8 @@ function persistSidebarNavStateToSession() {
   }
 }
 
+const replayedSubViewListeners = new WeakSet<EventListenerOrEventListenerObject>();
+
 function ensureSubViewMountReplayInstalled() {
   if (typeof window === 'undefined') return;
   const win = window as Window & { __upbaseSubViewReplayPatched?: boolean };
@@ -146,7 +149,8 @@ function ensureSubViewMountReplayInstalled() {
   ) {
     if (!listener) return;
     origAddEventListener(type, listener, options);
-    if (type === 'upbase-sidebar-subview') {
+    if (type === 'upbase-sidebar-subview' && !replayedSubViewListeners.has(listener)) {
+      replayedSubViewListeners.add(listener);
       queueMicrotask(() => {
         for (const [tabKey, subView] of Object.entries(activeSubViewByTab)) {
           if (!subView) continue;
@@ -155,6 +159,7 @@ function ensureSubViewMountReplayInstalled() {
               tab: tabKey as TabKey,
               subView,
               navId: activeNavIdByTab[tabKey as TabKey],
+              fromUserClick: false,
             },
           });
           if (typeof listener === 'function') {
@@ -792,6 +797,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         tab: target.key,
         subView: target.subView,
         navId: target.id,
+        fromUserClick: true,
       };
       window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { klFromFee } from '../../lib/klTiers';
 import type {
   KocListingItem,
@@ -12,14 +13,9 @@ import type {
   KocItem,
   BookingDealItem,
 } from '@/lib/types';
-import { Button, PageActions, Tabs } from '../ui';
+import { Button, PageActions, Skeleton, Tabs } from '../ui';
 import { Send } from 'lucide-react';
-import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
-import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
-import { MultiPlatformListingWorkspace } from '../shortlist/MultiPlatformListingWorkspace';
-import { LivestreamListingWorkspace } from '../shortlist/LivestreamListingWorkspace';
 import type { StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
-import { ApprovedBookingListView } from './ApprovedBookingListView';
 import type { ContractDocument } from '../../lib/planDealLink';
 import {
   appendKocsToStaffBrandSheet,
@@ -27,6 +23,48 @@ import {
 } from '@/lib/staffBrandListingSheet';
 import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
+
+function SubWorkspaceSkeleton() {
+  return (
+    <div className="bg-surface border border-line rounded-xl p-4 space-y-3" aria-hidden="true">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-8 w-48 rounded-md" />
+        <Skeleton className="h-8 w-36 rounded-md" />
+      </div>
+      <div className="divide-y divide-line space-y-3 pt-2">
+        {[0, 1, 2, 3, 4].map((r) => (
+          <div key={r} className="grid grid-cols-5 gap-4 pt-3 first:pt-0">
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-full rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const StoreShortlistFilterModal = dynamic(
+  () => import('../shortlist/StoreShortlistFilterModal').then((m) => m.StoreShortlistFilterModal)
+);
+const StaffBrandListingSheetWorkspace = dynamic(
+  () => import('../shortlist/StaffBrandListingSheetWorkspace').then((m) => m.StaffBrandListingSheetWorkspace),
+  { loading: SubWorkspaceSkeleton }
+);
+const MultiPlatformListingWorkspace = dynamic(
+  () => import('../shortlist/MultiPlatformListingWorkspace').then((m) => m.MultiPlatformListingWorkspace),
+  { loading: SubWorkspaceSkeleton }
+);
+const LivestreamListingWorkspace = dynamic(
+  () => import('../shortlist/LivestreamListingWorkspace').then((m) => m.LivestreamListingWorkspace),
+  { loading: SubWorkspaceSkeleton }
+);
+const ApprovedBookingListView = dynamic(
+  () => import('./ApprovedBookingListView').then((m) => m.ApprovedBookingListView),
+  { loading: SubWorkspaceSkeleton }
+);
 
 export interface ListingPlanContext {
   planId?: string;
@@ -607,19 +645,21 @@ export function KocListingBatchHubView({
         />
       )}
 
-      <StoreShortlistFilterModal
-        isOpen={showShortlistModal}
-        onClose={() => setShowShortlistModal(false)}
-        stores={stores}
-        kocs={kocs}
-        deals={deals}
-        existingListings={listings}
-        initialStoreId={matchedStoreObj?.id}
-        initialSalaryGrade={shortlistTargetGrade}
-        activePlan={matchedPlanFinal}
-        currentUserName={currentUserName}
-        onAddToListingBatch={handleAddShortlistToListings}
-      />
+      {showShortlistModal && (
+        <StoreShortlistFilterModal
+          isOpen={showShortlistModal}
+          onClose={() => setShowShortlistModal(false)}
+          stores={stores}
+          kocs={kocs}
+          deals={deals}
+          existingListings={listings}
+          initialStoreId={matchedStoreObj?.id}
+          initialSalaryGrade={shortlistTargetGrade}
+          activePlan={matchedPlanFinal}
+          currentUserName={currentUserName}
+          onAddToListingBatch={handleAddShortlistToListings}
+        />
+      )}
     </div>
   );
 }

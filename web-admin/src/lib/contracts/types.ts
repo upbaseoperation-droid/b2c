@@ -352,6 +352,10 @@ export interface ContractSystemSyncMeta {
   /** Thời điểm nhận sự kiện đồng bộ gần nhất từ contract-system (Bước 13). */
   lastSyncedAt?: string;
   lastWebhookTimestamp?: number;
+  /** Mã băm SHA-256 của payload gửi lên API 3 để nhận biết khi nào dữ liệu hợp đồng thay đổi cần sinh lại file mới. */
+  payloadHash?: string;
+  /** Thông báo lỗi gần nhất từ Contract Service (nếu gọi API 3 hoặc API 4 gặp lỗi). */
+  lastError?: string;
 }
 export interface ContractRecord {
   id: string; title: string; brand: string; partner: string; ownerId: string; ownerName: string;

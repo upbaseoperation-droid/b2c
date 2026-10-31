@@ -220,8 +220,9 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
   // Định mức còn thiếu của Kế hoạch tháng
   const missingQuotas = useMemo(() => {
+    if (!isOpen) return [];
     return computeMissingPlanQuotas(activePlan, existingListings, selectedStore?.storeName);
-  }, [activePlan, existingListings, selectedStore]);
+  }, [isOpen, activePlan, existingListings, selectedStore]);
 
   const totalMissingSlots = useMemo(
     () => missingQuotas.reduce((sum, q) => sum + q.missingQty, 0),

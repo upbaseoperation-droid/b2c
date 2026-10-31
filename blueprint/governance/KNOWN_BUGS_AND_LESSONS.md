@@ -1284,6 +1284,25 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-067 — Bấm Vào Thương Hiệu Trên Màn Hình `Thông Tin Thương Hiệu` Không Mở Được `Hồ Sơ Thương Hiệu` Do Vòng Lặp Phát Lại Sự Kiện `upbase-sidebar-subview` & Thiếu Đồng Bộ Số Liệu Sản Phẩm
+- **Ngày phát hiện:** 01/11/2026 (Người dùng gửi ảnh chụp màn hình `Thông tin thương hiệu` tại `b2c-theta.vercel.app` và phản ánh bấm vào thương hiệu không hiện gì, không thấy màn hình Hồ sơ thương hiệu).
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/BrandProfilesView.tsx`, `web-admin/src/components/brands/BrandProfileDetail.tsx`, `web-admin/src/components/Sidebar.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Vòng lặp tự hủy trạng thái mở hồ sơ (`openKey`) trong microtask (`BrandProfilesView.tsx` & `Sidebar.tsx`):**
+     - Trong `BrandProfilesView.tsx`, `useEffect` đăng ký `window.addEventListener('upbase-sidebar-subview', onSubView)` đặt `[openKey, visible]` trong mảng phụ thuộc.
+     - Trong `Sidebar.tsx`, hàm `ensureSubViewMountReplayInstalled` ghi đè `window.addEventListener` để mỗi khi có listener đăng ký sự kiện `'upbase-sidebar-subview'`, hệ thống tự động phát lại (`queueMicrotask`) trạng thái `activeSubViewByTab['brand-knowledge'] = 'OVERVIEW'`.
+     - Khi người dùng bấm vào bất kỳ dòng thương hiệu nào trên bảng (`openBrand(r.key)`), `openKey` đổi từ `null` sang mã thương hiệu -> React chạy lại `useEffect` do `openKey` thay đổi -> gọi lại `window.addEventListener('upbase-sidebar-subview', onSubView)` -> `Sidebar.tsx` phát lại sự kiện `subView: 'OVERVIEW'` ngay trong microtask kế tiếp -> nhánh `else if (detail.subView === 'OVERVIEW')` gọi `setOpenKey(null)`, đóng sập màn hình `BrandProfileDetail` ngay lập tức trước khi kịp hiển thị.
+  2. **Ẩn thanh Tab phân khu và nút Quay lại khi mở tab `PRODUCTS` & thiếu nút `Hồ sơ` tường minh trên bảng (`BrandProfileDetail.tsx` & `BrandProfilesView.tsx`):**
+     - `BrandProfileDetail.tsx` ẩn nút `Danh bạ thương hiệu` (`onBack`) và ẩn thanh `<Tabs>` khi `initialTab === 'PRODUCTS'`, đồng thời loại bỏ tab `PRODUCTS` và `STORES` khỏi thanh `<Tabs>` của Hồ sơ thương hiệu.
+     - Bảng danh sách tại `BrandProfilesView.tsx` chỉ đếm `r.profile.products.length` (bỏ sót sản phẩm từ `INITIAL_PUSH_PRODUCTS` chưa lưu riêng vào `BrandProfile`), dẫn đến chip `Đã có sản phẩm 0` và cột `Sản phẩm & Tài liệu` báo `0 sản phẩm` lệch với màn chi tiết (`RULE-SYNC-01`).
+- **Cách khắc phục:**
+  1. Trong `Sidebar.tsx`: Bổ sung `WeakSet` (`replayedSubViewListeners`) để chỉ phát lại sự kiện khởi tạo đúng 1 lần khi listener mới mount lần đầu và gắn cờ `fromUserClick: true | false` phân biệt rõ thao tác người dùng bấm menu Sidebar với sự kiện phát lại ngầm.
+  2. Trong `BrandProfilesView.tsx`: Đưa `visible` vào `useRef` (`visibleRef`) để `useEffect` lắng nghe `'upbase-sidebar-subview'` dùng mảng phụ thuộc rỗng `[]` (không bao giờ đăng ký lại khi `openKey` đổi); chỉ đóng hồ sơ (`setOpenKey(null)`) khi `detail.fromUserClick !== false`; bổ sung nút `Hồ sơ` tường minh ở cột `Thao tác` và đồng bộ số lượng sản phẩm từ cả `r.profile.products` lẫn `INITIAL_PUSH_PRODUCTS` (`RULE-SYNC-01`).
+  3. Trong `BrandProfileDetail.tsx`: Luôn hiển thị nút quay lại `Danh bạ thương hiệu` và hiển thị đầy đủ 6 phân khu trên thanh `<Tabs>` (`Định vị & Pháp nhân`, `Sản phẩm trọng tâm`, `Quy chuẩn & pháp lý`, `Quy tắc vận hành`, `Tài liệu & Kho tệp`, `Gian hàng & Booking`).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã rà soát toàn bộ 12 màn hình lắng nghe sự kiện `upbase-sidebar-subview` trên toàn hệ thống, đảm bảo 100% dùng mảng phụ thuộc ổn định và không bị ghi đè trạng thái bởi mount replay.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

@@ -289,15 +289,21 @@ export function recordSigned(r: ContractRecord): { signed: boolean; at: string }
  */
 export function formatContractRecordNumber(r: ContractRecord): string {
   const vals = r.values || {};
+  if (vals['CONTRACT_NO']?.trim()) {
+    return vals['CONTRACT_NO'].trim();
+  }
   const explicitKey = Object.keys(vals).find(
     k => /^(token:)?\[?\s*(số|so)\b.*(hợp đồng|phụ lục|sow)/i.test(k) && (vals[k] || '').trim(),
   );
   if (explicitKey && vals[explicitKey]?.trim()) {
     return vals[explicitKey].trim();
   }
-  const docDate = (vals['token:[dd.mm.yy]'] || '').trim();
-  const brandToken = (vals['token:[BRAND]'] || r.brand || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const kocToken = (vals['token:[ID KOC]'] || r.dealCode || '').trim();
+  const docDate = (vals['CONTRACT_DATE_CODE'] || vals['token:[dd.mm.yy]'] || '').trim();
+  const brandToken = (vals['BRAND_CODE'] || vals['BRAND_NAME'] || vals['token:[BRAND]'] || r.brand || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  const kocToken = (vals['KOC_CODE'] || vals['token:[ID KOC]'] || r.dealCode || '').trim();
   if (docDate && kocToken) {
     if (r.templateId.endsWith('-HDNT')) {
       return `${docDate}/HĐNT/UPBASE-${kocToken}`;
@@ -376,7 +382,7 @@ export function documentsOfJob(deal: PlanDeal, job: DealJob, records: ContractRe
       pool = candidates.filter(
         r =>
           documentOfTemplate(r.templateId) === 'HDNT' &&
-          [r.kocId, r.partner, r.values?.['token:[ID KOC]'], r.values?.['CHANNEL_ID'], r.values?.['KOC_ID']].some(
+          [r.kocId, r.partner, r.values?.['KOC_CODE'], r.values?.['token:[ID KOC]'], r.values?.['CHANNEL_ID'], r.values?.['KOC_ID']].some(
             v => v && normHandle(v) === kocKey
           )
       );
@@ -401,7 +407,7 @@ export function documentsOfDeal(deal: PlanDeal, records: ContractRecord[], frame
       pool = candidates.filter(
         r =>
           documentOfTemplate(r.templateId) === 'HDNT' &&
-          [r.kocId, r.partner, r.values?.['token:[ID KOC]'], r.values?.['CHANNEL_ID'], r.values?.['KOC_ID']].some(
+          [r.kocId, r.partner, r.values?.['KOC_CODE'], r.values?.['token:[ID KOC]'], r.values?.['CHANNEL_ID'], r.values?.['KOC_ID']].some(
             v => v && normHandle(v) === kocKey
           )
       );

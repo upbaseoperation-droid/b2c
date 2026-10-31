@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, rename, open, unlink } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename, open, unlink, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import prisma from '../prisma';
@@ -15,6 +15,13 @@ let pgContractCache: {
   expiresAt: number;
   byId: Map<string, ContractRecord>;
   list: ContractRecord[];
+} | null = null;
+
+let localContractCache: {
+  dir: string;
+  mtimeMs: number;
+  size: number;
+  records: ContractRecord[];
 } | null = null;
 
 function defaultSeedRecords(): ContractRecord[] {
@@ -45,16 +52,45 @@ function mergeWithSeedRecords(existing: ContractRecord[]): ContractRecord[] {
   return all;
 }
 
-async function localRecords(): Promise<ContractRecord[]> {
+async function localRecords(bypassCache = false): Promise<ContractRecord[]> {
+  const dir = directory();
+  const filePath = path.join(dir, 'records.json');
   try {
-    const parsed = JSON.parse(await readFile(path.join(directory(), 'records.json'), 'utf8'));
-    if (Array.isArray(parsed)) {
-      return process.env.CONTRACT_DATA_DIR ? parsed : mergeWithSeedRecords(parsed);
+    if (!bypassCache && localContractCache && localContractCache.dir === dir) {
+      try {
+        const st = await stat(filePath);
+        if (st.mtimeMs === localContractCache.mtimeMs && st.size === localContractCache.size) {
+          return localContractCache.records;
+        }
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT' && localContractCache.mtimeMs === -1) {
+          return localContractCache.records;
+        }
+      }
     }
-    return defaultSeedRecords();
+    const raw = await readFile(filePath, 'utf8');
+    const st = await stat(filePath).catch(() => null);
+    const parsed = JSON.parse(raw);
+    const records = Array.isArray(parsed)
+      ? (process.env.CONTRACT_DATA_DIR ? parsed : mergeWithSeedRecords(parsed))
+      : defaultSeedRecords();
+    localContractCache = {
+      dir,
+      mtimeMs: st ? st.mtimeMs : Date.now(),
+      size: st ? st.size : raw.length,
+      records,
+    };
+    return records;
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
-      return process.env.CONTRACT_DATA_DIR ? [] : defaultSeedRecords();
+      const fallback = process.env.CONTRACT_DATA_DIR ? [] : defaultSeedRecords();
+      localContractCache = {
+        dir,
+        mtimeMs: -1,
+        size: 0,
+        records: fallback,
+      };
+      return fallback;
     }
     throw e;
   }
@@ -179,7 +215,7 @@ export async function saveContract(record: ContractRecord, expected?: number) {
   }
   const temp = path.join(directory(), `${randomUUID()}.tmp`);
   try {
-    const records = await localRecords();
+    const records = [...(await localRecords(true))];
     const index = records.findIndex(r => r.id === next.id);
     requireCondition(!records.some(r => r.id !== next.id && r.signing.some(s => next.signing.some(n => n.documentId === s.documentId))), 'Luồng weSign đã liên kết hồ sơ khác.', 409);
     requireCondition(expected === undefined ? index < 0 : index >= 0 && records[index].revision === expected, 'Hồ sơ đã được người khác cập nhật. Vui lòng tải lại.', 409);
@@ -187,6 +223,7 @@ export async function saveContract(record: ContractRecord, expected?: number) {
     else records[index] = next;
     await writeFile(temp, JSON.stringify(records), { mode: 0o600 });
     await rename(temp, path.join(directory(), 'records.json'));
+    localContractCache = null;
     return next;
   } finally {
     await lock.close();

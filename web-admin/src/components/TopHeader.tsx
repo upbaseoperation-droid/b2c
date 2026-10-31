@@ -4,7 +4,7 @@ import React from 'react';
 import { Menu, Building2, PanelLeftOpen } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
-import { PageActionsSlot } from './ui';
+import { PageActionsSlot, PageHeaderNavSlot } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
 
 interface TopHeaderProps {
@@ -65,6 +65,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <h1 className="text-sm sm:text-base font-semibold text-ink leading-6 tracking-tight whitespace-nowrap shrink-0">{title}</h1>
+        <PageHeaderNavSlot />
       </div>
 
       {/* Khối phải: Phạm vi phân quyền (khi giới hạn phạm vi) & Thao tác trang */}

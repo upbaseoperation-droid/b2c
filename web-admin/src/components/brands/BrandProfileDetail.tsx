@@ -230,13 +230,32 @@ export function BrandProfileDetail({
   };
 
   const [activeTab, setActiveTab] = useState<BrandDetailTab>(
-    initialTab && initialTab !== 'STORES' ? initialTab : 'OVERVIEW',
+    initialTab || 'OVERVIEW',
   );
   const [selectedAngleProductId, setSelectedAngleProductId] = useState<string>('ALL');
   const [liveCatalog, setLiveCatalog] = useState<BrandProductCatalog | null>(null);
 
   const mergedBrandProducts = useMemo<BrandProduct[]>(() => {
-    if (!liveCatalog) return p.products;
+    if (!liveCatalog) {
+      if (p.products.length > 0) return p.products;
+      const bLower = row.name.trim().toLowerCase();
+      return INITIAL_MASTER_PRODUCTS.filter(mp => mp.brandName.trim().toLowerCase() === bLower).map(mp => ({
+        id: mp.id,
+        skuCode: mp.sku || mp.id,
+        name: mp.productName,
+        size: '',
+        priceVnd: mp.originalPrice,
+        commissionOrganicPct: mp.commissionRate,
+        sampleStockStatus: (mp.sampleAvailableCount ?? 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+        pdpUrl: mp.pdpUrl || '',
+        usps: mp.usp ? [mp.usp] : [],
+        mechanism: '',
+        ingredients: [],
+        usageInstruction: '',
+        targetUser: '',
+        contraindications: '',
+      }));
+    }
     const fromCatalog: BrandProduct[] = listAllCatalogProducts(liveCatalog).map(({ group, product }) => {
       const existing = p.products.find(
         bp =>
@@ -270,7 +289,7 @@ export function BrandProfileDetail({
       };
     });
     return fromCatalog.length > 0 ? fromCatalog : p.products;
-  }, [liveCatalog, p.products]);
+  }, [liveCatalog, p.products, row.name]);
   const effectiveProductCount = mergedBrandProducts.length;
 
   const [prevInitialTab, setPrevInitialTab] = useState<BrandDetailTab | undefined>(initialTab);
@@ -711,15 +730,11 @@ export function BrandProfileDetail({
   const missing = missingSections(p);
   const activeMonthOption = PROFILE_MONTH_OPTIONS.find(o => o.value === activeMonth);
 
-  const isProductsDedicatedView = initialTab === 'PRODUCTS';
-
   const navControl = (
     <div className="flex items-center gap-2">
-      {!isProductsDedicatedView && (
-        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-1">
-          {embedded ? 'Quay lại' : 'Danh bạ thương hiệu'}
-        </Button>
-      )}
+      <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-1">
+        {embedded ? 'Quay lại' : 'Danh bạ thương hiệu'}
+      </Button>
       {brandOptions && brandOptions.length > 0 && onSelectBrandKey && (
         <Select
           aria-label="Chọn thương hiệu"
@@ -853,24 +868,24 @@ export function BrandProfileDetail({
         </div>
       </section>
 
-      {/* 3. CÁC PHÂN KHU NGHIỆP VỤ (Ẩn khi mở trực tiếp từ menu 2.2 Sản phẩm trọng tâm) */}
-      {!isProductsDedicatedView && (
-        <Tabs<BrandDetailTab>
-          value={activeTab === 'PRODUCTS' ? 'OVERVIEW' : activeTab}
-          onChange={setActiveTab}
-          items={[
-            { key: 'OVERVIEW', label: 'Định vị' },
-            {
-              key: 'COMPLIANCE',
-              label: 'Quy chuẩn & pháp lý',
-              count: (p.contentRules?.banned.length || 0) + p.legal.length + p.faqs.length,
-              tone: expiredLegalCount > 0 ? 'critical' : 'default',
-            },
-            { key: 'WORKFLOW', label: 'Quy tắc' },
-            { key: 'FILES', label: 'Tài liệu & Kho tệp', count: p.documents.length },
-          ]}
-        />
-      )}
+      {/* 3. CÁC PHÂN KHU NGHIỆP VỤ CỦA HỒ SƠ THƯƠNG HIỆU */}
+      <Tabs<BrandDetailTab>
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { key: 'OVERVIEW', label: 'Định vị & Pháp nhân' },
+          { key: 'PRODUCTS', label: 'Sản phẩm trọng tâm', count: effectiveProductCount },
+          {
+            key: 'COMPLIANCE',
+            label: 'Quy chuẩn & pháp lý',
+            count: (p.contentRules?.banned.length || 0) + p.legal.length + p.faqs.length,
+            tone: expiredLegalCount > 0 ? 'critical' : 'default',
+          },
+          { key: 'WORKFLOW', label: 'Quy tắc vận hành' },
+          { key: 'FILES', label: 'Tài liệu & Kho tệp', count: p.documents.length },
+          { key: 'STORES', label: 'Gian hàng & Booking', count: brandStores.length },
+        ]}
+      />
 
       {/* ===================================================================== */}
       {/* TAB 1: ĐỊNH VỊ & PHÁP NHÂN (BỐ CỤC 2 CỘT)                             */}

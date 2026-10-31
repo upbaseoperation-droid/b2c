@@ -1099,14 +1099,25 @@ export function formatContractServiceFieldValue(
     return cleanNum || '0';
   }
   if (normalizedType === 'date') {
-    const dmyMatch = trimmed.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+    const isoMatch = trimmed.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+    }
+    const dmyMatch = trimmed.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
     if (dmyMatch) {
       const dd = dmyMatch[1].padStart(2, '0');
       const mm = dmyMatch[2].padStart(2, '0');
       const yyyy = dmyMatch[3];
       return `${yyyy}-${mm}-${dd}`;
     }
-    return trimmed;
+    return new Date().toISOString().slice(0, 10);
+  }
+  if (normalizedType === 'phone') {
+    const cleanPhone = trimmed.replace(/[\s.-]+/g, '').replace(/[^\d+]/g, '');
+    return cleanPhone || '0900000000';
+  }
+  if (normalizedType === 'email') {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed.toLowerCase() : 'partner@booking.upbase.vn';
   }
   if (normalizedType === 'checkbox') {
     const lower = trimmed.toLowerCase();
@@ -1232,9 +1243,36 @@ export function mapRecordValuesToTemplateVariables(
       ? `Tạm ứng ${advanceVal} và thanh toán phần còn lại sau khi ký Biên bản nghiệm thu`
       : 'Thanh toán trong vòng 7 ngày làm việc kể từ ngày nghiệm thu');
 
+  const contractDateCode =
+    record.values?.['CONTRACT_DATE_CODE']?.trim() ||
+    `${rawSignDay.padStart(2, '0')}${rawSignMonth.padStart(2, '0')}${normalizedYear}`;
+
+  const fallbackKocShort = partyBName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .split(/\s+/)
+    .map(w => w[0] || '')
+    .join('')
+    .toUpperCase();
+
+  const kocCode =
+    record.values?.['KOC_CODE']?.trim() ||
+    record.kocId?.trim() ||
+    fallbackKocShort ||
+    'KOC';
+
+  const partyBTaxCode =
+    record.values?.['PARTY_B_TAX_CODE']?.trim() ||
+    bySource.taxCode ||
+    record.values?.['src:taxCode']?.trim() ||
+    '';
+
   const vars: Record<string, string> = {
-    // 17 field chuẩn của Contract Service (HDNT-CANHAN)
+    // Các field chuẩn của Contract Service (HDNT-CANHAN & các mẫu mở rộng)
     CONTRACT_NO: record.values?.['CONTRACT_NO']?.trim() || contractCode,
+    CONTRACT_DATE_CODE: contractDateCode,
+    KOC_CODE: kocCode,
     NOW_DAY: rawSignDay,
     NOW_MONTH: rawSignMonth,
     NOW_YEAR: normalizedYear,
@@ -1245,6 +1283,7 @@ export function mapRecordValuesToTemplateVariables(
     PARTY_B_ID_NUMBER: parsedId.idNumber,
     PARTY_B_ID_ISSUE_DATE: parsedId.issueDate,
     PARTY_B_ID_ISSUE_PLACE: parsedId.issuePlace,
+    PARTY_B_TAX_CODE: partyBTaxCode,
     BANK_ACCOUNT_NAME: bankAccountName,
     BANK_ACCOUNT_NUMBER: bankAccountNumber,
     BANK_NAME: bankName,
@@ -1377,9 +1416,12 @@ export function buildContractServicePayload(params: {
     let formatted = formatContractServiceFieldValue(rawCandidate, field.fieldType);
 
     if (!formatted && field.required) {
-      if (field.fieldType === 'number') formatted = '0';
-      else if (field.fieldType === 'date') formatted = new Date().toISOString().slice(0, 10);
-      else if (field.fieldType === 'checkbox') formatted = 'false';
+      const fType = (field.fieldType || 'text').toLowerCase();
+      if (fType === 'number') formatted = '0';
+      else if (fType === 'date') formatted = new Date().toISOString().slice(0, 10);
+      else if (fType === 'checkbox') formatted = 'false';
+      else if (fType === 'email') formatted = 'partner@booking.upbase.vn';
+      else if (fType === 'phone') formatted = '0900000000';
       else formatted = 'Đang cập nhật';
     }
 

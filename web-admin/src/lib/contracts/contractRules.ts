@@ -526,6 +526,7 @@ export function extractSowPaymentScheduleAndAdvance(
   );
   let rawAdv =
     (advField ? v[advField.key] : '') ||
+    v['ADVANCE_AMOUNT'] ||
     v['sowAdvanceAmount'] ||
     v['token:[Số tiền tạm ứng đợt 1]'] ||
     v['token:[advanceAmount]'] ||
@@ -534,7 +535,12 @@ export function extractSowPaymentScheduleAndAdvance(
   if (!rawAdv) {
     for (const [k, val] of Object.entries(v)) {
       const kl = k.toLowerCase();
-      if (kl.includes('tạm ứng lần 1') || kl.includes('tạm ứng đợt 1') || kl.includes('advanceamount')) {
+      if (
+        kl.includes('tạm ứng lần 1') ||
+        kl.includes('tạm ứng đợt 1') ||
+        kl.includes('advanceamount') ||
+        kl.includes('advance_amount')
+      ) {
         if (val) {
           rawAdv = val;
           break;

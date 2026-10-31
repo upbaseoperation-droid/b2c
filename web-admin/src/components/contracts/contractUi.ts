@@ -1703,7 +1703,8 @@ export function prefill(
       return parentValueByTitleContains('điều khoản điều chỉnh') || 'Không có';
     }
     // Bảng nghiệm thu tháng CTV-VID-BBNT & CTV-HDNT (Dòng 1..5)
-    const ctvRowMatch = title.match(/^dòng\s+([1-5])\s*·\s*(.+)$/i);
+    const cleanTitleForCtv = title.replace(/\s*\([a-z0-9_]+\)\s*$/i, '').trim();
+    const ctvRowMatch = cleanTitleForCtv.match(/^dòng\s+([1-5])\s*·\s*(.+)$/i);
     if (ctvRowMatch) {
       const rowIdx = Number(ctvRowMatch[1]) - 1;
       const colName = ctvRowMatch[2].trim().toLowerCase();
