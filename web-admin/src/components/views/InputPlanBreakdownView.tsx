@@ -535,10 +535,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     return planState.items.reduce((sum, item) => sum + item.targetGmv, 0);
   }, [planState.items]);
 
-  // Budget Headroom & Status: Tổng chi phí = Phân rã KOC & kênh + Gói Ads tổng do Growth giao cho Media
+  // Budget Headroom & Status: Đối soát ngân sách B2C (Cast + FOC + Kênh Brand + Đa sàn + Live) với trần 4.1
   const totalAdsBudget = planState.budgetAdsTotal || 0;
   const totalCombinedBudget = totalAllocatedBudget + totalAdsBudget;
-  const budgetHeadroom = planState.totalTargetBudget - totalCombinedBudget;
+  const budgetHeadroom = planState.totalTargetBudget - totalAllocatedBudget;
   const isOverBudget = budgetHeadroom < 0;
 
   // Content Headroom & Status
@@ -2655,7 +2655,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </span>
                       </div>
                       <div className="text-2xs text-ink-3 font-mono truncate">
-                        Đã phân bổ: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
+                        Đã phân bổ 4.1.1: {totalAllocatedContents} video · {formatVndShort(totalAllocatedBudget)}
                       </div>
                     </div>
                     <div className="text-xs font-semibold font-mono text-ink text-right shrink-0">
@@ -3261,7 +3261,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </td>
                         <td className="py-2 px-3 text-right whitespace-nowrap">
                           <span className="text-2xs font-mono text-ink-3">
-                            {layer1Metrics.qtyLivestreamSessions} ca live
+                            {channelTotals.livestream.qty} ca live / {formatVndShort(channelTotals.livestream.budget)}
                           </span>
                         </td>
                       </tr>
@@ -3284,7 +3284,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           {formatVndShort(layer1Metrics.targetNmvTotal)}
                         </td>
                         <td className="py-2 px-3 text-right font-mono text-2xs">
-                          Đã phân bổ: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
+                          Đã phân bổ 4.1.1: {totalAllocatedContents} video · {formatVndShort(totalAllocatedBudget)}
                         </td>
                       </tr>
                     </tfoot>
@@ -4158,13 +4158,22 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
 
           {/* Table Footer with Actions */}
-          <div className="p-4 bg-canvas border-t border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 text-xs font-mono text-ink-2">
+          <div className="px-3 py-2 bg-canvas border-t border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-ink-2">
               <span>Đang hiển thị: <strong className="text-ink">{visibleItems.length}</strong> hạng mục</span>
               <span>•</span>
-              <span>Tổng ngân sách: <strong className="text-accent-hover">{formatVndShort(visibleItems.reduce((s, it) => s + it.totalBudget, 0))}</strong></span>
+              <span>Tổng 4.1.1: <strong className="text-accent-hover">{formatVndShort(visibleItems.reduce((s, it) => s + it.totalBudget, 0))}</strong></span>
               <span>•</span>
-              <span>Số lượng: <strong className="text-ink">{visibleItems.reduce((s, it) => s + it.qty, 0)}</strong> video</span>
+              <span>Số lượng 4.1.1: <strong className="text-ink">{visibleItems.reduce((s, it) => s + it.qty, 0)}</strong> video</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs font-code text-ink-3">
+              <span>Chỉ tiêu 4.1: <strong className="text-ink-2">{planState.totalTargetContents} video · {formatVndShort(planState.totalTargetBudget)}</strong></span>
+              <span>•</span>
+              <span className={Math.abs(budgetHeadroom) <= 1000 && contentHeadroom === 0 ? 'text-positive font-semibold' : 'text-warning font-semibold'}>
+                {Math.abs(budgetHeadroom) <= 1000 && contentHeadroom === 0
+                  ? 'Khớp 100% với 4.1'
+                  : `Lệch 4.1: ${budgetHeadroom > 0 ? `-${formatVndShort(budgetHeadroom)}` : `+${formatVndShort(Math.abs(budgetHeadroom))}`} (${contentHeadroom === 0 ? 'Đủ SL video' : `${contentHeadroom > 0 ? `-${contentHeadroom}` : `+${Math.abs(contentHeadroom)}`} video`})`}
+              </span>
             </div>
           </div>
         </div>

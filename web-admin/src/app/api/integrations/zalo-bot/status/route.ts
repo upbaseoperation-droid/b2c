@@ -12,6 +12,7 @@ import {
   getDebugEvents,
   getSecurityPolicy,
   getReplyConfig,
+  isMockOrTestGroup,
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
@@ -72,11 +73,15 @@ export async function GET(req: NextRequest) {
 
   const combinedMap = new Map<string, any>();
   for (const ev of inMemEvents) {
-    const key = `${ev.time}-${ev.extractedChatId || ev.body?.result?.message?.chat?.id || ''}`;
+    const rawCid = ev.extractedChatId || ev.body?.result?.message?.chat?.id || (ev as any).chatId || '';
+    if (isMockOrTestGroup(rawCid)) continue;
+    const key = `${ev.time}-${rawCid}`;
     combinedMap.set(key, ev);
   }
   for (const ev of persistedEvents) {
-    const key = `${ev.time}-${ev.chatId || ev.extractedChatId || ''}`;
+    const rawCid = ev.chatId || ev.extractedChatId || '';
+    if (isMockOrTestGroup(rawCid)) continue;
+    const key = `${ev.time}-${rawCid}`;
     if (!combinedMap.has(key)) {
       combinedMap.set(key, {
         time: ev.time || new Date().toISOString(),
@@ -106,7 +111,7 @@ export async function GET(req: NextRequest) {
     pingOk,
     botInfo: botInfo || {
       id: '4534079839618724427',
-      display_name: 'Bot tttttttupbase',
+      display_name: 'Upbase B2C Assistant Bot',
       account_name: 'bot.qxQiPkja',
       can_join_groups: true,
     },

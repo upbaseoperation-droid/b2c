@@ -1,9 +1,10 @@
 import { resolveStoreBookingLeader } from './larkPaymentRequestEngine';
-﻿import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
+import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
 import { 
   INITIAL_INPUT_PLAN_ITEMS, 
   autoBalancePlanItems,  
 } from './inputPlanDefaults';
+import { resolveWeekRows, hasBreakdownData, mergeBreakdownItems } from './planBreakdownRules';
 import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from './realB2cPlanData';
 import { REAL_MONTHLY_PLANS_NOV_2026 } from './realLarkPlans202611';
@@ -761,8 +762,13 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
     : enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
   const matchedCamp = basePlan.campaignId ? undefined : findActiveCampaignForBrandInMonth(basePlan.brandName, basePlan.month);
   const matchedPhase = matchedCamp ? getCampaignPhaseForMonth(matchedCamp, basePlan.month) : undefined;
+  const weekRows = resolveWeekRows(basePlan);
+  const syncedItems = hasBreakdownData(weekRows)
+    ? mergeBreakdownItems(basePlan, weekRows)
+    : basePlan.items;
   const out: InputPlanBreakdownState = {
     ...basePlan,
+    items: syncedItems,
     hasCampaign: basePlan.hasCampaign !== undefined ? basePlan.hasCampaign : !!matchedCamp,
     campaignId: basePlan.campaignId ?? matchedCamp?.id,
     campaignCode: basePlan.campaignCode ?? matchedCamp?.code,

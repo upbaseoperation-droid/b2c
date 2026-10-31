@@ -71,12 +71,22 @@ export interface Brand411Summary {
   ttLiveSelfBudget: number;
   ttAdsBudget: number;
   ttTargetGmv: number;
+  ttNmvTarget: number;
+  ttVideoAffGmv: number;
+  ttVideoSelfGmv: number;
+  ttLiveGmv: number;
   spVideos: number;
   spBudget: number;
+  spAffBudget: number;
+  spSelfBudget: number;
   spLiveSessions: number;
   spLiveBudget: number;
   spAdsBudget: number;
   spTargetGmv: number;
+  spNmvTarget: number;
+  spVideoAffGmv: number;
+  spVideoSelfGmv: number;
+  spLiveGmv: number;
   totalNetBudget411: number;
   totalVideos411: number;
 }
@@ -257,6 +267,8 @@ export function extractBrand411Summary(params: {
   }
 
   // 2. Cộng dữ liệu từ các bản 4.1.1 của gian hàng Shopee
+  let spAffBudgetAcc = 0;
+  let spSelfBudgetAcc = 0;
   for (const p of shopeePlans) {
     const effRows = getEffectiveWeekRowsForPlan(p);
     let planSpVideosFromWeeks = 0;
@@ -276,6 +288,8 @@ export function extractBrand411Summary(params: {
       const bTotal = wCastBud + wSelfBud + wMpSpBud;
       target.spVideos += vTotal;
       target.spBudget += bTotal;
+      spAffBudgetAcc += wCastBud + wMpSpBud;
+      spSelfBudgetAcc += wSelfBud;
       target.spLiveSessions +=
         num(r.live?.sessions) +
         num(r.liveSelf?.inhouse3h) +
@@ -298,6 +312,8 @@ export function extractBrand411Summary(params: {
         spItems.reduce((s, it) => s + num(it.totalBudget), 0) ||
         num(p.reference41?.affCostNet) + num(p.reference41?.selfCostNet) ||
         num(p.totalTargetBudget);
+      spAffBudgetAcc += num(p.reference41?.affCostNet) || itemBud;
+      spSelfBudgetAcc += num(p.reference41?.selfCostNet);
       const q4 = splitTo4Weeks(itemQty);
       const b4 = splitTo4Weeks(itemBud);
       q4.forEach((v, idx) => {
@@ -328,18 +344,78 @@ export function extractBrand411Summary(params: {
 
   const spVideos = weeks.reduce((s, w) => s + w.spVideos, 0);
   const spBudget = weeks.reduce((s, w) => s + w.spBudget, 0);
+  const spAffBudget = spAffBudgetAcc + spSelfBudgetAcc > 0 ? spAffBudgetAcc : spBudget;
+  const spSelfBudget = spSelfBudgetAcc;
   const spLiveSessions = weeks.reduce((s, w) => s + w.spLiveSessions, 0);
   const spLiveBudget = weeks.reduce((s, w) => s + w.spLiveBudget, 0);
 
   const tiktokStores = brandStores.filter((s) => !s.platform.toLowerCase().includes('shopee'));
   const shopeeStores = brandStores.filter((s) => s.platform.toLowerCase().includes('shopee'));
 
-  const ttTargetGmv =
-    tiktokPlans.reduce((s, p) => s + num(p.targetGmv), 0) ||
-    tiktokStores.reduce((s, st) => s + num(st.monthlyTargetGmv), 0);
-  const spTargetGmv =
-    shopeePlans.reduce((s, p) => s + num(p.targetGmv), 0) ||
-    shopeeStores.reduce((s, st) => s + num(st.monthlyTargetGmv), 0);
+  const ttNmvTarget =
+    tiktokPlans.reduce(
+      (s, p) =>
+        s +
+        (num(p.reference41?.gmvTargets?.nmvPlan) ||
+          num(p.coreMetricsLayer1?.targetNmvTotal) ||
+          num(p.targetGmv)),
+      0
+    ) || tiktokStores.reduce((s, st) => s + num(st.monthlyTargetGmv), 0);
+  const ttVideoAffGmv = tiktokPlans.reduce(
+    (s, p) =>
+      s +
+      (num(p.reference41?.gmvTargets?.videoAff) ||
+        num(p.coreMetricsLayer1?.targetGmvAffiliate)),
+    0
+  );
+  const ttVideoSelfGmv = tiktokPlans.reduce(
+    (s, p) =>
+      s +
+      (num(p.reference41?.gmvTargets?.videoSelf) ||
+        num(p.coreMetricsLayer1?.targetGmvSelfChannel)),
+    0
+  );
+  const ttLiveGmv = tiktokPlans.reduce(
+    (s, p) =>
+      s +
+      (num(p.reference41?.gmvTargets?.liveInhouse) + num(p.reference41?.gmvTargets?.liveCtv) ||
+        num(p.coreMetricsLayer1?.targetGmvLivestream)),
+    0
+  );
+
+  const spNmvTarget =
+    shopeePlans.reduce(
+      (s, p) =>
+        s +
+        (num(p.reference41?.gmvTargets?.nmvPlan) ||
+          num(p.coreMetricsLayer1?.targetNmvTotal) ||
+          num(p.targetGmv)),
+      0
+    ) || shopeeStores.reduce((s, st) => s + num(st.monthlyTargetGmv), 0);
+  const spVideoAffGmv = shopeePlans.reduce(
+    (s, p) =>
+      s +
+      (num(p.reference41?.gmvTargets?.videoAff) ||
+        num(p.coreMetricsLayer1?.targetGmvAffiliate)),
+    0
+  );
+  const spVideoSelfGmv = shopeePlans.reduce(
+    (s, p) =>
+      s +
+      (num(p.reference41?.gmvTargets?.videoSelf) ||
+        num(p.coreMetricsLayer1?.targetGmvSelfChannel)),
+    0
+  );
+  const spLiveGmv = shopeePlans.reduce(
+    (s, p) =>
+      s +
+      (num(p.reference41?.gmvTargets?.liveInhouse) + num(p.reference41?.gmvTargets?.liveCtv) ||
+        num(p.coreMetricsLayer1?.targetGmvLivestream)),
+    0
+  );
+
+  const ttTargetGmv = ttNmvTarget;
+  const spTargetGmv = spNmvTarget;
 
   const ttAdsBudget = tiktokPlans.reduce((s, p) => s + num(p.budgetAdsTotal), 0);
   const spAdsBudget = shopeePlans.reduce((s, p) => s + num(p.budgetAdsTotal), 0);
@@ -366,12 +442,22 @@ export function extractBrand411Summary(params: {
     ttLiveSelfBudget,
     ttAdsBudget,
     ttTargetGmv,
+    ttNmvTarget,
+    ttVideoAffGmv,
+    ttVideoSelfGmv,
+    ttLiveGmv,
     spVideos,
     spBudget,
+    spAffBudget,
+    spSelfBudget,
     spLiveSessions,
     spLiveBudget,
     spAdsBudget,
     spTargetGmv,
+    spNmvTarget,
+    spVideoAffGmv,
+    spVideoSelfGmv,
+    spLiveGmv,
     totalNetBudget411,
     totalVideos411,
   };
@@ -489,31 +575,72 @@ export function buildBrandOneSheetPlanData(params: {
   const tiktokPlan = tiktokPlans[0];
   const shopeePlan = shopeePlans[0];
 
+  const normalizeCancelRate = (raw: number | undefined, fallback: number) => {
+    if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) return fallback;
+    return raw > 1 ? Math.min(0.9, raw / 100) : Math.min(0.9, raw);
+  };
+
   const totalBookingVideoBudget = s411.ttCastBudget;
-  const tiktokGmvSeller = s411.ttTargetGmv || brandPlan?.planStrategyPlan?.targetBrandGmv || 0;
-  const tiktokCancelRate = tiktokPlan?.cancellationRate ?? 0.1;
-  const tiktokNmvSeller = Math.round(tiktokGmvSeller * (1 - tiktokCancelRate));
+  const tiktokCancelRate = normalizeCancelRate(tiktokPlan?.cancellationRate, 0.08);
+  const tiktokNmvSeller =
+    s411.ttNmvTarget ||
+    s411.ttTargetGmv ||
+    brandPlan?.planStrategyPlan?.targetBrandGmv ||
+    0;
+  const tiktokGmvSeller =
+    tiktokNmvSeller > 0
+      ? Math.round(tiktokNmvSeller / Math.max(0.1, 1 - tiktokCancelRate))
+      : 0;
   const tiktokAov = 200000;
   const tiktokOrders = tiktokGmvSeller > 0 ? Math.round(tiktokGmvSeller / tiktokAov) : 0;
   const tiktokCr = 0.05;
   const tiktokTraffic = tiktokOrders > 0 ? Math.round(tiktokOrders / tiktokCr) : 0;
 
-  const shopeeGmvSeller = s411.spTargetGmv || 0;
-  const shopeeCancelRate = shopeePlan?.cancellationRate ?? 0.05;
-  const shopeeNmvSeller = Math.round(shopeeGmvSeller * (1 - shopeeCancelRate));
+  const shopeeCancelRate = normalizeCancelRate(shopeePlan?.cancellationRate, 0.08);
+  const shopeeNmvSeller = s411.spNmvTarget || s411.spTargetGmv || 0;
+  const shopeeGmvSeller =
+    shopeeNmvSeller > 0
+      ? Math.round(shopeeNmvSeller / Math.max(0.1, 1 - shopeeCancelRate))
+      : 0;
   const shopeeAov = 200000;
   const shopeeOrders = shopeeGmvSeller > 0 ? Math.round(shopeeGmvSeller / shopeeAov) : 0;
   const shopeeCr = 0.05;
   const shopeeTraffic = shopeeOrders > 0 ? Math.round(shopeeOrders / shopeeCr) : 0;
 
-  // Doanh thu theo hoạt động
-  const tiktokGmvVideo = Math.round(tiktokGmvSeller * 0.55);
+  // Doanh thu theo hoạt động đồng bộ từ chỉ tiêu 4.1 (NMV/GMV Affiliate + Kênh Brand + Live)
+  const ttAffGmv41 =
+    s411.ttVideoAffGmv > 0
+      ? s411.ttVideoAffGmv
+      : totalBookingVideoBudget > 0
+      ? Math.round(totalBookingVideoBudget * 5.5)
+      : Math.round(tiktokGmvSeller * 0.45);
+  const ttSelfGmv41 =
+    s411.ttVideoSelfGmv > 0
+      ? s411.ttVideoSelfGmv
+      : s411.ttSelfBudget > 0
+      ? Math.round(s411.ttSelfBudget * 6)
+      : 0;
+  const tiktokGmvVideo = ttAffGmv41 + ttSelfGmv41;
   const tiktokGmvLive =
-    s411.ttLiveAffSessions + s411.ttLiveSelfSessions > 0 ? Math.round(tiktokGmvSeller * 0.2) : 0;
+    s411.ttLiveGmv > 0
+      ? s411.ttLiveGmv
+      : s411.ttLiveAffSessions + s411.ttLiveSelfSessions > 0
+      ? Math.round(tiktokGmvSeller * 0.2)
+      : 0;
   const tiktokGmvCard = Math.max(0, tiktokGmvSeller - tiktokGmvVideo - tiktokGmvLive);
 
-  const shopeeGmvVideo = s411.spVideos > 0 ? Math.round(shopeeGmvSeller * 0.4) : 0;
-  const shopeeGmvLive = s411.spLiveSessions > 0 ? Math.round(shopeeGmvSeller * 0.2) : 0;
+  const shopeeGmvVideo =
+    s411.spVideoAffGmv + s411.spVideoSelfGmv > 0
+      ? s411.spVideoAffGmv + s411.spVideoSelfGmv
+      : s411.spVideos > 0
+      ? Math.round(shopeeGmvSeller * 0.4)
+      : 0;
+  const shopeeGmvLive =
+    s411.spLiveGmv > 0
+      ? s411.spLiveGmv
+      : s411.spLiveSessions > 0
+      ? Math.round(shopeeGmvSeller * 0.2)
+      : 0;
   const shopeeGmvCard = Math.max(0, shopeeGmvSeller - shopeeGmvVideo - shopeeGmvLive);
 
   const preparedBy =
@@ -614,7 +741,33 @@ export function buildBrandOneSheetPlanData(params: {
   };
 
   // Section 04: 5 tuần TikTok KOC & Booking lấy trực tiếp từ 4.1.1 (`w411`)
-  const tiktokWeeklyRows: BrandOneSheetTikTokWeeklyRow[] = w411.map((w) => {
+  let remAffGmv = Math.max(0, Math.round(ttAffGmv41));
+  const activeWeekIndices = w411
+    .map((w, idx) => ({
+      idx,
+      b:
+        w.kl1Budget +
+        w.kl2Budget +
+        w.kl3Budget +
+        w.kl4Budget +
+        w.kl5Budget +
+        w.kl6Budget +
+        w.kl7Budget,
+      v:
+        w.tapCount +
+        w.kl1Count +
+        w.kl2Count +
+        w.kl3Count +
+        w.kl4Count +
+        w.kl5Count +
+        w.kl6Count +
+        w.kl7Count,
+    }))
+    .filter((x) => x.b > 0 || (s411.ttCastBudget === 0 && x.v > 0));
+  const lastActiveWeekIdx =
+    activeWeekIndices.length > 0 ? activeWeekIndices[activeWeekIndices.length - 1].idx : -1;
+
+  const tiktokWeeklyRows: BrandOneSheetTikTokWeeklyRow[] = w411.map((w, idx) => {
     const weekVideos =
       w.tapCount +
       w.kl1Count +
@@ -632,6 +785,26 @@ export function buildBrandOneSheetPlanData(params: {
       w.kl5Budget +
       w.kl6Budget +
       w.kl7Budget;
+    let weekBookingGmv = 0;
+    if (s411.ttCastBudget > 0 && weekBudget > 0) {
+      if (idx === lastActiveWeekIdx) {
+        weekBookingGmv = Math.max(0, remAffGmv);
+      } else {
+        weekBookingGmv = Math.min(
+          remAffGmv,
+          Math.max(0, Math.round(ttAffGmv41 * (weekBudget / s411.ttCastBudget)))
+        );
+        remAffGmv -= weekBookingGmv;
+      }
+    } else if (s411.ttCastBudget === 0 && weekVideos > 0) {
+      const totalV = Math.max(1, s411.ttCastQty + s411.ttFocQty);
+      if (idx === lastActiveWeekIdx) {
+        weekBookingGmv = Math.max(0, remAffGmv);
+      } else {
+        weekBookingGmv = Math.min(remAffGmv, Math.max(0, Math.round(ttAffGmv41 * (weekVideos / totalV))));
+        remAffGmv -= weekBookingGmv;
+      }
+    }
     return {
       week: w.week,
       dateRange: w.dateRange,
@@ -651,12 +824,7 @@ export function buildBrandOneSheetPlanData(params: {
       kl5Budget: w.kl5Budget,
       kl6Budget: w.kl6Budget,
       kl7Budget: w.kl7Budget,
-      targetBookingGmv:
-        weekBudget > 0
-          ? Math.round(weekBudget * 5.5)
-          : s411.ttCastBudget > 0
-          ? 0
-          : Math.round((tiktokGmvVideo / 4) * (w.week === 'W5' ? 0 : 1)),
+      targetBookingGmv: weekBookingGmv,
       ownerActionNote: `4.1.1 ${w.week}: ${weekVideos} video AFF (${w.tapCount} FOC) · NS Net ${weekBudget.toLocaleString('vi-VN')}đ`,
     };
   });
@@ -1037,8 +1205,8 @@ export function buildBrandOneSheetPlanData(params: {
       gmvVideo: shopeeGmvVideo,
       gmvLivestream: shopeeGmvLive,
       gmvProductCard: shopeeGmvCard,
-      costBookingVideoAff: 0,
-      costVideoSelfChannel: s411.spBudget,
+      costBookingVideoAff: s411.spAffBudget,
+      costVideoSelfChannel: s411.spSelfBudget,
       costAds: s411.spAdsBudget,
       costBookingLiveAff: s411.spLiveBudget,
       costLiveSelfChannel: 0,
@@ -1072,10 +1240,10 @@ export function buildBrandOneSheetPlanData(params: {
       'Lưu ý: Số liệu Chi phí Booking Video Affiliate, Video Self-channel, Livestream và Số lượng Video tuần được đồng bộ trực tiếp từ Bản phân rã 4.1.1 của các gian hàng thuộc Brand.',
     keyVisual,
     tiktokOverviewExtra: {
-      selfRevenueTarget: s411.ttSelfBudget > 0 ? Math.round(s411.ttSelfBudget * 6) : Math.round(tiktokGmvVideo * 0.25),
+      selfRevenueTarget: ttSelfGmv41,
       selfContentCount: s411.ttSelfQty,
       selfCostNet: s411.ttSelfBudget,
-      affRevenueTarget: totalBookingVideoBudget > 0 ? Math.round(totalBookingVideoBudget * 5.5) : Math.round(tiktokGmvVideo * 0.75),
+      affRevenueTarget: ttAffGmv41,
       awarenessVideoTagCount: Math.round(totalAffVideos * 0.35),
       brandingVideoTagCount: Math.round(totalAffVideos * 0.15),
       liveSelfOrders: s411.ttLiveSelfSessions * 30,

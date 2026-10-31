@@ -269,7 +269,12 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
     const s411LiveBudget = s411.ttLiveAffBudget + s411.ttLiveSelfBudget;
     const planSpQty = formData.shopeeWeeklyTargets.reduce((sum, r) => sum + (r.plannedVideos || 0), 0);
     const planSpBudget = sp.costVideoSelfChannel + sp.costBookingVideoAff;
-    const planTotalNet = totPromoCost;
+    const planTotalNet =
+      planCastBudget +
+      planSelfLiveBudget +
+      planSpBudget +
+      sp.costBookingLiveAff +
+      sp.costLiveSelfChannel;
 
     const rows = [
       {
