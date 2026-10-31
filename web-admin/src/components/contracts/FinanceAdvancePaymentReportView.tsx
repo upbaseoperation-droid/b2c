@@ -1156,11 +1156,53 @@ export function FinanceAdvancePaymentReportView({
       );
       if (targetCodes.size === 0) return;
 
+      if (mode === 'APPROVE_S40_UNLOCK') {
+        const paidDeal = approvedItems.find(
+          (r) =>
+            targetCodes.has((r.maBooking || '').trim().toUpperCase()) &&
+            Boolean(r.daDiTien),
+        );
+        if (paidDeal && targetCodes.size === 1) {
+          onNotify?.(
+            `Deal ${paidDeal.maBooking} đã giải ngân thanh toán (Đã đi tiền UNC), không thể mở khóa S40 để sửa số liệu.`,
+            'warning',
+          );
+          return;
+        }
+      }
+
       const todayIso = new Date().toISOString().slice(0, 10);
+      const nowIso = new Date().toISOString();
+      const actorName = 'Phòng Kế toán (FINANCE)';
       setApprovedItems((prev) => {
         const nextList = prev.map((row) => {
           const code = (row.maBooking || '').trim().toUpperCase();
           if (!targetCodes.has(code)) return row;
+          if (mode === 'APPROVE_S40_UNLOCK' && row.daDiTien) return row;
+          const logEntry = {
+            id: `s40-${Date.now()}-${code}`,
+            action:
+              mode === 'LOCK_DATA'
+                ? ('LOCK_DATA' as const)
+                : mode === 'APPROVE_S40_UNLOCK'
+                  ? ('APPROVE_UNLOCK' as const)
+                  : ('REJECT_UNLOCK' as const),
+            batch:
+              mode === 'APPROVE_S40_UNLOCK'
+                ? ('UNLOCKED' as const)
+                : ('NONE' as const),
+            reason:
+              row.unlockRequestReason ||
+              (mode === 'LOCK_DATA'
+                ? 'Kế toán khóa sổ nghiệm thu tháng'
+                : mode === 'APPROVE_S40_UNLOCK'
+                  ? 'Kế toán duyệt mở khóa sửa S40'
+                  : 'Kế toán từ chối yêu cầu mở khóa S40'),
+            actorName,
+            actorRole: 'FINANCE',
+            createdAt: nowIso,
+          };
+          const nextHistory = [logEntry, ...(row.s40History || [])].slice(0, 20);
           if (mode === 'LOCK_DATA') {
             return {
               ...row,
@@ -1171,6 +1213,9 @@ export function FinanceAdvancePaymentReportView({
                 row.thangPlan ||
                 (monthFilter !== 'ALL' ? monthFilter : '2026/10'),
               unlockRequestBatch: 'NONE' as const,
+              s40ReviewedBy: actorName,
+              s40ReviewedAt: nowIso,
+              s40History: nextHistory,
             };
           }
           if (mode === 'APPROVE_S40_UNLOCK') {
@@ -1178,12 +1223,18 @@ export function FinanceAdvancePaymentReportView({
               ...row,
               chotData: true,
               unlockRequestBatch: 'UNLOCKED' as const,
+              s40ReviewedBy: actorName,
+              s40ReviewedAt: nowIso,
+              s40History: nextHistory,
             };
           }
           return {
             ...row,
             chotData: true,
             unlockRequestBatch: 'NONE' as const,
+            s40ReviewedBy: actorName,
+            s40ReviewedAt: nowIso,
+            s40History: nextHistory,
           };
         });
         saveApprovedBookingList(nextList, true);
@@ -1223,7 +1274,7 @@ export function FinanceAdvancePaymentReportView({
         mode === 'REJECT_S40_UNLOCK' ? 'warning' : 'success',
       );
     },
-    [isFinanceActor, monthFilter, onNotify],
+    [approvedItems, isFinanceActor, monthFilter, onNotify],
   );
 
   const availableMonths = useMemo(() => {
@@ -1407,6 +1458,10 @@ export function FinanceAdvancePaymentReportView({
       'Gian hàng',
       'Kỳ nghiệm thu chốt',
       'Trạng thái khóa sổ',
+      'Ngày khóa sổ',
+      'Trạng thái S40',
+      'Lý do mở khóa S40',
+      'Người duyệt / Khóa sổ S40',
       'KOC',
       'ID Kênh',
       'Mã Hồ sơ pháp lý',
@@ -1435,6 +1490,16 @@ export function FinanceAdvancePaymentReportView({
       r.storeName,
       r.lockedAcceptanceMonth,
       r.isDataLocked ? 'Đã chốt data' : 'Chưa chốt data',
+      r.lockDate,
+      r.unlockRequestBatch === 'DOT_1_LV4_LV5'
+        ? 'Xin mở S40 Đợt 1 (LV4-LV5)'
+        : r.unlockRequestBatch === 'DOT_2_LV10_LV11'
+          ? 'Xin mở S40 Đợt 2 (LV10-LV11)'
+          : r.unlockRequestBatch === 'UNLOCKED'
+            ? 'Đã mở S40 cho sửa'
+            : 'Không yêu cầu mở S40',
+      r.unlockRequestReason || '',
+      r.rawApprovedItem?.s40ReviewedBy || '',
       r.kocName,
       r.kocChannelId,
       r.legalProfileCode,

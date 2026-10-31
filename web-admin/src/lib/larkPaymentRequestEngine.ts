@@ -514,7 +514,7 @@ export function evaluateDealForPaymentRequest(
 
   // Tất toán trừ phần đã tạm ứng (Giải quyết P-03: tự động lấy từ phiếu tạm ứng đã duyệt, không nhập tay sai lệch)
   const advanceFromDeal =
-    deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode) || (deal.advanceAmount || 0) > 0
+    deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode)
       ? deal.advanceAmount || 0
       : 0;
   const advancePaidAmount =
@@ -563,7 +563,13 @@ export function evaluateDealForPaymentRequest(
     ''
   ).trim();
   const bbntUrl = (override?.bbntUrl ?? deal.bbntSignedUrl ?? '').trim();
-  const invoiceNumber = (override?.invoiceNumber ?? '').trim();
+  const invoiceNumber = (
+    override?.invoiceNumber ??
+    (requestType === 'ADVANCE'
+      ? deal.draftInvoiceCode || deal.invoiceNumber
+      : deal.invoiceNumber || deal.draftInvoiceCode) ??
+    ''
+  ).trim();
 
   // =========================================================================
   // KIỂM TRA CHẶN CỨNG 100% THEO 4 NHÓM NGHIỆP VỤ BẢNG 3.2 & LARK APPROVAL

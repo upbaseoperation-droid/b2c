@@ -31,6 +31,10 @@ export type ApprovedBookingPaymentStatus =
   | 'Chờ nghiệm thu'
   | 'Đủ điều kiện ĐNTT'
   | 'Đã lập ĐNTT'
+  | 'Đang duyệt Lark'
+  | 'Đã tạm ứng'
+  | 'Đã duyệt chờ chi'
+  | 'Từ chối duyệt'
   | 'Đã thanh toán';
 
 export type ApprovedBookingPipelineStatus =
@@ -45,6 +49,53 @@ export type AddonServicesAcceptanceStatus =
   | 'KHOA_CHO_VIDEO'
   | 'CHO_NGHIEM_THU'
   | 'DA_NGHIEM_THU_DU';
+
+export interface S40AuditLogEntry {
+  id: string;
+  action: 'LOCK_DATA' | 'REQUEST_UNLOCK' | 'APPROVE_UNLOCK' | 'REJECT_UNLOCK';
+  batch?: 'NONE' | 'DOT_1_LV4_LV5' | 'DOT_2_LV10_LV11' | 'UNLOCKED';
+  reason?: string;
+  actorName: string;
+  actorRole?: string;
+  createdAt: string;
+}
+
+export const S40_STANDARD_UNLOCK_REASONS = [
+  'KOC lên sóng cuối tháng / gửi link bài Air hoặc Mã Spark Ads trễ sau ngày khóa sổ',
+  'Video bị gậy bản quyền / hạn chế hiển thị — KOC xóa đăng lại và cấp link/code mới',
+  'Bàn giao bổ sung hoặc khấu trừ (Drop) hạng mục phụ đi kèm trong SOW (link Drive, bài đa sàn)',
+  'Điều chỉnh giá trị quyết toán thực tế / phát sinh mua thêm quyền lợi sau Air (Upsell)',
+  'Điều chỉnh thông tin đối soát theo yêu cầu Kế toán (kỳ nghiệm thu, pháp nhân, số hóa đơn)',
+] as const;
+
+export const DATA_LOCKED_APPROVED_FIELDS: ReadonlySet<keyof ApprovedBookingListItem> = new Set([
+  'idKenh',
+  'sanPham',
+  'giaDeXuatNet',
+  'chiPhiBookingNetCuoi',
+  'plannedAirDate',
+  'soTienTamUngTruoc',
+  'loaiTaiKhoanThanhToan',
+  'linkAir',
+  'videoId',
+  'actualAirDate',
+  'sparkAdsCode',
+  'videoAssetNetCost',
+  'addonServicesNetCost',
+  'khauTruHangMucHuy',
+  'addonServices',
+  'dealJobs',
+  'acceptanceStatus',
+  'thangNghiemThuChot',
+]);
+
+export function isApprovedDealDataLocked(
+  item?: Pick<ApprovedBookingListItem, 'chotData' | 'unlockRequestBatch' | 'daDiTien'> | null,
+): boolean {
+  if (!item) return false;
+  if (item.daDiTien) return true;
+  return Boolean(item.chotData) && item.unlockRequestBatch !== 'UNLOCKED';
+}
 
 export interface ApprovedBookingListItem {
   id: string;
@@ -133,6 +184,8 @@ export interface ApprovedBookingListItem {
   soTaiKhoan: string;                  // Cột 24: Số tài khoản
   nganHang: string;                    // Cột 25: Ngân hàng
   soCccd: string;                      // Cột 26: CCCD/MST/Passport
+  legalProfileId?: string;             // Khóa ngoại Hồ sơ pháp lý KOC (KocLegalProfile) được chọn cho Deal
+  soHoaDonVat?: string;                // Số hóa đơn VAT / Hóa đơn bán hàng phục vụ quyết toán ĐNTT
 
   // 6. Cấu trúc Deal (1 Deal -> N Jobs, mỗi Job = 1 Bảng công việc trong Phụ lục SOW) & Nghiệm thu 2 tầng
   dealStructureType?: 'VIDEO_ONLY' | 'VIDEO_AND_ADDONS';
@@ -188,6 +241,11 @@ export interface ApprovedBookingListItem {
   chotData?: boolean;                  // Cờ "Chốt data" trên Base 3.2 (bắt buộc tích trước ngayKhoaData để vào kỳ nghiệm thu)
   unlockRequestBatch?: 'NONE' | 'DOT_1_LV4_LV5' | 'DOT_2_LV10_LV11' | 'UNLOCKED'; // Đợt xin Kế toán mở khóa sửa trên S40
   unlockRequestReason?: string;        // Lý do đề nghị mở khóa sửa nghiệm thu
+  s40RequestedBy?: string;             // Người gửi yêu cầu mở khóa S40
+  s40RequestedAt?: string;             // Thời điểm gửi yêu cầu mở khóa S40 (ISO)
+  s40ReviewedBy?: string;              // Kế toán / Lãnh đạo duyệt mở khóa hoặc khóa sổ
+  s40ReviewedAt?: string;              // Thời điểm Kế toán xử lý khóa sổ / mở khóa S40 (ISO)
+  s40History?: S40AuditLogEntry[];     // Nhật ký kiểm toán các lần khóa sổ & mở khóa sửa S40 của Deal
 
   // 10. Luồng 3 — Thanh toán ĐNTT & Bước cuối KT Handle (Đã đi tiền + Bill UNC 7 ngày - P-07, P-08)
   loaiThanhToanLark?:
@@ -836,7 +894,13 @@ export function recalculateApprovedBookingItem(
   const chotData =
     item.chotData !== undefined
       ? item.chotData
-      : sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL';
+      : Boolean(
+          item.daDiTien ||
+            item.larkSlipCode ||
+            item.trangThaiPhieuThanhToan === 'Đã thanh toán' ||
+            item.trangThaiPhieuThanhToan === 'Đã lập ĐNTT' ||
+            item.trangThaiPhieuThanhToan === 'Đã duyệt chờ chi',
+        );
 
   const isLivestreamFormat =
     item.phanLoaiVideo === 'Livestream' || item.dinhDangNghiemThu === 'Phiên Livestream';
@@ -1411,18 +1475,24 @@ export function transferBrandApprovedRowsToBookingList(params: {
 
     if (existingIdx >= 0) {
       const existing = nextList[existingIdx];
+      const locked = isApprovedDealDataLocked(existing);
       const merged = recalculateApprovedBookingItem({
         ...existing,
         sourceSheetRowId: row.id,
         sourceSheetKey: sheetKey,
-        dot: row.dot || existing.dot,
-        sanPham: row.sanPham || existing.sanPham,
+        dot: locked ? existing.dot : row.dot || existing.dot,
+        sanPham: locked ? existing.sanPham : row.sanPham || existing.sanPham,
         pillarContent: row.contentTag || existing.pillarContent,
         contentAngle: row.contentNote || existing.contentAngle,
-        giaDeXuatNet: Number(row.giaNetVideo) || existing.giaDeXuatNet,
-        chiPhiBookingNetCuoi:
-          existing.chiPhiBookingNetCuoi || Number(row.giaNetVideo) || 0,
-        plannedAirDate: existing.plannedAirDate || row.ngayAirPlan || '',
+        giaDeXuatNet: locked
+          ? existing.giaDeXuatNet
+          : Number(row.giaNetVideo) || existing.giaDeXuatNet,
+        chiPhiBookingNetCuoi: locked
+          ? existing.chiPhiBookingNetCuoi
+          : existing.chiPhiBookingNetCuoi || Number(row.giaNetVideo) || 0,
+        plannedAirDate: locked
+          ? existing.plannedAirDate
+          : existing.plannedAirDate || row.ngayAirPlan || '',
         nguoiNhanHang: row.nguoiNhanHang || existing.nguoiNhanHang,
         sdtNhanHang: row.sdtNhanHang || existing.sdtNhanHang,
         diaChiNhanHang: row.diaChiNhanHang || existing.diaChiNhanHang,
@@ -1498,6 +1568,27 @@ export function buildBookingDealFromApprovedItem(
     };
   });
 
+  const activeAdsAddons = addons.filter(
+    (a) => a.termType === 'ADS_CODE' && a.acceptanceStatus !== 'DROPPED',
+  );
+  const resolvedAdsCodeStatus: BookingDealItem['adsCodeStatus'] =
+    normalized.sparkAdsCode?.trim() ||
+    (activeAdsAddons.length > 0 &&
+      activeAdsAddons.every((a) => a.acceptanceStatus === 'VERIFIED'))
+      ? 'ĐÃ_NGHIỆM_THU'
+      : activeAdsAddons.length === 0
+        ? 'KHÔNG_DÙNG'
+        : 'CHƯA_CẤP';
+  const resolvedDealStatus: BookingDealItem['status'] =
+    normalized.daDiTien || normalized.trangThaiPhieuThanhToan === 'Đã thanh toán'
+      ? 'FINAL_PAID'
+      : isVideoVerified
+        ? 'VIDEO_VERIFIED'
+        : normalized.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG' ||
+            normalized.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
+          ? 'ADVANCE_PAID'
+          : 'CONTRACT_GENERATED';
+
   return {
     id: maBo,
     dealCode: maBo,
@@ -1537,7 +1628,7 @@ export function buildBookingDealFromApprovedItem(
       : isVideoVerified
         ? 'Chờ nghiệm thu dịch vụ đi kèm'
         : 'Đang triển khai',
-    status: isVideoVerified ? 'VIDEO_VERIFIED' : 'CONTRACT_GENERATED',
+    status: resolvedDealStatus,
     statusLabel: isFullyVerified
       ? 'Đã nghiệm thu toàn Deal'
       : isVideoVerified
@@ -1549,7 +1640,7 @@ export function buildBookingDealFromApprovedItem(
         ? '4_AIR_GROWTH'
         : '2_DEAL_CONTRACT',
     sparkAdsCode: normalized.sparkAdsCode || undefined,
-    adsCodeStatus: normalized.sparkAdsCode ? 'ĐÃ_NGHIỆM_THU' : 'CHƯA_CẤP',
+    adsCodeStatus: resolvedAdsCodeStatus,
     tiktokVideoUrl: normalized.linkAir || undefined,
     videoUrl: normalized.linkAir || undefined,
     assignedStaff: normalized.nguoiPhuTrach,
@@ -1573,14 +1664,17 @@ export function buildBookingDealFromApprovedItem(
     kocBankHolder: normalized.tenTaiKhoanNganHang || undefined,
     kocIdCardNumber: normalized.soCccd || undefined,
     hasIdCardScan: Boolean(normalized.soCccd?.trim()),
+    legalProfileId: normalized.legalProfileId || undefined,
     sampleStatus: normalized.sampleStatus,
     sampleTrackingCode: normalized.sampleTrackingCode,
     sampleCarrier: (['GHN', 'ViettelPost', 'J&T', 'ShopeeExpress'].includes(normalized.sampleCarrier || '') ? (normalized.sampleCarrier as 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress') : undefined),
     contractScanUrl: undefined,
+    invoiceNumber: normalized.soHoaDonVat || normalized.draftInvoiceCode || undefined,
+    draftInvoiceCode: normalized.draftInvoiceCode || undefined,
     larkAdvanceApprovalCode:
-      normalized.larkAdvanceInstanceCode ||
-      normalized.larkAdvanceSlipCode ||
-      (normalized.soTienTamUngTruoc > 0 ? `TU-${maBo}` : undefined),
+      normalized.larkAdvanceStatus !== 'TỪ_CHỐI_TẠM_ỨNG'
+        ? normalized.larkAdvanceInstanceCode || normalized.larkAdvanceSlipCode || undefined
+        : undefined,
     larkFinalApprovalCode: normalized.larkApprovalInstanceCode || undefined,
     committedOutputsCount: dealJobs.reduce((s, j) => s + Math.max(1, Number(j.quantity) || 1), 0),
     dealType: addons.length > 0 || dealJobs.length > 1 ? 'MULTI_PLATFORM_CONTENT' : 'SINGLE_CONTENT',
@@ -1779,9 +1873,12 @@ export function autoMapVideoAcceptanceByKocChannel(params: {
     }
 
     const target = nextList[targetIdx];
+    const locked = isApprovedDealDataLocked(target);
     const maBooking =
       target.maBooking || generateBookingOrderCode(target.thangPlan, targetIdx + 501);
-    const actualAirDate = acc.actualAirDate || target.actualAirDate || todayStr;
+    const actualAirDate = locked
+      ? target.actualAirDate
+      : acc.actualAirDate || target.actualAirDate || todayStr;
     const views30 =
       acc.views30d !== undefined && acc.views30d >= 0
         ? acc.views30d
@@ -1806,11 +1903,13 @@ export function autoMapVideoAcceptanceByKocChannel(params: {
       maBooking,
       bookingOrderCreated: true,
       bookingOrderCreatedAt: target.bookingOrderCreatedAt || new Date().toISOString(),
-      linkAir: acc.linkAir || target.linkAir,
-      videoId: acc.videoId || target.videoId,
+      linkAir: locked ? target.linkAir : acc.linkAir || target.linkAir,
+      videoId: locked ? target.videoId : acc.videoId || target.videoId,
       actualAirDate,
-      ngayDienLinkAir: todayStr,
-      sparkAdsCode: acc.sparkAdsCode || target.sparkAdsCode || '',
+      ngayDienLinkAir: locked ? target.ngayDienLinkAir : todayStr,
+      sparkAdsCode: locked
+        ? target.sparkAdsCode
+        : acc.sparkAdsCode || target.sparkAdsCode || '',
       views30d: views30,
       gmv30d: gmv30,
       orders30d: orders30,
@@ -2008,4 +2107,15 @@ export function downloadApprovedBookingListCsv(
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Tải danh sách Booking đã duyệt (đồng bộ từ máy chủ hoặc bộ nhớ đệm).
+ */
+export async function hydrateApprovedBookingListFromServer(
+  allKocs: KocItem[],
+  allStores: StorePortfolioItem[],
+  allDeals: BookingDealItem[] = [],
+): Promise<ApprovedBookingListItem[]> {
+  return loadApprovedBookingList(allKocs, allStores, allDeals);
 }

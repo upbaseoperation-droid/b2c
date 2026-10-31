@@ -981,6 +981,8 @@ export interface BookingDealItem {
   // BỘ TRIGGER SLA B2C MỚI (CHUẨN HOÁ THEO TÀI LIỆU CÁC SLA B2C.PDF)
   // 1. Pháp chế & Hợp đồng KOC
   contractScanUrl?: string; // Link scan hợp đồng (Bắt buộc với deal > 9.000.000 VNĐ)
+  invoiceNumber?: string; // Số hóa đơn VAT / Hóa đơn bán hàng của Deal
+  draftInvoiceCode?: string; // Số / Link hóa đơn nháp đợt 1 (bắt buộc với HKD/Công ty khi tạm ứng)
   contractCreatedAt?: string; // Ngày ký HĐ (phải trước ngày DNTT >= 2 ngày với deal > 9M)
   contractSignDaysPrior?: number; // Số ngày ký HĐ trước DNTT
   hasIdCardScan?: boolean; // Đã có ảnh CCCD / Hộ chiếu / MST hợp lệ
