@@ -253,3 +253,24 @@ export function compareDocWithTemplate(
     },
   };
 }
+
+/**
+ * So sánh giữa Bản đẩy lên ban đầu (initialSnapshot) và Bản chốt cuối (finalSnapshot / approvedSnapshot).
+ * Dùng được cho cả Hợp đồng sửa từ mẫu UpBase và Hợp đồng theo Form riêng của KOC.
+ */
+export function compareInitialAndFinalDoc(
+  finalParagraphs: string[],
+  initialParagraphs: string[],
+): GoogleDocClauseDiff[] {
+  if (!initialParagraphs.length || !finalParagraphs.length) return [];
+  const rawDiffs = compareDocWithTemplate(finalParagraphs, initialParagraphs).clauseDiffs;
+  return rawDiffs.map(d => ({
+    ...d,
+    explanation:
+      d.changeType === 'ADDED'
+        ? `Điều khoản mới được bổ sung thêm trong quá trình đàm phán (so với bản đẩy lên ban đầu).`
+        : d.changeType === 'REMOVED'
+        ? `Điều khoản có trong bản đẩy lên ban đầu đã được lược bỏ sau khi đàm phán.`
+        : `Điều khoản được điều chỉnh trong quá trình đàm phán giữa bản ban đầu và bản chốt cuối (${d.targetRole === 'FINANCE' ? 'Kế toán' : d.targetRole === 'LEGAL' ? 'Pháp chế' : 'Pháp chế & Kế toán'}).`,
+  }));
+}

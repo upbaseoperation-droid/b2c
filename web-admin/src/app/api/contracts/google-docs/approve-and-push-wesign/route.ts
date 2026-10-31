@@ -4,7 +4,7 @@ import { canRead, ContractError, decideContract, event, inScope, requireConditio
 import { getContract, saveContract } from '@/lib/contracts/store';
 import { loadTemplate } from '@/lib/contracts/templates';
 import { extractGoogleDocId } from '@/lib/contracts/googleDocsService';
-import { captureGoogleDocForRecord, exportGoogleDocFile } from '@/lib/contracts/googleDocsServer';
+import { buildContractNegotiationReport, captureGoogleDocForRecord, exportGoogleDocFile } from '@/lib/contracts/googleDocsServer';
 import { requestSignOnSystem } from '@/lib/contracts/contractSystemClient';
 import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
 import { uploadLegalDocFile } from '@/lib/brands/r2';
@@ -22,8 +22,8 @@ function failure(error: unknown) {
 
 /**
  * Kế toán duyệt hồ sơ Google Doc (bước cuối, sau Pháp chế) và đẩy WeSign.
- * Bản đẩy WeSign là file DOCX/PDF xuất từ chính Google Doc, nội dung phải trùng bản B2C đã trình final.
- * Bình luận, lịch sử phiên bản và nội dung lúc duyệt được lưu lại để audit.
+ * Tự động kéo bản mới nhất từ Google Doc, lưu cả Bản ban đầu (`initialSnapshot`), bình luận, lịch sử phiên bản,
+ * Bản chốt duyệt (`approvedSnapshot`), xuất DOCX/PDF lưu hệ thống, tạo Báo cáo lưu vết đàm phán (`negotiationReport`) và đẩy WeSign.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -42,20 +42,16 @@ export async function POST(req: NextRequest) {
     );
     requireCondition(Boolean(record.googleDocsUrl), 'Hồ sơ không theo luồng Google Doc.');
     requireCondition(
-      record.approval === 'IN_REVIEW' && record.googleDocsStage === 'FINAL' && Boolean(record.googleDocsAuditTrail?.finalSnapshot),
-      'Hồ sơ chưa được trình final. B2C cần trình final trước khi Kế toán duyệt.',
+      record.approval === 'IN_REVIEW',
+      'Hồ sơ không ở trạng thái chờ duyệt.',
     );
     const pendingLegal = record.steps.find(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED');
     requireCondition(!pendingLegal, 'Pháp chế chưa duyệt hồ sơ này.');
 
-    // Chụp lại file lúc duyệt; nội dung phải trùng bản đã trình final.
+    // Tự động kéo và lưu phiên bản mới nhất trên Google Doc ngay lúc Kế toán bấm chốt (không bắt B2C trình lại).
     const capture = await captureGoogleDocForRecord(record, actor.name);
-    const finalSnapshot = record.googleDocsAuditTrail!.finalSnapshot!;
-    requireCondition(
-      capture.simulated || capture.snapshot.hash === finalSnapshot.hash,
-      'Google Doc đã bị sửa sau khi trình final. B2C cần trình final lại để Pháp chế duyệt bản mới.',
-      409,
-    );
+    const prevFinalHash = record.googleDocsAuditTrail?.finalSnapshot?.hash;
+    const autoSyncedLatest = Boolean(prevFinalHash && prevFinalHash !== capture.snapshot.hash);
 
     const approvalNote =
       typeof note === 'string' && note.trim() ? note.trim() : 'Kế toán duyệt bản Google Doc đã trình final và đẩy WeSign.';
@@ -74,13 +70,18 @@ export async function POST(req: NextRequest) {
     const pdfFile = pdf ? await uploadLegalDocFile({ entitySlug, originalName: `${fileBase}.pdf`, mimeType: 'application/pdf', buffer: pdf }) : null;
 
     const now = new Date().toISOString();
+    updated.googleDocsStage = 'FINAL';
     updated.googleDocsComments = capture.comments;
+    updated.googleDocsReviewRouting = capture.routing;
     updated.googleDocsAuditTrail = {
       ...updated.googleDocsAuditTrail,
       syncedAt: now,
       commentsCount: capture.comments.length,
       revisions: capture.revisions,
       simulated: capture.simulated || undefined,
+      initialSnapshot: capture.initialSnapshot,
+      initialToFinalDiffs: capture.initialToFinalDiffs,
+      finalSnapshot: record.googleDocsAuditTrail?.finalSnapshot || capture.snapshot,
       approvedByFinance: actor.name,
       approvedAtFinance: now,
       approvedSnapshot: capture.snapshot,
@@ -89,13 +90,14 @@ export async function POST(req: NextRequest) {
       exportedPdfUrl: pdfFile?.url,
       exportedAt: docxFile || pdfFile ? now : undefined,
     };
+    updated.googleDocsAuditTrail.negotiationReport = await buildContractNegotiationReport(updated, actor.name);
     event(
       updated,
       actor,
       'FINANCE_APPROVE_AND_EXPORT',
       capture.simulated
         ? 'Kế toán duyệt bản Google Doc (giả lập: máy chủ chưa kết nối Google nên chưa xuất được DOCX/PDF).'
-        : `Kế toán duyệt và chốt bản Google Doc (${capture.comments.length} bình luận, ${capture.revisions.length} phiên bản). Đã xuất DOCX và PDF để đẩy WeSign.`,
+        : `Kế toán duyệt và tự động chốt bản mới nhất từ Google Doc (${capture.comments.length} bình luận, ${capture.revisions.length} phiên bản${autoSyncedLatest ? ', đã tự động cập nhật thay đổi mới nhất trên Google Doc' : ''}). Đã lưu Báo cáo đàm phán, xuất DOCX/PDF lưu hệ thống & đẩy WeSign.`,
     );
 
     // Chưa có API WeSign: tạo lượt trình ký với bằng chứng là nội dung Google Doc đã chốt, file đẩy lên WeSign là DOCX/PDF vừa xuất.

@@ -277,8 +277,8 @@ export function ContractApprovalPortalView({
   const isFinanceActor = me.roles.includes('FINANCE') || me.roles.includes('LEAD');
 
   const [search, setSearch] = useState('');
-  const [legalFilter, setLegalFilter] = useState<LegalFilter>('PENDING_LEGAL');
-  const [financeFilter, setFinanceFilter] = useState<FinanceFilter>('PENDING_FINANCE');
+  const [legalFilter, setLegalFilter] = useState<LegalFilter>('ALL');
+  const [financeFilter, setFinanceFilter] = useState<FinanceFilter>('ALL');
   const [financeSection, setFinanceSection] = useState<
     'CONTRACT_REVIEW' | 'ADVANCE_PAYMENT_REPORT' | 'FINANCE_REMINDERS'
   >(initialFinanceSection);
@@ -403,9 +403,7 @@ export function ContractApprovalPortalView({
   };
 
   const isGDocsPendingFinal = (r: ContractRecord) =>
-    Boolean(r.googleDocsUrl) &&
-    r.approval !== 'APPROVED' &&
-    !r.signing.some(s => s.status === 'COMPLETED');
+    Boolean(r.googleDocsUrl);
 
   const isLegalApproved = (r: ContractRecord) =>
     r.steps.some(s => s.role === 'LEGAL' && s.status === 'APPROVED' && s.version === r.version) ||
@@ -446,7 +444,7 @@ export function ContractApprovalPortalView({
           r.hasCustomTerms ||
           (r.googleDocsReviewRouting?.clauseDiffs.length ?? 0) > 0,
       ),
-    KOC_OWN_FORM: r => Boolean(r.isKocOwnForm),
+    KOC_OWN_FORM: r => Boolean(r.isKocOwnForm || r.googleDocsSource === 'KOC_CUSTOM_DOC'),
     LEGAL_APPROVED: isLegalApproved,
     ALL: () => true,
   };
@@ -766,7 +764,7 @@ export function ContractApprovalPortalView({
                 Ký lần đầu · Cần kiểm tra CCCD / ĐKKD
               </span>
             )}
-            <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+            <div className="flex items-center gap-2 text-2xs text-ink-3">
               <span>
                 {docs.length > 0 ? `${docs.length} tệp CCCD / ĐKKD` : 'Chưa đính kèm giấy tờ'}
               </span>
@@ -1323,7 +1321,7 @@ export function ContractApprovalPortalView({
                 ) : (
                   <div className="rounded-xl border border-line bg-surface divide-y divide-line">
                     {inspectRecord.customTermsSummary && (
-                      <div className="p-3.5 space-y-1">
+                      <div className="p-4 space-y-1">
                         <span className="font-semibold text-ink block">
                           Tóm tắt điều khoản điều chỉnh
                         </span>
@@ -1331,15 +1329,76 @@ export function ContractApprovalPortalView({
                       </div>
                     )}
 
-                    <div className="p-3.5 space-y-2.5">
+                    {inspectRecord.googleDocsAuditTrail?.negotiationReport && (
+                      <div className="p-4 space-y-2.5 bg-canvas/40">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold text-ink">
+                            Báo cáo lưu vết đàm phán &amp; chỉnh sửa (Bản đầu → Bình luận → Bản chốt)
+                          </span>
+                          <span className="text-2xs text-positive font-medium">
+                            {inspectRecord.googleDocsAuditTrail.negotiationReport.accountContributionsSummary.length} tài khoản · {inspectRecord.googleDocsComments?.length || 0} bình luận
+                          </span>
+                        </div>
+                        <p className="text-2xs text-ink-2 leading-relaxed">
+                          {inspectRecord.googleDocsAuditTrail.negotiationReport.executiveSummary}
+                        </p>
+                        {inspectRecord.googleDocsAuditTrail.negotiationReport.accountContributionsSummary.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            {inspectRecord.googleDocsAuditTrail.negotiationReport.accountContributionsSummary.map((acc, idx) => (
+                              <div key={idx} className="rounded-lg border border-line bg-surface p-2.5 text-2xs space-y-0.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-semibold text-ink">{acc.account}</span>
+                                  <span className="text-ink-3">{acc.roleHint} · {acc.editCount} lần sửa · {acc.commentCount} bình luận · {acc.replyCount} phản hồi</span>
+                                </div>
+                                <p className="text-ink-2">{acc.summary}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length ?? 0) > 0 && (
+                      <div className="p-4 space-y-3">
+                        <span className="font-semibold text-ink block">
+                          Đối chiếu biến đổi từ Bản đẩy lên ban đầu (v0) sang Bản chốt cuối (v1) ({inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length} điều khoản)
+                        </span>
+                        <div className="divide-y divide-line border border-line rounded-lg">
+                          {inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.map((diff, idx) => (
+                            <div key={idx} className="p-3 space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-ink">
+                                  {diff.clauseNumber}: {diff.title}
+                                </span>
+                                <span className="text-2xs text-ink-3">
+                                  {diff.targetRole === 'FINANCE' ? 'Kế toán' : 'Pháp chế'}
+                                </span>
+                              </div>
+                              {diff.originalText && (
+                                <p className="text-2xs text-ink-3 line-through">
+                                  Bản đầu (v0): {diff.originalText}
+                                </p>
+                              )}
+                              {diff.modifiedText && (
+                                <p className="text-2xs text-ink font-medium">
+                                  Bản chốt (v1): {diff.modifiedText}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-4 space-y-3">
                       <span className="font-semibold text-ink block">
-                        So sánh điều khoản thay đổi
+                        So sánh điều khoản với mẫu chuẩn UpBase
                       </span>
                       {inspectRecord.googleDocsReviewRouting?.clauseDiffs &&
                       inspectRecord.googleDocsReviewRouting.clauseDiffs.length > 0 ? (
                         <div className="divide-y divide-line border border-line rounded-lg">
                           {inspectRecord.googleDocsReviewRouting.clauseDiffs.map((diff, idx) => (
-                            <div key={idx} className="p-3 space-y-1.5">
+                            <div key={idx} className="p-3 space-y-2">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-medium text-ink">
                                   {diff.clauseNumber}: {diff.title}
@@ -1368,7 +1427,7 @@ export function ContractApprovalPortalView({
                       )}
                     </div>
 
-                    <div className="p-3.5 space-y-2">
+                    <div className="p-4 space-y-2">
                       <span className="font-semibold text-ink block">Tiến độ phê duyệt</span>
                       <div className="flex items-center justify-between py-1">
                         <span className="text-ink-2">
@@ -1418,7 +1477,7 @@ export function ContractApprovalPortalView({
               {/* CỘT PHỤ 340PX: Chung một khung, ngăn bằng đường kẻ mảnh (DESIGN_SYSTEM.md §7 Rule 14) */}
               <div className="rounded-xl border border-line bg-surface divide-y divide-line">
                 {/* Khối 1: Định danh & Thụ hưởng */}
-                <div className="p-4 space-y-2.5">
+                <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-ink">Hồ sơ pháp lý &amp; thụ hưởng</span>
                     <button
@@ -1428,17 +1487,17 @@ export function ContractApprovalPortalView({
                     >
                       {revealSensitive ? (
                         <>
-                          <EyeOff className="w-3 h-3" /> Ẩn số
+                          <EyeOff className="w-3.5 h-3.5" /> Ẩn số
                         </>
                       ) : (
                         <>
-                          <Eye className="w-3 h-3" /> Hiện số
+                          <Eye className="w-3.5 h-3.5" /> Hiện số
                         </>
                       )}
                     </button>
                   </div>
 
-                  <dl className="space-y-1.5">
+                  <dl className="space-y-2">
                     <div className="flex justify-between gap-2">
                       <dt className="text-ink-3">Đối tác KOC</dt>
                       <dd className="font-medium text-ink text-right">{inspectRecord.partner}</dd>
@@ -1472,7 +1531,7 @@ export function ContractApprovalPortalView({
                 </div>
 
                 {/* Khối 2: Đối soát giá trị */}
-                <div className="p-4 space-y-2.5">
+                <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-ink">Đối soát giá trị</span>
                     {inspectFinancials.isOverDealBudget ? (
@@ -1484,7 +1543,7 @@ export function ContractApprovalPortalView({
                     )}
                   </div>
 
-                  <dl className="space-y-1.5 tabular-nums">
+                  <dl className="space-y-2 tabular-nums">
                     <div className="flex justify-between gap-2">
                       <dt className="text-ink-3">Tổng giá trị Gross</dt>
                       <dd className="font-code text-ink">
@@ -1497,7 +1556,7 @@ export function ContractApprovalPortalView({
                         -{formatVnd(inspectFinancials.taxAmount)}
                       </dd>
                     </div>
-                    <div className="flex justify-between gap-2 pt-1.5 border-t border-line">
+                    <div className="flex justify-between gap-2 pt-2 border-t border-line">
                       <dt className="font-semibold text-ink">Thực chi Net</dt>
                       <dd className="font-code font-semibold text-positive">
                         {formatVnd(inspectFinancials.netAmount)}
@@ -1515,7 +1574,7 @@ export function ContractApprovalPortalView({
 
                 {/* Khối 3: Ghi chú phê duyệt */}
                 {canApproveInInspectModal && (
-                  <div className="p-4 space-y-2.5">
+                  <div className="p-4 space-y-3">
                     <Field
                       label={
                         mode === 'LEGAL_PORTAL'

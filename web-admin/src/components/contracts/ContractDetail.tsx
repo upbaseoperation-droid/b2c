@@ -234,6 +234,7 @@ export function ContractDetail({
   );
 
   const [syncingGDocsComments, setSyncingGDocsComments] = useState(false);
+  const [generatingGDocsReport, setGeneratingGDocsReport] = useState(false);
   const [gdocsError, setGdocsError] = useState('');
   const handleSyncGoogleDocsComments = async () => {
     setSyncingGDocsComments(true);
@@ -247,6 +248,22 @@ export function ContractDetail({
       setGdocsError((err as Error).message);
     } finally {
       setSyncingGDocsComments(false);
+    }
+  };
+
+  const handleGenerateGoogleDocsReport = async () => {
+    setGeneratingGDocsReport(true);
+    setGdocsError('');
+    try {
+      const res = await contractApi<{ success: boolean; record: ContractRecord }>(
+        '/api/contracts/google-docs/summarize-report',
+        { contractId: record.id, syncLatest: true }
+      );
+      await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, 'Đã tổng hợp và lưu báo cáo đàm phán hợp đồng');
+    } catch (err) {
+      setGdocsError((err as Error).message);
+    } finally {
+      setGeneratingGDocsReport(false);
     }
   };
 
@@ -380,7 +397,7 @@ export function ContractDetail({
               Quay về Quản lý Deal &amp; Booking
             </Button>
           )}
-          <Button variant="ghost" size="sm" icon={!onBackToBooking ? ArrowLeft : undefined} onClick={onBack} className={!onBackToBooking ? '-ml-2.5' : ''}>
+          <Button variant="ghost" size="sm" icon={!onBackToBooking ? ArrowLeft : undefined} onClick={onBack} className={!onBackToBooking ? '-ml-3' : ''}>
             Danh sách hợp đồng
           </Button>
         </div>
@@ -392,7 +409,7 @@ export function ContractDetail({
             </Status>
           )}
           {(onPrev || onNext) && (
-            <div className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-1.5 py-1">
+            <div className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2 py-1">
               <button
                 type="button"
                 disabled={!onPrev}
@@ -402,7 +419,7 @@ export function ContractDetail({
                 <ChevronLeft className="w-3.5 h-3.5" /> Trước
               </button>
               {positionLabel && (
-                <span className="px-1.5 text-2xs font-code text-ink-3 tabular-nums">{positionLabel}</span>
+                <span className="px-2 text-2xs font-code text-ink-3 tabular-nums">{positionLabel}</span>
               )}
               <button
                 type="button"
@@ -429,7 +446,7 @@ export function ContractDetail({
                 ? 'Đang trình draft: Pháp chế, Kế toán góp ý và sửa trực tiếp trên Google Doc. Sửa xong, bấm Trình final.'
                 : 'Chưa trình draft. Bấm Trình draft để Pháp chế, Kế toán vào Google Doc góp ý.';
         return (
-          <div className="rounded-xl border border-line bg-surface px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="rounded-xl border border-line bg-surface px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="min-w-0 space-y-0.5">
               <p className="text-ink">
                 <span className="font-semibold">{record.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'Mẫu của KOC' : 'Mẫu Upbase có chỉnh sửa'} · </span>
@@ -450,7 +467,7 @@ export function ContractDetail({
       {/* Thanh lộ trình 3 bước pháp lý chuẩn của Deal (Bấm chuyển nhanh giữa HĐNT -> SOW -> BBNT).
           HĐNT của KOC chưa có deal thì không hiện: phụ lục và BBNT chỉ có khi có deal. */}
       {(!isFrameworkWithSow || onCreateSow || childRecords.length > 0) && (
-      <div className="rounded-xl border border-line bg-surface px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-xl border border-line bg-surface px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {[
             {
@@ -519,7 +536,7 @@ export function ContractDetail({
                 type="button"
                 disabled={!item.onClick}
                 onClick={item.onClick}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-left transition-colors ${
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
                   item.isCurrent
                     ? 'border-accent bg-accent-soft/35 text-ink'
                     : item.state === 'done'
@@ -545,7 +562,7 @@ export function ContractDetail({
       )}
 
       {/* Tiêu đề hồ sơ & Thanh tác vụ chính */}
-      <header className="flex flex-wrap items-start justify-between gap-4 bg-surface border border-line rounded-xl px-4 py-3.5">
+      <header className="flex flex-wrap items-start justify-between gap-4 bg-surface border border-line rounded-xl px-4 py-4">
         <div className="min-w-0 grid gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold text-ink">{record.title}</h2>
@@ -576,7 +593,7 @@ export function ContractDetail({
           )}
           {editable && <Button size="sm" icon={Pencil} onClick={onEdit}>Sửa nội dung</Button>}
           {myStep && <Button size="sm" disabled={busy} onClick={() => setDialog('changes')}>Yêu cầu sửa</Button>}
-          <a href={`/api/contracts/${record.id}/document`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken">
+          <a href={`/api/contracts/${record.id}/document`} className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken">
             <Download className="w-3.5 h-3.5 text-ink-3" strokeWidth={1.75} />Tải Word
           </a>
           {primary}
@@ -607,7 +624,7 @@ export function ContractDetail({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {demo && !isFullySigned && (
                 <Button
                   size="sm"
@@ -661,7 +678,7 @@ export function ContractDetail({
               {isFullySigned && (signing?.signedFileUrl || record.contractSystem?.signedFileUrl || signing?.provider !== 'DEMO') && (
                 <a
                   href={signing?.signedFileUrl || record.contractSystem?.signedFileUrl || `/api/contracts/${record.id}/document?signed=1`}
-                  className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft px-2.5 py-1 text-xs font-medium text-positive hover:underline"
+                  className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft px-3 py-1 text-xs font-medium text-positive hover:underline"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Bản đã ký (.pdf/.docx)
@@ -731,7 +748,7 @@ export function ContractDetail({
 
           {isFullySigned && isSowDoc && (
             <div className="rounded-lg border border-positive/30 bg-positive-soft px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink">
-              <span className="flex items-center gap-1.5 font-medium text-positive">
+              <span className="flex items-center gap-2 font-medium text-positive">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 Phụ lục SOW đã ký đủ 2 bên — Cấu hình Deal ({record.dealCode || linkedDeal?.dealCode || 'Deal'}) đã khóa. Phát sinh mới sẽ lập Phụ lục bổ sung (PL-02).
               </span>
@@ -762,7 +779,7 @@ export function ContractDetail({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 text-xs">
+          <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2">
               <span className="text-2xs text-ink-3 block">Giá trị thù lao dịch vụ</span>
               <span className="text-sm font-code font-semibold text-ink tabular-nums block mt-0.5">
@@ -816,7 +833,7 @@ export function ContractDetail({
             const jobTables = buildDealSowJobTables(linkedDeal, linkedKoc, parent, shownValues['meta:sowJobsJson']);
             if (jobTables.length === 0) return null;
             return (
-              <div className="rounded-lg border border-line bg-sunken/25 px-3 py-2 space-y-1.5 text-2xs">
+              <div className="rounded-lg border border-line bg-sunken/25 px-3 py-2 space-y-2 text-2xs">
                 <div className="flex items-center justify-between gap-2 font-semibold text-ink">
                   <span>Danh sách Bảng công việc trong Phụ lục ({jobTables.length} Job)</span>
                   <span className="font-code text-accent">1 Job = 1 Bảng CV</span>
@@ -888,7 +905,7 @@ export function ContractDetail({
       {record.hasCustomTerms && (
         <div className="rounded-xl border border-warning/50 bg-warning-soft/70 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
-            <span className="font-semibold text-xs text-warning-strong flex items-center gap-1.5">
+            <span className="font-semibold text-xs text-warning-strong flex items-center gap-2">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
               Điều khoản KOC đề xuất sửa / Thỏa thuận riêng
             </span>
@@ -944,6 +961,8 @@ export function ContractDetail({
               auditTrail={record.googleDocsAuditTrail}
               onSyncComments={handleSyncGoogleDocsComments}
               syncingComments={syncingGDocsComments}
+              onGenerateReport={handleGenerateGoogleDocsReport}
+              generatingReport={generatingGDocsReport}
               canApproveWeSign={canApproveGDocsFinance}
               onApproveAndPushWeSign={() => setDialog('google_docs_finance')}
               isFinanceRole={me.roles.includes('FINANCE')}
@@ -995,7 +1014,7 @@ export function ContractDetail({
                   isTemplatePreview={record.isKocOwnForm}
                   versionSelector={
                     record.versions.length > 0 ? (
-                      <div className="inline-flex items-center gap-1.5">
+                      <div className="inline-flex items-center gap-2">
                         <select
                           aria-label="Chọn phiên bản hợp đồng"
                           value={selectedVersion}
@@ -1010,7 +1029,7 @@ export function ContractDetail({
                           ))}
                         </select>
                         {previousSnapshot && (
-                          <label className="inline-flex items-center gap-1 text-2xs text-ink-2 cursor-pointer px-1.5">
+                          <label className="inline-flex items-center gap-1 text-2xs text-ink-2 cursor-pointer px-2">
                             <input
                               type="checkbox"
                               checked={comparePrev}
@@ -1065,19 +1084,19 @@ export function ContractDetail({
           ) : (
             <div className="grid gap-5">
               {/* Luồng đồng bộ Google Docs & contract-system (khi cần thao tác kỹ thuật) */}
-              <section className="bg-surface border border-line rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <section className="bg-surface border border-line rounded-xl p-4 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-ink">Đồng bộ contract-system &amp; Google Docs</span>
                   <span className="text-2xs font-code px-2 py-0.5 rounded bg-sunken border border-line text-ink-2">
                     {stableContractCode}
                   </span>
                   {templateSignTags.map(tag => (
-                    <span key={tag} className="text-2xs font-code px-1.5 py-0.5 rounded bg-accent-soft/50 border border-accent/25 text-accent">
+                    <span key={tag} className="text-2xs font-code px-2 py-0.5 rounded bg-accent-soft/50 border border-accent/25 text-accent">
                       {tag}
                     </span>
                   ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   {!activeSigning && (
                     <Button
                       size="sm"
@@ -1099,7 +1118,7 @@ export function ContractDetail({
                       href={record.contractSystem.googleDocsUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
+                      className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Mở Google Docs
@@ -1137,7 +1156,7 @@ export function ContractDetail({
                     ))
                   )}
                   {signing && (
-                    <li className="px-4 py-3.5 grid gap-2.5">
+                    <li className="px-4 py-4 grid gap-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                         <span className="font-semibold text-ink">Chi tiết các bước ký trên MISA AMIS weSign</span>
                         <span className="text-2xs font-code text-ink-3">UUID: {signing.documentId}</span>
@@ -1148,8 +1167,8 @@ export function ContractDetail({
                           const stepNum = p.level ?? i + 1;
                           const roleText = p.roleLabel || 'Người ký';
                           return (
-                            <li key={i} className="px-3 py-2.5 flex flex-wrap items-center justify-between gap-3">
-                              <div className="flex items-center gap-2.5 min-w-0">
+                            <li key={i} className="px-3 py-3 flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
                                 <span
                                   className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-2xs font-semibold shrink-0 ${
                                     p.action === 2
@@ -1164,7 +1183,7 @@ export function ContractDetail({
                                   {stepNum}
                                 </span>
                                 <Person name={p.name} sub={p.email} size={24} />
-                                <span className="text-2xs px-1.5 py-0.5 rounded bg-sunken border border-line text-ink-2">
+                                <span className="text-2xs px-2 py-0.5 rounded bg-sunken border border-line text-ink-2">
                                   {roleText}
                                 </span>
                               </div>
@@ -1331,7 +1350,7 @@ export function ContractDetail({
             </dl>
           </AsideSection>
           <AsideSection title="Phiên bản">
-            <ul className="grid gap-1.5 text-[13px]">
+            <ul className="grid gap-2 text-xs">
               <li className="flex items-center justify-between gap-2">
                 <button
                   type="button"
@@ -1358,14 +1377,14 @@ export function ContractDetail({
           </AsideSection>
           {(legalNotes || kocTemplate) && (
             <AsideSection title="Lưu ý của Pháp chế">
-              <div className="rounded-lg bg-warning-soft/70 border border-warning/30 p-2.5 text-xs text-ink space-y-1.5">
+              <div className="rounded-lg bg-warning-soft/70 border border-warning/30 p-3 text-xs text-ink space-y-2">
                 <div className="font-semibold text-warning-strong flex items-center justify-between gap-1">
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-2">
                     <Scale className="w-3.5 h-3.5 shrink-0" />
                     Lưu ý cho {record.partner}
                   </span>
                   {kocTemplate && (
-                    <span className="text-2xs font-normal px-1.5 py-0.5 rounded bg-surface border border-line text-ink-2">
+                    <span className="text-2xs font-normal px-2 py-0.5 rounded bg-surface border border-line text-ink-2">
                       Mẫu đã duyệt
                     </span>
                   )}
@@ -1514,10 +1533,10 @@ export function ContractDetail({
 
 function Step({ title, who, status, meta, note }: { title: string; who: string; status: { label: string; tone: StatusTone; note?: string }; meta?: string; note?: string }) {
   return (
-    <li className="px-4 py-3 grid gap-1.5">
+    <li className="px-4 py-3 grid gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-[13px] font-medium text-ink w-24 shrink-0">{title}</span>
+          <span className="text-xs font-medium text-ink w-24 shrink-0">{title}</span>
           <Person name={who} size={20} />
         </div>
         <div className="flex items-center gap-2">
@@ -1525,7 +1544,7 @@ function Step({ title, who, status, meta, note }: { title: string; who: string; 
           <Status tone={status.tone}>{status.note || status.label}</Status>
         </div>
       </div>
-      {note && <p className="text-[13px] text-ink-2 whitespace-pre-wrap pl-[108px]">{note}</p>}
+      {note && <p className="text-xs text-ink-2 whitespace-pre-wrap pl-[108px]">{note}</p>}
     </li>
   );
 }
@@ -1543,7 +1562,7 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div className="grid gap-0.5">
       <dt className="text-2xs text-ink-3">{label}</dt>
-      <dd className="text-[13px] text-ink break-words">{children}</dd>
+      <dd className="text-xs text-ink break-words">{children}</dd>
     </div>
   );
 }
@@ -1597,16 +1616,16 @@ function DiscussionAndHistory({
       ) : (
         <ol className="grid gap-3">
           {shown.map((h, i) => (
-            <li key={i} className={`grid gap-0.5 pl-2.5 border-l-2 ${h.action === 'NOTE' ? 'border-accent' : 'border-line'}`}>
+            <li key={i} className={`grid gap-0.5 pl-3 border-l-2 ${h.action === 'NOTE' ? 'border-accent' : 'border-line'}`}>
               <div className="flex items-center justify-between gap-1">
-                <span className={`text-[13px] font-medium ${h.action === 'NOTE' ? 'text-accent' : 'text-ink'}`}>
+                <span className={`text-xs font-medium ${h.action === 'NOTE' ? 'text-accent' : 'text-ink'}`}>
                   {HISTORY_LABEL[h.action] || h.action}
                 </span>
                 <span className="text-2xs text-ink-3">v{h.version}</span>
               </div>
               <span className="text-2xs text-ink-3">{h.actorName} · {dateTime(h.at)}</span>
               {h.note && !/^-?\d+$/.test(h.note) && (
-                <span className={`text-2xs mt-0.5 ${h.action === 'NOTE' ? 'text-ink font-normal bg-sunken/60 p-1.5 rounded' : 'text-ink-2 line-clamp-3'}`}>
+                <span className={`text-2xs mt-0.5 ${h.action === 'NOTE' ? 'text-ink font-normal bg-sunken/60 p-2 rounded' : 'text-ink-2 line-clamp-3'}`}>
                   {h.note}
                 </span>
               )}
@@ -1614,7 +1633,7 @@ function DiscussionAndHistory({
           ))}
           {items.length > 8 && (
             <li>
-              <button type="button" className="text-[13px] text-accent hover:underline" onClick={() => setAll(v => !v)}>
+              <button type="button" className="text-xs text-accent hover:underline" onClick={() => setAll(v => !v)}>
                 {all ? 'Thu gọn' : `Xem thêm ${items.length - 8} thao tác`}
               </button>
             </li>
@@ -1689,7 +1708,7 @@ function SubmitDialog({
       <div className="space-y-4">
         {isExempt && !forceLegal ? (
           <div className="rounded-lg border border-positive/30 bg-positive-soft p-3 text-xs text-ink space-y-1">
-            <div className="font-semibold text-positive flex items-center gap-1.5">
+            <div className="font-semibold text-positive flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               Áp dụng luồng chuẩn: Miễn duyệt Pháp chế
             </div>
@@ -1699,7 +1718,7 @@ function SubmitDialog({
           </div>
         ) : (
           <div className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-xs text-ink space-y-1">
-            <div className="font-semibold text-warning-strong flex items-center gap-1.5">
+            <div className="font-semibold text-warning-strong flex items-center gap-2">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
               Bắt buộc Pháp chế (chị Liên) duyệt trước
             </div>
@@ -1777,7 +1796,7 @@ function LinkDialog({ open, version, busy, onClose, onSubmit }: { open: boolean;
       <Field label="Mã tài liệu trên weSign" htmlFor="ws-id">
         <Input id="ws-id" value={id} onChange={e => setId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="font-code" />
       </Field>
-      <label className="flex items-start gap-2 text-[13px] text-ink-2">
+      <label className="flex items-start gap-2 text-xs text-ink-2">
         <input type="checkbox" className="mt-0.5" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
         Tôi đã đối chiếu tài liệu và người ký trên weSign với đúng bản duyệt phiên bản {version}.
       </label>
@@ -1832,7 +1851,7 @@ function LegalApproveDialog({
         </Field>
 
         <div className="rounded-lg border border-line bg-surface p-3 space-y-3">
-          <label className="flex items-start gap-2.5 text-xs font-medium text-ink cursor-pointer">
+          <label className="flex items-start gap-3 text-xs font-medium text-ink cursor-pointer">
             <input
               type="checkbox"
               className="mt-0.5 rounded border-line text-accent"
@@ -2016,9 +2035,9 @@ function RequestSignDialog({
           {signTags.length > 0 && (
             <div className="pt-1 border-t border-line flex flex-wrap items-center justify-between gap-2">
               <span className="text-ink-3">Thẻ vị trí chữ ký tự động tách</span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {signTags.map(tag => (
-                  <span key={tag} className="font-code text-2xs px-1.5 py-0.5 rounded bg-surface border border-line text-accent">
+                  <span key={tag} className="font-code text-2xs px-2 py-0.5 rounded bg-surface border border-line text-accent">
                     {tag}
                   </span>
                 ))}

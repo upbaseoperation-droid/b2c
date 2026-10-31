@@ -20,7 +20,7 @@ import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
 import { isTwoTimePaymentField, resolvePaymentScheduleOption } from '@/lib/contracts/contractRules';
 import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, LegalDocAttachment, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
-import { captureGoogleDocForRecord, googleDocsShareEmail } from '@/lib/contracts/googleDocsServer';
+import { buildContractNegotiationReport, captureGoogleDocForRecord, googleDocsShareEmail } from '@/lib/contracts/googleDocsServer';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 function failure(error: unknown) { return NextResponse.json({ error: error instanceof ContractError ? error.message : 'Không thể xử lý hồ sơ. Kiểm tra cấu hình và thử lại.' }, { status: error instanceof ContractError ? eStatus(error) : 503, headers: { 'Cache-Control': 'no-store' } }); }
@@ -50,18 +50,27 @@ export async function GET(req: NextRequest) {
     );
   } catch (error) { return failure(error); }
 }
-/** Trình draft: báo Pháp chế, Kế toán vào Google Doc góp ý và sửa trực tiếp trước khi B2C trình final. */
-function markGoogleDocsDraft(record: ContractRecord, actor: ContractActor) {
+/** Trình draft: báo Pháp chế, Kế toán vào Google Doc góp ý và sửa trực tiếp trước khi B2C trình final, đồng thời chụp lại Bản ban đầu (initialSnapshot). */
+async function markGoogleDocsDraft(record: ContractRecord, actor: ContractActor) {
   const now = new Date().toISOString();
   record.googleDocsStage = 'DRAFT';
+  const capture = await captureGoogleDocForRecord(record, actor.name).catch(() => null);
+  if (capture) {
+    record.googleDocsComments = capture.comments;
+    record.googleDocsReviewRouting = capture.routing;
+  }
   record.googleDocsAuditTrail = {
     ...record.googleDocsAuditTrail,
-    syncedAt: record.googleDocsAuditTrail?.syncedAt || now,
-    commentsCount: record.googleDocsAuditTrail?.commentsCount || 0,
+    syncedAt: now,
+    commentsCount: capture ? capture.comments.length : record.googleDocsAuditTrail?.commentsCount || 0,
+    revisions: capture ? capture.revisions : record.googleDocsAuditTrail?.revisions,
+    simulated: capture?.simulated || record.googleDocsAuditTrail?.simulated,
+    initialSnapshot: record.googleDocsAuditTrail?.initialSnapshot || capture?.initialSnapshot,
+    initialToFinalDiffs: capture?.initialToFinalDiffs || record.googleDocsAuditTrail?.initialToFinalDiffs,
     draftSubmittedAt: now,
     draftSubmittedBy: actor.name,
   };
-  event(record, actor, 'GOOGLE_DOCS_DRAFT', 'Đã trình draft: Pháp chế và Kế toán góp ý, sửa trực tiếp trên Google Doc.');
+  event(record, actor, 'GOOGLE_DOCS_DRAFT', 'Đã trình draft (đã lưu bản chụp ban đầu): Pháp chế và Kế toán góp ý, sửa trực tiếp trên Google Doc.');
 }
 async function parseInput(body: Record<string, unknown>, actor: ContractActor, existing?: ContractRecord) {
   const title = typeof body.title === 'string' ? body.title.trim() : ''; const brand = typeof body.brand === 'string' ? body.brand.trim() : ''; const partner = typeof body.partner === 'string' ? body.partner.trim() : '';
@@ -157,7 +166,23 @@ export async function POST(req: NextRequest) {
         createStandaloneContractSystemMeta(draft, template, parentContractCode),
       );
       await archiveTemplate(input.templateId, input.templateHash);
-      if (draft.googleDocsUrl && body.submitGoogleDocsDraft === true) markGoogleDocsDraft(draft, actor);
+      if (draft.googleDocsUrl && body.submitGoogleDocsDraft === true) await markGoogleDocsDraft(draft, actor);
+      else if (draft.googleDocsUrl) {
+        const initCap = await captureGoogleDocForRecord(draft, actor.name).catch(() => null);
+        if (initCap) {
+          draft.googleDocsComments = initCap.comments;
+          draft.googleDocsReviewRouting = initCap.routing;
+          draft.googleDocsAuditTrail = {
+            ...draft.googleDocsAuditTrail,
+            syncedAt: new Date().toISOString(),
+            commentsCount: initCap.comments.length,
+            revisions: initCap.revisions,
+            simulated: initCap.simulated || undefined,
+            initialSnapshot: initCap.initialSnapshot,
+            initialToFinalDiffs: initCap.initialToFinalDiffs,
+          };
+        }
+      }
       const saved = await saveContract(draft); await syncContractToJob(saved).catch(() => 0); return NextResponse.json({ record: saved });
     }
     requireCondition(typeof body.id === 'string', 'Thiếu mã hồ sơ.');
@@ -172,11 +197,27 @@ export async function POST(req: NextRequest) {
       next.contractSystem = await generateContractOnSystem(next, template, parentCode).catch(() =>
         createStandaloneContractSystemMeta(next, template, parentCode),
       );
+      if (next.googleDocsUrl && !next.googleDocsAuditTrail?.initialSnapshot) {
+        const initCap = await captureGoogleDocForRecord(next, actor.name).catch(() => null);
+        if (initCap) {
+          next.googleDocsComments = initCap.comments;
+          next.googleDocsReviewRouting = initCap.routing;
+          next.googleDocsAuditTrail = {
+            ...next.googleDocsAuditTrail,
+            syncedAt: new Date().toISOString(),
+            commentsCount: initCap.comments.length,
+            revisions: initCap.revisions,
+            simulated: initCap.simulated || undefined,
+            initialSnapshot: initCap.initialSnapshot,
+            initialToFinalDiffs: initCap.initialToFinalDiffs,
+          };
+        }
+      }
     }
     else if (body.action === 'SUBMIT_GOOGLE_DOCS_DRAFT') {
       requireCondition(Boolean(record.googleDocsUrl) && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval), 'Hồ sơ không ở trạng thái trình draft được.');
       requireCondition(record.ownerId === actor.id || actor.roles.includes('LEAD'), 'Chỉ người tạo hồ sơ được trình draft.', 403);
-      markGoogleDocsDraft(next, actor);
+      await markGoogleDocsDraft(next, actor);
     }
     else if (body.action === 'SUBMIT') {
       const { template } = await loadTemplate(record.templateId, record.templateHash);
@@ -206,9 +247,12 @@ export async function POST(req: NextRequest) {
           commentsCount: capture.comments.length,
           revisions: capture.revisions,
           simulated: capture.simulated || undefined,
+          initialSnapshot: capture.initialSnapshot,
+          initialToFinalDiffs: capture.initialToFinalDiffs,
           finalSnapshot: capture.snapshot,
           approvedSnapshot: undefined,
         };
+        next.googleDocsAuditTrail.negotiationReport = await buildContractNegotiationReport(next, actor.name);
         event(
           next,
           actor,
@@ -284,6 +328,14 @@ export async function POST(req: NextRequest) {
         } else if (kocLegalNotes) {
           event(next, actor, 'NOTE', `Lưu ý của Pháp chế cho KOC: ${kocLegalNotes}`);
         }
+      }
+      if (next.googleDocsUrl) {
+        next.googleDocsAuditTrail = {
+          ...next.googleDocsAuditTrail,
+          syncedAt: next.googleDocsAuditTrail?.syncedAt || new Date().toISOString(),
+          commentsCount: (next.googleDocsComments || []).length,
+        };
+        next.googleDocsAuditTrail.negotiationReport = await buildContractNegotiationReport(next, actor.name);
       }
     } else if (body.action === 'UPDATE_LEGAL_NOTES') {
       requireCondition(actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)), 'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền cập nhật lưu ý pháp lý.', 403);

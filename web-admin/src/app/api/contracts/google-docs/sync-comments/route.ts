@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { actorFromRequest } from '@/lib/contracts/access';
 import { canRead, ContractError, event, requireCondition } from '@/lib/contracts/domain';
 import { getContract, saveContract } from '@/lib/contracts/store';
-import { captureGoogleDocForRecord } from '@/lib/contracts/googleDocsServer';
+import { buildContractNegotiationReport, captureGoogleDocForRecord } from '@/lib/contracts/googleDocsServer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,8 +15,8 @@ function failure(error: unknown) {
 }
 
 /**
- * Đồng bộ từ Google Doc: gộp bình luận mới (không xóa bình luận đã lưu), lấy lịch sử phiên bản
- * và, với mẫu Upbase có chỉnh sửa, so lại nội dung với mẫu. Bản chốt lúc trình final không đổi.
+ * Đồng bộ từ Google Doc: gộp bình luận mới (không xóa bình luận đã lưu), lấy lịch sử phiên bản,
+ * giữ nguyên Bản chụp ban đầu (`initialSnapshot`), cập nhật độ lệch `initialToFinalDiffs` và tổng hợp lại báo cáo.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +40,10 @@ export async function POST(req: NextRequest) {
       commentsCount: capture.comments.length,
       revisions: capture.revisions,
       simulated: capture.simulated || undefined,
+      initialSnapshot: capture.initialSnapshot,
+      initialToFinalDiffs: capture.initialToFinalDiffs,
     };
+    updated.googleDocsAuditTrail.negotiationReport = await buildContractNegotiationReport(updated, actor.name);
     event(
       updated,
       actor,

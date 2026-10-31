@@ -47,7 +47,7 @@ export interface GoogleDocRevisionItem {
   authorEmail?: string;
 }
 
-/** Bản chốt nội dung Google Doc tại một thời điểm (lúc trình final hoặc lúc Kế toán duyệt). */
+/** Bản chốt nội dung Google Doc tại một thời điểm (lúc đẩy lên ban đầu, lúc trình final hoặc lúc Kế toán duyệt). */
 export interface GoogleDocSnapshot {
   at: string;
   by: string;
@@ -60,6 +60,29 @@ export interface GoogleDocSnapshot {
   simulated?: boolean;
 }
 
+/** Báo cáo tổng hợp lưu vết đàm phán, bình luận và biến đổi điều khoản của riêng hợp đồng. */
+export interface GoogleDocsNegotiationReport {
+  generatedAt: string;
+  generatedBy: string;
+  providerUsed: string;
+  modelUsed: string;
+  initialHash?: string;
+  finalHash?: string;
+  executiveSummary: string;
+  clauseEvolutionSummary: string[];
+  accountContributionsSummary: Array<{
+    account: string;
+    email?: string;
+    roleHint?: string;
+    editCount: number;
+    commentCount: number;
+    replyCount: number;
+    summary: string;
+  }>;
+  riskAndFinanceNotes: string[];
+  rawReportText: string;
+}
+
 export interface GoogleDocsAuditTrail {
   syncedAt: string;
   commentsCount: number;
@@ -68,10 +91,16 @@ export interface GoogleDocsAuditTrail {
   draftSubmittedAt?: string;
   draftSubmittedBy?: string;
   revisions?: GoogleDocRevisionItem[];
+  /** Bản chụp ban đầu ngay khi nhân sự đẩy link Google Doc lên hệ thống (Baseline v0). */
+  initialSnapshot?: GoogleDocSnapshot;
+  /** Danh sách điều khoản thay đổi giữa bản ban đầu (initialSnapshot) và bản hiện tại/bản chốt cuối. */
+  initialToFinalDiffs?: GoogleDocClauseDiff[];
   /** Bản chốt lúc B2C trình final; Pháp chế và Kế toán duyệt trên bản này. */
   finalSnapshot?: GoogleDocSnapshot;
   /** Bản chốt lúc Kế toán duyệt, chính là bản xuất DOCX/PDF đẩy WeSign. */
   approvedSnapshot?: GoogleDocSnapshot;
+  /** Báo cáo tổng hợp lưu vết đàm phán (từ bản đầu + comment + bản cuối) của riêng hợp đồng này. */
+  negotiationReport?: GoogleDocsNegotiationReport;
   exportedDocxUrl?: string;
   exportedPdfUrl?: string;
   exportedAt?: string;

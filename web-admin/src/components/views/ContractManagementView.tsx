@@ -490,7 +490,9 @@ export function ContractManagementView({
       render: r => {
         const code = r.contractSystem?.contractCode || r.signing.at(-1)?.contractCode || r.title;
         const gdocsUrl = r.googleDocsUrl || r.contractSystem?.googleDocsUrl;
-        const docxUrl = r.contractSystem?.exportedDocxUrl || `/api/contracts/${r.id}/document?version=${r.version}`;
+        const docxUrl = r.googleDocsAuditTrail?.exportedDocxUrl || r.contractSystem?.exportedDocxUrl || `/api/contracts/${r.id}/document?version=${r.version}`;
+        const pdfUrl = r.googleDocsAuditTrail?.exportedPdfUrl;
+        const hasReport = Boolean(r.googleDocsAuditTrail?.negotiationReport);
         const signedUrl =
           r.signing.at(-1)?.signedFileUrl ||
           r.contractSystem?.signedFileUrl ||
@@ -500,7 +502,7 @@ export function ContractManagementView({
             <div className="font-code text-xs font-medium text-ink truncate" title={code}>
               {code}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
+            <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
               <button
                 type="button"
                 onClick={() => setQuickViewRecord(r)}
@@ -517,6 +519,19 @@ export function ContractManagementView({
               >
                 .docx ↗
               </a>
+              {pdfUrl && (
+                <>
+                  <span>·</span>
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-ink hover:underline"
+                  >
+                    .pdf ↗
+                  </a>
+                </>
+              )}
               {gdocsUrl && (
                 <>
                   <span>·</span>
@@ -528,6 +543,18 @@ export function ContractManagementView({
                   >
                     Docs ↗
                   </a>
+                </>
+              )}
+              {hasReport && (
+                <>
+                  <span>·</span>
+                  <button
+                    type="button"
+                    onClick={() => setScreen({ mode: 'detail', id: r.id })}
+                    className="font-medium text-positive hover:underline"
+                  >
+                    Báo cáo đàm phán ({r.googleDocsComments?.length || 0} góp ý)
+                  </button>
                 </>
               )}
               {signedUrl && (
@@ -688,12 +715,12 @@ export function ContractManagementView({
         <EmptyState
           title={loadError.status === 401 ? 'Cần đăng nhập Lark để xem hợp đồng' : loadError.status === 403 ? 'Tài khoản chưa được cấp quyền hợp đồng' : 'Chưa tải được hợp đồng'}
           description={loadError.message}
-          action={<div className="flex gap-2"><Button onClick={() => { enableBrowserDemo(); refresh().catch(() => undefined); }}>Mở bản giả lập</Button>{loadError.status === 401 ? <a href="/api/auth/lark/login?returnTo=/" className="text-[13px] text-accent hover:underline">Đăng nhập Lark</a> : <Button onClick={() => refresh().catch(() => undefined)}>Thử lại</Button>}</div>}
+          action={<div className="flex gap-2"><Button onClick={() => { enableBrowserDemo(); refresh().catch(() => undefined); }}>Mở bản giả lập</Button>{loadError.status === 401 ? <a href="/api/auth/lark/login?returnTo=/" className="text-xs text-accent hover:underline">Đăng nhập Lark</a> : <Button onClick={() => refresh().catch(() => undefined)}>Thử lại</Button>}</div>}
         />
       </Panel>
     );
   }
-  if (!data) return <p className="text-[13px] text-ink-3 px-1">Đang tải hồ sơ hợp đồng…</p>;
+  if (!data) return <p className="text-xs text-ink-3 px-1">Đang tải hồ sơ hợp đồng…</p>;
 
   const canCreate = data.actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r));
 
@@ -720,7 +747,7 @@ export function ContractManagementView({
   }).filter(item => item.urgency === 'critical' || item.urgency === 'warning').length;
 
   return (
-    <div className="space-y-3.5" onClickCapture={e => {
+    <div className="space-y-4" onClickCapture={e => {
       if (!browserDemoEnabled()) return;
       const link = (e.target as HTMLElement).closest('a');
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
@@ -822,7 +849,7 @@ export function ContractManagementView({
                 count: financeReminderCount,
                 tone: financeReminderCount > 0 ? 'critical' : 'default',
               },
-              { key: 'FINANCE_PAYMENT_PORTAL', label: 'Tra cứu deal' },
+              { key: 'FINANCE_PAYMENT_PORTAL', label: 'Đối chiếu thanh toán' },
               { key: 'SETS', label: 'Theo bộ' },
               {
                 key: 'CATALOG',
@@ -1079,7 +1106,7 @@ export function ContractManagementView({
         title="Tạo hợp đồng với KOC"
         footer={<Button variant="ghost" onClick={() => setChooserOpen(false)}>Hủy</Button>}
       >
-        <div className="grid gap-2.5">
+        <div className="grid gap-3">
           <p className="text-xs text-ink-2">
             Chọn cách soạn hợp đồng nguyên tắc. Phụ lục SOW và biên bản nghiệm thu lập sau, từ deal của KOC.
           </p>
@@ -1110,11 +1137,11 @@ export function ContractManagementView({
                 setChooserOpen(false);
                 setScreen({ mode: 'form', init: { docStage: 'HDNT', kind: 'CONTRACT', source: opt.source } });
               }}
-              className="flex items-start gap-3 rounded-lg border border-line bg-surface px-3.5 py-3 text-left transition-colors hover:border-accent hover:bg-accent-soft/30"
+              className="flex items-start gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-left transition-colors hover:border-accent hover:bg-accent-soft/30"
             >
               <opt.icon className="w-4 h-4 mt-0.5 shrink-0 text-accent" />
               <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-ink">{opt.title}</span>
+                <span className="block text-xs font-semibold text-ink">{opt.title}</span>
                 <span className="block text-xs text-ink-2 mt-0.5">{opt.body}</span>
               </span>
             </button>
@@ -1133,7 +1160,7 @@ export function ContractManagementView({
             <div className="flex items-center justify-between w-full gap-2">
               <a
                 href={`/api/contracts/${quickViewRecord.id}/document`}
-                className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline"
+                className="inline-flex items-center gap-2 text-xs text-accent hover:underline"
               >
                 <Download className="w-4 h-4" />
                 Tải file Word (.docx)
