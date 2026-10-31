@@ -50,9 +50,11 @@ import {
   CONTENT_TAG_OPTIONS,
   DE_XUAT_UPBASE_OPTIONS,
   DOT_LISTING_OPTIONS,
+  LOAI_GIA_OPTIONS,
   STAFF_LISTING_COLUMNS,
   STAFF_SHEET_READONLY_SYSTEM_COLUMNS,
   STAFF_SHEET_UPDATED_EVENT,
+  TEP_BOOKING_OPTIONS,
   TEP_KENH_OPTIONS,
   TRANG_THAI_OPTIONS,
   buildStaffListingRowFromKoc,
@@ -704,6 +706,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [quickProduct, setQuickProduct] = useState('');
   const [quickContentTag, setQuickContentTag] = useState('Review trực tiếp');
   const [quickUpbaseProposal, setQuickUpbaseProposal] = useState('Recommend');
+  const [quickPricingMode, setQuickPricingMode] = useState<
+    'KOC_RATECARD' | 'FREECAST' | 'CUSTOM_NET'
+  >('KOC_RATECARD');
+  const [quickCustomNetFee, setQuickCustomNetFee] = useState('');
 
   const activeBrandProductCatalog = useMemo(
     () =>
@@ -731,6 +737,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     setQuickProduct(
       activeBrandProductCatalog.flatOptions[0]?.name || activeStoreObj?.mainProducts?.[0] || ''
     );
+    setQuickPricingMode('KOC_RATECARD');
+    setQuickCustomNetFee('');
     setPickedKocIds([]);
     setIsDirectoryPickerOpen(true);
   };
@@ -741,6 +749,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const selectedRowIdSet = useMemo(() => new Set(selectedRowIds), [selectedRowIds]);
   const [filterDot, setFilterDot] = useState<string>('ALL');
+  const [filterTepBooking, setFilterTepBooking] = useState<string>('ALL');
   const [filterBrandChon, setFilterBrandChon] = useState<string>('ALL');
   const [filterNhanSu, setFilterNhanSu] = useState<string>('ALL');
   const [appSortBy, setAppSortBy] = useState<'DEFAULT' | 'PRODUCT' | 'STAFF' | 'BATCH' | 'BRAND_DECISION'>('DEFAULT');
@@ -1048,6 +1057,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     const q = rowSearchQuery.trim().toLowerCase();
     const filtered = rows.filter((r) => {
       if (filterDot !== 'ALL' && r.dot !== filterDot) return false;
+      if (filterTepBooking === 'FREECAST') {
+        const isRowFreecast =
+          r.tepBooking === 'Freecast' ||
+          Number(r.giaNetVideo) === 0 ||
+          String(r.loaiGia || '').toLowerCase().includes('freecast');
+        if (!isRowFreecast) return false;
+      } else if (filterTepBooking === 'PAID') {
+        const isRowPaid =
+          r.tepBooking !== 'Freecast' &&
+          Number(r.giaNetVideo) > 0 &&
+          !String(r.loaiGia || '').toLowerCase().includes('freecast');
+        if (!isRowPaid) return false;
+      } else if (filterTepBooking !== 'ALL' && r.tepBooking !== filterTepBooking) {
+        return false;
+      }
       if (filterBrandChon !== 'ALL' && r.brandChon !== filterBrandChon) return false;
       if (filterNhanSu === 'MINE') {
         if ((r.nhanSuDien || '').trim().toLowerCase() !== currentUserName.trim().toLowerCase()) {
@@ -1064,6 +1088,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           r.tenKenh.toLowerCase().includes(q) ||
           r.sanPham.toLowerCase().includes(q) ||
           r.tepKenh.toLowerCase().includes(q) ||
+          r.tepBooking.toLowerCase().includes(q) ||
+          (r.loaiGia || '').toLowerCase().includes(q) ||
           r.contentNote.toLowerCase().includes(q) ||
           (r.nhanSuDien || '').toLowerCase().includes(q) ||
           r.id.toLowerCase().includes(q);
@@ -1095,12 +1121,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       return 0;
     });
     return sorted;
-  }, [rows, filterDot, filterBrandChon, filterNhanSu, currentUserName, rowSearchQuery, appSortBy]);
+  }, [
+    rows,
+    filterDot,
+    filterTepBooking,
+    filterBrandChon,
+    filterNhanSu,
+    currentUserName,
+    rowSearchQuery,
+    appSortBy,
+  ]);
 
   const [sheetPage, setSheetPage] = useState(1);
   const sheetPageSize = 50;
   const [prevSheetFilterKey, setPrevSheetFilterKey] = useState('');
-  const currentSheetFilterKey = `${activeSheetKey}|${filterDot}|${filterBrandChon}|${filterNhanSu}|${rowSearchQuery}|${appSortBy}`;
+  const currentSheetFilterKey = `${activeSheetKey}|${filterDot}|${filterTepBooking}|${filterBrandChon}|${filterNhanSu}|${rowSearchQuery}|${appSortBy}`;
   if (currentSheetFilterKey !== prevSheetFilterKey) {
     setPrevSheetFilterKey(currentSheetFilterKey);
     setSheetPage(1);
@@ -1168,6 +1203,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     const totalNet = rows.reduce((s, r) => s + (Number(r.giaNetVideo) || 0), 0);
     const totalGross = rows.reduce((s, r) => s + (Number(r.phiBookingKemThue) || 0), 0);
     const brandApprovedCount = rows.filter((r) => r.brandChon === 'Yes').length;
+    const freecastCount = rows.filter(
+      (r) => Number(r.giaNetVideo) === 0 || /freecast|foc/i.test(r.loaiGia || '') || /^freecast$/i.test(r.tepBooking || '')
+    ).length;
     const mustHaveCount = rows.filter((r) => r.deXuatUpBase === 'Must Have').length;
 
     let reviewedCount = 0;
@@ -1203,6 +1241,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
     return {
       totalCount,
+      freecastCount,
       totalNet,
       totalGross,
       brandApprovedCount,
@@ -1275,7 +1314,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           ...(key === 'tenKenh' ? { stageName: strVal } : {}),
           ...(key === 'tepKenh' ? { tepKenh: strVal } : {}),
           ...(key === 'follower' ? { followers: numVal } : {}),
-          ...(key === 'giaNetVideo' ? { rateCardVideo: numVal } : {}),
+          ...(key === 'giaNetVideo' && numVal > 0 ? { rateCardVideo: numVal } : {}),
           ...(key === 'doanhSo' ? { recentRevenue: numVal } : {}),
           ...(key === 'soMonBanRa' ? { itemsSold: numVal } : {}),
           ...(key === 'gpm' ? { gpm: numVal } : {}),
@@ -1321,6 +1360,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           {
             preserveIdKenhInput: key === 'idKenh',
             forceRefreshBrandTimestamp: brandDecisionChanged,
+            changedKey: key,
           }
         );
         if (
@@ -1362,6 +1402,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         const nowIso = new Date().toISOString();
         const nowFormatted = formatVnDateTime(new Date());
         if (matchedKoc && (!r.kocId || r.kocId !== matchedKoc.id)) {
+          const rowWasFreecast =
+            r.tepBooking === 'Freecast' ||
+            String(r.loaiGia || '').toLowerCase().includes('freecast') ||
+            Number(r.giaNetVideo) === 0;
           const autoRow = buildStaffListingRowFromKoc({
             koc: matchedKoc,
             monthKey: activeMonth,
@@ -1375,6 +1419,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             trangThai: r.trangThai,
             contentNote: r.contentNote,
             ngayAirPlan: r.ngayAirPlan,
+            isFreecast: rowWasFreecast,
+            loaiGia: rowWasFreecast ? 'Freecast (FOC 0đ)' : r.loaiGia,
           });
           return recalculateStaffListingRow({
             ...autoRow,
@@ -1393,8 +1439,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     );
   };
 
-  // Thêm 1 dòng trống để nhân viên tự gõ hoặc dán ID kênh
-  const handleAddBlankRow = () => {
+  // Thêm 1 dòng trống để nhân viên tự gõ hoặc dán ID kênh (hỗ trợ thêm nhanh dòng Freecast 0đ)
+  const handleAddBlankRow = (isFreecast = false) => {
     const defaultProd =
       activeBrandProductCatalog.flatOptions[0]?.name ||
       activeStoreObj?.mainProducts?.[0] ||
@@ -1403,7 +1449,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       koc: {
         stageName: '',
         channelId: '',
-        rateCardVideo: 1500000,
+        rateCardVideo: isFreecast ? 0 : 1500000,
         followers: 0,
         tepKenh: 'Beauty',
       },
@@ -1415,9 +1461,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       sanPham: defaultProd,
       contentTag: 'Review trực tiếp',
       deXuatUpBase: 'Recommend',
+      isFreecast,
+      loaiGia: isFreecast ? 'Freecast (FOC 0đ)' : 'Booking',
     });
     updateActiveSheetRows((prev) => [...prev, blankRow]);
-    onNotify?.('Đã thêm 1 dòng mới vào Sheet.', 'info');
+    onNotify?.(
+      isFreecast
+        ? 'Đã thêm 1 dòng Freecast (FOC 0đ) vào Sheet. Nhập ID kênh để điền thông tin KOC.'
+        : 'Đã thêm 1 dòng mới vào Sheet.',
+      'info'
+    );
   };
 
   // Đưa các KOC đã tích chọn từ Danh bạ vào Sheet theo Plan Tháng & Gian hàng đã chọn
@@ -1444,6 +1497,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     let added = 0;
     let skipped = 0;
     const targetKey = makeSheetKey(targetMonth, targetStore);
+    const isFreecastPick = quickPricingMode === 'FREECAST';
+    const customNetVal =
+      quickPricingMode === 'CUSTOM_NET'
+        ? parseThousandNumberInput(quickCustomNetFee)
+        : undefined;
 
     setCollection((prev) => {
       const currentRows = prev.sheets[targetKey] || [];
@@ -1470,7 +1528,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             sanPham: defaultProd,
             contentTag: quickContentTag,
             deXuatUpBase: quickUpbaseProposal,
-            contentNote: 'Hình ảnh phù hợp với thương hiệu',
+            contentNote: isFreecastPick
+              ? 'Freecast gửi mẫu FOC (0đ) — Hình ảnh phù hợp với thương hiệu'
+              : 'Hình ảnh phù hợp với thương hiệu',
+            isFreecast: isFreecastPick,
+            loaiGia: isFreecastPick ? 'Freecast (FOC 0đ)' : 'Booking',
+            overrideNetFee: customNetVal,
           })
         );
         added++;
@@ -1499,8 +1562,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     if (added > 0) {
       onNotify?.(
         skipped > 0
-          ? `Đã đưa ${added} KOC vào Sheet "${targetStore}" (Plan ${targetMonth}, bỏ qua ${skipped} kênh trùng).`
-          : `Đã đưa ${added} KOC vào Sheet "${targetStore}" (Plan ${targetMonth}) và tự động điền dữ liệu hồ sơ.`,
+          ? `Đã đưa ${added} KOC${isFreecastPick ? ' (Freecast 0đ)' : ''} vào Sheet "${targetStore}" (Plan ${targetMonth}, bỏ qua ${skipped} kênh trùng).`
+          : `Đã đưa ${added} KOC${isFreecastPick ? ' (Freecast 0đ)' : ''} vào Sheet "${targetStore}" (Plan ${targetMonth}) và tự động điền dữ liệu hồ sơ.`,
         'success'
       );
     } else {
@@ -1530,9 +1593,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     onNotify?.(`Đã xóa ${delSet.size} dòng khỏi Sheet.`, 'info');
   };
 
-  // Cập nhật hàng loạt (Bulk Update) cho các dòng đã chọn: Đợt, Đề xuất UpBase, hoặc Brand chọn
+  // Cập nhật hàng loạt (Bulk Update) cho các dòng đã chọn: Đợt, Đề xuất UpBase, Brand chọn, Tệp booking, Loại giá
   const handleBulkUpdateSelectedRows = (
-    field: 'dot' | 'deXuatUpBase' | 'brandChon',
+    field: 'dot' | 'deXuatUpBase' | 'brandChon' | 'tepBooking' | 'loaiGia',
     value: string
   ) => {
     if (!value || selectedRowIds.length === 0) return;
@@ -1549,7 +1612,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         const brandDecisionChanged = field === 'brandChon' && value !== r.brandChon;
         const updated = recalculateStaffListingRow(
           { ...r, [field]: value },
-          { forceRefreshBrandTimestamp: brandDecisionChanged }
+          {
+            forceRefreshBrandTimestamp: brandDecisionChanged,
+            changedKey: field as StaffListingColumnKey,
+          }
         );
         if (field === 'brandChon' && value === 'Yes') {
           approvedRowsToSync.push(updated);
@@ -1576,9 +1642,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     const fieldLabel =
       field === 'dot'
         ? 'Đợt'
-        : field === 'deXuatUpBase'
-          ? 'Đề xuất UpBase'
-          : 'Brand chọn';
+        : field === 'tepBooking'
+          ? 'Tệp Booking'
+          : field === 'loaiGia'
+            ? 'Loại giá'
+            : field === 'deXuatUpBase'
+              ? 'Đề xuất UpBase'
+              : 'Brand chọn';
     if (updatedCount > 0) {
       onNotify?.(
         `Đã cập nhật "${fieldLabel}: ${value}" cho ${updatedCount} dòng KOC.`,
@@ -3088,6 +3158,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           setRowSearchQuery={setRowSearchQuery}
           filterDot={filterDot}
           setFilterDot={setFilterDot}
+          filterTepBooking={filterTepBooking}
+          setFilterTepBooking={setFilterTepBooking}
           filterBrandChon={filterBrandChon}
           setFilterBrandChon={setFilterBrandChon}
           filterNhanSu={filterNhanSu}
@@ -3350,9 +3422,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           variant="secondary"
                           size="sm"
                           icon={Plus}
-                          onClick={handleAddBlankRow}
+                          onClick={() => handleAddBlankRow(false)}
                         >
                           Thêm dòng trống
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={Plus}
+                          onClick={() => handleAddBlankRow(true)}
+                        >
+                          Dòng Freecast (0đ)
                         </Button>
                       </div>
                     </div>
@@ -3811,11 +3891,64 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         }
 
                         if (col.key === 'tepBooking') {
+                          const isFreecastTep =
+                            row.tepBooking === 'Freecast' ||
+                            Number(row.giaNetVideo) === 0;
                           return (
-                            <td key={col.key} className={cellBaseClass}>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-sunken border border-line font-mono text-xs font-semibold text-ink">
-                                {row.tepBooking}
-                              </span>
+                            <td key={col.key} className={cellBaseClass} title={cellTitle}>
+                              <select
+                                disabled={!cellEditable}
+                                value={isFreecastTep ? 'Freecast' : row.tepBooking}
+                                onChange={(e) =>
+                                  handleCellChange(row.id, 'tepBooking', e.target.value)
+                                }
+                                className={`w-full h-7 px-2 rounded border font-mono text-xs font-semibold disabled:opacity-60 cursor-pointer ${
+                                  isFreecastTep
+                                    ? 'bg-positive-soft text-positive border-positive/30'
+                                    : 'bg-sunken text-ink border-line'
+                                }`}
+                              >
+                                {TEP_BOOKING_OPTIONS.map((t) => (
+                                  <option key={t} value={t}>
+                                    {t === 'Freecast' ? 'Freecast (0đ)' : t}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                          );
+                        }
+
+                        if (col.key === 'loaiGia') {
+                          const isFreecastLoai =
+                            String(row.loaiGia || '').toLowerCase().includes('freecast') ||
+                            String(row.loaiGia || '').toLowerCase().includes('foc') ||
+                            row.tepBooking === 'Freecast';
+                          const currentLoaiVal = isFreecastLoai
+                            ? 'Freecast (FOC 0đ)'
+                            : row.loaiGia || 'Booking';
+                          return (
+                            <td key={col.key} className={cellBaseClass} title={cellTitle}>
+                              <select
+                                disabled={!cellEditable}
+                                value={currentLoaiVal}
+                                onChange={(e) =>
+                                  handleCellChange(row.id, 'loaiGia', e.target.value)
+                                }
+                                className={`w-full h-7 px-2 rounded border text-xs font-medium disabled:opacity-60 cursor-pointer ${
+                                  isFreecastLoai
+                                    ? 'bg-positive-soft text-positive border-positive/30 font-semibold'
+                                    : 'bg-surface text-ink border-line'
+                                }`}
+                              >
+                                {!LOAI_GIA_OPTIONS.includes(currentLoaiVal) && currentLoaiVal && (
+                                  <option value={currentLoaiVal}>{currentLoaiVal}</option>
+                                )}
+                                {LOAI_GIA_OPTIONS.map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
                             </td>
                           );
                         }
@@ -3831,9 +3964,56 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           );
                         }
 
+                        if (col.key === 'giaNetVideo') {
+                          const isZeroFreecast = Number(row.giaNetVideo) === 0;
+                          return (
+                            <td key={col.key} className={cellBaseClass} title={cellTitle}>
+                              <div className="flex items-center justify-end gap-1">
+                                <BufferedSheetNumberInput
+                                  disabled={!cellEditable}
+                                  value={Number(row.giaNetVideo) || 0}
+                                  onCommit={(val) =>
+                                    handleCellChange(row.id, 'giaNetVideo', val)
+                                  }
+                                  className={`${flatInputClass} text-right font-mono tabular-nums ${
+                                    isZeroFreecast ? 'text-positive font-semibold' : ''
+                                  }`}
+                                />
+                                {cellEditable && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (isZeroFreecast) {
+                                        const fallbackFee =
+                                          Number(row.giaDaHopTacTruocDo) > 0
+                                            ? Number(row.giaDaHopTacTruocDo)
+                                            : 1500000;
+                                        handleCellChange(row.id, 'giaNetVideo', fallbackFee);
+                                      } else {
+                                        handleCellChange(row.id, 'giaNetVideo', 0);
+                                      }
+                                    }}
+                                    title={
+                                      isZeroFreecast
+                                        ? 'Đang là Freecast (0đ) — Bấm để hoàn lại giá Booking có phí'
+                                        : 'Bấm để đặt nhanh Freecast / Gửi mẫu FOC (0đ)'
+                                    }
+                                    className={`px-1.5 h-6 rounded border text-2xs font-semibold shrink-0 transition-colors ${
+                                      isZeroFreecast
+                                        ? 'bg-positive-soft text-positive border-positive/30 hover:bg-positive/20'
+                                        : 'bg-sunken text-ink-3 border-line hover:text-ink hover:border-line-strong'
+                                    }`}
+                                  >
+                                    {isZeroFreecast ? 'FOC' : '0đ'}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        }
+
                         if (
                           col.key === 'giaDaHopTacTruocDo' ||
-                          col.key === 'giaNetVideo' ||
                           col.key === 'follower' ||
                           col.key === 'gmvDaHopTac' ||
                           col.key === 'doanhSo' ||
@@ -4117,6 +4297,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         setQuickContentTag={setQuickContentTag}
         quickUpbaseProposal={quickUpbaseProposal}
         setQuickUpbaseProposal={setQuickUpbaseProposal}
+        quickPricingMode={quickPricingMode}
+        setQuickPricingMode={setQuickPricingMode}
+        quickCustomNetFee={quickCustomNetFee}
+        setQuickCustomNetFee={setQuickCustomNetFee}
         kocSearchText={kocSearchText}
         setKocSearchText={setKocSearchText}
         kocFilterTep={kocFilterTep}

@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ExternalLink, FileSpreadsheet } from 'lucide-react';
 import type { BookingDealItem, KocItem, StorePortfolioItem } from '../../lib/types';
-import { formatVnd } from '../../lib/format';
+import { formatVnd, parseThousandNumberInput } from '../../lib/format';
 import {
   CONTENT_NOTE_SUGGESTIONS,
   CONTENT_TAG_OPTIONS,
@@ -67,6 +67,10 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
   const [contentTag, setContentTag] = useState<string>('Review trực tiếp');
   const [deXuatUpBase, setDeXuatUpBase] = useState<string>('Recommend');
   const [sanPham, setSanPham] = useState<string>('');
+  const [pricingMode, setPricingMode] = useState<
+    'KOC_RATECARD' | 'FREECAST' | 'CUSTOM_NET'
+  >('KOC_RATECARD');
+  const [customNetFee, setCustomNetFee] = useState<string>('');
   const [contentNote, setContentNote] = useState<string>(
     'Hình ảnh phù hợp với thương hiệu'
   );
@@ -107,6 +111,11 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
   const handleConfirm = (openSheetAfter: boolean) => {
     if (!targetKocs.length) return;
     const finalProduct = sanPham.trim();
+    const isFreecast = pricingMode === 'FREECAST';
+    const overrideNetFee =
+      pricingMode === 'CUSTOM_NET'
+        ? parseThousandNumberInput(customNetFee)
+        : undefined;
 
     const { addedCount, skippedDuplicateCount } = appendKocsToStaffBrandSheet({
       kocsToAdd: targetKocs,
@@ -121,13 +130,16 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
       contentTag,
       deXuatUpBase,
       contentNote: contentNote.trim(),
+      isFreecast,
+      loaiGia: isFreecast ? 'Freecast (FOC 0đ)' : 'Booking',
+      overrideNetFee,
     });
 
     if (addedCount > 0) {
       const msg =
         skippedDuplicateCount > 0
-          ? `Đã thêm ${addedCount} KOC vào Sheet "${storeName}" (${monthKey}), bỏ qua ${skippedDuplicateCount} kênh đã có.`
-          : `Đã thêm ${addedCount} KOC vào Sheet "${storeName}" (${monthKey}).`;
+          ? `Đã thêm ${addedCount} KOC${isFreecast ? ' (Freecast 0đ)' : ''} vào Sheet "${storeName}" (${monthKey}), bỏ qua ${skippedDuplicateCount} kênh đã có.`
+          : `Đã thêm ${addedCount} KOC${isFreecast ? ' (Freecast 0đ)' : ''} vào Sheet "${storeName}" (${monthKey}).`;
       onNotify?.(msg, 'success');
     } else {
       onNotify?.(
@@ -208,7 +220,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Field label="Sản phẩm đề xuất (Cột K)" labelClassName="whitespace-nowrap">
             <BrandProductDropdownInput
               value={sanPham}
@@ -222,6 +234,36 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
                 'Chọn sản phẩm từ Danh mục SP của Brand...'
               }
             />
+          </Field>
+
+          <Field label="Hình thức & Báo giá (Cột M/O/P)" labelClassName="whitespace-nowrap">
+            <div className="flex items-center gap-2">
+              <Select
+                className={`w-full ${
+                  pricingMode === 'FREECAST'
+                    ? 'bg-positive-soft text-positive border-positive/30 font-semibold'
+                    : ''
+                }`}
+                value={pricingMode}
+                onChange={(e) =>
+                  setPricingMode(
+                    e.target.value as 'KOC_RATECARD' | 'FREECAST' | 'CUSTOM_NET'
+                  )
+                }
+              >
+                <option value="KOC_RATECARD">Booking theo Ratecard KOC</option>
+                <option value="FREECAST">Freecast / Gửi mẫu FOC (0đ)</option>
+                <option value="CUSTOM_NET">Nhập giá Net đồng loạt</option>
+              </Select>
+              {pricingMode === 'CUSTOM_NET' && (
+                <Input
+                  value={customNetFee}
+                  onChange={(e) => setCustomNetFee(e.target.value)}
+                  placeholder="VD: 1.500.000"
+                  className="w-32 font-mono text-right shrink-0"
+                />
+              )}
+            </div>
           </Field>
 
           <Field label="Content tag (Cột G)" labelClassName="whitespace-nowrap">
@@ -277,12 +319,21 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
               <FileSpreadsheet className="w-3.5 h-3.5 text-accent" />
               Dữ liệu hệ thống tự động điền ({targetKocs.length} kênh)
             </span>
-            <Status tone="info">Tự động lấy 38/48 cột từ Danh bạ & Lịch sử</Status>
+            <Status tone={pricingMode === 'FREECAST' ? 'positive' : 'info'}>
+              {pricingMode === 'FREECAST'
+                ? 'Freecast / Gửi mẫu FOC (0đ)'
+                : 'Tự động lấy 38/48 cột từ Danh bạ & Lịch sử'}
+            </Status>
           </div>
           <div className="max-h-56 overflow-y-auto divide-y divide-line">
             {targetKocs.map((k, idx) => {
               const handle = normalizeTikTokId(k.channelId || k.tiktokChannel || '');
-              const net = Number(k.rateCardVideo || 0);
+              const net =
+                pricingMode === 'FREECAST'
+                  ? 0
+                  : pricingMode === 'CUSTOM_NET'
+                    ? parseThousandNumberInput(customNetFee)
+                    : Number(k.rateCardVideo || 0);
               const kl = computeTepBookingFromNetFee(net);
               const gross = computeGrossFeeWithTax(net);
               return (
@@ -304,7 +355,11 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-semibold text-ink tabular-nums">
+                    <div
+                      className={`font-semibold tabular-nums ${
+                        net === 0 ? 'text-positive' : 'text-ink'
+                      }`}
+                    >
                       {kl} · Net: {formatVnd(net)}
                     </div>
                     <div className="text-2xs text-ink-3 tabular-nums">

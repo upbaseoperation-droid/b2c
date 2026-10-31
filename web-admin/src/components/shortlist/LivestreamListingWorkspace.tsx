@@ -1390,13 +1390,29 @@ export function LivestreamListingWorkspace({
 
           <div className="grid grid-cols-2 gap-2.5">
             <Field label="Cát-xê cứng Net (VNĐ)">
-              <Input
-                type="number"
-                min={0}
-                step={500000}
-                value={formNetFee}
-                onChange={(e) => setFormNetFee(Number(e.target.value) || 0)}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={500000}
+                  value={formNetFee}
+                  onChange={(e) => setFormNetFee(Number(e.target.value) || 0)}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormNetFee(0);
+                    setFormPackageType('Chỉ Hoa hồng');
+                  }}
+                  className={`h-8 px-2.5 rounded-md border text-2xs font-semibold shrink-0 transition-colors ${
+                    formNetFee === 0
+                      ? 'bg-positive-soft text-positive border-positive/30'
+                      : 'bg-sunken text-ink-2 border-line hover:text-ink'
+                  }`}
+                >
+                  Freecast / 0đ
+                </button>
+              </div>
             </Field>
             <Field label="% Hoa hồng Affiliate">
               <Input

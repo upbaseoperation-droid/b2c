@@ -86,6 +86,12 @@ export interface ListingSheetModalsProps {
   setQuickContentTag: React.Dispatch<React.SetStateAction<string>>;
   quickUpbaseProposal: string;
   setQuickUpbaseProposal: React.Dispatch<React.SetStateAction<string>>;
+  quickPricingMode: 'KOC_RATECARD' | 'FREECAST' | 'CUSTOM_NET';
+  setQuickPricingMode: React.Dispatch<
+    React.SetStateAction<'KOC_RATECARD' | 'FREECAST' | 'CUSTOM_NET'>
+  >;
+  quickCustomNetFee: string;
+  setQuickCustomNetFee: React.Dispatch<React.SetStateAction<string>>;
   kocSearchText: string;
   setKocSearchText: React.Dispatch<React.SetStateAction<string>>;
   kocFilterTep: string;
@@ -261,6 +267,10 @@ export const ListingSheetModals: React.FC<ListingSheetModalsProps> = ({
   setQuickContentTag,
   quickUpbaseProposal,
   setQuickUpbaseProposal,
+  quickPricingMode,
+  setQuickPricingMode,
+  quickCustomNetFee,
+  setQuickCustomNetFee,
   kocSearchText,
   setKocSearchText,
   kocFilterTep,
@@ -430,7 +440,7 @@ export const ListingSheetModals: React.FC<ListingSheetModalsProps> = ({
               </Select>
             </Field>
 
-            <Field label="Sản phẩm (Cột K)" className="sm:col-span-6" labelClassName="whitespace-nowrap">
+            <Field label="Sản phẩm (Cột K)" className="sm:col-span-4" labelClassName="whitespace-nowrap">
               <BrandProductDropdownInput
                 value={quickProduct}
                 onChange={(val) => setQuickProduct(val)}
@@ -445,7 +455,37 @@ export const ListingSheetModals: React.FC<ListingSheetModalsProps> = ({
               />
             </Field>
 
-            <Field label="Content tag (Cột G)" className="sm:col-span-3" labelClassName="whitespace-nowrap">
+            <Field label="Hình thức & Báo giá (Cột M/O/P)" className="sm:col-span-4" labelClassName="whitespace-nowrap">
+              <div className="flex items-center gap-2">
+                <Select
+                  value={quickPricingMode}
+                  onChange={(e) =>
+                    setQuickPricingMode(
+                      e.target.value as 'KOC_RATECARD' | 'FREECAST' | 'CUSTOM_NET'
+                    )
+                  }
+                  className={
+                    quickPricingMode === 'FREECAST'
+                      ? 'bg-positive-soft text-positive border-positive/30 font-semibold'
+                      : ''
+                  }
+                >
+                  <option value="KOC_RATECARD">Booking theo Ratecard KOC</option>
+                  <option value="FREECAST">Freecast / Gửi mẫu FOC (0đ)</option>
+                  <option value="CUSTOM_NET">Nhập giá Net đồng loạt</option>
+                </Select>
+                {quickPricingMode === 'CUSTOM_NET' && (
+                  <Input
+                    value={quickCustomNetFee}
+                    onChange={(e) => setQuickCustomNetFee(e.target.value)}
+                    placeholder="VD: 1.500.000"
+                    className="w-32 font-mono text-right"
+                  />
+                )}
+              </div>
+            </Field>
+
+            <Field label="Content tag (Cột G)" className="sm:col-span-2" labelClassName="whitespace-nowrap">
               <Select
                 value={quickContentTag}
                 onChange={(e) => setQuickContentTag(e.target.value)}
@@ -458,7 +498,7 @@ export const ListingSheetModals: React.FC<ListingSheetModalsProps> = ({
               </Select>
             </Field>
 
-            <Field label="Đề xuất UpBase (Cột R)" className="sm:col-span-3" labelClassName="whitespace-nowrap">
+            <Field label="Đề xuất UpBase (Cột R)" className="sm:col-span-2" labelClassName="whitespace-nowrap">
               <Select
                 value={quickUpbaseProposal}
                 onChange={(e) => setQuickUpbaseProposal(e.target.value)}

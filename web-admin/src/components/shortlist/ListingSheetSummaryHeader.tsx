@@ -34,7 +34,9 @@ import {
   BRAND_CHON_OPTIONS,
   DE_XUAT_UPBASE_OPTIONS,
   DOT_LISTING_OPTIONS,
+  LOAI_GIA_OPTIONS,
   STAFF_LISTING_COLUMNS,
+  TEP_BOOKING_OPTIONS,
   downloadStaffSheetCsv,
   type StaffListingColumnKey,
   type StaffListingColumnMeta,
@@ -58,6 +60,7 @@ export const BRAND_REVIEW_PRIORITY_KEYS: StaffListingColumnKey[] = [
   'tepKenh',
   'contentTag',
   'tepBooking',
+  'loaiGia',
   'giaNetVideo',
   'phiBookingKemThue',
   'deXuatUpBase',
@@ -99,6 +102,7 @@ const UI_HEADER_OVERRIDES: Partial<Record<StaffListingColumnKey, string>> = {
   linkKenh: 'Link kênh',
   tepKenh: 'Tệp kênh',
   tenKenh: 'Tên kênh KOC',
+  loaiGia: 'Loại giá / FOC',
   phiBookingKemThue: 'Phí kèm thuế TNCN',
   leaderNote: 'Ghi chú Leader',
   lyDoTuChoi: 'Lý do từ chối',
@@ -267,8 +271,13 @@ export const BufferedSheetNumberInput = React.memo<BufferedSheetNumberInputProps
       };
     }, []);
 
-    const parseDraft = (raw: string): number =>
-      mode === 'thousand' ? parseThousandNumberInput(raw) : Number(raw) || 0;
+    const parseDraft = (raw: string): number => {
+      const lower = String(raw || '').trim().toLowerCase();
+      if (lower === 'freecast' || lower === 'foc' || lower.includes('freecast')) {
+        return 0;
+      }
+      return mode === 'thousand' ? parseThousandNumberInput(raw) : Number(raw) || 0;
+    };
 
     const flushCommit = (raw: string) => {
       if (timerRef.current) {
@@ -333,6 +342,7 @@ export interface ListingSheetSummaryHeaderProps {
   onChangeStore: (storeName: string) => void;
   sheetStats: {
     totalCount: number;
+    freecastCount: number;
     brandApprovedCount: number;
     reviewedCount: number;
     onTimeCount: number;
@@ -387,7 +397,7 @@ export interface ListingSheetSummaryHeaderProps {
   handleOpenPushSheetModal: () => void;
   handleOpenSheetTemplateModal: () => void;
   handleOpenDirectoryPickerModal: () => void;
-  handleAddBlankRow: () => void;
+  handleAddBlankRow: (isFreecast?: boolean) => void;
   handleOpenCreateDealsModal: (
     overrideRows?: StaffListingSheetRow[],
     onlySelectedIds?: string[]
@@ -398,7 +408,7 @@ export interface ListingSheetSummaryHeaderProps {
   ) => Promise<void>;
   handleSelectAllBrandApproved: () => void;
   handleBulkUpdateSelectedRows: (
-    field: 'dot' | 'deXuatUpBase' | 'brandChon',
+    field: 'dot' | 'deXuatUpBase' | 'brandChon' | 'tepBooking' | 'loaiGia',
     value: string
   ) => void;
   handleDeleteSelectedRows: () => void;
@@ -415,6 +425,8 @@ export interface ListingSheetSummaryHeaderProps {
   setRowSearchQuery: (v: string) => void;
   filterDot: string;
   setFilterDot: (v: string) => void;
+  filterTepBooking: string;
+  setFilterTepBooking: (v: string) => void;
   filterBrandChon: string;
   setFilterBrandChon: (v: string) => void;
   currentUserName: string;
@@ -483,6 +495,8 @@ export const ListingSheetSummaryHeader: React.FC<ListingSheetSummaryHeaderProps>
   setRowSearchQuery,
   filterDot,
   setFilterDot,
+  filterTepBooking,
+  setFilterTepBooking,
   filterBrandChon,
   setFilterBrandChon,
   currentUserName,
@@ -501,6 +515,13 @@ export const ListingSheetSummaryHeader: React.FC<ListingSheetSummaryHeaderProps>
             <span className="text-ink-3">KOC:</span>
             <strong className="text-ink tabular-nums">
               {formatNumber(sheetStats.totalCount)}
+            </strong>
+          </div>
+          <span className="h-3 w-px bg-line" />
+          <div className="flex items-center gap-1" title="Số lượng dòng Freecast / Gửi mẫu FOC (0đ) trong bảng">
+            <span className="text-ink-3">Freecast:</span>
+            <strong className="text-positive tabular-nums">
+              {formatNumber(sheetStats.freecastCount)}
             </strong>
           </div>
           <span className="h-3 w-px bg-line" />
@@ -893,7 +914,7 @@ export const ListingSheetSummaryHeader: React.FC<ListingSheetSummaryHeaderProps>
               applyColumnPreset(val as 'BRAND_WORKING_FILE' | 'ACCEPTANCE_FILE_32' | 'ALL_48')
             }
             items={[
-              { key: 'BRAND_WORKING_FILE', label: 'Trình Brand (17)' },
+              { key: 'BRAND_WORKING_FILE', label: 'Trình Brand (18)' },
               { key: 'ACCEPTANCE_FILE_32', label: 'Đi Air & Nghiệm thu' },
               { key: 'ALL_48', label: 'Đầy đủ (57)' },
             ]}
@@ -928,9 +949,18 @@ export const ListingSheetSummaryHeader: React.FC<ListingSheetSummaryHeaderProps>
                 variant="secondary"
                 size="sm"
                 icon={Plus}
-                onClick={handleAddBlankRow}
+                onClick={() => handleAddBlankRow(false)}
               >
                 Thêm dòng
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Plus}
+                onClick={() => handleAddBlankRow(true)}
+              >
+                Dòng Freecast (0đ)
               </Button>
 
               {sheetStats.brandApprovedCount > 0 && (
@@ -1059,6 +1089,22 @@ export const ListingSheetSummaryHeader: React.FC<ListingSheetSummaryHeaderProps>
           </select>
 
           <select
+            value={filterTepBooking}
+            onChange={(e) => setFilterTepBooking(e.target.value)}
+            className="h-7 px-2 text-xs rounded-md border border-line bg-surface text-ink"
+            aria-label="Lọc theo Tệp Booking / Freecast"
+          >
+            <option value="ALL">Tệp KL: Tất cả</option>
+            <option value="FREECAST">Freecast / FOC (0đ) ({sheetStats.freecastCount})</option>
+            <option value="PAID">Có phí (KL1–KL7)</option>
+            {TEP_BOOKING_OPTIONS.filter((t) => t !== 'Freecast').map((t) => (
+              <option key={t} value={t}>
+                Tệp: {t}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={filterBrandChon}
             onChange={(e) => setFilterBrandChon(e.target.value)}
             className="h-7 px-2 text-xs rounded-md border border-line bg-surface text-ink"
@@ -1166,6 +1212,43 @@ export const ListingSheetSummaryHeader: React.FC<ListingSheetSummaryHeaderProps>
             {DOT_LISTING_OPTIONS.map((d) => (
               <option key={d} value={d}>
                 {d}
+              </option>
+            ))}
+          </select>
+
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) {
+                handleBulkUpdateSelectedRows('tepBooking', e.target.value);
+                e.target.value = '';
+              }
+            }}
+            className="h-7 px-2 text-2xs font-medium rounded border border-line-strong bg-surface text-ink"
+          >
+            <option value="">+ Tệp KL / Freecast...</option>
+            <option value="Freecast">Chuyển sang Freecast (FOC 0đ)</option>
+            {TEP_BOOKING_OPTIONS.filter((t) => t !== 'Freecast').map((t) => (
+              <option key={t} value={t}>
+                Tệp: {t}
+              </option>
+            ))}
+          </select>
+
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) {
+                handleBulkUpdateSelectedRows('loaiGia', e.target.value);
+                e.target.value = '';
+              }
+            }}
+            className="h-7 px-2 text-2xs font-medium rounded border border-line-strong bg-surface text-ink"
+          >
+            <option value="">+ Loại giá...</option>
+            {LOAI_GIA_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
               </option>
             ))}
           </select>

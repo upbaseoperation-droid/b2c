@@ -3119,13 +3119,31 @@ export const MultiPlatformListingWorkspace: React.FC<MultiPlatformListingWorkspa
               />
             </Field>
             <Field label="Giá Net trọn gói (VND)">
-              <Input
-                type="number"
-                value={newRowDraft.unitNetFee}
-                onChange={e =>
-                  setNewRowDraft(prev => ({ ...prev, unitNetFee: Number(e.target.value) || 0 }))
-                }
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={newRowDraft.unitNetFee}
+                  onChange={e =>
+                    setNewRowDraft(prev => ({ ...prev, unitNetFee: Number(e.target.value) || 0 }))
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setNewRowDraft(prev => ({
+                      ...prev,
+                      unitNetFee: prev.unitNetFee === 0 ? 1500000 : 0,
+                    }))
+                  }
+                  className={`h-8 px-2.5 rounded-md border text-2xs font-semibold shrink-0 transition-colors ${
+                    newRowDraft.unitNetFee === 0
+                      ? 'bg-positive-soft text-positive border-positive/30'
+                      : 'bg-sunken text-ink-2 border-line hover:text-ink'
+                  }`}
+                >
+                  Freecast (0đ)
+                </button>
+              </div>
             </Field>
           </div>
 

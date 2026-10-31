@@ -721,6 +721,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'group-rbac': false,
   });
 
+  // Trạng thái thu gọn cho từng Section chính (lưu trữ trong sessionStorage)
+  const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.sessionStorage.getItem('upbase_sidebar_collapsed_sections_v1');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleSection = (sectionTitle: string) => {
+    setCollapsedSections((prev) => {
+      const next = { ...prev, [sectionTitle]: !prev[sectionTitle] };
+      try {
+        window.sessionStorage.setItem('upbase_sidebar_collapsed_sections_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
   React.useEffect(() => {
     ensureSubViewMountReplayInstalled();
   }, []);
@@ -749,15 +772,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const currentRouteKey = `${activeTab}:${activeNavIdByTab[activeTab] || activeNavId || ''}`;
   if (currentRouteKey !== prevActiveRouteKey) {
     setPrevActiveRouteKey(currentRouteKey);
+    let matchedGroupId: string | null = null;
+    let matchedSecTitle: string | null = null;
+
     for (const sec of navSections) {
       for (const item of sec.items) {
-        if (!item.children || item.children.length === 0) continue;
-        const groupId = item.id || item.label;
-        const matchesChild = item.children.some((c) => isLeafItemActive(c));
-        if (matchesChild && !openGroups[groupId]) {
-          setOpenGroups((prev) => ({ ...prev, [groupId]: true }));
+        const isSelfActive = isLeafItemActive(item);
+        const matchesChild = item.children?.some((c) => isLeafItemActive(c));
+        if (isSelfActive || matchesChild) {
+          matchedSecTitle = sec.title || null;
+        }
+        if (matchesChild && item.children && item.children.length > 0) {
+          matchedGroupId = item.id || item.label;
         }
       }
+    }
+
+    if (matchedGroupId) {
+      setOpenGroups({ [matchedGroupId]: true });
+    }
+    if (matchedSecTitle && collapsedSections[matchedSecTitle]) {
+      setCollapsedSections((prev) => {
+        const next = { ...prev, [matchedSecTitle!]: false };
+        try {
+          window.sessionStorage.setItem('upbase_sidebar_collapsed_sections_v1', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
     }
   }
 
@@ -826,173 +867,194 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
         aria-label="Điều hướng chính"
       >
-        <div className="flex flex-col min-h-0 flex-1 overflow-y-auto overscroll-contain sidebar-scrollbar">
-          <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
-            <BrandLogo height={22} />
+        {/* Header thương hiệu cố định ở đầu sidebar */}
+        <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
+          <BrandLogo height={22} />
 
-            <div className="flex items-center gap-1">
-              {onToggleCollapse && (
-                <button
-                  type="button"
-                  onClick={onToggleCollapse}
-                  className="hidden lg:inline-flex p-2 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
-                  title="Ẩn thanh menu bên trái để mở rộng không gian làm việc"
-                  aria-label="Ẩn thanh menu bên trái"
-                >
-                  <PanelLeftClose className="w-4 h-4" />
-                </button>
-              )}
+          <div className="flex items-center gap-1">
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="hidden lg:inline-flex p-2 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
+                title="Ẩn thanh menu bên trái để mở rộng không gian làm việc"
+                aria-label="Ẩn thanh menu bên trái"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            )}
 
-              {onCloseMobile && (
-                <button
-                  type="button"
-                  onClick={onCloseMobile}
-                  className="lg:hidden h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
-                  aria-label="Đóng menu"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            {onCloseMobile && (
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className="lg:hidden h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+                aria-label="Đóng menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
+        </div>
 
-          <nav ref={navRef} className="relative px-3 py-3 space-y-3">
+        {/* Danh sách điều hướng cuộn mượt mà không lộ thanh cuộn thô */}
+        <div className="flex flex-col min-h-0 flex-1 overflow-y-auto overscroll-contain sidebar-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <nav ref={navRef} className="relative px-2 py-1 space-y-1">
             <SlidingIndicator box={box} ready={ready} className="sidebar-indicator rounded-md bg-accent-soft" />
-            {navSections.map((section, idx) => (
-              <div key={section.title || `sec-${idx}`}>
-                {section.title && (
-                  <div className="px-3 pb-1 text-2xs font-medium text-ink-3">
-                    {section.title}
-                  </div>
-                )}
-                <div className="space-y-0.5">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const hasChildren = Boolean(item.children && item.children.length > 0);
+            {navSections.map((section, idx) => {
+              const secTitle = section.title || `sec-${idx}`;
+              const isSecCollapsed = Boolean(collapsedSections[secTitle]);
 
-                    if (hasChildren && item.children) {
-                      const groupId = item.id || item.label;
-                      const isGroupActive = item.children.some((c) => isLeafItemActive(c));
-                      const isGroupOpen = Boolean(openGroups[groupId]);
-                      const submenuId = `sidebar-submenu-${groupId}`;
+              return (
+                <div key={secTitle} className="space-y-0.5">
+                  {section.title && (
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(secTitle)}
+                      className="w-full flex items-center justify-between px-2 pt-1.5 pb-0.5 text-2xs font-semibold text-ink-3 hover:text-ink hover:bg-sunken/50 rounded transition-colors group cursor-pointer select-none"
+                      title={isSecCollapsed ? `Mở rộng nhóm ${section.title}` : `Thu gọn nhóm ${section.title}`}
+                      aria-expanded={!isSecCollapsed}
+                    >
+                      <span className="truncate tracking-wide">{section.title}</span>
+                      <ChevronDown
+                        className={`w-3 h-3 text-ink-3/70 transition-transform duration-200 group-hover:text-ink ${
+                          isSecCollapsed ? '-rotate-90' : 'rotate-0'
+                        }`}
+                      />
+                    </button>
+                  )}
 
-                      return (
-                        <div key={`group-${groupId}`} className="space-y-0.5">
+                  {!isSecCollapsed && (
+                    <div className="space-y-0.5">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const hasChildren = Boolean(item.children && item.children.length > 0);
+
+                        if (hasChildren && item.children) {
+                          const groupId = item.id || item.label;
+                          const isGroupActive = item.children.some((c) => isLeafItemActive(c));
+                          const isGroupOpen = Boolean(openGroups[groupId]);
+                          const submenuId = `sidebar-submenu-${groupId}`;
+
+                          return (
+                            <div key={`group-${groupId}`} className="space-y-0.5">
+                              <button
+                                type="button"
+                                aria-expanded={isGroupOpen}
+                                aria-controls={submenuId}
+                                onMouseEnter={() => {
+                                  if (item.children?.[0]?.key) onTabHover?.(item.children[0].key);
+                                }}
+                                onClick={() => {
+                                  setOpenGroups((prev) => {
+                                    const isOpen = Boolean(prev[groupId]);
+                                    return isOpen ? {} : { [groupId]: true };
+                                  });
+                                }}
+                                className={`sidebar-item w-full flex items-center justify-between gap-2 px-2 py-1 rounded-md text-left text-xs leading-4 transition-colors cursor-pointer ${
+                                  isGroupActive
+                                    ? 'bg-accent-soft/60 text-accent font-semibold'
+                                    : 'text-ink-2 hover:text-ink hover:bg-sunken'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Icon
+                                    className={`w-3.5 h-3.5 shrink-0 ${
+                                      isGroupActive ? 'text-accent' : 'text-ink-3'
+                                    }`}
+                                    strokeWidth={1.75}
+                                  />
+                                  <span className="truncate">{item.label}</span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {isGroupOpen ? (
+                                    <ChevronDown className="w-3 h-3 text-ink-3" />
+                                  ) : (
+                                    <ChevronRight className="w-3 h-3 text-ink-3" />
+                                  )}
+                                </div>
+                              </button>
+
+                              {isGroupOpen && (
+                                <div id={submenuId} className="ml-3 pl-2 border-l border-line space-y-0.5 py-0.5">
+                                  {item.children.map((child) => {
+                                    const ChildIcon = child.icon;
+                                    const isChildActive =
+                                      isLeafItemActive(child) ||
+                                      (activeTab === 'dashboard-bi' && child.id === 'sub-dash-pnl') ||
+                                      (activeTab === 'dashboard-air-sync' && child.id === 'sub-dash-sla');
+                                    return (
+                                      <button
+                                        key={child.id || `${child.key}-${child.label}`}
+                                        type="button"
+                                        onMouseEnter={() => onTabHover?.(child.key)}
+                                        onClick={() => handleSelectNavItem(child)}
+                                        aria-current={isChildActive ? 'page' : undefined}
+                                        data-active={isChildActive}
+                                        className={`sidebar-item w-full flex items-center justify-between gap-1.5 px-2 py-0.75 rounded-md text-left text-2xs leading-4 transition-colors cursor-pointer ${
+                                          isChildActive
+                                            ? 'text-accent font-semibold bg-accent-soft/60'
+                                            : 'text-ink-2 hover:text-ink hover:bg-sunken'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <ChildIcon
+                                            className={`w-3 h-3 shrink-0 ${
+                                              isChildActive ? 'text-accent' : 'text-ink-3'
+                                            }`}
+                                            strokeWidth={1.75}
+                                          />
+                                          <span className="truncate">{child.label}</span>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        const isActive = isLeafItemActive(item);
+                        return (
                           <button
+                            key={item.id ?? item.key}
                             type="button"
-                            aria-expanded={isGroupOpen}
-                            aria-controls={submenuId}
-                            onMouseEnter={() => {
-                              if (item.children?.[0]?.key) onTabHover?.(item.children[0].key);
-                            }}
-                            onClick={() => {
-                              setOpenGroups((prev) => ({
-                                ...prev,
-                                [groupId]: !prev[groupId],
-                              }));
-                            }}
-                            className={`sidebar-item w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-left text-xs leading-5 transition-colors cursor-pointer ${
-                              isGroupActive
-                                ? 'bg-accent-soft/60 text-accent font-semibold'
+                            onMouseEnter={() => onTabHover?.(item.key)}
+                            onClick={() => handleSelectNavItem(item)}
+                            aria-current={isActive ? 'page' : undefined}
+                            data-active={isActive}
+                            className={`sidebar-item w-full flex items-center justify-between gap-2 px-2 py-1 rounded-md text-left text-xs leading-4 transition-colors cursor-pointer ${
+                              isActive
+                                ? 'text-accent font-semibold'
                                 : 'text-ink-2 hover:text-ink hover:bg-sunken'
                             }`}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Icon
-                                className={`w-4 h-4 shrink-0 ${
-                                  isGroupActive ? 'text-accent' : 'text-ink-3'
-                                }`}
-                                strokeWidth={1.75}
-                              />
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-accent' : 'text-ink-3'}`} strokeWidth={1.75} />
                               <span className="truncate">{item.label}</span>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {isGroupOpen ? (
-                                <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
-                              ) : (
-                                <ChevronRight className="w-3.5 h-3.5 text-ink-3" />
-                              )}
-                            </div>
+                            {item.badge && (
+                              <span className={`px-1.5 py-0.2 rounded text-2xs font-medium tabular-nums ${
+                                isActive ? 'bg-accent/15 text-accent' : 'bg-sunken text-ink-3'
+                              }`}>
+                                {item.badge}
+                              </span>
+                            )}
                           </button>
-
-                          {isGroupOpen && (
-                            <div id={submenuId} className="ml-4 pl-3 border-l border-line space-y-0.5 py-0.5">
-                              {item.children.map((child) => {
-                                const ChildIcon = child.icon;
-                                const isChildActive =
-                                  isLeafItemActive(child) ||
-                                  (activeTab === 'dashboard-bi' && child.id === 'sub-dash-pnl') ||
-                                  (activeTab === 'dashboard-air-sync' && child.id === 'sub-dash-sla');
-                                return (
-                                  <button
-                                    key={child.id || `${child.key}-${child.label}`}
-                                    type="button"
-                                    onMouseEnter={() => onTabHover?.(child.key)}
-                                    onClick={() => handleSelectNavItem(child)}
-                                    aria-current={isChildActive ? 'page' : undefined}
-                                    data-active={isChildActive}
-                                    className={`sidebar-item w-full flex items-center justify-between gap-2 px-2 py-1.25 rounded-md text-left text-2xs leading-4 transition-colors cursor-pointer ${
-                                      isChildActive
-                                        ? 'text-accent font-semibold bg-accent-soft/60'
-                                        : 'text-ink-2 hover:text-ink hover:bg-sunken'
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <ChildIcon
-                                        className={`w-3.5 h-3.5 shrink-0 ${
-                                          isChildActive ? 'text-accent' : 'text-ink-3'
-                                        }`}
-                                        strokeWidth={1.75}
-                                      />
-                                      <span className="truncate">{child.label}</span>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    const isActive = isLeafItemActive(item);
-                    return (
-                      <button
-                        key={item.id ?? item.key}
-                        type="button"
-                        onMouseEnter={() => onTabHover?.(item.key)}
-                        onClick={() => handleSelectNavItem(item)}
-                        aria-current={isActive ? 'page' : undefined}
-                        data-active={isActive}
-                        className={`sidebar-item w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-left text-xs leading-5 transition-colors cursor-pointer ${
-                          isActive
-                            ? 'text-accent font-semibold'
-                            : 'text-ink-2 hover:text-ink hover:bg-sunken'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-accent' : 'text-ink-3'}`} strokeWidth={1.75} />
-                          <span className="truncate">{item.label}</span>
-                        </div>
-                        {item.badge && (
-                          <span className={`px-2 py-0.25 rounded text-2xs font-medium tabular-nums ${
-                            isActive ? 'bg-accent/15 text-accent' : 'bg-sunken text-ink-3'
-                          }`}>
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </nav>
         </div>
 
-        <div className="shrink-0 px-3 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom))] border-t border-line space-y-2">
+        <div className="shrink-0 px-2.5 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-line space-y-1">
           {/* Hàng công cụ tiện ích (Icon quyển sách Học tập/Kiểm tra & Icon Cấu hình API) + Đăng xuất */}
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between px-0.5">
             <div className="flex items-center gap-0.5">
               {footerItems.map((f) => {
                 const FooterIcon = f.icon;
@@ -1004,13 +1066,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onMouseEnter={() => onTabHover?.(f.key)}
                     onClick={() => handleSelectNavItem(f)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+                    className={`h-6.5 w-6.5 inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                       isActive ? 'text-accent bg-accent-soft' : 'text-ink-3 hover:text-ink hover:bg-sunken'
                     }`}
                     title={f.label}
                     aria-label={f.label}
                   >
-                    <FooterIcon className="w-4 h-4" strokeWidth={1.75} />
+                    <FooterIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
                   </button>
                 );
               })}
@@ -1021,14 +1083,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 onClick={onLogout}
                 disabled={isLoggingOut}
-                className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="h-6.5 w-6.5 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Đăng xuất"
                 aria-label="Đăng xuất"
               >
                 {isLoggingOut ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
                 ) : (
-                  <LogOut className="w-4 h-4" strokeWidth={1.75} />
+                  <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
                 )}
               </button>
             )}
@@ -1038,10 +1100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onOpenProfile}
-            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-sunken transition-colors text-left group cursor-pointer"
+            className="w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-sunken transition-colors text-left group cursor-pointer"
             title="Xem hồ sơ và thiết lập cá nhân"
           >
-            <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={32} />
+            <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
             <div className="min-w-0 flex-1 leading-tight">
               <span className="block text-xs font-semibold text-ink truncate group-hover:text-accent">
                 {currentUser.name}

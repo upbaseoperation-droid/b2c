@@ -264,6 +264,25 @@ export const DOT_LISTING_OPTIONS: string[] = [
   'Bổ sung',
 ];
 
+export const LOAI_GIA_OPTIONS: string[] = [
+  'Booking',
+  'Freecast (FOC 0đ)',
+  'Code ads',
+  'Reup gắn giỏ',
+  'SDHA',
+];
+
+export const TEP_BOOKING_OPTIONS: string[] = [
+  'Freecast',
+  'KL1',
+  'KL2',
+  'KL3',
+  'KL4',
+  'KL5',
+  'KL6',
+  'KL7',
+];
+
 export const CONTENT_NOTE_SUGGESTIONS: string[] = [
   'Hình ảnh phù hợp với thương hiệu',
   'Yếu tố xu hướng',
@@ -307,7 +326,6 @@ export const STAFF_SHEET_READONLY_SYSTEM_COLUMNS: StaffListingColumnKey[] = [
   'nhanSuDien',
   'store',
   'linkKenh',
-  'tepBooking',
   'phiBookingKemThue',
   'gmvTuTheSanPhamPct',
   'nuPct',
@@ -328,6 +346,8 @@ export const STAFF_SHEET_INITIAL_PROPOSAL_COLUMNS: StaffListingColumnKey[] = [
   'tepKenh',
   'sanPham',
   'tenKenh',
+  'tepBooking',
+  'loaiGia',
   'giaNetVideo',
   'deXuatUpBase',
 ];
@@ -344,6 +364,8 @@ export const STAFF_SHEET_CONFIGURABLE_FIELD_GROUPS: StaffSheetConfigurableFieldG
       'tepKenh',
       'sanPham',
       'tenKenh',
+      'tepBooking',
+      'loaiGia',
       'giaNetVideo',
       'trangThai',
       'deXuatUpBase',
@@ -426,6 +448,8 @@ export const DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY: StaffSheetFieldEditPolicy = 
       'tepKenh',
       'sanPham',
       'tenKenh',
+      'tepBooking',
+      'loaiGia',
       'giaNetVideo',
       'trangThai',
       'deXuatUpBase',
@@ -455,6 +479,8 @@ export const DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY: StaffSheetFieldEditPolicy = 
       'tepKenh',
       'sanPham',
       'tenKenh',
+      'tepBooking',
+      'loaiGia',
       'giaNetVideo',
       'trangThai',
       'deXuatUpBase',
@@ -496,6 +522,8 @@ export const DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY: StaffSheetFieldEditPolicy = 
       'tepKenh',
       'sanPham',
       'tenKenh',
+      'tepBooking',
+      'loaiGia',
       'giaNetVideo',
       'trangThai',
       'deXuatUpBase',
@@ -576,6 +604,14 @@ export function normalizeStaffSheetFieldEditPolicy(
     };
   }
   const byRole = raw.editableFieldsByRole;
+  const ensurePricingFields = (list: StaffListingColumnKey[]): StaffListingColumnKey[] => {
+    const set = new Set<StaffListingColumnKey>(list);
+    if (set.has('giaNetVideo')) {
+      set.add('tepBooking');
+      set.add('loaiGia');
+    }
+    return Array.from(set);
+  };
   return {
     supportRowScope:
       raw.supportRowScope === 'ALL_STORE_ROWS' ? 'ALL_STORE_ROWS' : 'OWN_ROWS_ONLY',
@@ -588,15 +624,21 @@ export function normalizeStaffSheetFieldEditPolicy(
         ? raw.allowSupportPushToSheet
         : DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.allowSupportPushToSheet,
     editableFieldsByRole: {
-      SUPPORT: Array.isArray(byRole?.SUPPORT)
-        ? [...byRole.SUPPORT]
-        : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.SUPPORT],
-      PRIMARY_PIC: Array.isArray(byRole?.PRIMARY_PIC)
-        ? [...byRole.PRIMARY_PIC]
-        : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.PRIMARY_PIC],
-      LEADER: Array.isArray(byRole?.LEADER)
-        ? [...byRole.LEADER]
-        : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.LEADER],
+      SUPPORT: ensurePricingFields(
+        Array.isArray(byRole?.SUPPORT)
+          ? [...byRole.SUPPORT]
+          : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.SUPPORT]
+      ),
+      PRIMARY_PIC: ensurePricingFields(
+        Array.isArray(byRole?.PRIMARY_PIC)
+          ? [...byRole.PRIMARY_PIC]
+          : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.PRIMARY_PIC]
+      ),
+      LEADER: ensurePricingFields(
+        Array.isArray(byRole?.LEADER)
+          ? [...byRole.LEADER]
+          : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.LEADER]
+      ),
     },
     updatedAt: raw.updatedAt,
   };
@@ -962,6 +1004,9 @@ export function buildStaffListingRowFromKoc(params: {
   trangThai?: string;
   contentNote?: string;
   ngayAirPlan?: string;
+  loaiGia?: string;
+  overrideNetFee?: number;
+  isFreecast?: boolean;
   listedAtDate?: Date;
   brandReviewedAtDate?: Date;
 }): StaffListingSheetRow {
@@ -978,15 +1023,33 @@ export function buildStaffListingRowFromKoc(params: {
     trangThai = 'Nhận sản phẩm',
     contentNote = '',
     ngayAirPlan = '',
+    loaiGia,
+    overrideNetFee,
+    isFreecast = false,
     listedAtDate,
     brandReviewedAtDate,
   } = params;
 
   const cleanId = normalizeTikTokId(koc.channelId || koc.tiktokChannel || '');
   const linkKenh = koc.channelLink?.trim() || buildTikTokChannelUrl(cleanId);
-  const netFee = Number(koc.rateCardVideo ?? 0);
+  const kocRatecard = Number(koc.rateCardVideo ?? 0);
+  const forceFoc =
+    isFreecast ||
+    overrideNetFee === 0 ||
+    /freecast|foc|0đ|0d/i.test(String(loaiGia || ''));
+  const netFee = forceFoc
+    ? 0
+    : overrideNetFee !== undefined
+      ? Math.max(0, Number(overrideNetFee) || 0)
+      : kocRatecard;
   const tepBooking = computeTepBookingFromNetFee(netFee);
   const grossFee = computeGrossFeeWithTax(netFee);
+  const resolvedLoaiGia =
+    netFee <= 0
+      ? 'Freecast (FOC 0đ)'
+      : loaiGia && !/freecast|foc/i.test(loaiGia)
+        ? loaiGia
+        : 'Booking';
 
   // Tìm lịch sử hợp tác UpBase từ deals
   const safeDeals = Array.isArray(deals) ? deals : [];
@@ -1084,8 +1147,8 @@ export function buildStaffListingRowFromKoc(params: {
       : Number(koc.recentRevenue ?? 0);
   const lastHistPrice =
     kocDeals.length > 0
-      ? Number(kocDeals[0].totalValue || koc.minRate || netFee)
-      : Number(koc.minRate || netFee);
+      ? Number(kocDeals[0].totalValue || koc.minRate || kocRatecard || netFee)
+      : Number(koc.minRate || kocRatecard || netFee);
   const topCategoriesText =
     koc.tiktokTopCategories && koc.tiktokTopCategories.length > 0
       ? koc.tiktokTopCategories.slice(0, 3).join(', ')
@@ -1108,7 +1171,7 @@ export function buildStaffListingRowFromKoc(params: {
     tenKenh: koc.stageName || cleanId,
     tepBooking,
     giaDaHopTacTruocDo: lastHistPrice,
-    loaiGia: 'Booking',
+    loaiGia: resolvedLoaiGia,
     giaNetVideo: netFee,
     phiBookingKemThue: grossFee,
     follower: Number(koc.followers || 0),
@@ -1359,18 +1422,80 @@ export function buildStaffListingRowFromListingItem(
   });
 }
 
+function getDefaultNetFeeForTepBooking(tep: string, fallbackPrice?: number): number {
+  const clean = (tep || '').trim().toUpperCase();
+  if (!clean || clean === 'FREECAST') return 0;
+  const fb = Number(fallbackPrice) || 0;
+  if (fb > 0 && computeTepBookingFromNetFee(fb).toUpperCase() === clean) {
+    return fb;
+  }
+  switch (clean) {
+    case 'KL1':
+      return 300_000;
+    case 'KL2':
+      return 800_000;
+    case 'KL3':
+      return 2_000_000;
+    case 'KL4':
+      return 4_000_000;
+    case 'KL5':
+      return 7_000_000;
+    case 'KL6':
+      return 15_000_000;
+    case 'KL7':
+      return 35_000_000;
+    default:
+      return fb > 0 ? fb : 1_500_000;
+  }
+}
+
 /**
  * Tự động tính toán lại các cột công thức, ghi nhận thời gian Brand duyệt và đo lường SLA khi nhân viên sửa dòng
  */
 export function recalculateStaffListingRow(
   row: StaffListingSheetRow,
-  options?: { preserveIdKenhInput?: boolean; forceRefreshBrandTimestamp?: boolean }
+  options?: {
+    preserveIdKenhInput?: boolean;
+    forceRefreshBrandTimestamp?: boolean;
+    changedKey?: StaffListingColumnKey;
+  }
 ): StaffListingSheetRow {
   const cleanId = normalizeTikTokId(row.idKenh);
   const linkKenh = cleanId ? buildTikTokChannelUrl(cleanId) : row.linkKenh;
-  const netFee = Math.max(0, Number(row.giaNetVideo) || 0);
+
+  let netFee = Math.max(0, Number(row.giaNetVideo) || 0);
+  let loaiGia = (row.loaiGia || '').trim();
+
+  if (options?.changedKey === 'tepBooking') {
+    const targetTep = (row.tepBooking || '').trim();
+    if (/^freecast$/i.test(targetTep)) {
+      netFee = 0;
+      loaiGia = 'Freecast (FOC 0đ)';
+    } else if (computeTepBookingFromNetFee(netFee) !== targetTep) {
+      netFee = getDefaultNetFeeForTepBooking(targetTep, row.giaDaHopTacTruocDo);
+      if (/freecast|foc/i.test(loaiGia)) {
+        loaiGia = 'Booking';
+      }
+    }
+  } else if (options?.changedKey === 'loaiGia') {
+    if (/freecast|foc|0đ|0d/i.test(loaiGia)) {
+      netFee = 0;
+    } else if (netFee <= 0 && Number(row.giaDaHopTacTruocDo) > 0) {
+      netFee = Number(row.giaDaHopTacTruocDo);
+    }
+  }
+
   const tepBooking = computeTepBookingFromNetFee(netFee);
-  const phiBookingKemThue = computeGrossFeeWithTax(netFee);
+  if (netFee <= 0) {
+    if (!loaiGia || loaiGia === 'Booking' || loaiGia === 'Booking video') {
+      loaiGia = 'Freecast (FOC 0đ)';
+    }
+  } else if (/freecast|foc/i.test(loaiGia)) {
+    loaiGia = 'Booking';
+  } else if (!loaiGia) {
+    loaiGia = 'Booking';
+  }
+  const phiBookingKemThue = computeGrossFeeWithTax(netFee, netFee <= 0 ? 'FOC' : undefined);
 
   const vPct = Math.min(100, Math.max(0, Number(row.gmvTuVideoPct) || 0));
   const lPct = Math.min(100 - vPct, Math.max(0, Number(row.gmvTuLivePct) || 0));
@@ -1460,7 +1585,7 @@ export function recalculateStaffListingRow(
     crPct: crVal,
     viewTarget: Number(row.viewTarget) > 0 ? Number(row.viewTarget) : avgViewsVal,
     tyLeTuongTacPct: Number(row.tyLeTuongTacPct ?? 0),
-    loaiGia: row.loaiGia || 'Booking',
+    loaiGia,
     gmvTuVideoPct: vPct,
     gmvTuLivePct: lPct,
     gmvTuTheSanPhamPct: cPct,
@@ -1832,6 +1957,9 @@ export function appendKocsToStaffBrandSheet(params: {
   contentTag?: string;
   deXuatUpBase?: string;
   contentNote?: string;
+  loaiGia?: string;
+  overrideNetFee?: number;
+  isFreecast?: boolean;
 }): { addedCount: number; skippedDuplicateCount: number; sheetKey: string } {
   const {
     kocsToAdd,
@@ -1846,6 +1974,9 @@ export function appendKocsToStaffBrandSheet(params: {
     contentTag = 'Review trực tiếp',
     deXuatUpBase = 'Recommend',
     contentNote = '',
+    loaiGia,
+    overrideNetFee,
+    isFreecast = false,
   } = params;
 
   const collection = loadStaffSheetCollection(allKocs, allStores, allDeals, staffName);
@@ -1878,6 +2009,9 @@ export function appendKocsToStaffBrandSheet(params: {
       contentTag,
       deXuatUpBase,
       contentNote,
+      loaiGia,
+      overrideNetFee,
+      isFreecast,
     });
     newRows.push(row);
     addedCount++;

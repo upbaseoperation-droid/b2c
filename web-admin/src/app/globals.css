@@ -292,9 +292,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   display: none;
 }
 
-.sidebar-scrollbar { scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
-.sidebar-scrollbar::-webkit-scrollbar { width: 4px; }
-.sidebar-scrollbar::-webkit-scrollbar-thumb { background: var(--color-line); border: 0; }
+/* Thanh cuon Sidebar: An hoan toan thanh cuon de giao dien sach dep chuan SaaS */
+.sidebar-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 
 /* ========================================================================= */
 /* LỚP THÀNH PHẦN DÙNG CHUNG                                                  */
