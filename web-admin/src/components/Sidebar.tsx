@@ -91,9 +91,82 @@ const GROUP_TABS: Record<string, TabKey[]> = Object.fromEntries(
   ])
 );
 
-// Lưu nhãn sub-menu vừa chọn theo từng TabKey để TopHeader hiển thị đúng tiêu đề mục con đang mở
+// Lưu nhãn sub-menu, navId và subView vừa chọn theo từng TabKey (đồng bộ sessionStorage + tự động phát lại khi view dynamic mount)
+const SIDEBAR_SESSION_STORAGE_KEY = 'upbase_sidebar_nav_state_v1';
 const activeSubLabelByTab: Partial<Record<TabKey, string>> = {};
 const activeNavIdByTab: Partial<Record<TabKey, string>> = {};
+const activeSubViewByTab: Partial<Record<TabKey, string>> = {};
+
+function hydrateSidebarNavStateFromSession() {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = window.sessionStorage.getItem(SIDEBAR_SESSION_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as {
+      labels?: Partial<Record<TabKey, string>>;
+      navIds?: Partial<Record<TabKey, string>>;
+      subViews?: Partial<Record<TabKey, string>>;
+    };
+    if (parsed.labels) Object.assign(activeSubLabelByTab, parsed.labels);
+    if (parsed.navIds) Object.assign(activeNavIdByTab, parsed.navIds);
+    if (parsed.subViews) Object.assign(activeSubViewByTab, parsed.subViews);
+  } catch {
+    // Ignore storage parse errors
+  }
+}
+
+function persistSidebarNavStateToSession() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(
+      SIDEBAR_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        labels: activeSubLabelByTab,
+        navIds: activeNavIdByTab,
+        subViews: activeSubViewByTab,
+      })
+    );
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function ensureSubViewMountReplayInstalled() {
+  if (typeof window === 'undefined') return;
+  const win = window as Window & { __upbaseSubViewReplayPatched?: boolean };
+  if (win.__upbaseSubViewReplayPatched) return;
+  win.__upbaseSubViewReplayPatched = true;
+  hydrateSidebarNavStateFromSession();
+
+  const origAddEventListener = window.addEventListener.bind(window);
+  window.addEventListener = function (
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions
+  ) {
+    if (!listener) return;
+    origAddEventListener(type, listener, options);
+    if (type === 'upbase-sidebar-subview') {
+      queueMicrotask(() => {
+        for (const [tabKey, subView] of Object.entries(activeSubViewByTab)) {
+          if (!subView) continue;
+          const evt = new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', {
+            detail: {
+              tab: tabKey as TabKey,
+              subView,
+              navId: activeNavIdByTab[tabKey as TabKey],
+            },
+          });
+          if (typeof listener === 'function') {
+            listener(evt);
+          } else if (typeof listener.handleEvent === 'function') {
+            listener.handleEvent(evt);
+          }
+        }
+      });
+    }
+  };
+}
 
 // Cấu trúc Menu 3 Tầng chuẩn nghiệp vụ B2C: Level 1 (Section) -> Level 2 (Menu cha) -> Level 3 (Sub-menu xổ ra)
 const NAV = {
@@ -509,11 +582,11 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
 
   return [
     {
-      title: '1. Tổng quan & Báo cáo',
+      title: 'Tổng quan & Báo cáo',
       items: [NAV.cockpit, NAV.dashboardGroup],
     },
     {
-      title: '2. Hồ sơ thương hiệu',
+      title: 'Hồ sơ thương hiệu',
       items: [
         NAV.brandInfo,
         NAV.brandProducts,
@@ -522,23 +595,23 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
       ],
     },
     {
-      title: '3. Kế hoạch',
+      title: 'Kế hoạch',
       items: [NAV.planGroup, NAV.delegationGroup],
     },
     {
-      title: '4. Booking',
+      title: 'Booking',
       items: [NAV.kocDiscoveryGroup, NAV.bookingGroup],
     },
     {
-      title: '5. Hợp đồng, phụ lục',
+      title: 'Hợp đồng, phụ lục',
       items: [NAV.contractsGroup, NAV.larkSettlementGroup],
     },
     {
-      title: '6. Danh bạ',
+      title: 'Danh bạ',
       items: [NAV.kocMaster, NAV.ctvDirectoryGroup],
     },
     {
-      title: '7. Hệ thống',
+      title: 'Hệ thống',
       items: [NAV.masterDataGroup, NAV.rbacGroup],
     },
   ];
@@ -546,6 +619,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
 
 /** Nhãn của màn hình trên menu trái của vai trò này. Dùng làm tiêu đề trang trên TopHeader. */
 export function getNavLabelForRole(role: UserProfile['role'], tab: TabKey): string | undefined {
+  hydrateSidebarNavStateFromSession();
   const rememberedLabel = activeSubLabelByTab[tab];
   if (rememberedLabel) return rememberedLabel;
 
@@ -651,17 +725,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'group-rbac': false,
   });
 
+  React.useEffect(() => {
+    ensureSubViewMountReplayInstalled();
+  }, []);
+
+  const isLeafItemActive = (item: NavItem): boolean => {
+    if (activeTab !== item.key) return false;
+    const savedId = activeNavIdByTab[item.key];
+    if (savedId && item.id) {
+      return savedId === item.id;
+    }
+    // Mặc định chọn mục đầu tiên trùng TabKey nếu người dùng chưa bấm mục cụ thể
+    if (item.key === 'brand-knowledge') return item.id === 'nav-brand-info';
+    if (item.key === 'content') return item.id === 'nav-brand-content';
+    if (item.key === 'koc-listing') return item.id === 'sub-book-tiktok';
+    if (item.key === 'self-channel-hub') return item.id === 'sub-book-self';
+    if (item.key === 'task-delegation') return item.id === 'sub-del-task';
+    if (item.key === 'input-plan') return item.id === 'sub-plan-store';
+    if (item.key === 'contracts') return item.id === 'sub-con-hdnt';
+    if (item.key === 'lark-settlement') return item.id === 'sub-lark-queue';
+    if (item.key === 'master-data') return item.id === 'sub-md-stores';
+    if (item.key === 'partner-access') return item.id === 'sub-rbac-roles';
+    return true;
+  };
+
   const [prevActiveRouteKey, setPrevActiveRouteKey] = React.useState<string>('');
-  const currentRouteKey = `${activeTab}:${activeNavId || ''}`;
+  const currentRouteKey = `${activeTab}:${activeNavIdByTab[activeTab] || activeNavId || ''}`;
   if (currentRouteKey !== prevActiveRouteKey) {
     setPrevActiveRouteKey(currentRouteKey);
     for (const sec of navSections) {
       for (const item of sec.items) {
         if (!item.children || item.children.length === 0) continue;
         const groupId = item.id || item.label;
-        const matchesChild = item.children.some((c) =>
-          activeNavId ? c.id === activeNavId : c.key === activeTab
-        );
+        const matchesChild = item.children.some((c) => isLeafItemActive(c));
         if (matchesChild && !openGroups[groupId]) {
           setOpenGroups((prev) => ({ ...prev, [groupId]: true }));
         }
@@ -670,7 +766,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   const navRef = useRef<HTMLElement>(null);
-  const { box, ready } = useActiveBox(navRef, `${activeTab}-${activeNavId || ''}`);
+  const { box, ready } = useActiveBox(navRef, `${activeTab}-${activeNavIdByTab[activeTab] || activeNavId || ''}`);
 
   React.useEffect(() => {
     if (!isMobileOpen) return;
@@ -687,46 +783,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [isMobileOpen, onCloseMobile]);
 
   const handleSelectNavItem = (target: NavItem) => {
+    ensureSubViewMountReplayInstalled();
     activeSubLabelByTab[target.key] = target.label;
     if (target.id) {
       activeNavIdByTab[target.key] = target.id;
       setActiveNavId(target.id);
     }
+    if (target.subView) {
+      activeSubViewByTab[target.key] = target.subView;
+    } else {
+      delete activeSubViewByTab[target.key];
+    }
+    persistSidebarNavStateToSession();
     onTabSelect(target.key);
-    if (typeof window !== 'undefined' && target.subView) {
+    if (typeof window !== 'undefined') {
       const detail: SidebarSubViewEventDetail = {
         tab: target.key,
         subView: target.subView,
         navId: target.id,
       };
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
-      }, 0);
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
-      }, 150);
+      window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
+      if (target.subView) {
+        window.setTimeout(() => {
+          window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
+        }, 0);
+        window.setTimeout(() => {
+          window.dispatchEvent(new CustomEvent<SidebarSubViewEventDetail>('upbase-sidebar-subview', { detail }));
+        }, 150);
+      }
     }
     onCloseMobile?.();
-  };
-
-  const isLeafItemActive = (item: NavItem): boolean => {
-    if (activeTab !== item.key) return false;
-    const savedId = activeNavId || activeNavIdByTab[activeTab];
-    if (savedId && item.id) {
-      return savedId === item.id;
-    }
-    // Mặc định chọn mục đầu tiên trùng TabKey nếu người dùng chưa bấm mục cụ thể
-    if (item.key === 'brand-knowledge') return item.id === 'nav-brand-info';
-    if (item.key === 'content') return item.id === 'nav-brand-content';
-    if (item.key === 'koc-listing') return item.id === 'sub-book-tiktok';
-    if (item.key === 'self-channel-hub') return item.id === 'sub-book-self';
-    if (item.key === 'task-delegation') return item.id === 'sub-del-task';
-    if (item.key === 'input-plan') return item.id === 'sub-plan-store';
-    if (item.key === 'contracts') return item.id === 'sub-con-hdnt';
-    if (item.key === 'lark-settlement') return item.id === 'sub-lark-queue';
-    if (item.key === 'master-data') return item.id === 'sub-md-stores';
-    if (item.key === 'partner-access') return item.id === 'sub-rbac-roles';
-    return true;
   };
 
   return (

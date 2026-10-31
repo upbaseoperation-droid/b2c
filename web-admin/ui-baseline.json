@@ -1,25 +1,17 @@
 {
   "src/app/login/page.tsx": {
     "button-tu-viet": 12,
-    "chu-nho": 5,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 33
+    "chu-nho": 1
   },
   "src/app/page.tsx": {
     "bang-tu-viet": 1,
-    "dinh-dang-so": 3,
-    "khoang-cach-nua-bac": 4
-  },
-  "src/components/AiStaffReviewModal.tsx": {
-    "font-mono": 2,
-    "khoang-cach-nua-bac": 6
+    "dinh-dang-so": 3
   },
   "src/components/CampaignCreateModal.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 10,
     "font-mono": 2,
     "input-tu-viet": 28,
-    "khoang-cach-nua-bac": 44,
     "nhan-danh-so": 3,
     "select-tu-viet": 2,
     "textarea-tu-viet": 5
@@ -28,66 +20,31 @@
     "button-tu-viet": 10,
     "font-mono": 21,
     "input-tu-viet": 28,
-    "khoang-cach-nua-bac": 36,
     "select-tu-viet": 10
-  },
-  "src/components/EmployeePlanInspectorModal.tsx": {
-    "bang-tu-viet": 1,
-    "button-tu-viet": 16,
-    "dinh-dang-so": 3,
-    "input-tu-viet": 2,
-    "khoang-cach-nua-bac": 27,
-    "textarea-tu-viet": 1
   },
   "src/components/ErrorBoundary.tsx": {
     "button-tu-viet": 2,
-    "font-mono": 1,
-    "khoang-cach-nua-bac": 5,
-    "mau-cu": 3
+    "font-mono": 1
   },
   "src/components/ImportExcelModal.tsx": {
-    "button-tu-viet": 1,
-    "khoang-cach-nua-bac": 1
-  },
-  "src/components/InlinePurposeApiSetup.tsx": {
-    "button-tu-viet": 5,
-    "font-mono": 4,
-    "icon-12": 3,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 15,
-    "select-tu-viet": 4,
-    "textarea-tu-viet": 1
+    "button-tu-viet": 1
   },
   "src/components/LegalOcrModal.tsx": {
-    "button-tu-viet": 9,
+    "button-tu-viet": 1,
     "dinh-dang-so": 1,
-    "font-mono": 8,
-    "input-tu-viet": 11,
-    "select-tu-viet": 1,
-    "textarea-tu-viet": 2
+    "input-tu-viet": 1
   },
   "src/components/MobileBottomNav.tsx": {
-    "button-tu-viet": 2,
-    "chu-nho": 3
-  },
-  "src/components/MyPlanWorkspace.tsx": {
-    "bang-tu-viet": 1,
-    "button-tu-viet": 4,
-    "font-mono": 13,
-    "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 14,
-    "select-tu-viet": 7
+    "button-tu-viet": 2
   },
   "src/components/OperationalReportDrawer.tsx": {
     "button-tu-viet": 1,
-    "font-mono": 1,
-    "khoang-cach-nua-bac": 5
+    "font-mono": 1
   },
   "src/components/PartnerDiscussion.tsx": {
     "button-tu-viet": 13,
     "dinh-dang-so": 1,
     "input-tu-viet": 4,
-    "mau-cu": 39,
     "textarea-tu-viet": 1
   },
   "src/components/QuickBookModal.tsx": {
@@ -100,40 +57,30 @@
     "button-tu-viet": 8,
     "font-mono": 3,
     "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 35,
-    "mau-cu": 177,
     "select-tu-viet": 3,
     "textarea-tu-viet": 1
   },
   "src/components/Sidebar.tsx": {
-    "button-tu-viet": 8,
-    "chu-nho": 4,
-    "khoang-cach-nua-bac": 19
+    "button-tu-viet": 8
   },
   "src/components/TopHeader.tsx": {
-    "button-tu-viet": 2,
-    "khoang-cach-nua-bac": 10
+    "button-tu-viet": 2
   },
   "src/components/UserProfileModal.tsx": {
     "button-tu-viet": 5,
-    "font-mono": 4,
-    "khoang-cach-nua-bac": 13
+    "font-mono": 4
   },
   "src/components/booking/DealDetailDrawer.tsx": {
     "button-tu-viet": 19,
     "dinh-dang-so": 1,
-    "icon-12": 7,
     "input-tu-viet": 6,
-    "khoang-cach-nua-bac": 62,
+    "khoang-cach-nua-bac": 6,
     "nhan-danh-so": 3
   },
   "src/components/booking/LarkPaymentRequestModal.tsx": {
     "font-mono": 4,
-    "icon-12": 2,
     "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 22,
-    "nhan-danh-so": 4,
-    "viet-hoa-gian-chu": 1
+    "nhan-danh-so": 4
   },
   "src/components/brands/BrandEditors.tsx": {
     "input-tu-viet": 6,
@@ -161,51 +108,41 @@
   },
   "src/components/content/ContentCopilotModal.tsx": {
     "button-tu-viet": 5,
-    "chu-nho": 3,
-    "font-mono": 2,
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 11
+    "font-mono": 2
   },
   "src/components/content/ContentPerformanceReviewModal.tsx": {
     "bang-tu-viet": 1,
-    "chu-nho": 3,
-    "dinh-dang-so": 10,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 18,
-    "viet-hoa-gian-chu": 1
+    "dinh-dang-so": 10
   },
   "src/components/contracts/ContractApprovalPortalView.tsx": {
     "button-tu-viet": 3,
     "chua-ro": 1,
     "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 4
+    "khoang-cach-nua-bac": 3
   },
   "src/components/contracts/ContractCatalogView.tsx": {
     "button-tu-viet": 3,
-    "chu-nho": 5,
-    "icon-12": 1,
-    "input-tu-viet": 3,
-    "khoang-cach-nua-bac": 21
+    "input-tu-viet": 3
   },
   "src/components/contracts/ContractDetail.tsx": {
-    "button-tu-viet": 6,
+    "button-tu-viet": 4,
     "dinh-dang-so": 1,
-    "input-tu-viet": 5,
-    "khoang-cach-nua-bac": 7,
+    "input-tu-viet": 4,
+    "khoang-cach-nua-bac": 9,
     "nhan-danh-so": 5,
     "select-tu-viet": 1,
     "textarea-tu-viet": 1
   },
   "src/components/contracts/ContractDocumentViewer.tsx": {
     "bang-tu-viet": 4,
-    "button-tu-viet": 6,
-    "chu-nho": 2
+    "button-tu-viet": 8,
+    "chu-nho": 2,
+    "khoang-cach-nua-bac": 11
   },
   "src/components/contracts/ContractForm.tsx": {
-    "bang-tu-viet": 1,
-    "button-tu-viet": 11,
-    "font-mono": 1,
-    "input-tu-viet": 5,
+    "button-tu-viet": 9,
+    "input-tu-viet": 6,
+    "khoang-cach-nua-bac": 6,
     "nhan-danh-so": 6,
     "select-tu-viet": 1
   },
@@ -216,19 +153,14 @@
   "src/components/contracts/DraftBbntPreviewModal.tsx": {
     "button-tu-viet": 2,
     "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 18,
     "nhan-danh-so": 4
   },
   "src/components/contracts/FinanceAdvancePaymentReportView.tsx": {
     "khoang-cach-nua-bac": 1
   },
-  "src/components/contracts/GoogleDocsFinanceApproveDialog.tsx": {
-    "font-mono": 1,
-    "khoang-cach-nua-bac": 5
-  },
   "src/components/contracts/GoogleDocsReviewPanel.tsx": {
     "icon-12": 2,
-    "khoang-cach-nua-bac": 6,
+    "khoang-cach-nua-bac": 17,
     "nhan-danh-so": 3
   },
   "src/components/contracts/LegalAttachmentsPanel.tsx": {
@@ -238,189 +170,136 @@
   },
   "src/components/contracts/VideoProductScreenshotModal.tsx": {
     "button-tu-viet": 5,
-    "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 29
+    "input-tu-viet": 4
   },
   "src/components/crawler/CompetitorVideoScriptModal.tsx": {
     "button-tu-viet": 2,
-    "icon-12": 5,
     "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 16,
-    "nhan-danh-so": 4,
-    "viet-hoa-gian-chu": 10
+    "nhan-danh-so": 4
   },
   "src/components/crawler/LinkAirCheckerPanel.tsx": {
-    "font-mono": 2,
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 6
-  },
-  "src/components/crawler/TikTokCrawlCreativeLoader.tsx": {
-    "chu-nho": 4,
-    "khoang-cach-nua-bac": 6
+    "font-mono": 2
   },
   "src/components/kalodata/KalodataSyncModal.tsx": {
     "button-tu-viet": 5,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 10
+    "input-tu-viet": 1
   },
   "src/components/koc/KocChannelBriefMatcherModal.tsx": {
     "button-tu-viet": 2,
-    "icon-12": 2,
     "input-tu-viet": 5,
-    "khoang-cach-nua-bac": 44,
-    "select-tu-viet": 1,
-    "viet-hoa-gian-chu": 2
+    "select-tu-viet": 1
   },
   "src/components/koc/KocChannelReviewModal.tsx": {
     "bang-tu-viet": 1,
-    "button-tu-viet": 5,
-    "chu-nho": 1,
-    "icon-12": 5,
-    "khoang-cach-nua-bac": 30
+    "button-tu-viet": 5
   },
   "src/components/koc/KocHistoryEvaluationModal.tsx": {
     "button-tu-viet": 1,
     "dinh-dang-so": 1,
-    "font-mono": 3,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 7
+    "font-mono": 3
   },
   "src/components/koc/KocLegalProfilesSection.tsx": {
     "button-tu-viet": 6,
-    "font-mono": 8,
-    "icon-12": 6,
     "input-tu-viet": 3,
-    "khoang-cach-nua-bac": 21,
     "nhan-danh-so": 3
   },
   "src/components/koc/KocProfile.tsx": {
     "button-tu-viet": 21,
     "dinh-dang-so": 6,
     "font-mono": 12,
-    "icon-12": 13,
-    "input-tu-viet": 8,
-    "khoang-cach-nua-bac": 61
+    "input-tu-viet": 8
   },
   "src/components/koc/KocSocialChannelsModal.tsx": {
     "button-tu-viet": 1,
-    "font-mono": 3,
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 17
+    "font-mono": 3
   },
   "src/components/koc/KocVideoHistoryRegistryModal.tsx": {
-    "font-mono": 4,
-    "khoang-cach-nua-bac": 5
+    "font-mono": 4
   },
   "src/components/koc/KocVideoWeeklyHistoryPanel.tsx": {
     "bang-tu-viet": 4,
     "dinh-dang-so": 5,
     "font-mono": 34,
-    "icon-12": 1,
     "input-tu-viet": 2,
-    "khoang-cach-nua-bac": 82,
     "select-tu-viet": 1
   },
   "src/components/koc/PendingKocStagingModal.tsx": {
     "bang-tu-viet": 1,
-    "button-tu-viet": 4,
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 24
+    "button-tu-viet": 4
   },
   "src/components/koc/TikTokKocScraperModal.tsx": {
     "button-tu-viet": 7,
-    "icon-12": 8,
-    "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 66
+    "input-tu-viet": 4
   },
   "src/components/koc/TikTokVideoInspectorModal.tsx": {
     "button-tu-viet": 1,
     "font-mono": 1,
-    "icon-12": 6,
     "input-tu-viet": 6,
-    "khoang-cach-nua-bac": 48,
-    "select-tu-viet": 1,
-    "viet-hoa-gian-chu": 4
+    "select-tu-viet": 1
   },
   "src/components/koc/UpaffiliateDataManagementPanel.tsx": {
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 6,
     "nhan-danh-so": 9
   },
   "src/components/koc/UpaffiliateSyncModal.tsx": {
     "bang-tu-viet": 3,
-    "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 41
+    "input-tu-viet": 4
   },
   "src/components/shortlist/AddToBrandListingSheetModal.tsx": {
     "button-tu-viet": 1,
-    "dinh-dang-so": 1,
-    "khoang-cach-nua-bac": 5
+    "dinh-dang-so": 1
   },
   "src/components/shortlist/BrandProductDropdownInput.tsx": {
     "button-tu-viet": 3,
     "font-mono": 1,
-    "icon-12": 1,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 10
+    "input-tu-viet": 1
   },
   "src/components/shortlist/KocOutreachEmailModal.tsx": {
     "button-tu-viet": 12,
     "chua-ro": 1,
     "dinh-dang-so": 1,
     "font-mono": 3,
-    "icon-12": 4,
-    "input-tu-viet": 7,
-    "khoang-cach-nua-bac": 51,
-    "mau-cu": 5
+    "input-tu-viet": 7
   },
   "src/components/shortlist/KocQuickViewModal.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 1,
-    "font-mono": 8,
-    "khoang-cach-nua-bac": 20
+    "font-mono": 8
+  },
+  "src/components/shortlist/LivestreamListingWorkspace.tsx": {
+    "dinh-dang-so": 10,
+    "khoang-cach-nua-bac": 13
   },
   "src/components/shortlist/MultiPlatformListingWorkspace.tsx": {
-    "bang-tu-viet": 3,
-    "button-tu-viet": 9,
-    "cat-danh-sach-chon": 1,
+    "bang-tu-viet": 4,
+    "button-tu-viet": 23,
     "dinh-dang-so": 1,
-    "font-mono": 31,
-    "icon-12": 3,
+    "font-mono": 48,
+    "icon-12": 4,
     "input-tu-viet": 11,
-    "khoang-cach-nua-bac": 103,
-    "nhan-danh-so": 3,
+    "khoang-cach-nua-bac": 37,
     "select-tu-viet": 10
   },
   "src/components/shortlist/PushSheetReconciliationView.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 9,
-    "chu-nho": 26,
     "font-mono": 11,
-    "icon-12": 2,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 43,
-    "mau-cu": 37
+    "input-tu-viet": 1
   },
   "src/components/shortlist/StaffBrandListingSheetWorkspace.tsx": {
     "bang-tu-viet": 3,
-    "button-tu-viet": 34,
+    "button-tu-viet": 30,
     "dinh-dang-so": 5,
     "font-mono": 23,
-    "icon-12": 6,
     "input-tu-viet": 18,
-    "khoang-cach-nua-bac": 134,
-    "mau-cu": 72,
     "nhan-danh-so": 14,
-    "select-tu-viet": 15,
+    "select-tu-viet": 13,
     "textarea-tu-viet": 1
   },
   "src/components/shortlist/StoreShortlistFilterModal.tsx": {
     "button-tu-viet": 7,
     "dinh-dang-so": 1,
     "font-mono": 1,
-    "icon-12": 6,
     "input-tu-viet": 11,
-    "khoang-cach-nua-bac": 48,
     "nhan-danh-so": 12,
     "select-tu-viet": 7
   },
@@ -430,22 +309,14 @@
     "dinh-dang-so": 3,
     "font-mono": 6
   },
-  "src/components/stores/StoreEditDialog.tsx": {
-    "chu-nho": 1,
-    "input-tu-viet": 1
-  },
   "src/components/stores/StoreHandoverDialog.tsx": {
     "button-tu-viet": 2,
-    "icon-12": 3,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 9
+    "input-tu-viet": 1
   },
   "src/components/stores/StoreProfile.tsx": {
     "button-tu-viet": 6,
     "dinh-dang-so": 5,
     "font-mono": 4,
-    "icon-12": 4,
-    "khoang-cach-nua-bac": 16,
     "nhan-danh-so": 4
   },
   "src/components/views/ApiKeySetupView.tsx": {
@@ -453,44 +324,26 @@
     "button-tu-viet": 29,
     "dinh-dang-so": 34,
     "font-mono": 51,
-    "icon-12": 11,
     "input-tu-viet": 11,
-    "khoang-cach-nua-bac": 113,
     "nhan-danh-so": 4,
     "select-tu-viet": 12,
-    "textarea-tu-viet": 2,
-    "viet-hoa-gian-chu": 16
+    "textarea-tu-viet": 2
   },
   "src/components/views/ApprovedBookingListView.tsx": {
     "bang-tu-viet": 2,
-    "button-tu-viet": 16,
+    "button-tu-viet": 12,
     "chua-ro": 3,
-    "dinh-dang-so": 6,
+    "dinh-dang-so": 7,
     "font-mono": 8,
-    "icon-12": 4,
-    "input-tu-viet": 34,
-    "khoang-cach-nua-bac": 156,
+    "icon-12": 1,
+    "input-tu-viet": 32,
+    "khoang-cach-nua-bac": 12,
     "nhan-danh-so": 3,
     "select-tu-viet": 6
   },
   "src/components/views/BrandMarketResearchHubView.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 2,
-    "icon-12": 5,
-    "khoang-cach-nua-bac": 87,
-    "select-tu-viet": 1,
-    "viet-hoa-gian-chu": 2
-  },
-  "src/components/views/BrandMonthlyPlanForm.tsx": {
-    "bang-tu-viet": 7,
-    "button-tu-viet": 6,
-    "chu-nho": 7,
-    "dinh-dang-so": 5,
-    "font-mono": 1,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 18,
-    "mau-cu": 2,
-    "nhan-danh-so": 5,
     "select-tu-viet": 1
   },
   "src/components/views/BrandOneSheetPlanView.tsx": {
@@ -516,18 +369,13 @@
   "src/components/views/CentralizedRbacHubView.tsx": {
     "bang-tu-viet": 3,
     "button-tu-viet": 7,
-    "chu-nho": 6,
     "font-mono": 7,
-    "icon-12": 7,
     "input-tu-viet": 10,
-    "khoang-cach-nua-bac": 61,
     "nhan-danh-so": 5,
     "select-tu-viet": 5
   },
   "src/components/views/CockpitView.tsx": {
-    "button-tu-viet": 1,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 4
+    "button-tu-viet": 1
   },
   "src/components/views/ContentAngleSetupView.tsx": {
     "button-tu-viet": 1
@@ -535,10 +383,7 @@
   "src/components/views/ContentPlanBoard.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 7,
-    "chu-nho": 5,
     "dinh-dang-so": 2,
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 15,
     "nhan-danh-so": 8
   },
   "src/components/views/ContentView.tsx": {
@@ -546,8 +391,6 @@
     "button-tu-viet": 2,
     "dinh-dang-so": 4,
     "font-mono": 6,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 28,
     "nhan-danh-so": 8
   },
   "src/components/views/ContractManagementView.tsx": {
@@ -555,43 +398,27 @@
   },
   "src/components/views/CreatorMatchModal.tsx": {
     "button-tu-viet": 4,
-    "chu-nho": 1,
-    "dinh-dang-so": 1,
-    "khoang-cach-nua-bac": 12
+    "dinh-dang-so": 1
   },
   "src/components/views/CtvManagementView.tsx": {
     "bang-tu-viet": 2,
     "button-tu-viet": 6,
-    "chu-nho": 6,
     "dinh-dang-so": 2,
     "font-mono": 38,
-    "icon-12": 5,
-    "khoang-cach-nua-bac": 42,
     "nhan-danh-so": 1
   },
-  "src/components/views/DashboardAnalysisView.tsx": {
-    "dinh-dang-so": 1,
-    "khoang-cach-nua-bac": 2
-  },
   "src/components/views/DashboardBudgetReport.tsx": {
-    "button-tu-viet": 1,
-    "khoang-cach-nua-bac": 5
-  },
-  "src/components/views/DashboardStaffReport.tsx": {
-    "khoang-cach-nua-bac": 1
+    "button-tu-viet": 1
   },
   "src/components/views/DashboardSummaryView.tsx": {
-    "button-tu-viet": 1,
-    "khoang-cach-nua-bac": 1
+    "button-tu-viet": 1
   },
   "src/components/views/DashboardVideoReport.tsx": {
-    "dinh-dang-so": 1,
-    "icon-12": 1
+    "dinh-dang-so": 1
   },
   "src/components/views/ExecutiveDashboardReportsView.tsx": {
     "dinh-dang-so": 2,
     "font-mono": 4,
-    "khoang-cach-nua-bac": 4,
     "nhan-danh-so": 5
   },
   "src/components/views/InputPlanBreakdownView.tsx": {
@@ -608,31 +435,31 @@
   "src/components/views/KocKolHubView.tsx": {
     "bang-tu-viet": 6,
     "button-tu-viet": 56,
-    "chu-nho": 17,
     "dinh-dang-so": 16,
     "font-mono": 107,
-    "icon-12": 8,
     "input-tu-viet": 35,
-    "khoang-cach-nua-bac": 184,
-    "mau-cu": 799,
+    "mau-cu": 8,
     "nhan-danh-so": 10,
     "select-tu-viet": 8,
-    "textarea-tu-viet": 4,
-    "viet-hoa-gian-chu": 4
+    "textarea-tu-viet": 4
   },
   "src/components/views/KocMasterDataView.tsx": {
     "dinh-dang-so": 1,
     "font-mono": 1,
     "input-tu-viet": 1
   },
+  "src/components/views/LarkAcceptancePaymentHubView.tsx": {
+    "font-mono": 21,
+    "icon-12": 1,
+    "input-tu-viet": 2,
+    "khoang-cach-nua-bac": 12
+  },
   "src/components/views/ManagerDelegationHub.tsx": {
     "bang-tu-viet": 4,
-    "button-tu-viet": 9,
+    "button-tu-viet": 7,
     "dinh-dang-so": 1,
-    "font-mono": 4,
-    "icon-12": 4,
-    "input-tu-viet": 9,
-    "khoang-cach-nua-bac": 89,
+    "font-mono": 2,
+    "input-tu-viet": 8,
     "nhan-danh-so": 3,
     "select-tu-viet": 17,
     "textarea-tu-viet": 1
@@ -643,17 +470,12 @@
     "cat-danh-sach-chon": 1,
     "dinh-dang-so": 1,
     "font-mono": 10,
-    "icon-12": 5,
-    "khoang-cach-nua-bac": 31,
-    "select-tu-viet": 1,
-    "viet-hoa-gian-chu": 8
+    "select-tu-viet": 1
   },
   "src/components/views/MarketingKnowledgeQaView.tsx": {
     "bang-tu-viet": 4,
     "button-tu-viet": 23,
-    "icon-12": 3,
-    "input-tu-viet": 2,
-    "khoang-cach-nua-bac": 54
+    "input-tu-viet": 2
   },
   "src/components/views/MasterDataHubView.tsx": {
     "bang-tu-viet": 2,
@@ -674,8 +496,6 @@
   },
   "src/components/views/PlanActualReportView.tsx": {
     "button-tu-viet": 1,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 26,
     "nhan-danh-so": 5
   },
   "src/components/views/PlanApprovalStepper.tsx": {
@@ -683,14 +503,6 @@
     "font-mono": 2,
     "input-tu-viet": 5,
     "textarea-tu-viet": 3
-  },
-  "src/components/views/PlanChatDrawer.tsx": {
-    "button-tu-viet": 9,
-    "chu-nho": 2,
-    "dinh-dang-so": 1,
-    "icon-12": 2,
-    "khoang-cach-nua-bac": 13,
-    "textarea-tu-viet": 1
   },
   "src/components/views/PlanHistoryModal.tsx": {
     "bang-tu-viet": 1,
@@ -700,25 +512,11 @@
     "input-tu-viet": 6,
     "textarea-tu-viet": 1
   },
-  "src/components/views/PlanListingBoard.tsx": {
-    "bang-tu-viet": 2,
-    "button-tu-viet": 11,
-    "chu-nho": 3,
-    "dinh-dang-so": 1,
-    "font-mono": 1,
-    "icon-12": 2,
-    "input-tu-viet": 2,
-    "khoang-cach-nua-bac": 45,
-    "mau-cu": 1,
-    "nhan-danh-so": 3
-  },
   "src/components/views/PlanOrderUploadModal.tsx": {
     "bang-tu-viet": 1,
     "button-tu-viet": 1,
     "dinh-dang-so": 1,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 13,
-    "mau-cu": 28
+    "input-tu-viet": 1
   },
   "src/components/views/PlanSelfChannelBoard.tsx": {
     "bang-tu-viet": 1,
@@ -728,23 +526,17 @@
     "nhan-danh-so": 14
   },
   "src/components/views/PlanSyncBadge.tsx": {
-    "button-tu-viet": 1,
-    "icon-12": 6,
-    "khoang-cach-nua-bac": 2,
-    "mau-cu": 20
+    "button-tu-viet": 1
   },
   "src/components/views/PlanWeeklyBreakdown.tsx": {
     "bang-tu-viet": 5,
     "button-tu-viet": 10,
     "dinh-dang-so": 1,
-    "icon-12": 2,
     "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 122,
-    "mau-cu": 422,
+    "mau-cu": 19,
     "nhan-danh-so": 5,
     "select-tu-viet": 1,
-    "textarea-tu-viet": 1,
-    "viet-hoa-gian-chu": 2
+    "textarea-tu-viet": 1
   },
   "src/components/views/ProductCatalogView.tsx": {
     "button-tu-viet": 1,
@@ -754,162 +546,101 @@
   "src/components/views/PullHangingJobsModal.tsx": {
     "bang-tu-viet": 1,
     "dinh-dang-so": 1,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 15,
-    "mau-cu": 7
-  },
-  "src/components/views/SheetPullPreviewModal.tsx": {
-    "bang-tu-viet": 1,
-    "khoang-cach-nua-bac": 17
+    "input-tu-viet": 1
   },
   "src/components/views/StorePipelineFunnelOverview.tsx": {
-    "khoang-cach-nua-bac": 2,
     "nhan-danh-so": 13
   },
   "src/components/views/StorePlanMindmap.tsx": {
     "button-tu-viet": 10,
     "font-mono": 11,
-    "icon-12": 5,
     "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 25,
-    "mau-cu": 71,
+    "mau-cu": 2,
     "select-tu-viet": 2
   },
-  "src/components/views/StoreStaffSheetSetupModal.tsx": {
-    "bang-tu-viet": 2,
-    "khoang-cach-nua-bac": 11
+  "src/components/views/StoreSheetLinkModal.tsx": {
+    "button-tu-viet": 2,
+    "font-mono": 1,
+    "input-tu-viet": 1
   },
   "src/components/views/StoreStaffSheetSetupView.tsx": {
     "button-tu-viet": 9,
     "font-mono": 10,
-    "input-tu-viet": 7,
-    "khoang-cach-nua-bac": 53,
-    "nhan-danh-so": 19
+    "input-tu-viet": 6,
+    "nhan-danh-so": 12
   },
   "src/components/views/TaskDelegationView.tsx": {
     "button-tu-viet": 1,
     "dinh-dang-so": 34,
     "font-mono": 29,
-    "khoang-cach-nua-bac": 26,
-    "select-tu-viet": 2,
-    "viet-hoa-gian-chu": 4
+    "select-tu-viet": 2
   },
   "src/components/views/TaskPolicySetupView.tsx": {
     "bang-tu-viet": 6,
     "button-tu-viet": 1,
     "dinh-dang-so": 9,
-    "font-mono": 16,
-    "khoang-cach-nua-bac": 41
+    "font-mono": 16
   },
   "src/components/views/ThirdPartyAccessSetupView.tsx": {
     "button-tu-viet": 6,
-    "cat-danh-sach-chon": 1,
     "font-mono": 2,
-    "icon-12": 4,
     "input-tu-viet": 5,
-    "khoang-cach-nua-bac": 21,
-    "select-tu-viet": 3
+    "select-tu-viet": 2
   },
   "src/components/views/TikTokCrawlerHubView.tsx": {
     "button-tu-viet": 15,
-    "chu-nho": 8,
     "dinh-dang-so": 2,
-    "icon-12": 6,
-    "input-tu-viet": 7,
-    "khoang-cach-nua-bac": 67
+    "input-tu-viet": 7
   },
   "src/components/views/WeeklyAdsReportHubView.tsx": {
     "dinh-dang-so": 9,
     "font-mono": 20,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 4
-  },
-  "src/components/views/WeeklyAirSyncDashboardSection.tsx": {
-    "button-tu-viet": 3,
-    "icon-12": 1,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 21,
-    "select-tu-viet": 3
-  },
-  "src/components/views/WorkToolkitHubView.tsx": {
-    "button-tu-viet": 2,
-    "chu-nho": 1,
-    "dinh-dang-so": 10,
-    "font-mono": 8,
-    "nhan-danh-so": 18
+    "input-tu-viet": 1
   },
   "src/components/views/ZaloBotManagerView.tsx": {
     "button-tu-viet": 1,
     "dinh-dang-so": 3,
     "font-mono": 31,
-    "icon-12": 2,
     "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 18,
     "nhan-danh-so": 14
   },
-  "src/components/views/integrations/GoogleSheetsSetupPanel.tsx": {
-    "chu-nho": 2,
-    "font-mono": 4,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 2,
-    "nhan-danh-so": 2
-  },
-  "src/components/views/master-data/AssignmentIssuesPanel.tsx": {
-    "khoang-cach-nua-bac": 1
-  },
   "src/components/views/master-data/AssignmentLogList.tsx": {
-    "dinh-dang-so": 1,
-    "icon-12": 1,
-    "khoang-cach-nua-bac": 5
+    "dinh-dang-so": 1
   },
   "src/components/views/master-data/CastTiersMasterView.tsx": {
     "font-mono": 7,
     "input-tu-viet": 7,
-    "khoang-cach-nua-bac": 11,
     "select-tu-viet": 1,
     "textarea-tu-viet": 1
   },
   "src/components/views/master-data/ContributorsMasterView.tsx": {
     "font-mono": 3,
     "input-tu-viet": 8,
-    "khoang-cach-nua-bac": 19,
     "select-tu-viet": 1
   },
   "src/components/views/master-data/KocNichesMasterView.tsx": {
     "font-mono": 1,
     "input-tu-viet": 4,
-    "khoang-cach-nua-bac": 8,
     "textarea-tu-viet": 1
   },
   "src/components/views/master-data/StaffMasterView.tsx": {
-    "font-mono": 2,
-    "khoang-cach-nua-bac": 3
+    "font-mono": 2
   },
   "src/components/views/master-data/StaffSearchSelect.tsx": {
     "button-tu-viet": 2,
-    "chu-nho": 5,
-    "icon-12": 1,
-    "input-tu-viet": 1,
-    "khoang-cach-nua-bac": 6,
-    "viet-hoa-gian-chu": 2
+    "input-tu-viet": 1
   },
   "src/components/views/master-data/StoresMasterView.tsx": {
-    "button-tu-viet": 10,
+    "button-tu-viet": 11,
     "font-mono": 9,
-    "icon-12": 1,
     "input-tu-viet": 18,
-    "khoang-cach-nua-bac": 52,
     "select-tu-viet": 5
   },
   "src/components/views/master-data/VideoFormatsMasterView.tsx": {
     "font-mono": 2,
-    "input-tu-viet": 2,
-    "khoang-cach-nua-bac": 4
+    "input-tu-viet": 2
   },
   "src/components/views/self-channel/SelfChannelAirCheck.tsx": {
-    "dinh-dang-so": 1
-  },
-  "src/components/views/self-channel/SelfChannelAirPlanPanel.tsx": {
     "dinh-dang-so": 1
   },
   "src/components/views/self-channel/SelfChannelProgressPanel.tsx": {

@@ -125,6 +125,8 @@ const registryWarnings = [];
 let registryStats = null;
 
 async function checkRegistry() {
+  const registryFile = path.join(ROOT, 'src/lib/screenRegistry.ts');
+  if (!fs.existsSync(registryFile)) return;
   const err = (m) => registryErrors.push(m);
 
   let mod;
@@ -132,7 +134,7 @@ async function checkRegistry() {
   const emit = process.emitWarning;
   process.emitWarning = (w, ...a) => (JSON.stringify(a).includes('MODULE_TYPELESS_PACKAGE_JSON') ? undefined : emit.call(process, w, ...a));
   try {
-    mod = await import(pathToFileURL(path.join(ROOT, 'src/lib/screenRegistry.ts')).href);
+    mod = await import(pathToFileURL(registryFile).href);
   } catch (e) {
     err(`Không nạp được src/lib/screenRegistry.ts (cần Node 22.6+ để đọc TypeScript): ${e.message}`);
     return;

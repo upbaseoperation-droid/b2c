@@ -149,7 +149,7 @@ const NO_PARTNERSHIP_STAFF: PartnershipStaffEntry[] = [];
 
 export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   currentUser,
-  initialSubTab = 'brands',
+  initialSubTab = 'stores',
   brands = INITIAL_BRANDS,
   stores,
   kocs = INITIAL_KOCS,

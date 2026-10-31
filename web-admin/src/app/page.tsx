@@ -347,8 +347,6 @@ export default function App() {
             : mapped;
     if (tab === 'content-angles') {
       setBrandInitialDetailTab('PRODUCTS');
-    } else if (tab === 'brand-knowledge') {
-      setBrandInitialDetailTab(undefined);
     }
     if (!options?.keepReturnContext) {
       setKocMasterReturnTab(null);
@@ -383,6 +381,18 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleSelectTab]);
+  const [, setSidebarSubViewTick] = useState<number>(0);
+  useEffect(() => {
+    const onSubView = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
+      if (detail?.tab === 'brand-knowledge') {
+        setBrandInitialDetailTab(detail.subView === 'PRODUCTS' ? 'PRODUCTS' : undefined);
+      }
+      setSidebarSubViewTick((n) => n + 1);
+    };
+    window.addEventListener('upbase-sidebar-subview', onSubView);
+    return () => window.removeEventListener('upbase-sidebar-subview', onSubView);
+  }, []);
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
   const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
@@ -394,9 +404,12 @@ export default function App() {
   const toastQueue = useToastQueue();
   const showToast = toastQueue.show;
 
-  const [approvedBookingListContext, setApprovedBookingListContext] = useState<{
+  const [bookingNavFocus, setBookingNavFocus] = useState<{
+    tab: string;
     storeName?: string;
     monthKey?: string;
+    dealCode?: string;
+    planId?: string;
     nonce: number;
   } | null>(null);
 
@@ -410,7 +423,14 @@ export default function App() {
     const onNavigateTab = (event: Event) => {
       const detail = (
         event as CustomEvent<
-          TabKey | { tab: TabKey; storeName?: string; monthKey?: string }
+          | TabKey
+          | {
+              tab: TabKey;
+              storeName?: string;
+              monthKey?: string;
+              dealCode?: string;
+              planId?: string;
+            }
         >
       ).detail;
       if (!detail) return;
@@ -418,14 +438,15 @@ export default function App() {
         handleSelectTab(detail);
         return;
       }
-      if (detail.tab === 'approved-booking-list') {
-        setApprovedBookingListContext({
+      if (detail.tab) {
+        setBookingNavFocus({
+          tab: detail.tab,
           storeName: detail.storeName,
           monthKey: detail.monthKey,
+          dealCode: detail.dealCode,
+          planId: detail.planId,
           nonce: Date.now(),
         });
-      }
-      if (detail.tab) {
         handleSelectTab(detail.tab);
       }
     };
@@ -1794,6 +1815,7 @@ export default function App() {
               kocs={kocs}
               deals={scopedDeals}
               activePlanContext={listingPlanContext}
+              navFocus={bookingNavFocus}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
               onOpenContractForPlanDeal={openContractForPlanDeal}
               onNavigateTab={(tab, ctx) => {
@@ -1834,6 +1856,7 @@ export default function App() {
               kocs={kocs}
               deals={scopedDeals}
               activePlanContext={listingPlanContext}
+              navFocus={bookingNavFocus}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
               onOpenContractForPlanDeal={openContractForPlanDeal}
               onNavigateTab={(tab, ctx) => {
@@ -1874,6 +1897,7 @@ export default function App() {
               kocs={kocs}
               deals={scopedDeals}
               activePlanContext={listingPlanContext}
+              navFocus={bookingNavFocus}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
               onOpenContractForPlanDeal={openContractForPlanDeal}
               onNavigateTab={(tab, ctx) => {
@@ -1943,6 +1967,7 @@ export default function App() {
               onContributorUpdated={handleContributorUpdated}
               ctvAccess={ctvDirectory.access}
               focusCtvId={selectedCtvContext}
+              navFocus={bookingNavFocus}
               onOpenLarkSettlement={() => setActiveTab('lark-settlement')}
               onNotify={showToast}
             />
@@ -1969,54 +1994,43 @@ export default function App() {
               }}
               onOpenContractForDeal={openContractForDeal}
               onNavigateSourceModule={(module, ctx) => {
+                const nonce = Date.now();
                 if (module === 'TIKTOK_KOC_32') {
-                  window.dispatchEvent(
-                    new CustomEvent('upbase-navigate-tab', {
-                      detail: {
-                        tab: 'approved-booking-list',
-                        storeName: ctx?.storeName,
-                        monthKey: ctx?.monthKey,
-                        dealCode: ctx?.dealCode,
-                      },
-                    }),
-                  );
+                  setBookingNavFocus({
+                    tab: 'approved-booking-list',
+                    storeName: ctx?.storeName,
+                    monthKey: ctx?.monthKey,
+                    dealCode: ctx?.dealCode,
+                    nonce,
+                  });
                   setActiveTab('koc-listing');
                 } else if (module === 'MULTI_PLATFORM') {
-                  window.dispatchEvent(
-                    new CustomEvent('upbase-navigate-tab', {
-                      detail: {
-                        tab: 'multi-platform-booking',
-                        storeName: ctx?.storeName,
-                        monthKey: ctx?.monthKey,
-                        dealCode: ctx?.dealCode,
-                      },
-                    }),
-                  );
+                  setBookingNavFocus({
+                    tab: 'multi-platform-booking',
+                    storeName: ctx?.storeName,
+                    monthKey: ctx?.monthKey,
+                    dealCode: ctx?.dealCode,
+                    nonce,
+                  });
                   setActiveTab('multi-platform-booking');
                 } else if (module === 'LIVESTREAM_DEAL') {
-                  window.dispatchEvent(
-                    new CustomEvent('upbase-navigate-tab', {
-                      detail: {
-                        tab: 'livestream-booking',
-                        storeName: ctx?.storeName,
-                        monthKey: ctx?.monthKey,
-                        dealCode: ctx?.dealCode,
-                      },
-                    }),
-                  );
+                  setBookingNavFocus({
+                    tab: 'livestream-booking',
+                    storeName: ctx?.storeName,
+                    monthKey: ctx?.monthKey,
+                    dealCode: ctx?.dealCode,
+                    nonce,
+                  });
                   setActiveTab('livestream-booking');
                 } else if (module === 'SELF_CHANNEL_CTV') {
-                  window.dispatchEvent(
-                    new CustomEvent('upbase-navigate-tab', {
-                      detail: {
-                        tab: 'self-channel-hub',
-                        storeName: ctx?.storeName,
-                        monthKey: ctx?.monthKey,
-                        dealCode: ctx?.dealCode,
-                        planId: ctx?.planId,
-                      },
-                    }),
-                  );
+                  setBookingNavFocus({
+                    tab: 'self-channel-hub',
+                    storeName: ctx?.storeName,
+                    monthKey: ctx?.monthKey,
+                    dealCode: ctx?.dealCode,
+                    planId: ctx?.planId,
+                    nonce,
+                  });
                   setActiveTab('self-channel-hub');
                 }
               }}
