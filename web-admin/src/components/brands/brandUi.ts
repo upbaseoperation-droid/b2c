@@ -17,7 +17,8 @@ import type {
   StrategyOwnerTeam,
   ToneTag,
 } from '../../lib/brands/types';
-import { brandKey, emptyProfile } from '../../lib/brands/types';
+import { brandKey, emptyProfile, type BrandProduct } from '../../lib/brands/types';
+import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
 
 export interface BrandAccess {
   name: string;
@@ -323,4 +324,66 @@ export async function uploadKeyVisualImageClient(params: {
       uploadedAt: new Date().toISOString(),
     };
   }
+}
+
+
+let masterProductsByBrandKeyCache: Map<string, BrandProduct[]> | null = null;
+
+function getMasterProductsByBrandKey(): Map<string, BrandProduct[]> {
+  if (!masterProductsByBrandKeyCache) {
+    const map = new Map<string, BrandProduct[]>();
+    for (const mp of INITIAL_MASTER_PRODUCTS) {
+      const k = brandKey(mp.brandName || '');
+      if (!k) continue;
+      let list = map.get(k);
+      if (!list) {
+        list = [];
+        map.set(k, list);
+      }
+      list.push({
+        id: mp.id,
+        skuCode: mp.sku || mp.id,
+        name: mp.productName,
+        size: '',
+        priceVnd: mp.originalPrice,
+        commissionOrganicPct: mp.commissionRate,
+        sampleStockStatus: (mp.sampleAvailableCount ?? 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+        pdpUrl: mp.pdpUrl || '',
+        usps: mp.usp ? [mp.usp] : [],
+        mechanism: '',
+        ingredients: [],
+        usageInstruction: '',
+        targetUser: '',
+        contraindications: '',
+      });
+    }
+    masterProductsByBrandKeyCache = map;
+  }
+  return masterProductsByBrandKeyCache;
+}
+
+/**
+ * Hợp nhất danh sách sản phẩm của thương hiệu từ `BrandProfile.products` và `INITIAL_MASTER_PRODUCTS`
+ * theo chuẩn RULE-SYNC-01 & RULE-PERF-01 (O(1) Map lookup).
+ */
+export function resolveEffectiveBrandProducts(profile: BrandProfile, brandName: string): BrandProduct[] {
+  const fromMaster = getMasterProductsByBrandKey().get(brandKey(brandName)) || [];
+  if (profile.products.length === 0) return fromMaster;
+  if (fromMaster.length === 0) return profile.products;
+
+  const merged: BrandProduct[] = [...profile.products];
+  const known = new Set<string>();
+  for (const bp of profile.products) {
+    if (bp.skuCode?.trim()) known.add(`sku:${bp.skuCode.trim().toLowerCase()}`);
+    if (bp.name?.trim()) known.add(`name:${bp.name.trim().toLowerCase()}`);
+  }
+  for (const mp of fromMaster) {
+    const skuKey = mp.skuCode?.trim() ? `sku:${mp.skuCode.trim().toLowerCase()}` : '';
+    const nameKey = mp.name?.trim() ? `name:${mp.name.trim().toLowerCase()}` : '';
+    if ((skuKey && known.has(skuKey)) || (nameKey && known.has(nameKey))) continue;
+    if (skuKey) known.add(skuKey);
+    if (nameKey) known.add(nameKey);
+    merged.push(mp);
+  }
+  return merged;
 }

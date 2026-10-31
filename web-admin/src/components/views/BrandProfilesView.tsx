@@ -13,7 +13,6 @@ import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfo
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
 import { UPBASE_BRANDS_MASTER, UPBASE_STORES_MASTER } from '../../lib/importedMasterData';
-import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import {
   buildBrandMonthlyPlanReport,
   type BrandMonthlyPlanReport,
@@ -36,7 +35,7 @@ import {
 } from '../ui';
 import type { Column } from '../ui';
 import { BrandProfileDetail, type BrandDetailTab } from '../brands/BrandProfileDetail';
-import { buildRows, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
+import { buildRows, permissionsOf, real, resolveEffectiveBrandProducts, type BrandAccess, type BrandRow } from '../brands/brandUi';
 import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
 import { isBrandManagedByUser } from '../../lib/rbacScope';
 import { isStorePicOfBrand } from '../../lib/storePositions';
@@ -195,26 +194,9 @@ export function BrandProfilesView({
 
   // Đồng bộ số lượng sản phẩm giữa bảng danh sách và màn chi tiết (RULE-SYNC-01 & RULE-PERF-01)
   const productCountByKey = useMemo(() => {
-    const pushByBrandKey = new Map<string, Set<string>>();
-    for (const p of INITIAL_PUSH_PRODUCTS) {
-      const k = brandKey(p.brandName || '');
-      if (!k) continue;
-      let set = pushByBrandKey.get(k);
-      if (!set) {
-        set = new Set<string>();
-        pushByBrandKey.set(k, set);
-      }
-      const idKey = (p.sku || p.productName || p.id || '').trim().toLowerCase();
-      if (idKey) set.add(idKey);
-    }
     const counts = new Map<string, number>();
     for (const r of rows) {
-      const known = new Set<string>(pushByBrandKey.get(r.key) || []);
-      for (const bp of r.profile.products) {
-        const idKey = (bp.skuCode || bp.name || bp.id || '').trim().toLowerCase();
-        if (idKey) known.add(idKey);
-      }
-      counts.set(r.key, known.size);
+      counts.set(r.key, resolveEffectiveBrandProducts(r.profile, r.name).length);
     }
     return counts;
   }, [rows]);
@@ -270,7 +252,9 @@ export function BrandProfilesView({
   }
 
   const visibleRef = useRef(visible);
-  visibleRef.current = visible;
+  useEffect(() => {
+    visibleRef.current = visible;
+  }, [visible]);
 
   useEffect(() => {
     const onSubView = (e: Event) => {

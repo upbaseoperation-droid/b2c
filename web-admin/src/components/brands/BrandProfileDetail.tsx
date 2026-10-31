@@ -99,6 +99,7 @@ import {
   isExpired,
   missingSections,
   real,
+  resolveEffectiveBrandProducts,
   uploadBrandFileClient,
   type BrandRow,
 } from './brandUi';
@@ -236,28 +237,12 @@ export function BrandProfileDetail({
   const [liveCatalog, setLiveCatalog] = useState<BrandProductCatalog | null>(null);
 
   const mergedBrandProducts = useMemo<BrandProduct[]>(() => {
+    const baseProducts = resolveEffectiveBrandProducts(p, row.name);
     if (!liveCatalog) {
-      if (p.products.length > 0) return p.products;
-      const bLower = row.name.trim().toLowerCase();
-      return INITIAL_MASTER_PRODUCTS.filter(mp => mp.brandName.trim().toLowerCase() === bLower).map(mp => ({
-        id: mp.id,
-        skuCode: mp.sku || mp.id,
-        name: mp.productName,
-        size: '',
-        priceVnd: mp.originalPrice,
-        commissionOrganicPct: mp.commissionRate,
-        sampleStockStatus: (mp.sampleAvailableCount ?? 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
-        pdpUrl: mp.pdpUrl || '',
-        usps: mp.usp ? [mp.usp] : [],
-        mechanism: '',
-        ingredients: [],
-        usageInstruction: '',
-        targetUser: '',
-        contraindications: '',
-      }));
+      return baseProducts;
     }
     const fromCatalog: BrandProduct[] = listAllCatalogProducts(liveCatalog).map(({ group, product }) => {
-      const existing = p.products.find(
+      const existing = baseProducts.find(
         bp =>
           bp.id === product.id ||
           (bp.skuCode && product.sku && bp.skuCode.trim().toLowerCase() === product.sku.trim().toLowerCase()) ||
@@ -288,8 +273,8 @@ export function BrandProfileDetail({
         contraindications: product.contraindications || existing?.contraindications || group.forbiddenClaims || '',
       };
     });
-    return fromCatalog.length > 0 ? fromCatalog : p.products;
-  }, [liveCatalog, p.products, row.name]);
+    return fromCatalog.length > 0 ? fromCatalog : baseProducts;
+  }, [liveCatalog, p, row.name]);
   const effectiveProductCount = mergedBrandProducts.length;
 
   const [prevInitialTab, setPrevInitialTab] = useState<BrandDetailTab | undefined>(initialTab);

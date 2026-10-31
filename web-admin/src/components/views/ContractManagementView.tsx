@@ -312,8 +312,14 @@ export function ContractManagementView({
     const docKind = documentOfTemplate(updatedRec.templateId);
     const isCompleted = updatedRec.signing.at(-1)?.status === 'COMPLETED';
     const vMap = updatedRec.values || {};
-    const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
-    const kocCode = vMap['token:[ID KOC]'] || updatedRec.dealCode || 'KOC';
+    const docDate =
+      vMap['CONTRACT_DATE_CODE'] ||
+      vMap['token:[dd.mm.yy]'] ||
+      vMap['token:[DDMMYY]'] ||
+      vMap['token:[DD/MM/YYYY]'] ||
+      '';
+    const kocCode = vMap['KOC_CODE'] || vMap['token:[ID KOC]'] || updatedRec.dealCode || 'KOC';
+    const gdocsLink = updatedRec.googleDocsUrl || updatedRec.contractSystem?.googleDocsUrl;
     const signedUrl =
       updatedRec.signing.at(-1)?.signedFileUrl ||
       updatedRec.contractSystem?.signedFileUrl ||
@@ -354,7 +360,7 @@ export function ContractManagementView({
               status: isCompleted ? 'ĐÃ_KÝ' : isReadyOrInReview ? 'ĐANG_TRÌNH_KÝ' : 'CHƯA_KÝ',
               signedAt: isCompleted ? new Date().toISOString() : undefined,
               driveUrl: signedUrl,
-              googleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+              googleDocsUrl: gdocsLink,
             }
           : {}),
         legalAttachments: updatedRec.legalAttachments,
@@ -370,7 +376,7 @@ export function ContractManagementView({
         contractAppendixCode:
           updatedRec.contractSystem?.contractCode || `PL01-${docDate || '26'}/${kocCode}`,
         contractAppendixStatus: dealDocStatus,
-        contractAppendixGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+        contractAppendixGoogleDocsUrl: gdocsLink,
         contractAppendixSignedUrl: signedUrl,
         paymentScheduleOption: sowPay.paymentScheduleOption,
         advanceAmount: sowPay.paymentScheduleOption === 'TWO_TIMES' ? sowPay.advanceAmount : 0,
@@ -381,7 +387,7 @@ export function ContractManagementView({
         dealCode: updatedRec.dealCode,
         masterContractCode: frameworkCode,
         masterContractStatus: dealDocStatus,
-        masterContractGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+        masterContractGoogleDocsUrl: gdocsLink,
         masterContractSignedUrl: signedUrl,
       });
     } else if (docKind === 'BBNT') {
@@ -390,7 +396,7 @@ export function ContractManagementView({
         bbntCode:
           updatedRec.contractSystem?.contractCode || `BBNT-${docDate || '26'}/${kocCode}`,
         bbntStatus: dealDocStatus,
-        bbntGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+        bbntGoogleDocsUrl: gdocsLink,
         bbntSignedUrl: signedUrl,
       });
     }
@@ -469,7 +475,7 @@ export function ContractManagementView({
     ALL: () => true,
     MINE: r => r.ownerId === me?.id,
     REVIEW: waitingMe,
-    GOOGLE_DOCS: (r: ContractRecord) => Boolean(r.googleDocsUrl || r.hasCustomTerms),
+    GOOGLE_DOCS: (r: ContractRecord) => Boolean(r.googleDocsUrl || r.hasCustomTerms || r.isKocOwnForm),
     SIGN: awaitingSign,
     DONE: done,
     NEED_ACCEPTANCE: needAcceptance,
@@ -494,10 +500,11 @@ export function ContractManagementView({
   const rows = searched.filter(matches[filter]);
   const pageSize = 20;
   const [pagedKey, setPagedKey] = useState('');
-  if (`${search}|${filter}|${showDealDocs}` !== pagedKey) {
-    setPagedKey(`${search}|${filter}|${showDealDocs}`);
+  if (`${search}|${filter}|${showDealDocs}|${activeSidebarSubView}` !== pagedKey) {
+    setPagedKey(`${search}|${filter}|${showDealDocs}|${activeSidebarSubView}`);
     setPage(1);
-    if (showDealDocs ? filter === 'GOOGLE_DOCS' : filter === 'NEED_ACCEPTANCE') setFilter('ALL');
+    if (activeSidebarSubView === 'BBNT' && filter === 'GOOGLE_DOCS') setFilter('ALL');
+    if (!showDealDocs && filter === 'NEED_ACCEPTANCE') setFilter('ALL');
   }
 
   const isFinanceUser = Boolean(me?.roles.includes('FINANCE'));
@@ -506,9 +513,10 @@ export function ContractManagementView({
         'ALL',
         'MINE',
         ...(isFinanceUser ? (['REVIEW'] as const) : []),
+        ...(activeSidebarSubView !== 'BBNT' ? (['GOOGLE_DOCS'] as const) : []),
         'SIGN',
         'DONE',
-        'NEED_ACCEPTANCE',
+        ...(activeSidebarSubView !== 'BBNT' ? (['NEED_ACCEPTANCE'] as const) : []),
       ]
     : [
         'ALL',
@@ -546,11 +554,18 @@ export function ContractManagementView({
             : docStage === 'SOW'
               ? 'Phụ lục SOW'
               : 'Biên bản nghiệm thu';
+        const isKocFlow = Boolean(r.isKocOwnForm || r.googleDocsSource === 'KOC_CUSTOM_DOC');
+        const isAmendedFlow = !isKocFlow && Boolean(r.googleDocsUrl || r.hasCustomTerms || r.googleDocsSource === 'TEMPLATE_AMENDED');
+        const sourceLabel = isKocFlow
+          ? r.customFile?.filename || 'Mẫu của KOC'
+          : isAmendedFlow
+            ? `${tpl?.id || r.templateId} (sửa điều khoản)`
+            : tpl?.id || r.templateId;
         return (
           <div className="min-w-0 max-w-[260px] leading-snug space-y-0.5">
             <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="block truncate text-2xs text-ink-3">
-              {stageName} · {r.isKocOwnForm && r.customFile ? r.customFile.filename : (tpl?.id || r.templateId)} · v{r.version}
+              {stageName} · {sourceLabel} · v{r.version}
             </span>
           </div>
         );
@@ -562,7 +577,7 @@ export function ContractManagementView({
       width: 190,
       render: r => {
         const docStage = documentOfTemplate(r.templateId);
-        const rawHandle = r.values['token:[ID KOC]'] || '';
+        const rawHandle = r.values['KOC_CODE'] || r.values['token:[ID KOC]'] || '';
         const kocHandle = rawHandle ? `@${rawHandle.replace(/^@/, '')}` : '';
         const legalSubject = r.templateId.startsWith('COM-')
           ? 'Công ty'
@@ -930,11 +945,19 @@ export function ContractManagementView({
                 onClick={() =>
                   setScreen({
                     mode: 'form',
-                    init: { docStage: showDealDocs ? 'SOW' : 'HDNT', kind: 'CONTRACT', source: 'UPBASE_TEMPLATE' },
+                    init: {
+                      docStage: showDealDocs ? (activeSidebarSubView === 'BBNT' ? 'BBNT' : 'SOW') : 'HDNT',
+                      kind: showDealDocs && activeSidebarSubView === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT',
+                      source: 'UPBASE_TEMPLATE',
+                    },
                   })
                 }
               >
-                Tạo hợp đồng
+                {showDealDocs
+                  ? activeSidebarSubView === 'BBNT'
+                    ? 'Lập BBNT'
+                    : 'Tạo phụ lục SOW'
+                  : 'Tạo hợp đồng'}
               </Button>
             )}
           </PageActions>
@@ -1253,11 +1276,11 @@ export function ContractManagementView({
         </div>
       )}
 
-      {/* Bước đầu của việc ký hợp đồng: chọn mẫu Upbase hay mẫu của KOC */}
+      {/* Bước đầu của việc ký hợp đồng / phụ lục: chọn mẫu Upbase hay mẫu của KOC */}
       <Modal
         open={chooserOpen}
         onClose={() => setChooserOpen(false)}
-        title="Tạo hợp đồng với KOC"
+        title={showDealDocs ? 'Tạo phụ lục SOW với KOC' : 'Tạo hợp đồng với KOC'}
         footer={<Button variant="ghost" onClick={() => setChooserOpen(false)}>Hủy</Button>}
       >
         <div className="grid gap-2">
@@ -1283,7 +1306,10 @@ export function ContractManagementView({
               type="button"
               onClick={() => {
                 setChooserOpen(false);
-                setScreen({ mode: 'form', init: { docStage: 'HDNT', kind: 'CONTRACT', source: opt.source } });
+                setScreen({
+                  mode: 'form',
+                  init: { docStage: showDealDocs ? 'SOW' : 'HDNT', kind: 'CONTRACT', source: opt.source },
+                });
               }}
               className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-left transition-colors hover:border-accent hover:bg-accent-soft/30"
             >

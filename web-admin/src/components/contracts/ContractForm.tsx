@@ -730,14 +730,17 @@ export function ContractForm({
       setDraftAirDate(activeJob.airDate);
     }
     setDraftAdvanceAmount(nextAdvanceAmount);
+    const nextBd = aggregateMultiJobAcceptanceBreakdown({
+      jobs: nextJobs,
+      deal: targetDeal,
+      koc: targetKoc,
+      parentRecord: targetParent,
+      advanceAmount: nextAdvanceAmount,
+    });
+    if (isSow && (isKocForm || isAmendedGoogleDoc)) {
+      setCustomContractValue(formatMoneyInput(String(nextBd.financials.plannedTotalNet || 0)));
+    }
     if (fields.length > 0) {
-      const nextBd = aggregateMultiJobAcceptanceBreakdown({
-        jobs: nextJobs,
-        deal: targetDeal,
-        koc: targetKoc,
-        parentRecord: targetParent,
-        advanceAmount: nextAdvanceAmount,
-      });
       setValues(prev => syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd));
     }
   };
@@ -1785,7 +1788,7 @@ export function ContractForm({
     Boolean(partner.trim()) &&
     (!isKocOwnForm || Boolean(customFile)) &&
     (!(isKocGoogleDoc || isAmendedGoogleDoc) || Boolean(extractGoogleDocId(googleDocsUrl))) &&
-    (!isSow || hasInheritedMasterContract);
+    (!isSow || hasInheritedMasterContract || isKocForm);
 
   const shareEmail = data.config.googleShareEmail || '';
   const googleDocIdValid = Boolean(extractGoogleDocId(googleDocsUrl));
@@ -1812,7 +1815,7 @@ export function ContractForm({
         </p>
       )}
       <Field
-        label="Link Google Doc hợp đồng *"
+        label={isSow ? 'Link Google Doc phụ lục *' : 'Link Google Doc hợp đồng *'}
         htmlFor="ct-gdoc-url"
         error={googleDocsUrl.trim() && !googleDocIdValid ? 'Link chưa đúng dạng Google Doc (docs.google.com/document/d/…).' : undefined}
       >
@@ -1831,10 +1834,25 @@ export function ContractForm({
       className="space-y-4"
       onSubmit={e => {
         e.preventDefault();
+        const bdFin = jobAcceptanceBreakdown.financials;
+        const bdNetStr = formatMoneyInput(String(bdFin.acceptedTotalNet || bdFin.plannedTotalNet || 0));
+        const bdGrossStr = formatMoneyInput(String(bdFin.grossTotal || 0));
+        const bdTaxStr = formatMoneyInput(
+          String((jobAcceptanceBreakdown.subjectKind === 'COM' ? bdFin.vatTax : bdFin.pitTax) || 0),
+        );
+        const bdRemainStr = formatMoneyInput(String(bdFin.remainingPayable || 0));
         const baseValues =
           isSow || kind === 'ACCEPTANCE'
             ? {
                 ...values,
+                NET_TOTAL: values.NET_TOTAL || bdNetStr,
+                GROSS_TOTAL: values.GROSS_TOTAL || bdGrossStr,
+                TAX_AMOUNT: values.TAX_AMOUNT || bdTaxStr,
+                REMAINING_AMOUNT: values.REMAINING_AMOUNT || bdRemainStr,
+                KOC_CODE:
+                  values.KOC_CODE ||
+                  (koc?.channelId || deal?.kocChannelId || '').replace(/^@/, ''),
+                BRAND_CODE: values.BRAND_CODE || brand.trim(),
                 [SOW_TASKS_META_KEY]: JSON.stringify(draftAddons),
                 [SOW_JOBS_META_KEY]: JSON.stringify(draftJobTables),
                 [PAYMENT_SCHEDULE_META_KEY]: paymentScheduleOption,
@@ -1906,7 +1924,7 @@ export function ContractForm({
                   ? `Lập Biên bản nghiệm thu${deal?.dealCode ? ` · ${deal.dealCode}` : ''}`
                   : 'Tạo hợp đồng'}
           </h2>
-          {!editing && !isSow && kind !== 'ACCEPTANCE' && (
+          {(!editing || !record?.signing?.length) && kind !== 'ACCEPTANCE' && (
             <Segmented
               value={activeSourceTab}
               onChange={v => switchContractSource(v as 'UPBASE_TEMPLATE' | 'UPBASE_AMENDED' | 'GOOGLE_DOCS')}
@@ -2550,7 +2568,7 @@ export function ContractForm({
               {hasSelectedPartyB && (
                 <>
                   {isKocGoogleDoc ? (
-                    <Panel title="Bước 2 · Dán link Google Doc của KOC">
+                    <Panel title={isSow ? 'Bước 2 · Dán link Google Doc phụ lục của KOC' : 'Bước 2 · Dán link Google Doc của KOC'}>
                       <div className="space-y-4">
                         {renderGoogleDocLink()}
 
@@ -2565,25 +2583,25 @@ export function ContractForm({
                               placeholder="Nhập tên hồ sơ..."
                             />
                           </Field>
-                          <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-koc-total">
+                          <Field label={isSow ? 'Tổng giá trị phụ lục SOW (VNĐ)' : 'Tổng giá trị hợp đồng (VNĐ)'} htmlFor="ct-koc-total">
                             <Input
                               id="ct-koc-total"
                               inputMode="numeric"
                               className="tabular-nums"
                               value={customContractValue}
                               onChange={e => setCustomContractValue(formatMoneyInput(e.target.value))}
-                              placeholder="Giá trị ghi trên hợp đồng KOC"
+                              placeholder={isSow ? 'Giá trị ghi trên phụ lục KOC' : 'Giá trị ghi trên hợp đồng KOC'}
                             />
                           </Field>
                         </div>
                       </div>
                     </Panel>
                   ) : (
-                    <Panel title="Bước 2 · Nội dung hợp đồng">
+                    <Panel title={isSow ? 'Bước 2 · Nội dung phụ lục SOW' : 'Bước 2 · Nội dung hợp đồng'}>
                       <div className="space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
                           {!isKocOwnForm && (
-                            <Field label="Mẫu hợp đồng" htmlFor="ct-template">
+                            <Field label={isSow ? 'Mẫu phụ lục SOW' : 'Mẫu hợp đồng'} htmlFor="ct-template">
                               <div
                                 id="ct-template"
                                 className="h-9 px-3 rounded-lg border border-line bg-sunken/70 flex items-center justify-between gap-2 text-xs"
@@ -3715,7 +3733,7 @@ export function ContractForm({
                     </Panel>
                   )}
 
-                  {template && (
+                  {(template || isKocForm || isAmendedGoogleDoc) && (
                     <div className="flex justify-end gap-2 pt-1">
                       <Button variant="ghost" onClick={onCancel}>Hủy</Button>
                       <Button variant="primary" type="submit" disabled={!canSubmitForm}>
