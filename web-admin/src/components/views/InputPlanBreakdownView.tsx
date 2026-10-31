@@ -307,6 +307,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         return;
       }
     }
+    const existing = monthlyPlans.find(p => p.id === planState.id);
+    if (existing === planState) return;
     const timer = window.setTimeout(() => {
       const merged = monthlyPlans.map(p => (p.id === planState.id ? planState : p));
       onPlansChange(merged);

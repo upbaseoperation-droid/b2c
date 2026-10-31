@@ -1079,9 +1079,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     setPrevSheetFilterKey(currentSheetFilterKey);
     setSheetPage(1);
   }
+  const totalSheetPages = Math.max(1, Math.ceil(displayedRows.length / sheetPageSize));
+  const safeSheetPage = Math.min(Math.max(1, sheetPage), totalSheetPages);
   const pagedDisplayedRows = useMemo(
-    () => displayedRows.slice((sheetPage - 1) * sheetPageSize, sheetPage * sheetPageSize),
-    [displayedRows, sheetPage]
+    () => displayedRows.slice((safeSheetPage - 1) * sheetPageSize, safeSheetPage * sheetPageSize),
+    [displayedRows, safeSheetPage]
   );
 
   // Các nhóm dòng thuộc Tháng cũ của cùng Gian hàng (dựa trên Cột B: Tháng) để hiển thị thu gọn / mở rộng ngay trên Bảng
@@ -3332,7 +3334,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 </tr>
               ) : (
                 pagedDisplayedRows.map((row, pageIdx) => {
-                  const rIdx = (sheetPage - 1) * sheetPageSize + pageIdx;
+                  const rIdx = (safeSheetPage - 1) * sheetPageSize + pageIdx;
                   const isSelected = selectedRowIdSet.has(row.id);
                   const rowEditable = canEditRow(row);
                   const stickyCellBg = isSelected
@@ -4050,7 +4052,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         {displayedRows.length > sheetPageSize && (
           <div className="px-3 py-2 border-t border-line bg-surface">
             <Pagination
-              page={sheetPage}
+              page={safeSheetPage}
               pageSize={sheetPageSize}
               total={displayedRows.length}
               onPageChange={setSheetPage}

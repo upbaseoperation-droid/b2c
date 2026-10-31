@@ -201,9 +201,37 @@ export function ContractDetail({
     <Button variant="primary" icon={CheckCircle2} onClick={onBackToBooking}>Chuyển sang Đề nghị thanh toán</Button>
   ) : null;
 
+  const isStandardFlow =
+    !record.isKocOwnForm &&
+    !record.googleDocsUrl &&
+    record.googleDocsSource !== 'KOC_CUSTOM_DOC' &&
+    record.googleDocsSource !== 'TEMPLATE_AMENDED';
+
   const menu: ActionMenuItem[] = [
     ...(myStep ? [{ label: 'Từ chối', onSelect: () => setDialog('reject') }] : []),
+    ...(isStandardFlow && !activeSigning && (isOwner || coordinator)
+      ? [
+          {
+            label: 'Sinh lại file hợp đồng (generateContract)',
+            icon: RotateCcw,
+            onSelect: () =>
+              onAction(
+                { action: 'GENERATE_CONTRACT_SYSTEM' },
+                'Đã gọi API generateContract sinh file hợp đồng trên Contract Service',
+              ),
+          },
+        ]
+      : []),
     ...(canStartSigning ? [{ label: 'Gửi ký WeSign qua contract-system (requestSign)', icon: Send, onSelect: () => setDialog('request_sign') }] : []),
+    ...(signing && signing.status !== 'COMPLETED'
+      ? [
+          {
+            label: 'Đồng bộ trạng thái ký (SYNC_WESIGN)',
+            icon: RotateCcw,
+            onSelect: () => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ trạng thái ký mới nhất'),
+          },
+        ]
+      : []),
     ...(canStartSigning && data.config.wesign ? [{ label: 'Liên kết luồng ký thủ công', onSelect: () => setDialog('link') }] : []),
     ...(canStartSigning && demo ? [{ label: 'Bắt đầu ký thử nội bộ', onSelect: () => onAction({ action: 'DEMO_SIGN_START' }, 'Đã bắt đầu lượt ký thử') }] : []),
     ...(canCheck ? [{ label: 'Kiểm tra nội dung', icon: ScanSearch, onSelect: () => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung') }] : []),
@@ -514,35 +542,57 @@ export function ContractDetail({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {record.googleDocsUrl && (
+          {(record.googleDocsUrl || record.contractSystem?.googleDocsUrl) && (
             <a
-              href={record.googleDocsUrl}
+              href={record.googleDocsUrl || record.contractSystem?.googleDocsUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Google Docs
+              {record.googleDocsUrl ? 'Google Docs' : 'Google Docs (API 3)'}
             </a>
           )}
-          {record.googleDocsAuditTrail?.exportedPdfUrl && (
+          {(record.contractSystem?.signedFileUrl || record.googleDocsAuditTrail?.exportedPdfUrl) && (
             <a
-              href={record.googleDocsAuditTrail.exportedPdfUrl}
+              href={record.contractSystem?.signedFileUrl || record.googleDocsAuditTrail?.exportedPdfUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-positive hover:bg-sunken"
             >
-              <Download className="w-3.5 h-3.5 text-ink-3" />
-              Tải PDF
+              <Download className="w-3.5 h-3.5" />
+              Tải PDF đã ký
             </a>
           )}
           <a
-            href={record.googleDocsAuditTrail?.exportedDocxUrl || `/api/contracts/${record.id}/document`}
+            href={
+              record.contractSystem?.signingFileUrl ||
+              record.googleDocsAuditTrail?.exportedDocxUrl ||
+              `/api/contracts/${record.id}/document`
+            }
+            target={record.contractSystem?.signingFileUrl ? '_blank' : undefined}
+            rel={record.contractSystem?.signingFileUrl ? 'noreferrer' : undefined}
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken"
           >
             <Download className="w-3.5 h-3.5 text-ink-3" strokeWidth={1.75} />
-            Tải Word
+            {record.contractSystem?.signingFileUrl ? 'Tải .docx trình ký (API 3)' : 'Tải Word'}
           </a>
+          {isStandardFlow && !activeSigning && (isOwner || coordinator) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RotateCcw}
+              disabled={busy}
+              onClick={() =>
+                onAction(
+                  { action: 'GENERATE_CONTRACT_SYSTEM' },
+                  'Đã gọi API 3 (generateContract) sinh file hợp đồng trên Contract Service',
+                )
+              }
+            >
+              Sinh file (API 3)
+            </Button>
+          )}
           {isAcceptanceDoc && (
             <Button
               variant="secondary"
@@ -943,8 +993,88 @@ export function ContractDetail({
                         Đẩy ký WeSign
                       </Button>
                     )}
+                    {signing && !isFullySigned && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={RotateCcw}
+                        disabled={busy}
+                        onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ trạng thái ký mới nhất')}
+                      >
+                        Đồng bộ trạng thái
+                      </Button>
+                    )}
                   </div>
                 </div>
+
+                {record.contractSystem && (
+                  <div className="rounded-lg border border-line bg-sunken/40 px-3 py-2 text-2xs space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2 text-ink-2">
+                        <span>
+                          Mã Contract Service: <strong className="font-mono text-ink">{record.contractSystem.contractCode || record.contractSystem.contractSystemId}</strong>
+                        </span>
+                        {record.contractSystem.remoteStatus && (
+                          <Status
+                            tone={
+                              record.contractSystem.remoteStatus === 'completed'
+                                ? 'positive'
+                                : record.contractSystem.remoteStatus === 'signing_requested'
+                                  ? 'warning'
+                                  : 'info'
+                            }
+                          >
+                            {record.contractSystem.remoteStatus === 'completed'
+                              ? 'Đã hoàn tất (completed)'
+                              : record.contractSystem.remoteStatus === 'signing_requested'
+                                ? 'Đang trình ký WeSign (signing_requested)'
+                                : `Đã sinh file (${record.contractSystem.remoteStatus})`}
+                          </Status>
+                        )}
+                        {record.contractSystem.wesignRequestId && (
+                          <span className="text-ink-3">
+                            WeSign ID: <code className="font-mono text-ink-2">{record.contractSystem.wesignRequestId}</code>
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        {record.contractSystem.googleDocsUrl && (
+                          <a
+                            href={record.contractSystem.googleDocsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            File Google Docs đã sinh
+                          </a>
+                        )}
+                        {record.contractSystem.signingFileUrl && (
+                          <a
+                            href={record.contractSystem.signingFileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
+                          >
+                            <Download className="w-3 h-3" />
+                            File .docx trình ký
+                          </a>
+                        )}
+                        {record.contractSystem.signedFileUrl && (
+                          <a
+                            href={record.contractSystem.signedFileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-medium text-positive hover:underline"
+                          >
+                            <Download className="w-3 h-3" />
+                            File PDF đã ký
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className={`rounded-lg border p-3 flex flex-col justify-between gap-2 ${partyADone ? 'border-positive/40 bg-positive-soft/35' : 'border-line bg-sunken/30'}`}>
@@ -1028,6 +1158,181 @@ export function ContractDetail({
               )}
               <Info label="Cập nhật">{dateTime(record.updatedAt)}</Info>
             </dl>
+          </AsideSection>
+          <AsideSection title="Kết nối Contract Service & WeSign">
+            <div className="space-y-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <span className="text-ink-3">Luồng xử lý:</span>
+                <Status tone={isStandardFlow ? 'info' : 'warning'}>
+                  {record.isKocOwnForm || record.googleDocsSource === 'KOC_CUSTOM_DOC'
+                    ? 'Luồng 3 · Mẫu riêng KOC (Chỉ WeSign)'
+                    : !isStandardFlow
+                      ? 'Luồng 2 · Sửa điều khoản (Không gọi API 3)'
+                      : 'Luồng 1 · Mẫu chuẩn (API 1, 2, 3, 4)'}
+                </Status>
+              </div>
+
+              {isStandardFlow && (
+                <div className="rounded-lg border border-line bg-sunken/50 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-ink">Kết quả API 3 (generateContract)</span>
+                    <Status
+                      tone={
+                        record.contractSystem?.remoteStatus === 'completed'
+                          ? 'positive'
+                          : record.contractSystem?.remoteStatus === 'signing_requested'
+                            ? 'warning'
+                            : record.contractSystem?.contractSystemId
+                              ? 'info'
+                              : 'neutral'
+                      }
+                    >
+                      {record.contractSystem?.remoteStatus || (record.contractSystem?.contractSystemId ? 'ready' : 'Chưa sinh file')}
+                    </Status>
+                  </div>
+                  {record.contractSystem ? (
+                    <dl className="grid gap-1.5 text-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <dt className="text-ink-3">Mã code:</dt>
+                        <dd className="font-mono font-medium text-ink truncate" title={record.contractSystem.contractCode}>
+                          {record.contractSystem.contractCode}
+                        </dd>
+                      </div>
+                      {record.contractSystem.contractSystemId && (
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-ink-3">Contract ID:</dt>
+                          <dd className="font-mono text-ink-2 truncate max-w-[170px]" title={record.contractSystem.contractSystemId}>
+                            {record.contractSystem.contractSystemId}
+                          </dd>
+                        </div>
+                      )}
+                      {record.contractSystem.remoteTemplateId && (
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-ink-3">Template UUID:</dt>
+                          <dd className="font-mono text-ink-2 truncate max-w-[170px]" title={record.contractSystem.remoteTemplateId}>
+                            {record.contractSystem.remoteTemplateId}
+                          </dd>
+                        </div>
+                      )}
+                      <div className="pt-1 flex flex-col gap-1.5">
+                        {record.contractSystem.googleDocsUrl ? (
+                          <a
+                            href={record.contractSystem.googleDocsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            Mở Google Docs đã sinh (document.fileUrl)
+                          </a>
+                        ) : (
+                          <span className="text-ink-3">document.fileUrl: Chưa có link từ API</span>
+                        )}
+                        {record.contractSystem.signingFileUrl ? (
+                          <a
+                            href={record.contractSystem.signingFileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline"
+                          >
+                            <Download className="w-3 h-3 shrink-0" />
+                            Tải file .docx trình ký (signingFileUrl)
+                          </a>
+                        ) : (
+                          <span className="text-ink-3">signingFileUrl: Chưa có link từ API</span>
+                        )}
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="text-2xs text-ink-3">Chưa có dữ liệu trả về từ API 3.</p>
+                  )}
+                  {!activeSigning && (isOwner || coordinator) && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={RotateCcw}
+                      disabled={busy}
+                      onClick={() =>
+                        onAction(
+                          { action: 'GENERATE_CONTRACT_SYSTEM' },
+                          'Đã gọi API 3 (generateContract) sinh lại file hợp đồng',
+                        )
+                      }
+                    >
+                      Gọi lại API 3 (generateContract)
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-lg border border-line bg-sunken/50 p-2.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">Kết quả API 4 (requestSign)</span>
+                  <Status tone={isFullySigned ? 'positive' : signing ? 'warning' : 'neutral'}>
+                    {isFullySigned
+                      ? 'Đã ký hoàn tất'
+                      : signing
+                        ? `Đang ký (${signingProgress?.completedCount || 0}/${signingProgress?.totalCount || 2})`
+                        : 'Chưa gửi ký'}
+                  </Status>
+                </div>
+                {signing || record.contractSystem?.wesignRequestId ? (
+                  <dl className="grid gap-1.5 text-2xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-ink-3">WeSign Request ID:</dt>
+                      <dd className="font-mono font-medium text-ink truncate max-w-[160px]">
+                        {record.contractSystem?.wesignRequestId || signing?.documentId}
+                      </dd>
+                    </div>
+                    {signing?.people && signing.people.length > 0 && (
+                      <div className="space-y-1 pt-1 border-t border-line/60">
+                        {signing.people.map((p, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-2">
+                            <span className="text-ink-2 truncate">{p.name} ({p.email})</span>
+                            <span className="font-medium text-ink">{p.status || (p.action === 2 ? 'Đã ký' : 'Chờ ký')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {record.contractSystem?.signedFileUrl && (
+                      <a
+                        href={record.contractSystem.signedFileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 pt-1 font-medium text-positive hover:underline"
+                      >
+                        <Download className="w-3 h-3 shrink-0" />
+                        Tải PDF đã ký hoàn tất (signedFileUrl)
+                      </a>
+                    )}
+                  </dl>
+                ) : (
+                  <p className="text-2xs text-ink-3">
+                    {record.approval === 'APPROVED'
+                      ? 'Hồ sơ đã duyệt nội bộ, sẵn sàng gọi API 4 (requestSign) đẩy sang WeSign.'
+                      : 'Hoàn tất duyệt nội bộ để mở khóa nút gửi ký WeSign.'}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {canStartSigning && (
+                    <Button size="sm" variant="primary" icon={Send} disabled={busy} onClick={() => setDialog('request_sign')}>
+                      Gọi API 4 (requestSign)
+                    </Button>
+                  )}
+                  {signing && !isFullySigned && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={RotateCcw}
+                      disabled={busy}
+                      onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ trạng thái ký mới nhất')}
+                    >
+                      Đồng bộ trạng thái ký
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
           </AsideSection>
           <DiscussionAndHistory
             record={record}
@@ -1581,6 +1886,7 @@ function RequestSignDialog({
   if (curOpenKey && curOpenKey !== prevOpenKey) {
     setPrevOpenKey(curOpenKey);
     const rawEmail =
+      record.values['PARTY_B_EMAIL'] ||
       record.values['src:email'] ||
       record.values['token:[ĐIỀN EMAIL]'] ||
       record.values['token:[EMAIL]'] ||

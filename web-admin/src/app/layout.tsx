@@ -4,18 +4,18 @@ import "./globals.css";
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-be-vietnam",
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-jetbrains",
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 export const viewport: Viewport = {

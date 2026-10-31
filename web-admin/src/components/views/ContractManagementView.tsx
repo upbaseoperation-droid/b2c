@@ -821,7 +821,7 @@ export function ContractManagementView({
   }
   if (!data) {
     return (
-      <div className="space-y-4 animate-pulse py-2" aria-busy="true" aria-label="Đang tải hồ sơ hợp đồng">
+      <div className="space-y-4 py-2" aria-busy="true" aria-label="Đang tải hồ sơ hợp đồng">
         <div className="flex items-center justify-between gap-4">
           <div className="h-7 w-56 bg-sunken rounded-md" />
           <div className="flex items-center gap-2">

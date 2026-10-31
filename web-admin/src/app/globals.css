@@ -235,19 +235,22 @@ button, input, select, textarea, optgroup {
   font-family: inherit;
 }
 
-/* Số trong bảng và chỉ số luôn thẳng cột */
-table, .tabular-nums {
-  font-variant-numeric: tabular-nums;
+/* Số trong bảng, chỉ số và mọi cột số luôn thẳng cột và dùng chung font chính */
+table, .tabular-nums, [data-numeric="true"], .numeral {
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" 1 !important;
 }
 
-/* font-mono trong code cũ dùng để căn số: hiển thị bằng font giao diện với số đều cột.
-   Mã (mã deal, SKU, mã hợp đồng) dùng class font-code. */
-.font-mono:not(pre):not(code):not(kbd) {
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
+/* font-mono trong các bảng/cột số: BẮT BUỘC hiển thị cùng font Be Vietnam Pro với tabular-nums */
+.font-mono:not(pre):not(code):not(kbd),
+.font-figure {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" 1 !important;
 }
+
 .font-code, pre, code, kbd, samp {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono) !important;
 }
 
 /* Focus bàn phím: luôn nhìn thấy */

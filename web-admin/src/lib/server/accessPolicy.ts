@@ -216,7 +216,7 @@ export async function readPolicy() {
 export async function effectiveUser(user: UserProfile | null): Promise<UserProfile | null> {
   if (!user) return null;
   const { data: policy, revision } = await readPolicy();
-  const cacheKey = `${revision}::${user.id}::${user.role}::${user.email || ''}::${user.canLogin ?? true}`;
+  const cacheKey = `${revision}::${user.id}::${user.role}::${user.email || ''}::${user.staffCode || ''}::${user.name || ''}::${user.canLogin ?? true}`;
   if (cachedEffectiveUserByKey.has(cacheKey)) {
     return cachedEffectiveUserByKey.get(cacheKey) ?? null;
   }
