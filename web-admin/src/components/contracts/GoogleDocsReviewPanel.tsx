@@ -13,10 +13,15 @@ import {
   Share2,
 } from 'lucide-react';
 import type {
+  GoogleDocClauseDiff,
   GoogleDocCommentItem,
   GoogleDocsAuditTrail,
   GoogleDocsReviewRouting,
 } from '../../lib/contracts/googleDocsTypes';
+import {
+  buildSubclauseComparisons,
+  type WordDiffSegment,
+} from '../../lib/contracts/googleDocsService';
 import { Button, Segmented, Status } from '../ui';
 import { formatDate } from '../../lib/format';
 
@@ -312,76 +317,7 @@ export function GoogleDocsReviewPanel({
 
       {/* TAB 2: ĐỐI CHIẾU ĐIỀU KHOẢN (BẢN ĐẦU VS BẢN CHỐT CUỐI) */}
       {activeTab === 'DIFFS' && (
-        <div className="space-y-3">
-          {effectiveDiffs.length === 0 ? (
-            <div className="rounded-xl border border-line bg-surface p-6 text-center text-xs text-ink-3">
-              Không phát sinh điều khoản thay đổi giữa bản đầu và bản chốt cuối.
-            </div>
-          ) : (
-            effectiveDiffs.map((diff, idx) => {
-              const isFinance = diff.targetRole === 'FINANCE' || diff.targetRole === 'BOTH';
-              const isLegal = diff.targetRole === 'LEGAL' || diff.targetRole === 'BOTH';
-              return (
-                <div
-                  key={`${diff.clauseNumber}-${idx}`}
-                  className="rounded-xl border border-line bg-surface p-4 space-y-3 text-xs"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-ink text-sm">
-                        {diff.clauseNumber}: {diff.title}
-                      </span>
-                      <Status
-                        tone={
-                          diff.changeType === 'ADDED'
-                            ? 'positive'
-                            : diff.changeType === 'REMOVED'
-                              ? 'critical'
-                              : 'warning'
-                        }
-                      >
-                        {diff.changeType === 'ADDED'
-                          ? 'Bổ sung mới'
-                          : diff.changeType === 'REMOVED'
-                            ? 'Đã lược bỏ'
-                            : 'Đã điều chỉnh'}
-                      </Status>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isFinance && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
-                          <CreditCard className="w-3 h-3" />
-                          Kế toán
-                        </span>
-                      )}
-                      {isLegal && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning-soft text-warning-strong text-2xs font-medium">
-                          <Scale className="w-3 h-3" />
-                          Pháp chế
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-2xs">
-                    {diff.originalText && (
-                      <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
-                        <span className="font-semibold text-ink-3 block">Bản ban đầu (v0):</span>
-                        <p className="text-ink-2 whitespace-pre-wrap">{diff.originalText}</p>
-                      </div>
-                    )}
-                    {diff.modifiedText && (
-                      <div className="rounded-lg border border-line-strong bg-warning-soft/20 p-3 space-y-1">
-                        <span className="font-semibold text-warning-strong block">Bản chốt cuối (Final):</span>
-                        <p className="text-ink whitespace-pre-wrap">{diff.modifiedText}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+        <ClauseDiffList diffs={effectiveDiffs} sourceType={sourceType} />
       )}
 
       {/* TAB 3: BÌNH LUẬN GOOGLE DOCS */}
@@ -440,6 +376,204 @@ export function GoogleDocsReviewPanel({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+export function InlineRedlineSegments({
+  segments,
+  mode = 'inline',
+}: {
+  segments: WordDiffSegment[];
+  mode?: 'inline' | 'original' | 'modified';
+}) {
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (seg.type === 'equal') {
+          return <span key={i}>{seg.text}</span>;
+        }
+        if (seg.type === 'delete') {
+          if (mode === 'modified') return null;
+          return (
+            <del
+              key={i}
+              className="bg-critical-soft text-critical line-through decoration-critical/80 px-1 py-0.5 rounded-xs mx-0.5 font-normal"
+            >
+              {seg.text}
+            </del>
+          );
+        }
+        if (mode === 'original') return null;
+        return (
+          <ins
+            key={i}
+            className="bg-positive-soft text-positive font-semibold no-underline px-1 py-0.5 rounded-xs mx-0.5 border-b border-positive/40"
+          >
+            {seg.text}
+          </ins>
+        );
+      })}
+    </>
+  );
+}
+
+export function ClauseDiffList({
+  diffs,
+  sourceType = 'TEMPLATE_AMENDED',
+  compact = false,
+}: {
+  diffs: GoogleDocClauseDiff[];
+  sourceType?: 'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC';
+  compact?: boolean;
+}) {
+  const [viewMode, setViewMode] = useState<'INLINE' | 'SPLIT'>('INLINE');
+
+  if (diffs.length === 0) {
+    return (
+      <div className="rounded-xl border border-line bg-surface p-6 text-center text-xs text-ink-3">
+        Hồ sơ giữ nguyên theo mẫu chuẩn, không phát sinh điều khoản sửa đổi.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Thanh chú giải & chuyển chế độ xem */}
+      <div className="rounded-xl border border-line bg-surface px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-2xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-semibold text-ink">
+            {diffs.length} điều khoản thay đổi{' '}
+            {sourceType === 'TEMPLATE_AMENDED' ? 'trên mẫu chuẩn UpBase' : 'sau đàm phán'}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-ink-2">
+            <span className="px-1.5 py-0.5 rounded-xs bg-critical-soft text-critical line-through">
+              Từ ngữ gốc bị thay
+            </span>
+            <span>→</span>
+            <span className="px-1.5 py-0.5 rounded-xs bg-positive-soft text-positive font-semibold">
+              Từ ngữ sửa đổi mới
+            </span>
+          </span>
+        </div>
+
+        {!compact && (
+          <Segmented
+            value={viewMode}
+            onChange={v => setViewMode(v)}
+            items={[
+              { key: 'INLINE' as const, label: 'Gộp trực quan' },
+              { key: 'SPLIT' as const, label: 'Song song 2 cột' },
+            ]}
+          />
+        )}
+      </div>
+
+      {/* Danh sách từng điều khoản thay đổi */}
+      <div className="space-y-3">
+        {diffs.map((diff, idx) => {
+          const isFinance = diff.targetRole === 'FINANCE' || diff.targetRole === 'BOTH';
+          const isLegal = diff.targetRole === 'LEGAL' || diff.targetRole === 'BOTH';
+          const subclauses = buildSubclauseComparisons(diff.originalText, diff.modifiedText);
+
+          return (
+            <div
+              key={`${diff.clauseNumber}-${idx}`}
+              className="rounded-xl border border-line bg-surface overflow-hidden text-xs"
+            >
+              {/* Header điều khoản */}
+              <div className="px-4 py-2.5 bg-sunken/40 border-b border-line flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-ink">
+                    {diff.clauseNumber}: {diff.title}
+                  </span>
+                  <Status
+                    tone={
+                      diff.changeType === 'ADDED'
+                        ? 'positive'
+                        : diff.changeType === 'REMOVED'
+                          ? 'critical'
+                          : 'warning'
+                    }
+                  >
+                    {diff.changeType === 'ADDED'
+                      ? 'Khoản bổ sung mới'
+                      : diff.changeType === 'REMOVED'
+                        ? 'Khoản đã lược bỏ'
+                        : 'Sửa đổi câu chữ'}
+                  </Status>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  {isFinance && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
+                      <CreditCard className="w-3 h-3" />
+                      Kế toán duyệt
+                    </span>
+                  )}
+                  {isLegal && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning-soft text-warning-strong text-2xs font-medium">
+                      <Scale className="w-3 h-3" />
+                      Pháp chế duyệt
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Nội dung đối chiếu từng khoản */}
+              <div className="p-4 space-y-2.5">
+                {subclauses.map((sub, sIdx) => {
+                  if (sub.unchanged) {
+                    return (
+                      <div
+                        key={sIdx}
+                        className="rounded-lg bg-sunken/35 border border-line px-3 py-2 text-2xs text-ink-3 flex items-start gap-2"
+                      >
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line text-ink-3 font-medium shrink-0">
+                          Giữ nguyên
+                        </span>
+                        <span className="line-clamp-1">{sub.modifiedLine || sub.originalLine}</span>
+                      </div>
+                    );
+                  }
+
+                  if (viewMode === 'INLINE' || compact || diff.changeType !== 'MODIFIED') {
+                    return (
+                      <div
+                        key={sIdx}
+                        className="rounded-lg border border-line-strong bg-surface p-3 leading-relaxed text-xs text-ink"
+                      >
+                        <InlineRedlineSegments segments={sub.segments} mode="inline" />
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={sIdx} className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="rounded-lg border border-line bg-sunken/30 p-3 space-y-1.5 leading-relaxed">
+                        <span className="text-2xs font-semibold text-ink-3 block">
+                          {sourceType === 'TEMPLATE_AMENDED' ? 'Mẫu chuẩn UpBase (Gốc)' : 'Bản đẩy lên ban đầu (v0)'}
+                        </span>
+                        <p className="text-ink-2">
+                          <InlineRedlineSegments segments={sub.segments} mode="original" />
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-line-strong bg-surface p-3 space-y-1.5 leading-relaxed">
+                        <span className="text-2xs font-semibold text-positive block">
+                          Bản chốt sau đàm phán (Final)
+                        </span>
+                        <p className="text-ink">
+                          <InlineRedlineSegments segments={sub.segments} mode="modified" />
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

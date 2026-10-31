@@ -124,20 +124,11 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
           "explanation": "Điều khoản được điều chỉnh trong quá trình đàm phán giữa bản ban đầu và bản chốt cuối (Pháp chế)."
         },
         {
-          "clauseNumber": "Điều 7",
-          "title": "CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP",
-          "changeType": "MODIFIED",
-          "targetRole": "LEGAL",
-          "originalText": "Điều 7. CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP\n7.1. Mọi tranh chấp phát sinh được giải quyết trước hết bằng thương lượng; nếu không thành sẽ đưa ra Tòa án nhân dân có thẩm quyền tại TP. Hà Nội.\nĐẠI DIỆN BÊN A: {{SIGN_BEN_A}}\nĐẠI DIỆN BÊN B: {{SIGN_BEN_B}}",
-          "modifiedText": "Điều 7. CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP\n7.1. Mọi tranh chấp phát sinh được giải quyết trước hết bằng thương lượng; nếu không thành sẽ đưa ra Tòa án nhân dân có thẩm quyền tại TP. Hà Nội.",
-          "explanation": "Điều khoản được điều chỉnh trong quá trình đàm phán giữa bản ban đầu và bản chốt cuối (Pháp chế)."
-        },
-        {
           "clauseNumber": "Điều 8",
           "title": "ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC",
           "changeType": "ADDED",
           "targetRole": "LEGAL",
-          "modifiedText": "Điều 8. ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC\n8.1. Bên B được quyền giữ nguyên phong cách nhận xét trung thực trên kênh Hà Linh Official miễn không vi phạm thuần phong mỹ tục và quy định pháp luật về quảng cáo.\nĐẠI DIỆN BÊN A: {{SIGN_BEN_A}}\nĐẠI DIỆN BÊN B: {{SIGN_BEN_B}}",
+          "modifiedText": "Điều 8. ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC\n8.1. Bên B được quyền giữ nguyên phong cách nhận xét trung thực trên kênh Hà Linh Official miễn không vi phạm thuần phong mỹ tục và quy định pháp luật về quảng cáo.",
           "explanation": "Điều khoản mới được bổ sung thêm trong quá trình đàm phán (so với bản đẩy lên ban đầu)."
         }
       ],
@@ -351,112 +342,61 @@ export const DEMO_SEED_RECORDS: ContractRecord[] = [
       "requiresLegal": true,
       "requiresFinance": true,
       "legalClauses": [
-        "Điều 2",
+        "Điều 1",
         "Điều 4",
-        "Điều 5",
         "Điều 6",
-        "Điều 7",
-        "Điều 8",
-        "Điều 9",
-        "Điều 10"
+        "Điều 8"
       ],
       "financeClauses": [
-        "Điều 1",
-        "Điều 2",
-        "Điều 3",
-        "Điều 4"
+        "Điều 3"
       ],
       "clauseDiffs": [
         {
           "clauseNumber": "Điều 1",
           "title": "NỘI DUNG DỊCH VỤ HỢP TÁC",
           "changeType": "MODIFIED",
-          "targetRole": "FINANCE",
-          "originalText": "ĐIỀU 1: ĐỊNH NGHĨA\nKhái niệm\nĐịnh nghĩa\nTài khoản mạng xã hội\nLà tài khoản mạng xã hội có link: https://www.tiktok.com/@halinhofficial\nBên B là chủ sở hữu hợp pháp và có toàn quyền quản lý, vận hành tài khoản mạng xã hội trong suốt thời gian thực hiện Hợp đồng.\nHợp đồng dịch vụ khung\n(Hợp đồng)\nLà Hợp đồng này và quy định nguyên tắc hợp tác tổng thể giữa các Bên.\nTrường hợp có mâu thuẫn giữa Hợp đồng và Phụ lục phạm vi công việc (SOW): ưu tiên áp dụng theo thứ tự (i) SOW, (ii) Hợp đồng, trừ khi có quy định khác trong SOW.\nPhụ lục phạm vi công việc\n(SOW)\nLà phụ lục của Hợp đồng do hai bên cùng xác nhận, quy định chi tiết nội dung công việc, số lượng, thời gian, phí booking, hoa hồng (nếu có) và các yêu cầu, các dịch vụ đi kèm liên quan. SOW được hai bên xác nhận dưới dạng bản cứng hoặc bản ký điện tử.\nTiếp thị\nliên kết\n(Affiliate)\nLà việc Bên B quảng bá sản phẩm/dịch vụ thông qua cơ chế của nền tảng thương mại điện tử (sàn TMĐT) (bao gồm link, mã, giỏ hàng hoặc công cụ tương đương), trong đó doanh thu chỉ được ghi nhận khi được hệ thống nền tảng xác nhận. Hoa hồng và doanh thu được xác định theo dữ liệu cuối cùng từ nền tảng và có thể bị điều chỉnh trong trường hợp hoàn đơn, gian lận hoặc vi phạm chính sách.\nBooking video\nBooking video là việc Bên A thuê Bên B sản xuất và đăng tải Video theo các yêu cầu cụ thể của Bên A, có nội dung review, đánh giá, giới thiệu, quảng bá sản phẩm và thúc đẩy doanh số bán hàng (có thể bao gồm các cơ chế như gắn link, mã, giỏ hàng hoặc kêu gọi hành động theo chi tiết tại SOW nếu có).\nPhí dịch vụ booking\nPhí dịch vụ booking là khoản phí cố định Bên A thanh toán cho Bên B theo Hợp đồng.\nHoa hồng\nLà khoản thu nhập của Bên B dựa trên doanh thu Affiliate hợp lệ được nền tảng thương mại điện tử chi trả. Bên B tự chịu trách nhiệm kê khai, nộp thuế và các nghĩa vụ tài chính liên quan đến khoản hoa hồng này theo quy định pháp luật (nếu áp dụng).",
+          "targetRole": "LEGAL",
+          "originalText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng trong suốt thời gian hợp tác.",
           "modifiedText": "Điều 1. NỘI DUNG DỊCH VỤ HỢP TÁC\n1.1. Bên B thực hiện sáng tạo nội dung Video review sản phẩm theo từng Phụ lục SOW ký kết với Bên A trên kênh TikTok Hà Linh Official theo định hướng Brief của Bên A.\n1.2. Bên B cam kết gắn link giỏ hàng TikTok Shop chính hãng tối thiểu 60 (sáu mươi) ngày kể từ ngày đăng tải.",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT)."
-        },
-        {
-          "clauseNumber": "Điều 2",
-          "title": "THỜI HẠN THỰC HIỆN HỢP ĐỒNG",
-          "changeType": "MODIFIED",
-          "targetRole": "BOTH",
-          "originalText": "ĐIỀU 2: PHẠM VI CÔNG VIỆC\nPhạm vi công việc cần thực hiện\nBên B thực hiện sản xuất và đăng tải video theo yêu cầu đặt hàng của Bên A. Phạm vi công việc, nội dung, số lượng video, kịch bản, hình thức thể hiện, kênh đăng tải, tiến độ thực hiện và các yêu cầu cụ thể khác của từng đợt đặt hàng sẽ được Hai Bên thỏa thuận tại từng SOW.\nQuy trình cung ứng dịch vụ\nBước\nTên bước\nMô tả công việc\n1\nKý Hợp đồng\ndịch vụ khung\nHai Bên ký Hợp đồng dịch vụ khung làm cơ sở pháp lý điều chỉnh toàn bộ hoạt động hợp tác.\n2\nYêu cầu dịch vụ\nBên A gửi brief/yêu cầu cung ứng dịch vụ, bao gồm: thông tin chiến dịch, sản phẩm/dịch vụ, nội dung quảng bá, nền tảng triển khai, timeline và các yêu cầu liên quan.\n3\nXác nhận SOW\nHai bên thống nhất SOW qua các hình thức ký bản cứng/ký điện tử.\n4\nDựng kịch bản\nBên B xây dựng kịch bản và nội dung video dựa trên brief của Bên A và gửi Bên A phê duyệt trước khi sản xuất.\n5\nDuyệt kịch bản\nBên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có).\nTối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.\n6\nSản xuất video\nBên B tiến hành quay dựng, chỉnh lý, biên tập, hậu kỳ video theo kịch bản đã thống nhất.\n7\nDuyệt video\nBên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có).\nTheo quy định chi tiết tại SOW.\n8\nĐăng tải video\nBên B đăng tải theo đúng nội dung đã duyệt, đúng tài khoản và timeline.\n9\nNghiệm thu\nBên A kiểm tra việc thực hiện dịch vụ theo SOW.\n10\nThanh toán phí Booking\nBên A thực hiện thanh toán phí booking theo SOW và Biên bản nghiệm thu (nếu có)\nTiêu chuẩn nghiệm thu dịch vụ\nTiêu chuẩn về nội dung và đăng tải\nVideo phải tuân thủ đầy đủ kịch bản, thông điệp và guideline do Bên A cung cấp;\nChỉ được đăng tải sau khi có phê duyệt nội dung từ Bên A;\nKhông vi phạm pháp luật, chính sách nền tảng hoặc gây ảnh hưởng tiêu cực đến hình ảnh thương hiệu.\nTiêu chuẩn về kịch bản và sản xuất\nKịch bản phải được Bên A phê duyệt bằng email/tin nhắn/văn bản trước khi quay dựng;\nMọi chi phí phát sinh do sản xuất khi chưa có phê duyệt hợp lệ do Bên B tự chi trả;\nCảnh quay, bố cục và thông điệp phải phù hợp với kịch bản đã duyệt;\nTrường hợp sai lệch, Bên A có quyền từ chối nghiệm thu và yêu cầu chỉnh sửa hoặc quay lại mà không phát sinh chi phí.\nTiêu chuẩn về chất lượng và hậu kỳ: Video phải được dựng và hoàn thiện theo tiêu chuẩn đã thống nhất (video mẫu, guideline thương hiệu).\nTiêu chuẩn về hình ảnh và nhận diện: Bên B phải kiểm soát trang phục, bối cảnh, nhận diện cá nhân và các yếu tố hình ảnh khác nhằm không được gây trùng lặp, xung đột hoặc ảnh hưởng tiêu cực đến hiệu quả truyền thông của Bên A;\nÁp dụng đối với dịch vụ khác: tiêu chuẩn nghiệm thu được áp dụng theo quy định cụ thể tại Phụ lục (nếu có).",
-          "modifiedText": "Điều 2. THỜI HẠN THỰC HIỆN HỢP ĐỒNG\n2.1. Hợp đồng có hiệu lực 12 tháng kể từ ngày ký kết (31/10/2026 - 31/10/2027).",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế & Kế toán."
+          "explanation": "Sửa thời hạn gắn link giỏ hàng TikTok Shop từ suốt thời gian hợp tác thành tối thiểu 60 ngày kể từ ngày đăng tải."
         },
         {
           "clauseNumber": "Điều 3",
           "title": "PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN",
           "changeType": "MODIFIED",
           "targetRole": "FINANCE",
-          "originalText": "ĐIỀU 3: PHÍ DỊCH VỤ VÀ THANH TOÁN\nPhí dịch vụ booking và hoa hồng\nPhí dịch vụ booking và hoa hồng được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc. Bên A có nghĩa vụ thanh toán đối với phần công việc đã được nghiệm thu hợp lệ theo tiêu chí quy định tại Hợp đồng khung và SOW.\nHình thức thanh toán\nBên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:\nTên chủ tài khoản: VÕ HÀ LINH\nSố tài khoản: 00710099887766\nTại Ngân hàng: Vietcombank - CN TP.HCM\nThời hạn thanh toán\nThanh toán 1 lần\nPhí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).\nThanh toán 2 lần\nPhí dịch vụ được thanh toán làm 2 lần:\nLần 1 tạm ứng 34.650.000 VNĐ trong vòng 03 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.\nLần 2 thanh toán số tiền còn lại trong vòng 05 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu Phụ lục SOW có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).\nThanh toán theo SOW\nThời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể.\nHồ sơ nghiệm thu thanh toán (Giá trị tại khoản này là giá trị của SOW đã bao gồm cả thuế TNCN)\nHai Bên bắt buộc ký Biên bản nghiệm thu Phụ lục SOW trong các trường hợp sau:\nGiá trị nghiệm thu hoặc thanh toán thực tế từ 20.000.000 đồng trở lên; hoặc\nGiá trị nghiệm thu/thanh toán thực tế dưới 20.000.000 đồng nhưng khác với giá trị Phụ lục SOW đã ký kết.\nPhụ lục SOW được tự động nghiệm thu và thanh lý mà không cần ký Biên bản nghiệm thu khi đồng thời đáp ứng đầy đủ các điều kiện sau:\nGiá trị Phụ lục SOW dưới 20.000.000 đồng;\nGiá trị nghiệm thu thực tế và giá trị thanh toán thực tế đúng bằng giá trị Phụ lục SOW;\nHai Bên đã hoàn tất toàn bộ quyền và nghĩa vụ theo Phụ lục SOW.",
+          "originalText": "Điều 3. PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN\n3.1. Tổng giá trị dịch vụ theo Phụ lục SOW: Chi phí Net Bên B thực nhận là 49.500.000 VNĐ (Tương đương Tổng chi phí Gross là 55.000.000 VNĐ sau khi Bên A khấu trừ 10% thuế TNCN tại nguồn là 5.500.000 VNĐ).\n3.2. Phương thức thanh toán ban đầu: Bên A thanh toán 100% giá trị Phí dịch vụ (Net) trong vòng 15 (mười lăm) ngày làm việc sau khi hai bên ký Biên bản nghiệm thu (BBNT).",
           "modifiedText": "Điều 3. PHÍ DỊCH VỤ VÀ PHƯƠNG THỨC THANH TOÁN\n3.1. Tổng giá trị dịch vụ theo Phụ lục SOW: Chi phí Net Bên B thực nhận là 49.500.000 VNĐ (Tương đương Tổng chi phí Gross là 55.000.000 VNĐ sau khi Bên A khấu trừ 10% thuế TNCN tại nguồn là 5.500.000 VNĐ).\n3.2. Phương thức thanh toán (Đã sửa đổi sau đàm phán): Bên A thực hiện tạm ứng Đợt 1 tương ứng 70% giá trị Phí dịch vụ Net (34.650.000 VNĐ) trong vòng 03 ngày làm việc kể từ ngày ký Phụ lục SOW; thanh toán Đợt 2 tương ứng 30% giá trị Net còn lại (14.850.000 VNĐ) trong vòng 05 ngày làm việc sau khi ký Biên bản nghiệm thu (BBNT).",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT)."
+          "explanation": "Sửa từ thanh toán 1 lần 100% sau 15 ngày BBNT sang tạm ứng 70% trong 03 ngày sau ký SOW và quyết toán 30% trong 05 ngày sau BBNT."
         },
         {
           "clauseNumber": "Điều 4",
           "title": "QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO",
           "changeType": "MODIFIED",
-          "targetRole": "BOTH",
-          "originalText": "ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CỦA BÊN A\nQuyền của Bên A\nQuyền kiểm tra, giám sát: Bên A có quyền kiểm tra và giám sát Bên B thực hiện công việc đúng nội dung, chất lượng, tiến độ theo Hợp đồng; có quyền phê duyệt hoặc đưa ra ý kiến trong thời gian hợp lý đối với các nội dung, đề xuất của Bên B.\nQuyền chỉnh sửa kịch bản: Bên A có quyền kiểm tra và yêu cầu Bên B chỉnh sửa nội dung kịch bản trước khi sản xuất/trước khi đăng tải trong trường hợp nội dung chưa phù hợp với yêu cầu đã thống nhất.\nQuyền chỉnh sửa sản phẩm: Trường hợp nội dung video/bài đăng do Bên B đăng tải không đúng với nội dung đã được hai Bên thống nhất, Bên A có quyền yêu cầu Bên B chỉnh sửa, gỡ bỏ hoặc thay thế ngay nội dung đã đăng tải sai.\nNghĩa vụ của Bên A\nThanh toán đầy đủ và đúng hạn Phí Booking cho Bên B theo Hợp đồng;\nCung cấp đầy đủ, kịp thời các thông tin, tài liệu, sản phẩm mẫu và phối hợp với Bên B để triển khai dịch vụ theo Hợp đồng;\nKhông sử dụng hình ảnh, nội dung của Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của Bên B.",
-          "modifiedText": "Điều 4. QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO\n4.1. Bên A chỉ được phép sử dụng Video và hình ảnh của Bên B để chạy quảng cáo chuyển đổi (Spark Ads / Whitelisting) trên nền tảng TikTok trong thời hạn tối đa 45 (bốn mươi lăm) ngày kể từ ngày Video được đăng tải công khai. Sau thời hạn 45 ngày, nếu gia hạn phải có sự đồng ý bằng văn bản của Bên B.",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế & Kế toán."
-        },
-        {
-          "clauseNumber": "Điều 5",
-          "title": "BẢO MẬT THÔNG TIN",
-          "changeType": "MODIFIED",
           "targetRole": "LEGAL",
-          "originalText": "ĐIỀU 5: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B\nQuyền của Bên B\nYêu cầu Bên A cung cấp đầy đủ thông tin, tài liệu, sản phẩm mẫu, guideline, chính sách thương hiệu và các dữ liệu cần thiết để thực hiện dịch vụ;\nYêu cầu Bên A phối hợp phản hồi, xác nhận nội dung, kế hoạch triển khai;\nĐược sử dụng tên thương mại, nhãn hiệu, hình ảnh sản phẩm của Bên A trong phạm vi cần thiết để thực hiện dịch vụ theo Hợp đồng.\nNghĩa vụ của Bên B\nNghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.\nNghĩa vụ duy trì nội dung đã đăng tải:\nBên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.\nTrường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.\nNghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B là người chuyển tải sản phẩm quảng cáo theo quy định pháp luật và cam kết tuân thủ quy định tại Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng hiện hành cũng như quy định của sàn TMĐT.\nNghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B cam kết bảo vệ hình ảnh, uy tín của nhãn hiệu và Bên A bằng việc không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào gây ảnh hưởng tiêu cực, gây hiểu nhầm hoặc chưa được kiểm chứng liên quan đến Bên A hoặc sản phẩm/dịch vụ, cũng như không sử dụng ngôn từ, hình ảnh phản cảm, vi phạm pháp luật hoặc không phù hợp với định vị thương hiệu của Bên A; các nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài ít nhất 06 tháng sau khi chấm dứt việc hợp tác với nhãn hàng.\nNghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B cam kết duy trì danh tiếng cá nhân, không để xảy ra các sự kiện, hành vi hoặc phát ngôn có thể gây scandal, tranh cãi hoặc ảnh hưởng trực tiếp hoặc gián tiếp đến uy tín của Bên A; trong trường hợp phát sinh sự kiện có nguy cơ ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời và phối hợp với Bên A để xử lý phù hợp.",
-          "modifiedText": "Điều 5. BẢO MẬT THÔNG TIN\n5.1. Hai bên cam kết bảo mật tuyệt đối đơn giá cát-xê và các điều khoản thương mại trong Hợp đồng này.",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế."
+          "originalText": "Điều 4. QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO\n4.1. Bên A được toàn quyền sử dụng hình ảnh, giọng nói và Video của Bên B để chạy quảng cáo thương mại (Spark Ads / Whitelisting) không giới hạn thời gian trong suốt hiệu lực hợp đồng mà không phát sinh thêm chi phí.",
+          "modifiedText": "Điều 4. QUYỀN SỬ DỤNG HÌNH ẢNH VÀ QUẢNG CÁO\n4.1. Bên A chỉ được phép sử dụng Video và hình ảnh của Bên B để chạy quảng cáo chuyển đổi (Spark Ads / Whitelisting) trên nền tảng TikTok trong thời hạn tối đa 45 (bốn mươi lăm) ngày kể từ ngày Video được đăng tải công khai. Sau thời hạn 45 ngày, nếu gia hạn phải có sự đồng ý bằng văn bản của Bên B.",
+          "explanation": "Giới hạn thời hạn chạy quảng cáo Spark Ads tối đa 45 ngày kể từ ngày đăng tải (thay vì không giới hạn thời gian)."
         },
         {
           "clauseNumber": "Điều 6",
           "title": "PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI",
           "changeType": "MODIFIED",
           "targetRole": "LEGAL",
-          "originalText": "ĐIỀU 6: PHẠT VI PHẠM, BỒI THƯỜNG THIỆT HẠI\nVi phạm của Bên A\nChậm thanh toán: Trừ trường hợp bất khả kháng hoặc do lỗi của Bên B, nếu Bên A chậm thanh toán quá 30 (ba mươi) ngày so với thời hạn đã thỏa thuận (thời hạn thanh toán được tính từ thời điểm Bên B hoàn tất chứng từ thanh toán), Bên A phải trả lãi chậm thanh toán với mức lãi suất 8%/năm trên số tiền chậm trả, tính theo số ngày chậm thanh toán.\nVi phạm của Bên B\nVi phạm tiến độ thực hiện: Trường hợp Bên B không thực hiện đúng tiến độ theo Hợp đồng mà không do lỗi của Bên A hoặc yếu tố khách quan, Bên A sẽ gia hạn để Bên B khắc phục kịp thời theo tiến độ của dự án. Nếu Bên B không khắc phục trong vòng 3 – 5 ngày hoặc xong trước deadline cuối của dự án, Bên B phải chịu phạt tương đương 1% giá trị phí dịch vụ của hạng mục công việc bị vi phạm cho mỗi ngày chậm, tổng mức phạt không vượt quá 8% giá trị hạng mục vi phạm.\nVi phạm nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên A có quyền yêu cầu Bên B gỡ bỏ, chỉnh sửa nội dung và chịu mọi trách nhiệm phát sinh; đồng thời Bên A có quyền giảm trừ hoặc không thanh toán phần Phí Dịch vụ liên quan đến nội dung vi phạm pháp luật hoặc đơn phương chấm dứt Hợp đồng tùy theo mức độ nghiêm trọng của sự việc.\nVi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có).\nBồi thường thiệt hại: Bên nào vi phạm nghĩa vụ theo Hợp đồng gây thiệt hại cho Bên còn lại thì phải bồi thường toàn bộ thiệt hại thực tế, trực tiếp phát sinh theo quy định của pháp luật.",
+          "originalText": "Điều 6. PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI\n6.1. Trường hợp một bên vi phạm nghĩa vụ hợp đồng thì chịu phạt 8% giá trị phần nghĩa vụ bị vi phạm và phải bồi thường toàn bộ 100% thiệt hại thực tế phát sinh cho bên bị vi phạm.",
           "modifiedText": "Điều 6. PHẠT VI PHẠM VÀ BỒI THƯỜNG THIỆT HẠI\n6.1. Trường hợp một bên vi phạm nghĩa vụ hợp đồng thì chịu phạt 8% giá trị phần nghĩa vụ bị vi phạm. Tổng mức phạt vi phạm và bồi thường thiệt hại do lỗi tiến độ của Bên B trong mọi trường hợp không vượt quá 50% tổng giá trị của Phụ lục SOW phát sinh vi phạm đó.",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế."
-        },
-        {
-          "clauseNumber": "Điều 7",
-          "title": "CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP",
-          "changeType": "MODIFIED",
-          "targetRole": "LEGAL",
-          "originalText": "ĐIỀU 7: HIỆU LỰC VÀ CHẤM DỨT HỢP ĐỒNG\nHiệu lực: Hợp Đồng có hiệu lực kể từ ngày ký và tiếp tục duy trì hiệu lực cho đến khi một trong Hai Bên đơn phương chấm dứt Hợp đồng hoặc Hai bên có thỏa thuận cùng chấm dứt bằng văn bản.\nCác trường hợp chấm dứt hợp đồng\nMột Bên thông báo bằng văn bản cho Bên còn lại ít nhất 30 (ba mươi) ngày trước ngày dự kiến chấm dứt;\nHai bên cùng thỏa thuận chấm dứt Hợp đồng bằng văn bản;\nBên A bị giải thể, phá sản, chấm dứt hoạt động hoặc thuộc trường hợp không còn khả năng tiếp tục thực hiện Hợp đồng;\nCác trường hợp khác theo quy định của pháp luật.\nViệc chấm dứt Hợp đồng không làm ảnh hưởng đến các quyền, nghĩa vụ và trách nhiệm đã phát sinh trước ngày chấm dứt. Hai bên có trách nhiệm hoàn tất việc nghiệm thu, đối soát và thanh toán các khoản còn tồn đọng theo các Phụ lục SOW đã ký kết.",
-          "modifiedText": "Điều 7. CHẤM DỨT HỢP ĐỒNG VÀ GIẢI QUYẾT TRANH CHẤP\n7.1. Mọi tranh chấp phát sinh được giải quyết trước hết bằng thương lượng; nếu không thành sẽ đưa ra Tòa án nhân dân có thẩm quyền tại TP. Hà Nội.",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế."
+          "explanation": "Giới hạn trần phạt vi phạm và bồi thường thiệt hại do lỗi tiến độ tối đa 50% giá trị Phụ lục SOW."
         },
         {
           "clauseNumber": "Điều 8",
           "title": "ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC",
-          "changeType": "MODIFIED",
+          "changeType": "ADDED",
           "targetRole": "LEGAL",
-          "originalText": "ĐIỀU 8: BẢO MẬT THÔNG TIN\nTrong quá trình thực hiện Hợp đồng và sau khi Hợp đồng chấm dứt, mỗi Bên (sau đây gọi là “Bên Nhận Thông Tin”) có nghĩa vụ bảo mật tuyệt đối đối với mọi thông tin, tài liệu do Bên còn lại (“Bên Tiết Lộ”) cung cấp hoặc phát sinh liên quan đến việc thực hiện Hợp đồng, bao gồm nhưng không giới hạn các điều khoản Hợp đồng, dữ liệu, tài liệu, kế hoạch kinh doanh, thông tin tài chính, chiến lược marketing, bí mật kinh doanh và các thông tin có tính chất bảo mật khác (“Thông Tin Mật”); theo đó, Bên Nhận Thông Tin không được tiết lộ, công bố hoặc sử dụng Thông Tin Mật cho bất kỳ mục đích nào ngoài mục đích thực hiện Hợp đồng nếu không có sự chấp thuận trước bằng văn bản của Bên Tiết Lộ.\nBên vi phạm phải chịu trách nhiệm bồi thường toàn bộ thiệt hại phát sinh cho Bên còn lại và các bên liên quan (nếu có).\nThời hạn bảo mật: Nghĩa vụ bảo mật tiếp tục có hiệu lực sau khi Hợp Đồng chấm dứt hoặc hết hạn, cho đến khi Thông Tin Bảo Mật trở thành thông tin công khai hợp pháp.",
-          "modifiedText": "Điều 8. ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC\n8.1. Bên B được quyền giữ nguyên phong cách nhận xét trung thực trên kênh Hà Linh Official miễn không vi phạm thuần phong mỹ tục và quy định pháp luật về quảng cáo.\nĐẠI DIỆN BÊN A: {{SIGN_BEN_A}}\nĐẠI DIỆN BÊN B: {{SIGN_BEN_B}}",
-          "explanation": "Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Pháp chế."
-        },
-        {
-          "clauseNumber": "Điều 9",
-          "title": "BẤT KHẢ KHÁNG",
-          "changeType": "REMOVED",
-          "targetRole": "LEGAL",
-          "originalText": "ĐIỀU 9: BẤT KHẢ KHÁNG\nMột Bên sẽ không bị xem là vi phạm Hợp Đồng nếu việc chậm trễ hoặc không thực hiện nghĩa vụ do sự kiện khách quan, không thể lường trước và không thể khắc phục mặc dù đã áp dụng mọi biện pháp cần thiết (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn: thiên tai, hỏa hoạn, chiến tranh, bạo loạn, đình công, dịch bệnh, hoặc các quyết định, hạn chế của cơ quan nhà nước có thẩm quyền. Bên bị ảnh hưởng phải thông báo bằng văn bản cho Bên còn lại trong vòng 03 ngày làm việc kể từ khi xảy ra sự kiện, nêu rõ bản chất sự kiện, phạm vi ảnh hưởng và thời gian dự kiến khắc phục.",
-          "explanation": "Điều khoản trong mẫu chuẩn đã bị xóa bỏ trên Google Docs. Phân luồng: Pháp chế."
-        },
-        {
-          "clauseNumber": "Điều 10",
-          "title": "ĐIỀU KHOẢN CHUNG",
-          "changeType": "REMOVED",
-          "targetRole": "LEGAL",
-          "originalText": "ĐIỀU 10: ĐIỀU KHOẢN CHUNG\nLuật áp dụng: Hợp Đồng này được điều chỉnh và giải thích theo pháp luật Việt Nam.\nGiải quyết tranh chấp: Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp Đồng sẽ được ưu tiên giải quyết thông qua thương lượng, hòa giải giữa các Bên. Nếu tranh chấp không được giải quyết trong vòng 30 ngày kể từ ngày một Bên thông báo bằng văn bản về tranh chấp, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền tại Việt Nam để giải quyết.\nHợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, có giá trị pháp lý như nhau.\nĐẠI DIỆN BÊN A\nĐẠI DIỆN BÊN B\n31.10.26/HĐNT/UPBASE-halinhofficial\nhttp://www.upbase.asia\nTrang 1\nBM.HĐ.VID.IND.Ver102026",
-          "explanation": "Điều khoản trong mẫu chuẩn đã bị xóa bỏ trên Google Docs. Phân luồng: Pháp chế."
+          "modifiedText": "Điều 8. ĐIỀU KHOẢN BỔ SUNG VỀ QUYỀN KIỂM DUYỆT NỘI DUNG KOC\n8.1. Bên B được quyền giữ nguyên phong cách nhận xét trung thực trên kênh Hà Linh Official miễn không vi phạm thuần phong mỹ tục và quy định pháp luật về quảng cáo.",
+          "explanation": "Bổ sung điều khoản giữ nguyên phong cách nhận xét trung thực của KOC trên kênh Hà Linh Official."
         }
       ],
-      "summary": "Phát hiện 10 điều khoản có sửa đổi/bổ sung (4 điều khoản liên quan Kế toán, 8 điều khoản liên quan Pháp chế).",
+      "summary": "Phát hiện 5 điều khoản sửa đổi/bổ sung trên mẫu chuẩn UpBase (1 điều khoản Kế toán, 4 điều khoản Pháp chế).",
       "analyzedAt": "2026-10-31T06:14:51.776Z"
     },
     "googleDocsComments": [

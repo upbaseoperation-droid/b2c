@@ -674,8 +674,12 @@ export function ContractDetail({
                   fields={record.isKocOwnForm ? [] : (previewData?.fields || template?.fields || [])}
                   values={shownValues}
                   compareValues={comparePrev && previousSnapshot ? previousSnapshot.values : undefined}
+                  clauseDiffs={
+                    record.googleDocsAuditTrail?.initialToFinalDiffs?.length
+                      ? record.googleDocsAuditTrail.initialToFinalDiffs
+                      : record.googleDocsReviewRouting?.clauseDiffs
+                  }
                   activeFieldKey={activeFieldKey}
-                  onSelectField={key => setActiveFieldKey(key)}
                   downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
                   signingPeople={selectedVersion === signing?.version ? signing?.people : undefined}
                   signingDocumentId={signing?.documentId}

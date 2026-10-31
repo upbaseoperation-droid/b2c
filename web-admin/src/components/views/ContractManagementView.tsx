@@ -1188,6 +1188,11 @@ export function ContractManagementView({
             paragraphs={quickViewDoc?.paragraphs || []}
             fields={quickViewDoc?.fields || []}
             values={quickViewDoc?.values || quickViewRecord.values}
+            clauseDiffs={
+              quickViewRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length
+                ? quickViewRecord.googleDocsAuditTrail.initialToFinalDiffs
+                : quickViewRecord.googleDocsReviewRouting?.clauseDiffs
+            }
             downloadHref={`/api/contracts/${quickViewRecord.id}/document`}
             signingPeople={quickViewRecord.signing.at(-1)?.people}
             signingDocumentId={quickViewRecord.signing.at(-1)?.documentId}

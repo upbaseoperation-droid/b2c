@@ -60,10 +60,12 @@ export function parseClausesFromParagraphs(paragraphs: string[]): ContractClause
   };
 
   const clauseRegex = /^(Điều\s+\d+[\.:]?)\s*(.*)$/iu;
+  const signatureLineRegex = /^(ĐẠI DIỆN BÊN [AB]|BÊN A\s*\(|BÊN B\s*\(|\{\{SIGN_BEN_[AB]\}\})/iu;
 
   for (const rawP of paragraphs) {
     const p = rawP.trim();
     if (!p) continue;
+    if (signatureLineRegex.test(p)) continue;
 
     const match = p.match(clauseRegex);
     if (match) {
@@ -274,3 +276,186 @@ export function compareInitialAndFinalDoc(
         : `Điều khoản được điều chỉnh trong quá trình đàm phán giữa bản ban đầu và bản chốt cuối (${d.targetRole === 'FINANCE' ? 'Kế toán' : d.targetRole === 'LEGAL' ? 'Pháp chế' : 'Pháp chế & Kế toán'}).`,
   }));
 }
+
+export interface WordDiffSegment {
+  type: 'equal' | 'delete' | 'insert';
+  text: string;
+}
+
+/** Bỏ dòng tiêu đề lặp lại ("Điều X. ...") và dòng chữ ký ở đầu/cuối nội dung điều khoản */
+export function stripClauseHeading(raw?: string): string {
+  if (!raw) return '';
+  const lines = raw
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean)
+    .filter(l => !/^(ĐẠI DIỆN BÊN [AB]|\{\{SIGN_BEN_[AB]\}\})/iu.test(l));
+  if (lines.length > 1 && /^(ĐIỀU|Điều)\s+\d+[\.:]/u.test(lines[0])) {
+    return lines.slice(1).join('\n');
+  }
+  return lines.join('\n');
+}
+
+/** Tính toán diff theo từng cụm từ giữa bản gốc và bản sửa đổi để tô màu trực quan (Track Changes) */
+export function computeWordDiff(originalText: string, modifiedText: string): WordDiffSegment[] {
+  const aTokens = originalText.trim().split(/(\s+)/).filter(Boolean);
+  const bTokens = modifiedText.trim().split(/(\s+)/).filter(Boolean);
+
+  if (aTokens.length === 0 && bTokens.length === 0) return [];
+  if (aTokens.length === 0) return [{ type: 'insert', text: modifiedText.trim() }];
+  if (bTokens.length === 0) return [{ type: 'delete', text: originalText.trim() }];
+
+  // Giới hạn độ dài mảng token để luôn chạy O(1) mượt mà trên UI
+  if (aTokens.length * bTokens.length > 90000) {
+    return [
+      { type: 'delete', text: originalText.trim() },
+      { type: 'insert', text: modifiedText.trim() },
+    ];
+  }
+
+  const m = aTokens.length;
+  const n = bTokens.length;
+  const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      if (aTokens[i] === bTokens[j]) {
+        dp[i][j] = dp[i + 1][j + 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+  }
+
+  const rawSegments: WordDiffSegment[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < m && j < n) {
+    if (aTokens[i] === bTokens[j]) {
+      rawSegments.push({ type: 'equal', text: aTokens[i] });
+      i++;
+      j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      rawSegments.push({ type: 'delete', text: aTokens[i] });
+      i++;
+    } else {
+      rawSegments.push({ type: 'insert', text: bTokens[j] });
+      j++;
+    }
+  }
+  while (i < m) {
+    rawSegments.push({ type: 'delete', text: aTokens[i++] });
+  }
+  while (j < n) {
+    rawSegments.push({ type: 'insert', text: bTokens[j++] });
+  }
+
+  // Gộp các đoạn liền kề cùng kiểu (và gộp khoảng trắng giữa 2 từ cùng kiểu delete/insert)
+  const merged: WordDiffSegment[] = [];
+  for (const seg of rawSegments) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.type === seg.type) {
+      prev.text += seg.text;
+    } else if (
+      prev &&
+      seg.type === 'equal' &&
+      /^\s+$/.test(seg.text) &&
+      prev.type !== 'equal'
+    ) {
+      // Tạm giữ khoảng trắng để xem từ tiếp theo có cùng kiểu không
+      merged.push(seg);
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+
+  // Gộp chuỗi [delete, space, delete] hoặc [insert, space, insert] để không bị đứt bóng màu từng từ
+  const compacted: WordDiffSegment[] = [];
+  for (let k = 0; k < merged.length; k++) {
+    const cur = merged[k];
+    const next = merged[k + 1];
+    const afterNext = merged[k + 2];
+    if (
+      (cur.type === 'delete' || cur.type === 'insert') &&
+      next?.type === 'equal' &&
+      /^\s+$/.test(next.text) &&
+      afterNext?.type === cur.type
+    ) {
+      compacted.push({
+        type: cur.type,
+        text: cur.text + next.text + afterNext.text,
+      });
+      k += 2;
+    } else {
+      const last = compacted[compacted.length - 1];
+      if (last && last.type === cur.type) {
+        last.text += cur.text;
+      } else {
+        compacted.push({ ...cur });
+      }
+    }
+  }
+
+  return compacted;
+}
+
+export interface SubclauseComparisonItem {
+  unchanged: boolean;
+  originalLine?: string;
+  modifiedLine?: string;
+  segments: WordDiffSegment[];
+}
+
+/** Tách từng khoản (1.1, 1.2...) trong điều khoản để ẩn/làm mờ khoản giữ nguyên và làm nổi bật đúng khoản có thay đổi */
+export function buildSubclauseComparisons(
+  rawOriginal?: string,
+  rawModified?: string,
+): SubclauseComparisonItem[] {
+  const cleanOrig = stripClauseHeading(rawOriginal);
+  const cleanMod = stripClauseHeading(rawModified);
+
+  const origLines = cleanOrig.split('\n').map(s => s.trim()).filter(Boolean);
+  const modLines = cleanMod.split('\n').map(s => s.trim()).filter(Boolean);
+
+  if (origLines.length === 0 && modLines.length === 0) return [];
+  if (origLines.length === 0) {
+    return modLines.map(line => ({
+      unchanged: false,
+      modifiedLine: line,
+      segments: [{ type: 'insert', text: line }],
+    }));
+  }
+  if (modLines.length === 0) {
+    return origLines.map(line => ({
+      unchanged: false,
+      originalLine: line,
+      segments: [{ type: 'delete', text: line }],
+    }));
+  }
+
+  // Nếu số khoản bằng nhau (ví dụ Khoản 1.1 và 1.2), đối chiếu từng khoản tương ứng
+  if (origLines.length === modLines.length) {
+    return origLines.map((oLine, idx) => {
+      const mLine = modLines[idx];
+      const isSame = oLine.replace(/\s+/g, ' ') === mLine.replace(/\s+/g, ' ');
+      return {
+        unchanged: isSame,
+        originalLine: oLine,
+        modifiedLine: mLine,
+        segments: isSame
+          ? [{ type: 'equal', text: mLine }]
+          : computeWordDiff(oLine, mLine),
+      };
+    });
+  }
+
+  return [
+    {
+      unchanged: cleanOrig.replace(/\s+/g, ' ') === cleanMod.replace(/\s+/g, ' '),
+      originalLine: cleanOrig,
+      modifiedLine: cleanMod,
+      segments: computeWordDiff(cleanOrig, cleanMod),
+    },
+  ];
+}
+

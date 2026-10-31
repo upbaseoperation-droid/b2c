@@ -25,6 +25,7 @@ import {
   LegalDocPreviewModal,
   LegalProfileSigningHistoryBanner,
 } from './LegalAttachmentsPanel';
+import { ClauseDiffList } from './GoogleDocsReviewPanel';
 import {
   Button,
   Chips,
@@ -1323,73 +1324,15 @@ export function ContractApprovalPortalView({
                       </div>
                     )}
 
-                    {(inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length ?? 0) > 0 && (
-                      <div className="p-4 space-y-3">
-                        <span className="font-semibold text-ink block">
-                          Đối chiếu biến đổi từ Bản đẩy lên ban đầu (v0) sang Bản chốt cuối (v1) ({inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length} điều khoản)
-                        </span>
-                        <div className="divide-y divide-line border border-line rounded-lg">
-                          {inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.map((diff, idx) => (
-                            <div key={idx} className="p-3 space-y-1.5">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium text-ink">
-                                  {diff.clauseNumber}: {diff.title}
-                                </span>
-                                <span className="text-2xs text-ink-3">
-                                  {diff.targetRole === 'FINANCE' ? 'Kế toán' : 'Pháp chế'}
-                                </span>
-                              </div>
-                              {diff.originalText && (
-                                <p className="text-2xs text-ink-3 line-through">
-                                  Bản đầu (v0): {diff.originalText}
-                                </p>
-                              )}
-                              {diff.modifiedText && (
-                                <p className="text-2xs text-ink font-medium">
-                                  Bản chốt (v1): {diff.modifiedText}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     <div className="p-4 space-y-3">
-                      <span className="font-semibold text-ink block">
-                        So sánh điều khoản với mẫu chuẩn UpBase
-                      </span>
-                      {inspectRecord.googleDocsReviewRouting?.clauseDiffs &&
-                      inspectRecord.googleDocsReviewRouting.clauseDiffs.length > 0 ? (
-                        <div className="divide-y divide-line border border-line rounded-lg">
-                          {inspectRecord.googleDocsReviewRouting.clauseDiffs.map((diff, idx) => (
-                            <div key={idx} className="p-3 space-y-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium text-ink">
-                                  {diff.clauseNumber}: {diff.title}
-                                </span>
-                                <span className="text-2xs text-ink-3">
-                                  {diff.targetRole === 'FINANCE' ? 'Kế toán' : 'Pháp chế'}
-                                </span>
-                              </div>
-                              {diff.originalText && (
-                                <p className="text-2xs text-ink-3 line-through">
-                                  Mẫu gốc: {diff.originalText}
-                                </p>
-                              )}
-                              {diff.modifiedText && (
-                                <p className="text-2xs text-ink font-medium">
-                                  Bản sửa: {diff.modifiedText}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-2xs text-ink-3">
-                          Hồ sơ sử dụng điều khoản chuẩn, không phát sinh điểm khác biệt.
-                        </p>
-                      )}
+                      <ClauseDiffList
+                        diffs={
+                          inspectRecord.googleDocsAuditTrail?.initialToFinalDiffs?.length
+                            ? inspectRecord.googleDocsAuditTrail.initialToFinalDiffs
+                            : inspectRecord.googleDocsReviewRouting?.clauseDiffs || []
+                        }
+                        sourceType={inspectRecord.googleDocsSource || 'TEMPLATE_AMENDED'}
+                      />
                     </div>
 
                     <div className="p-4 space-y-2">

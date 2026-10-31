@@ -21,8 +21,11 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import type { AcceptanceScreenshotItem, ContractField, DocBlock, DocParagraph, DocTable, SigningPerson } from '../../lib/contracts/types';
+import type { GoogleDocClauseDiff } from '../../lib/contracts/googleDocsTypes';
+import { buildSubclauseComparisons } from '../../lib/contracts/googleDocsService';
+import { InlineRedlineSegments } from './GoogleDocsReviewPanel';
 import { formatNumber } from '../../lib/format';
-import { Button, Modal } from '../ui';
+import { Button, Modal, Status } from '../ui';
 import {
   isTwoTimePaymentField,
   parseSavedSowJobs,
@@ -38,6 +41,7 @@ export interface ContractDocumentViewerProps {
   fields?: ContractField[];
   values?: Record<string, string>;
   compareValues?: Record<string, string>;
+  clauseDiffs?: GoogleDocClauseDiff[];
   activeFieldKey?: string | null;
   onSelectField?: (fieldKey: string) => void;
   downloadHref?: string;
@@ -59,6 +63,7 @@ export function ContractDocumentViewer({
   fields = [],
   values = {},
   compareValues,
+  clauseDiffs = [],
   activeFieldKey,
   onSelectField,
   downloadHref,
@@ -75,8 +80,22 @@ export function ContractDocumentViewer({
   const [zoom, setZoom] = useState<number>(100);
   const [fullscreen, setFullscreen] = useState(false);
   const [missingCursor, setMissingCursor] = useState(0);
+  const [diffCursor, setDiffCursor] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const printRef = useRef<HTMLDivElement | null>(null);
+
+  const normalizeClauseKey = (raw: string): string => {
+    const m = raw.match(/(?:ĐIỀU|Điều)\s*(\d+)/iu);
+    return m ? `ĐIỀU ${m[1]}` : raw.trim().toUpperCase();
+  };
+
+  const diffByClauseKey = useMemo(() => {
+    const map = new Map<string, GoogleDocClauseDiff>();
+    for (const d of clauseDiffs) {
+      map.set(normalizeClauseKey(d.clauseNumber), d);
+    }
+    return map;
+  }, [clauseDiffs]);
 
   // Danh sách các trường duy nhất (mỗi key 1 lần) để thống kê tiến độ điền
   const allUniqueFields = useMemo(
@@ -158,6 +177,25 @@ export function ContractDocumentViewer({
       }
     }
     onSelectField?.(nextField.key);
+  };
+
+  const jumpToClauseDiff = (targetKey?: string) => {
+    if (clauseDiffs.length === 0) return;
+    const key =
+      targetKey ||
+      normalizeClauseKey(clauseDiffs[diffCursor % clauseDiffs.length].clauseNumber);
+    if (!targetKey) {
+      setDiffCursor(c => c + 1);
+    }
+    setHighlight(true);
+    if (containerRef.current) {
+      const el = containerRef.current.querySelector<HTMLElement>(
+        `[data-clause-diff="${CSS.escape(key)}"]`,
+      );
+      if (el) {
+        scrollSheetToField(el);
+      }
+    }
   };
 
   const handlePrint = () => {
@@ -298,6 +336,30 @@ export function ContractDocumentViewer({
       );
     }
 
+    if (changed) {
+      return (
+        <span
+          data-field-key={f.key}
+          role={onSelectField ? 'button' : undefined}
+          tabIndex={onSelectField ? 0 : undefined}
+          onClick={onSelectField ? () => onSelectField(f.key) : undefined}
+          onKeyDown={onSelectField ? e => (e.key === 'Enter' || e.key === ' ') && onSelectField(f.key) : undefined}
+          title={`${fieldTitle} · Đổi từ "${prevVal || 'Trống'}" sang "${val || 'Trống'}"`}
+          className={`field-mark inline-flex flex-wrap items-baseline gap-1 px-1.5 py-0.5 rounded-xs bg-warning-soft/55 border border-warning/50 font-sans text-xs transition-colors ${
+            isSelected ? 'ring-2 ring-accent' : ''
+          } ${onSelectField ? 'cursor-pointer' : ''}`}
+        >
+          {prevVal && (
+            <>
+              <del className="text-critical line-through font-normal">{prevVal}</del>
+              <span className="text-ink-3">→</span>
+            </>
+          )}
+          <ins className="text-positive font-semibold no-underline">{val || 'Trống'}</ins>
+        </span>
+      );
+    }
+
     if (val) {
       return (
         <span
@@ -306,20 +368,25 @@ export function ContractDocumentViewer({
           tabIndex={onSelectField ? 0 : undefined}
           onClick={onSelectField ? () => onSelectField(f.key) : undefined}
           onKeyDown={onSelectField ? e => (e.key === 'Enter' || e.key === ' ') && onSelectField(f.key) : undefined}
-          title={
-            changed
-              ? `${fieldTitle} · Đổi từ "${prevVal || 'Trống'}" sang "${val}"`
-              : `${fieldTitle}: ${val}${onSelectField ? ' (Bấm để sửa ô này)' : ''}`
-          }
-          className={`field-mark inline px-1 py-0.5 rounded-xs font-medium text-ink transition-colors ${
-            changed
-              ? 'bg-accent-soft text-accent border-b-2 border-accent'
-              : 'bg-accent-soft/45 border-b border-accent/50'
-          } ${isSelected ? 'ring-2 ring-accent bg-accent-soft' : ''} ${
-            onSelectField ? 'cursor-pointer hover:bg-accent-soft/80' : ''
-          }`}
+          title={`${fieldTitle}: ${val}${onSelectField ? ' (Bấm để sửa ô này)' : ''}`}
+          className={`field-mark inline px-0.5 rounded-xs font-medium text-ink bg-accent-soft/25 border-b border-accent/40 transition-colors ${
+            isSelected ? 'ring-2 ring-accent bg-accent-soft' : ''
+          } ${onSelectField ? 'cursor-pointer hover:bg-accent-soft/65' : ''}`}
         >
           {val}
+        </span>
+      );
+    }
+
+    // Khi chỉ xem hợp đồng đã lưu (không ở trong màn hình Form nhập liệu), không hiện hộp cảnh báo vàng lổn nhổn
+    if (!onSelectField && !isTemplatePreview) {
+      return (
+        <span
+          data-field-key={f.key}
+          className="field-mark inline text-ink-3"
+          title={fieldTitle}
+        >
+          {rawPlaceholder || '……'}
         </span>
       );
     }
@@ -368,6 +435,64 @@ export function ContractDocumentViewer({
     );
   };
 
+  const renderInlineClauseAmendmentBox = (diff: GoogleDocClauseDiff, clauseKey: string) => {
+    const subclauses = buildSubclauseComparisons(diff.originalText, diff.modifiedText).filter(
+      s => !s.unchanged,
+    );
+    const isFinance = diff.targetRole === 'FINANCE' || diff.targetRole === 'BOTH';
+    const isLegal = diff.targetRole === 'LEGAL' || diff.targetRole === 'BOTH';
+
+    return (
+      <div
+        data-clause-diff={clauseKey}
+        className="field-mark my-2.5 rounded-lg border-l-4 border-l-warning border border-line-strong bg-[#fdfcf8] px-3.5 py-2.5 font-sans text-xs text-ink space-y-2"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-ink">
+              Điểm sửa đổi tại {diff.clauseNumber} ({diff.title})
+            </span>
+            <Status
+              tone={
+                diff.changeType === 'ADDED'
+                  ? 'positive'
+                  : diff.changeType === 'REMOVED'
+                    ? 'critical'
+                    : 'warning'
+              }
+            >
+              {diff.changeType === 'ADDED'
+                ? 'Khoản bổ sung mới'
+                : diff.changeType === 'REMOVED'
+                  ? 'Khoản lược bỏ'
+                  : 'Sửa đổi so với mẫu UpBase'}
+            </Status>
+          </div>
+          <div className="flex items-center gap-1.5 text-2xs">
+            {isFinance && (
+              <span className="px-2 py-0.5 rounded bg-accent-soft text-accent font-medium">
+                Kế toán duyệt
+              </span>
+            )}
+            {isLegal && (
+              <span className="px-2 py-0.5 rounded bg-warning-soft text-warning-strong font-medium">
+                Pháp chế duyệt
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-1.5 leading-relaxed">
+          {subclauses.map((sub, sIdx) => (
+            <div key={sIdx} className="rounded bg-white border border-line px-3 py-2 text-xs text-ink">
+              <InlineRedlineSegments segments={sub.segments} mode="inline" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderBlock = (block: DocBlock, idx: string): React.ReactNode => {
     if (block.kind === 'p') {
       const trimmed = block.text.trim();
@@ -378,6 +503,9 @@ export function ContractDocumentViewer({
       const isMainTitle = /^(HỢP ĐỒNG|BIÊN BẢN NGHIỆM THU|PHỤ LỤC|SOW|BẢNG KÊ NỘI DUNG)/i.test(trimmed);
       const isMotto = /^Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/i.test(trimmed);
       const isClause = /^(ĐIỀU|Điều|MỤC|Mục|PHẦN|Phần)\s+\d+/i.test(trimmed);
+      const matchedClauseKey = isClause ? normalizeClauseKey(trimmed) : '';
+      const matchedDiff =
+        highlight && matchedClauseKey ? diffByClauseKey.get(matchedClauseKey) : undefined;
       const alignClass =
         block.align === 'center'
           ? 'text-center'
@@ -402,6 +530,7 @@ export function ContractDocumentViewer({
               {renderParagraphContent(block)}
             </span>
           </p>
+          {matchedDiff && renderInlineClauseAmendmentBox(matchedDiff, matchedClauseKey)}
           {isMotto && (
             <div className="w-36 h-[1.5px] bg-black mx-auto mt-1 mb-5" />
           )}
@@ -819,6 +948,19 @@ export function ContractDocumentViewer({
     const beforeSigBlocks = sigIdx >= 0 ? bodyBlocks.slice(0, sigIdx) : bodyBlocks;
     const fromSigBlocks = sigIdx >= 0 ? bodyBlocks.slice(sigIdx) : [];
 
+    const existingClauseKeys = new Set<string>();
+    for (const b of beforeSigBlocks) {
+      if (b.kind === 'p') {
+        const t = b.text.trim();
+        if (/^(ĐIỀU|Điều|MỤC|Mục|PHẦN|Phần)\s+\d+/i.test(t)) {
+          existingClauseKeys.add(normalizeClauseKey(t));
+        }
+      }
+    }
+    const unmappedClauseDiffs = clauseDiffs.filter(
+      d => !existingClauseKeys.has(normalizeClauseKey(d.clauseNumber)),
+    );
+
     return (
       <div
         ref={inModal ? undefined : containerRef}
@@ -846,17 +988,69 @@ export function ContractDocumentViewer({
             </div>
           </div>
 
+          {/* Thanh nhảy nhanh tới các điều khoản sửa đổi trên mẫu UpBase */}
+          {highlight && clauseDiffs.length > 0 && (
+            <div className="field-mark mb-5 rounded-lg border border-warning/40 bg-warning-soft/35 p-3 font-sans text-xs text-ink space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-ink">
+                  Các điểm sửa đổi trên mẫu hợp đồng UpBase ({clauseDiffs.length} điều khoản)
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-2xs text-ink-2">
+                  <span className="px-1.5 py-0.5 rounded-xs bg-critical-soft text-critical line-through">
+                    Mẫu gốc
+                  </span>
+                  <span>→</span>
+                  <span className="px-1.5 py-0.5 rounded-xs bg-positive-soft text-positive font-semibold">
+                    Sửa đổi
+                  </span>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {clauseDiffs.map((d, i) => {
+                  const key = normalizeClauseKey(d.clauseNumber);
+                  return (
+                    <button
+                      key={`${key}-${i}`}
+                      type="button"
+                      onClick={() => jumpToClauseDiff(key)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-line-strong bg-white text-2xs font-medium text-ink hover:border-accent hover:text-accent transition-colors"
+                    >
+                      <span className="font-semibold">{d.clauseNumber}:</span>
+                      <span className="truncate max-w-[180px]">{d.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Nội dung chính của hợp đồng */}
           {bodyBlocks.length > 0 ? (
             <div className="space-y-1">
               {beforeSigBlocks.map((b, i) => renderBlock(b, `body-pre-${i}`))}
+              {highlight &&
+                unmappedClauseDiffs.map((d, i) =>
+                  renderInlineClauseAmendmentBox(d, `${normalizeClauseKey(d.clauseNumber)}-${i}`),
+                )}
               {renderMultiJobSowTablesBlock()}
               {renderAcceptanceScreenshotsBlock()}
               {fromSigBlocks.map((b, i) => renderBlock(b, `body-sig-${i}`))}
             </div>
           ) : (
             <div className="space-y-2">
-              {paragraphs.map((p, i) => p && <p key={i}>{p}</p>)}
+              {paragraphs.map((p, i) => {
+                if (!p) return null;
+                const trimmed = p.trim();
+                const isClause = /^(ĐIỀU|Điều|MỤC|Mục|PHẦN|Phần)\s+\d+/i.test(trimmed);
+                const cKey = isClause ? normalizeClauseKey(trimmed) : '';
+                const matchedDiff = highlight && cKey ? diffByClauseKey.get(cKey) : undefined;
+                return (
+                  <React.Fragment key={i}>
+                    <p className={isClause ? 'mt-4 mb-1 font-semibold' : undefined}>{p}</p>
+                    {matchedDiff && renderInlineClauseAmendmentBox(matchedDiff, cKey)}
+                  </React.Fragment>
+                );
+              })}
               {renderMultiJobSowTablesBlock()}
               {renderAcceptanceScreenshotsBlock()}
             </div>
@@ -890,7 +1084,22 @@ export function ContractDocumentViewer({
             </span>
           )}
 
-          {uniqueFields.length > 0 && (
+          {clauseDiffs.length > 0 && (
+            <>
+              <span className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-md border border-warning/40 bg-warning-soft/70 text-warning-strong font-medium">
+                {clauseDiffs.length} điều khoản sửa đổi
+              </span>
+              <button
+                type="button"
+                onClick={() => jumpToClauseDiff()}
+                className="text-2xs font-medium text-accent hover:underline"
+              >
+                Xem điểm sửa đổi →
+              </button>
+            </>
+          )}
+
+          {uniqueFields.length > 0 && (isTemplatePreview || Boolean(onSelectField)) && (
             isTemplatePreview ? (
               <span className="text-2xs text-ink-3 tabular-nums">
                 · {uniqueFields.length} vị trí điền ({requiredFields.length} bắt buộc)
@@ -922,7 +1131,7 @@ export function ContractDocumentViewer({
             )
           )}
 
-          {!isTemplatePreview && missingRequired.length > 0 && (
+          {!isTemplatePreview && Boolean(onSelectField) && missingRequired.length > 0 && (
             <button
               type="button"
               onClick={jumpToNextMissing}
@@ -944,10 +1153,14 @@ export function ContractDocumentViewer({
                 ? 'bg-accent-soft/50 border-accent/40 text-accent'
                 : 'bg-surface border-line text-ink-2 hover:bg-sunken'
             }`}
-            title="Bật/tắt tô màu các vị trí điền dữ liệu trên mặt hợp đồng"
+            title="Bật/tắt tô màu các điểm sửa đổi và vị trí điền trên mặt hợp đồng"
           >
             {highlight ? <Highlighter className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {highlight ? 'Đang đánh dấu chỗ điền' : 'Bản in chuẩn'}
+            {highlight
+              ? clauseDiffs.length > 0
+                ? 'Đang hiện điểm sửa đổi'
+                : 'Đang đánh dấu chỗ điền'
+              : 'Bản in chuẩn'}
           </button>
 
           {!compactToolbar && (
