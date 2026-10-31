@@ -107,15 +107,11 @@ const DASHBOARD_TO_SIDEBAR_TAB: Partial<Record<DashboardMainTab, string>> = {
   STAFF_EFFICIENCY: 'dashboard-staff',
 };
 
-// Danh mục các tab báo cáo Dashboard điều hành (1 tầng phẳng chuẩn UI)
-const DASHBOARD_TABS: { key: DashboardMainTab; label: string }[] = [
-  { key: 'SUMMARY', label: 'Tổng quan' },
-  { key: 'PLAN_ACTUAL', label: 'Kế hoạch & Thực thi tuần' },
+// Danh mục các góc nhìn con bên trong màn "Tổng quan & Ngân sách PnL"
+const DASHBOARD_PNL_TABS: { key: DashboardMainTab; label: string }[] = [
   { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
-  { key: 'STORE_PIPELINE', label: 'Tiến độ gian hàng' },
-  { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
-  { key: 'TEAM_SLA', label: 'Lịch đăng video' },
-  { key: 'STAFF_EFFICIENCY', label: 'Hiệu suất nhân sự' },
+  { key: 'SUMMARY', label: 'Tổng quan phễu' },
+  { key: 'STORE_PIPELINE', label: 'Tiến độ 69 gian hàng' },
 ];
 
 
@@ -1097,12 +1093,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         </Button>
       </PageActions>
 
-      {/* Thanh tab chuyển nhanh góc nhìn Dashboard điều hành */}
-      <Tabs<DashboardMainTab>
-        items={DASHBOARD_TABS}
-        value={activeTab}
-        onChange={handleSelectDashboardSection}
-      />
+      {/* Chỉ hiển thị tab con khi đang ở màn Tổng quan & Ngân sách PnL */}
+      {(activeTab === 'OVERVIEW_FINANCE' || activeTab === 'SUMMARY' || activeTab === 'STORE_PIPELINE') && (
+        <Tabs<DashboardMainTab>
+          items={DASHBOARD_PNL_TABS}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* TAB TIẾN ĐỘ PHỄU GIAN HÀNG (QUY TRÌNH 0 → 18)                             */}

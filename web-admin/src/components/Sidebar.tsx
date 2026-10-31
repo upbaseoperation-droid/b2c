@@ -274,25 +274,11 @@ const NAV = {
     ],
   },
   delegationGroup: {
-    id: 'group-delegation',
-    key: 'manager' as TabKey,
-    label: 'Điều phối & Giao việc',
+    id: 'nav-delegation-task',
+    key: 'task-delegation' as TabKey,
+    subView: 'ASSIGNMENTS',
+    label: 'Giao việc & Theo dõi SLA',
     icon: ClipboardList,
-    children: [
-      {
-        id: 'sub-del-alloc',
-        key: 'manager' as TabKey,
-        label: 'Phân bổ gian hàng & Nhân sự',
-        icon: Users,
-      },
-      {
-        id: 'sub-del-task',
-        key: 'task-delegation' as TabKey,
-        subView: 'ASSIGNMENTS',
-        label: 'Giao việc & Theo dõi SLA',
-        icon: ClipboardList,
-      },
-    ],
   },
 
   // 4. Booking (4.1 Tìm kiếm & Gợi ý KOC -> 4.2 Triển khai Booking)
@@ -489,14 +475,13 @@ const NAV = {
         id: 'sub-rbac-roles',
         key: 'partner-access' as TabKey,
         subView: 'roles',
-        label: 'Vai trò & Ma trận phân quyền',
+        label: 'Phân quyền & Cổng truy cập',
         icon: KeyRound,
       },
       {
         id: 'sub-rbac-internal',
-        key: 'partner-access' as TabKey,
-        subView: 'internal',
-        label: 'Phân quyền & Bàn giao gian hàng',
+        key: 'manager' as TabKey,
+        label: 'Phân công & Bàn giao gian hàng',
         icon: Users,
       },
       {

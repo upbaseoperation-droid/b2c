@@ -12,7 +12,7 @@ import type {
   KocItem,
   BookingDealItem,
 } from '@/lib/types';
-import { Button, PageActions, PageHeaderNav, Segmented } from '../ui';
+import { Button, PageActions, Tabs } from '../ui';
 import { Send } from 'lucide-react';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
@@ -134,8 +134,8 @@ export function KocListingBatchHubView({
     Boolean(currentUser?.permissions?.includes('ALL_PERMISSIONS')) ||
     Boolean(currentUser?.permissions?.includes('canApprovePayment'));
 
-    const [activeSubTab, setActiveSubTab] = useState<
-    'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD' | 'MULTI_PLATFORM_WORKSPACE'
+  const [activeSubTab, setActiveSubTab] = useState<
+    'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD' | 'MULTI_PLATFORM_WORKSPACE' | 'CREATOR_MATCHING'
   >('STAFF_BRAND_SHEET');
 
   const defaultInitialStore = useMemo(() => {
@@ -244,7 +244,8 @@ export function KocListingBatchHubView({
       const detail = (evt as CustomEvent<{ tab?: string; subView?: string }>).detail;
       if (detail?.tab !== 'koc-listing' || bookingMode !== 'TIKTOK') return;
       if (detail.subView === 'CREATOR_MATCHING') {
-        setShowShortlistModal(true);
+        setShowShortlistModal(false);
+        setActiveSubTab('CREATOR_MATCHING');
       } else if (detail.subView === 'STAFF_BRAND_SHEET') {
         setShowShortlistModal(false);
         setActiveSubTab('STAFF_BRAND_SHEET');
@@ -413,38 +414,50 @@ export function KocListingBatchHubView({
     );
   };
 
+  if (bookingMode === 'TIKTOK' && activeSubTab === 'CREATOR_MATCHING') {
+    return (
+      <div className="space-y-4">
+        <StoreShortlistFilterModal
+          isOpen={true}
+          inline={true}
+          onClose={() => setActiveSubTab('STAFF_BRAND_SHEET')}
+          stores={stores}
+          kocs={kocs}
+          deals={deals}
+          existingListings={listings}
+          initialStoreId={matchedStoreObj?.id}
+          initialSalaryGrade={shortlistTargetGrade}
+          activePlan={matchedPlanFinal}
+          currentUserName={currentUserName}
+          onAddToListingBatch={handleAddShortlistToListings}
+          onNotify={onNotify}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {(bookingMode === 'TIKTOK' || bookingMode === 'LIVESTREAM') && (
-        <PageHeaderNav>
-          {bookingMode === 'TIKTOK' ? (
-            <Segmented
-              value={
-                activeSubTab === 'MULTI_PLATFORM_WORKSPACE' ? 'STAFF_BRAND_SHEET' : activeSubTab
-              }
-              onChange={(val) =>
-                setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')
-              }
-              items={[
-                { key: 'STAFF_BRAND_SHEET', label: 'Listing TikTok' },
-                { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu TikTok' },
-              ]}
-            />
-          ) : (
-            <Segmented
-              value={
-                activeSubTab === 'MULTI_PLATFORM_WORKSPACE' ? 'STAFF_BRAND_SHEET' : activeSubTab
-              }
-              onChange={(val) =>
-                setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')
-              }
-              items={[
-                { key: 'STAFF_BRAND_SHEET', label: 'Listing Livestream' },
-                { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu Live' },
-              ]}
-            />
-          )}
-        </PageHeaderNav>
+        <Tabs
+          value={
+            activeSubTab === 'MULTI_PLATFORM_WORKSPACE' ? 'STAFF_BRAND_SHEET' : activeSubTab
+          }
+          onChange={(val) =>
+            setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')
+          }
+          items={
+            bookingMode === 'TIKTOK'
+              ? [
+                  { key: 'STAFF_BRAND_SHEET', label: 'Listing TikTok' },
+                  { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu TikTok' },
+                ]
+              : [
+                  { key: 'STAFF_BRAND_SHEET', label: 'Listing Livestream' },
+                  { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu Live' },
+                ]
+          }
+        />
       )}
 
       {currentRole !== 'BRAND_PARTNER' && onNavigateTab && (

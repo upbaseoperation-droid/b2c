@@ -411,20 +411,9 @@ export function TaskPolicySetupView({
     <div className="space-y-5">
       {/* Top Subpage Navigation Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={ArrowLeft}
-            onClick={onBack}
-          >
-            Quay lại bảng công việc
-          </Button>
-          <div className="h-4 w-px bg-line hidden sm:block" />
-          <h2 className="text-base font-semibold text-ink">
-            Cấu hình định mức &amp; Chính sách điểm SOW
-          </h2>
-        </div>
+        <h2 className="text-base font-semibold text-ink">
+          Cấu hình định mức &amp; Chính sách điểm SOW
+        </h2>
 
         <Segmented<SetupSectionKey>
           value={section}

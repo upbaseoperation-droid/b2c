@@ -102,6 +102,7 @@ export function ContractManagementView({
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
   const [screen, setScreen] = useState<Screen>({ mode: 'list' });
+  const [activeSidebarSubView, setActiveSidebarSubView] = useState<'RECORDS' | 'DEAL_DOCS' | 'BBNT' | 'APPROVAL_PORTAL'>('RECORDS');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
 
@@ -110,15 +111,19 @@ export function ContractManagementView({
       const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
       if (detail?.tab !== 'contracts') return;
       if (detail.subView === 'RECORDS') {
+        setActiveSidebarSubView('RECORDS');
         setFilter('ALL');
         setScreen({ mode: 'list' });
       } else if (detail.subView === 'DEAL_DOCS') {
+        setActiveSidebarSubView('DEAL_DOCS');
         setFilter('ALL');
         setScreen({ mode: 'deal_docs' });
       } else if (detail.subView === 'BBNT') {
-        setFilter('NEED_ACCEPTANCE');
+        setActiveSidebarSubView('BBNT');
+        setFilter('ALL');
         setScreen({ mode: 'deal_docs' });
       } else if (detail.subView === 'APPROVAL_PORTAL') {
+        setActiveSidebarSubView('APPROVAL_PORTAL');
         setScreen({ mode: 'legal_portal' });
       }
     };
@@ -161,18 +166,11 @@ export function ContractManagementView({
       const nextData = await refresh();
       if (!intent) {
         if (nextData.actor.roles.includes('LEGAL') && !nextData.actor.roles.includes('LEAD')) {
+          setActiveSidebarSubView('APPROVAL_PORTAL');
           setScreen({ mode: 'legal_portal' });
         } else if (nextData.actor.roles.includes('FINANCE') && !nextData.actor.roles.includes('LEAD')) {
+          setActiveSidebarSubView('APPROVAL_PORTAL');
           setScreen({ mode: 'finance_portal' });
-        } else {
-          setScreen(prev =>
-            prev.mode === 'legal_portal' ||
-            prev.mode === 'finance_portal' ||
-            prev.mode === 'finance_payment_portal' ||
-            prev.mode === 'finance_reminders'
-              ? { mode: 'list' }
-              : prev,
-          );
         }
       }
     })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
@@ -457,11 +455,16 @@ export function ContractManagementView({
     NEED_ACCEPTANCE: needAcceptance,
   };
 
-  // Tab "Hợp đồng" chỉ có hợp đồng nguyên tắc; phụ lục SOW và BBNT gắn theo deal nằm ở tab riêng.
+  // Phân tách danh sách theo đúng mục menu con (Hợp đồng nguyên tắc / Phụ lục SOW / Biên bản nghiệm thu)
   const showDealDocs = screen.mode === 'deal_docs';
   const tabRecords = useMemo(
-    () => (data?.records || []).filter(r => isDealDoc(r) === showDealDocs),
-    [data, showDealDocs],
+    () =>
+      (data?.records || []).filter(r => {
+        if (!showDealDocs) return !isDealDoc(r);
+        if (activeSidebarSubView === 'BBNT') return documentOfTemplate(r.templateId) === 'BBNT';
+        return documentOfTemplate(r.templateId) === 'SOW';
+      }),
+    [data, showDealDocs, activeSidebarSubView],
   );
   const kocHasDeal = (kocId?: string) => Boolean(kocId && firstDealByKocId.has(kocId));
   const searched = useMemo(() => {
@@ -927,20 +930,14 @@ export function ContractManagementView({
                               : { mode: 'list' },
               )
             }
-            items={[
-              { key: 'RECORDS', label: 'Hợp đồng', count: data.records.filter(r => !isDealDoc(r)).length },
-              { key: 'DEAL_DOCS', label: 'Phụ lục & BBNT', count: data.records.filter(isDealDoc).length },
-              ...(data.actor.roles.includes('LEGAL')
+            items={
+              activeSidebarSubView === 'APPROVAL_PORTAL'
                 ? [
                     {
                       key: 'LEGAL_PORTAL' as const,
                       label: 'Theo dõi pháp chế',
                       count: data.records.length,
                     },
-                  ]
-                : []),
-              ...(data.actor.roles.includes('FINANCE')
-                ? [
                     {
                       key: 'FINANCE_PORTAL' as const,
                       label: 'Duyệt kế toán',
@@ -955,16 +952,40 @@ export function ContractManagementView({
                     },
                     { key: 'FINANCE_PAYMENT_PORTAL' as const, label: 'Đối chiếu thanh toán' },
                   ]
-                : []),
-              { key: 'SETS', label: 'Theo bộ' },
-              {
-                key: 'CATALOG',
-                label: 'Biểu mẫu',
-                count: data.templates.filter(
-                  t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never),
-                ).length,
-              },
-            ]}
+                : activeSidebarSubView === 'DEAL_DOCS'
+                  ? [
+                      {
+                        key: 'DEAL_DOCS',
+                        label: 'Phụ lục (SOW)',
+                        count: data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW').length,
+                      },
+                      { key: 'SETS', label: 'Theo bộ' },
+                    ]
+                  : activeSidebarSubView === 'BBNT'
+                    ? [
+                        {
+                          key: 'DEAL_DOCS',
+                          label: 'Biên bản nghiệm thu',
+                          count: data.records.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length,
+                        },
+                        { key: 'SETS', label: 'Theo bộ' },
+                      ]
+                    : [
+                        {
+                          key: 'RECORDS',
+                          label: 'Hợp đồng nguyên tắc',
+                          count: data.records.filter(r => !isDealDoc(r)).length,
+                        },
+                        { key: 'SETS', label: 'Theo bộ' },
+                        {
+                          key: 'CATALOG',
+                          label: 'Biểu mẫu',
+                          count: data.templates.filter(
+                            t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never),
+                          ).length,
+                        },
+                      ]
+            }
             actions={
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="ghost" icon={FileText} onClick={() => setIsContractReportOpen(true)}>

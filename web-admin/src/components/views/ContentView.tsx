@@ -716,17 +716,16 @@ export const ContentView: React.FC<ContentViewProps> = ({
         </Button>
       </PageActions>
 
-      <Tabs<ContentSubTab>
-        value={activeSubTab}
-        onChange={setActiveSubTab}
-        items={[
-          { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
-          { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
-          { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
-          { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
-          { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
-        ]}
-      />
+      {activeSubTab !== 'CONTENT_PLAN' && (
+        <Tabs<ContentSubTab>
+          value={activeSubTab === 'CONTENT_ITEMS' ? 'CONTENT_ITEMS' : 'SCRIPTS'}
+          onChange={setActiveSubTab}
+          items={[
+            { key: 'SCRIPTS', label: 'Duyệt kịch bản & Brief', count: scripts.filter(s => s.status === 'PENDING').length },
+            { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
+          ]}
+        />
+      )}
 
       {activeSubTab === 'CONTENT_PLAN' && (
         <ContentPlanBoard

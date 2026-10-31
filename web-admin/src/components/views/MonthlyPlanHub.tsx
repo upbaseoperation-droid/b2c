@@ -719,6 +719,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       const detail = (e as CustomEvent<{ tab?: string; subView?: string }>).detail;
       if (detail?.tab !== 'input-plan') return;
       if (detail.subView === 'BRAND_PLANS' || detail.subView === 'STORE_GOVERNANCE') {
+        setEditingBrandPlan(null);
         setActiveHubTab(detail.subView);
       }
     };
@@ -1986,44 +1987,41 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
     return (
       <div className="space-y-4 animate-in fade-in duration-200 pb-6">
-        <PageHeaderNav>
-          <div className="flex items-center gap-2 sm:gap-2 shrink-0">
-            <span className="text-slate-300 hidden sm:inline">|</span>
-            <button
-              type="button"
-              onClick={() => {
+        <div className="flex flex-wrap items-center gap-2 bg-surface border border-line rounded-lg px-3 py-2">
+          <button
+            type="button"
+            onClick={() => {
+              persistBrandMonthlyPlan(editingBrandPlan);
+              setEditingBrandPlan(null);
+            }}
+            className="h-8 px-3 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
+            title="Quay lại danh sách Kế hoạch theo Brand"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Danh sách Brand</span>
+          </button>
+
+          <select
+            value={editingBrandPlan.id}
+            onChange={(e) => {
+              const nextBrand = monthScopedBrandMonthlyPlans.find(bp => bp.id === e.target.value);
+              if (nextBrand) {
                 persistBrandMonthlyPlan(editingBrandPlan);
-                setEditingBrandPlan(null);
-              }}
-              className="h-8 px-3 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
-              title="Quay lại danh sách Kế hoạch theo Brand"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Danh sách Brand</span>
-            </button>
+                setEditingBrandPlan(nextBrand);
+              }
+            }}
+            className="h-8 px-3 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[160px] sm:max-w-[220px] truncate"
+            title="Chuyển nhanh sang thương hiệu khác"
+          >
+            {monthScopedBrandMonthlyPlans.map(bp => (
+              <option key={bp.id} value={bp.id}>
+                {bp.brandName} · {activeBrandMonth}
+              </option>
+            ))}
+          </select>
 
-            <select
-              value={editingBrandPlan.id}
-              onChange={(e) => {
-                const nextBrand = monthScopedBrandMonthlyPlans.find(bp => bp.id === e.target.value);
-                if (nextBrand) {
-                  persistBrandMonthlyPlan(editingBrandPlan);
-                  setEditingBrandPlan(nextBrand);
-                }
-              }}
-              className="h-8 px-3 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[160px] sm:max-w-[220px] truncate"
-              title="Chuyển nhanh sang thương hiệu khác"
-            >
-              {monthScopedBrandMonthlyPlans.map(bp => (
-                <option key={bp.id} value={bp.id}>
-                  {bp.brandName} · {activeBrandMonth}
-                </option>
-              ))}
-            </select>
-
-            <div className="hidden sm:inline-flex">{getStatusBadge(editingBrandPlan.status)}</div>
-          </div>
-        </PageHeaderNav>
+          <div className="hidden sm:inline-flex">{getStatusBadge(editingBrandPlan.status)}</div>
+        </div>
 
         <PageActions>
           <div className="hidden xl:block">{syncBadge}</div>
@@ -2893,28 +2891,20 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </Button>
       </PageActions>
 
-      <PageHeaderNav>
-        <PeriodPicker
-          value={selectedMonth === 'ALL' ? '' : selectedMonth}
-          onChange={(v) => {
-            setSelectedMonth(v || 'ALL');
-            setGovernancePage(1);
-          }}
-          options={planMonths.map((m) => ({ value: m, hint: String(scopedPlans.filter((p) => p.month === m).length) }))}
-          allLabel="Tất cả tháng"
-          label="Chọn tháng kế hoạch"
-        />
-      </PageHeaderNav>
-
-      <div className="border-b border-line pb-3">
-        <Tabs
-          items={[
-            { key: 'STORE_GOVERNANCE', label: 'Kế hoạch gian hàng', count: governanceStats.totalB2cManaged },
-            { key: 'BRAND_PLANS', label: 'Kế hoạch theo Brand', count: filteredBrandMonthlyPlans.length },
-          ]}
-          value={activeHubTab}
-          onChange={setActiveHubTab}
-        />
+      <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+        <div className="flex items-center gap-2 text-xs text-ink-2">
+          <span className="font-medium">Kỳ kế hoạch:</span>
+          <PeriodPicker
+            value={selectedMonth === 'ALL' ? '' : selectedMonth}
+            onChange={(v) => {
+              setSelectedMonth(v || 'ALL');
+              setGovernancePage(1);
+            }}
+            options={planMonths.map((m) => ({ value: m, hint: String(scopedPlans.filter((p) => p.month === m).length) }))}
+            allLabel="Tất cả tháng"
+            label="Chọn tháng kế hoạch"
+          />
+        </div>
       </div>
 
       {activeHubTab === 'STORE_GOVERNANCE' ? (

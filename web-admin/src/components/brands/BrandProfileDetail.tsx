@@ -190,6 +190,8 @@ export function BrandProfileDetail({
   hideInternalRatecard = false,
   initialTab,
   currentUser,
+  brandOptions,
+  onSelectBrandKey,
 }: {
   row: BrandRow;
   can: BrandPermissions;
@@ -214,6 +216,8 @@ export function BrandProfileDetail({
   hideInternalRatecard?: boolean;
   initialTab?: BrandDetailTab;
   currentUser?: UserProfile | null;
+  brandOptions?: Array<{ key: string; name: string }>;
+  onSelectBrandKey?: (key: string) => void;
 }) {
   const p = row.profile;
   const m = row.master;
@@ -707,11 +711,29 @@ export function BrandProfileDetail({
   const missing = missingSections(p);
   const activeMonthOption = PROFILE_MONTH_OPTIONS.find(o => o.value === activeMonth);
 
+  const isProductsDedicatedView = initialTab === 'PRODUCTS';
+
   const navControl = (
     <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-1">
-        {embedded ? 'Quay lại' : 'Danh bạ'}
-      </Button>
+      {!isProductsDedicatedView && (
+        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-1">
+          {embedded ? 'Quay lại' : 'Danh bạ thương hiệu'}
+        </Button>
+      )}
+      {brandOptions && brandOptions.length > 0 && onSelectBrandKey && (
+        <Select
+          aria-label="Chọn thương hiệu"
+          value={row.key}
+          onChange={e => onSelectBrandKey(e.target.value)}
+          className="w-52 h-8 text-xs font-semibold"
+        >
+          {brandOptions.map(opt => (
+            <option key={opt.key} value={opt.key}>
+              {opt.name}
+            </option>
+          ))}
+        </Select>
+      )}
       {(nav?.onPrev || nav?.onNext) && (
         <div className="flex items-center gap-0.5 pl-2 border-l border-line text-2xs text-ink-3">
           <button
@@ -774,10 +796,12 @@ export function BrandProfileDetail({
 
   return (
     <div className="space-y-4">
-      {/* 1. ĐIỀU HƯỚNG & THAO TÁC NHANH (ĐƯA LÊN TOP HEADER KHI KHÔNG NHÚNG) */}
+      {/* 1. ĐIỀU HƯỚNG & THAO TÁC NHANH */}
       {!embedded ? (
         <>
-          <PageHeaderNav>{navControl}</PageHeaderNav>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {navControl}
+          </div>
           <PageActions>{actionControls}</PageActions>
         </>
       ) : (
@@ -829,23 +853,24 @@ export function BrandProfileDetail({
         </div>
       </section>
 
-      {/* 3. CÁC PHÂN KHU NGHIỆP VỤ */}
-      <Tabs<BrandDetailTab>
-        value={activeTab}
-        onChange={setActiveTab}
-        items={[
-          { key: 'OVERVIEW', label: 'Định vị' },
-          { key: 'PRODUCTS', label: 'Sản phẩm', count: `${effectiveProductCount} SKU` },
-          {
-            key: 'COMPLIANCE',
-            label: 'Quy chuẩn & pháp lý',
-            count: (p.contentRules?.banned.length || 0) + p.legal.length + p.faqs.length,
-            tone: expiredLegalCount > 0 ? 'critical' : 'default',
-          },
-          { key: 'WORKFLOW', label: 'Quy tắc' },
-          { key: 'FILES', label: 'Tài liệu', count: p.documents.length },
-        ]}
-      />
+      {/* 3. CÁC PHÂN KHU NGHIỆP VỤ (Ẩn khi mở trực tiếp từ menu 2.2 Sản phẩm trọng tâm) */}
+      {!isProductsDedicatedView && (
+        <Tabs<BrandDetailTab>
+          value={activeTab === 'PRODUCTS' ? 'OVERVIEW' : activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'OVERVIEW', label: 'Định vị' },
+            {
+              key: 'COMPLIANCE',
+              label: 'Quy chuẩn & pháp lý',
+              count: (p.contentRules?.banned.length || 0) + p.legal.length + p.faqs.length,
+              tone: expiredLegalCount > 0 ? 'critical' : 'default',
+            },
+            { key: 'WORKFLOW', label: 'Quy tắc' },
+            { key: 'FILES', label: 'Tài liệu & Kho tệp', count: p.documents.length },
+          ]}
+        />
+      )}
 
       {/* ===================================================================== */}
       {/* TAB 1: ĐỊNH VỊ & PHÁP NHÂN (BỐ CỤC 2 CỘT)                             */}

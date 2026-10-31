@@ -918,21 +918,31 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         }}
       />
 
-      {/* Sub-Tabs Navigation */}
+      {/* Sub-Tabs Navigation theo từng mục con của 7.1 Dữ liệu gốc (loại bỏ trùng lặp Danh bạ KOC / CTV) */}
       <Tabs
-        items={[
-          { key: 'brands', label: 'Thương hiệu', count: brandList.length },
-          { key: 'stores', label: 'Gian hàng', count: storeList.length },
-          { key: 'pillars', label: 'Trụ cột nội dung', count: pillarList.length },
-          { key: 'cast-tiers', label: 'Bậc cast', count: extraCatalog.castTiers.length },
-          { key: 'koc-niches', label: 'Tệp kênh', count: extraCatalog.niches.length },
-          { key: 'video-formats', label: 'Định dạng video', count: extraCatalog.formats.length },
-          { key: 'kocs', label: 'Danh bạ KOC', count: kocs.length },
-          { key: 'ctvs', label: 'Danh sách VJ / CTV', count: contributors.length },
-          { key: 'staff', label: 'Danh sách nhân sự', count: UPBASE_STAFF_MASTER.length },
-          { key: 'sla-kpi', label: 'Chuẩn SLA & KPI', count: UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length },
-        ]}
-        value={activeSubTab}
+        items={
+          activeSubTab === 'stores' || activeSubTab === 'brands'
+            ? [
+                { key: 'stores', label: 'Gian hàng', count: storeList.length },
+                { key: 'brands', label: 'Thương hiệu', count: brandList.length },
+              ]
+            : activeSubTab === 'staff' || activeSubTab === 'sla-kpi'
+              ? [
+                  { key: 'staff', label: 'Danh sách nhân sự', count: UPBASE_STAFF_MASTER.length },
+                  { key: 'sla-kpi', label: 'Chuẩn SLA & KPI', count: UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length },
+                ]
+              : [
+                  { key: 'cast-tiers', label: 'Bậc cast', count: extraCatalog.castTiers.length },
+                  { key: 'koc-niches', label: 'Tệp kênh', count: extraCatalog.niches.length },
+                  { key: 'video-formats', label: 'Định dạng video', count: extraCatalog.formats.length },
+                  { key: 'pillars', label: 'Trụ cột nội dung', count: pillarList.length },
+                ]
+        }
+        value={
+          activeSubTab === 'kocs' || activeSubTab === 'ctvs'
+            ? 'stores'
+            : activeSubTab
+        }
         onChange={setActiveSubTab}
       />
 

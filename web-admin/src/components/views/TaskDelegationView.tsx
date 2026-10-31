@@ -1045,28 +1045,17 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           )}
 
           {canManageSetup && (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Sliders}
-                onClick={() => setIsSetupViewOpen(true)}
-              >
-                Cấu hình định mức
-              </Button>
-
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Plus}
-                onClick={() => {
-                  setFormTaskSource('DIRECTOR_ASSIGNED');
-                  setIsAssignModalOpen(true);
-                }}
-              >
-                Giao việc mới
-              </Button>
-            </>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Plus}
+              onClick={() => {
+                setFormTaskSource('DIRECTOR_ASSIGNED');
+                setIsAssignModalOpen(true);
+              }}
+            >
+              Giao việc mới
+            </Button>
           )}
         </div>
       </div>

@@ -191,29 +191,31 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     { key: 'QUEUE', label: 'Hàng chờ duyệt' },
     { key: 'AIR_REPORT', label: 'Báo cáo air' },
     { key: 'SETTLEMENT', label: 'Thanh toán' },
-    { key: 'CONTRIBUTORS', label: 'Danh bạ CTV', count: contributors.length || undefined },
-    { key: 'DISCUSSION', label: 'Trao đổi' },
   ];
+
+  const isCtvDirectoryMode = activeTab === 'CONTRIBUTORS' || activeTab === 'DISCUSSION';
 
   return (
     <div className="space-y-4">
-      <Tabs
-        value={activeTab}
-        onChange={selectTab}
-        items={tabs}
-        actions={
-          onOpenLarkSettlement ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Send}
-              onClick={onOpenLarkSettlement}
-            >
-              Sổ ĐNTT Lark
-            </Button>
-          ) : undefined
-        }
-      />
+      {!isCtvDirectoryMode && (
+        <Tabs
+          value={activeTab}
+          onChange={selectTab}
+          items={tabs}
+          actions={
+            onOpenLarkSettlement ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Send}
+                onClick={onOpenLarkSettlement}
+              >
+                Sổ ĐNTT Lark
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
 
       {activeTab === 'WORK' && (
         <PlanSelfChannelBoard

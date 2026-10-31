@@ -4,8 +4,7 @@ import React from 'react';
 import { Menu, Building2, PanelLeftOpen } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
-import { resolveNavGroupTabKey } from '../lib/navGroups';
-import { PageActionsSlot, PageHeaderNavSlot, Segmented } from './ui';
+import { PageActionsSlot } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
 
 interface TopHeaderProps {
@@ -32,7 +31,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   title,
   activeTab,
   groupTabs,
-  onNavigateTab,
   onToggleMobileSidebar,
   isSidebarCollapsed = false,
   onToggleSidebarCollapse,
@@ -40,7 +38,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 }) => {
   return (
     <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-5 lg:px-6 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 shrink-0">
-      {/* Khối trái: Nút menu, Tiêu đề trang, Tabs nhóm và Điều hướng ngữ cảnh trên cùng 1 hàng */}
+      {/* Khối trái: Nút menu và Tiêu đề trang */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {onToggleMobileSidebar && (
           <button
@@ -67,17 +65,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <h1 className="text-sm sm:text-base font-semibold text-ink leading-6 tracking-tight whitespace-nowrap shrink-0">{title}</h1>
-
-        <div className="flex items-center gap-2 sm:gap-2 min-w-0 shrink-0 empty:hidden">
-          {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
-            <Segmented<TabKey>
-              items={groupTabs}
-              value={resolveNavGroupTabKey(activeTab)}
-              onChange={onNavigateTab}
-            />
-          )}
-          <PageHeaderNavSlot />
-        </div>
       </div>
 
       {/* Khối phải: Phạm vi phân quyền (khi giới hạn phạm vi) & Thao tác trang */}

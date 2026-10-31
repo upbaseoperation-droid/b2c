@@ -2262,43 +2262,16 @@ export const LarkAcceptancePaymentHubView: React.FC<LarkAcceptancePaymentHubView
         />
       </StatRow>
 
-      <Tabs
-        value={mainTab}
-        onChange={v => {
-          setMainTab(v);
-          setQueuePage(1);
-          setSlipPage(1);
-        }}
-        items={[
-          {
-            key: 'UNIFIED_QUEUE',
-            label: 'Sổ nghiệm thu & đẩy ĐNTT',
-            count: baseFilteredQueue.length,
-          },
-          {
-            key: 'LARK_SLIPS',
-            label: 'Phiếu ĐNTT & luồng duyệt Lark',
-            count: baseFilteredSlips.length,
-            tone: kpiStats.rejectedSlipsCount > 0 ? 'critical' : 'default',
-          },
-          {
-            key: 'FINANCE_RECON',
-            label: 'Khóa sổ S40 & đối soát nhãn hàng',
-          },
-        ]}
-        actions={
-          larkConfig ? (
-            <div className="flex items-center gap-2 text-2xs text-ink-3">
-              <Status tone={larkConfig.hasLiveApprovalDef ? 'positive' : 'info'}>
-                {larkConfig.hasLiveApprovalDef ? 'Lark Approval Live' : 'Lark Sandbox'}
-              </Status>
-              <span className="font-mono">
-                Base: {larkConfig.appToken.slice(0, 12)}… · Table: {larkConfig.paymentTableId}
-              </span>
-            </div>
-          ) : null
-        }
-      />
+      {larkConfig ? (
+        <div className="flex items-center justify-end gap-2 text-2xs text-ink-3">
+          <Status tone={larkConfig.hasLiveApprovalDef ? 'positive' : 'info'}>
+            {larkConfig.hasLiveApprovalDef ? 'Lark Approval Live' : 'Lark Sandbox'}
+          </Status>
+          <span className="font-mono">
+            Base: {larkConfig.appToken.slice(0, 12)}… · Table: {larkConfig.paymentTableId}
+          </span>
+        </div>
+      ) : null}
 
       {mainTab !== 'FINANCE_RECON' && (
         <Panel flush>

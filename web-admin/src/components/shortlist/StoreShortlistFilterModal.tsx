@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { klLabel } from '../../lib/klTiers';
-import { Modal, Button, Chips, Status } from '../ui';
+import { Modal, Panel, Button, Chips, Status } from '../ui';
 import {
   AlertTriangle,
   Download,
@@ -50,6 +50,7 @@ export type { KocCooperationHistory };
 interface StoreShortlistFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  inline?: boolean;
   stores?: StorePortfolioItem[];
   kocs?: KocItem[];
   deals?: BookingDealItem[];
@@ -106,6 +107,7 @@ const KL_FILTER_OPTIONS: Array<{ id: SalaryGrade; label: string }> = [
 export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps> = ({
   isOpen,
   onClose,
+  inline = false,
   stores = INITIAL_STORE_PORTFOLIOS,
   kocs = INITIAL_KOCS,
   deals = INITIAL_DEALS,
@@ -531,99 +533,95 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !inline) return null;
 
-  return (
-    <>
-      <Modal
-        open={isOpen}
-        onClose={onClose}
-        size="3xl"
-        title="Đề xuất & Chấm điểm KOC cho Gian hàng (Thang 100 điểm)"
-        footer={
-          <div className="w-full flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs w-full md:w-auto justify-between md:justify-start">
-              <div>
-                <span className="text-2xs text-ink-3 block">Đã chọn</span>
-                <span className="font-semibold text-primary text-sm tabular-nums">
-                  {selectedKocsSummary.count} KOC
-                  {selectedKocsSummary.avgScore > 0
-                    ? ` (TB ${selectedKocsSummary.avgScore}/100đ)`
-                    : ''}
-                </span>
-              </div>
+  const footerContent = (
+    <div className="w-full flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs w-full md:w-auto justify-between md:justify-start">
+        <div>
+          <span className="text-2xs text-ink-3 block">Đã chọn</span>
+          <span className="font-semibold text-primary text-sm tabular-nums">
+            {selectedKocsSummary.count} KOC
+            {selectedKocsSummary.avgScore > 0
+              ? ` (TB ${selectedKocsSummary.avgScore}/100đ)`
+              : ''}
+          </span>
+        </div>
 
-              <div className="border-l border-line pl-3 sm:pl-4">
-                <span className="text-2xs text-ink-3 block">Chi phí Net dự kiến</span>
-                <span
-                  className={`font-semibold text-sm tabular-nums ${
-                    selectedKocsSummary.isOverBudget ? 'text-critical' : 'text-ink'
-                  }`}
-                >
-                  {formatVndShort(selectedKocsSummary.totalCost)}
-                </span>
-                {selectedKocsSummary.isOverBudget && (
-                  <span className="text-2xs text-critical font-semibold block">
-                    Vượt ngân sách tháng ({formatVndShort(selectedKocsSummary.storeBudget)})
-                  </span>
-                )}
-              </div>
+        <div className="border-l border-line pl-3 sm:pl-4">
+          <span className="text-2xs text-ink-3 block">Chi phí Net dự kiến</span>
+          <span
+            className={`font-semibold text-sm tabular-nums ${
+              selectedKocsSummary.isOverBudget ? 'text-critical' : 'text-ink'
+            }`}
+          >
+            {formatVndShort(selectedKocsSummary.totalCost)}
+          </span>
+          {selectedKocsSummary.isOverBudget && (
+            <span className="text-2xs text-critical font-semibold block">
+              Vượt ngân sách tháng ({formatVndShort(selectedKocsSummary.storeBudget)})
+            </span>
+          )}
+        </div>
 
-              <div className="border-l border-line pl-3 sm:pl-4">
-                <span className="text-2xs text-ink-3 block">Doanh số kỳ vọng (GMV)</span>
-                <span className="font-semibold text-positive text-sm tabular-nums">
-                  ~{formatVndShort(selectedKocsSummary.estimatedGmv)}
-                </span>
-              </div>
-            </div>
+        <div className="border-l border-line pl-3 sm:pl-4">
+          <span className="text-2xs text-ink-3 block">Doanh số kỳ vọng (GMV)</span>
+          <span className="font-semibold text-positive text-sm tabular-nums">
+            ~{formatVndShort(selectedKocsSummary.estimatedGmv)}
+          </span>
+        </div>
+      </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-              <Button variant="secondary" size="sm" onClick={onClose}>
-                Đóng
-              </Button>
+      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+        {!inline && (
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Đóng
+          </Button>
+        )}
 
-              <div className="flex items-center gap-2 bg-sunken px-3 py-1 rounded-md border border-line">
-                <span className="text-2xs font-medium text-ink-2">Plan Tháng:</span>
-                <select
-                  value={selectedPlanMonth}
-                  onChange={(e) => setSelectedPlanMonth(e.target.value)}
-                  className="bg-transparent text-xs font-semibold text-ink focus:outline-none"
-                >
-                  <option value="2026/11">Plan 2026/11</option>
-                  <option value="2026/10">Plan 2026/10</option>
-                  <option value="2026/09">Plan 2026/09</option>
-                  <option value="2026/08">Plan 2026/08</option>
-                </select>
-              </div>
+        <div className="flex items-center gap-2 bg-sunken px-3 py-1 rounded-md border border-line">
+          <span className="text-2xs font-medium text-ink-2">Plan Tháng:</span>
+          <select
+            value={selectedPlanMonth}
+            onChange={(e) => setSelectedPlanMonth(e.target.value)}
+            className="bg-transparent text-xs font-semibold text-ink focus:outline-none"
+          >
+            <option value="2026/11">Plan 2026/11</option>
+            <option value="2026/10">Plan 2026/10</option>
+            <option value="2026/09">Plan 2026/09</option>
+            <option value="2026/08">Plan 2026/08</option>
+          </select>
+        </div>
 
-              <div className="flex items-center gap-2 bg-sunken px-3 py-1 rounded-md border border-line">
-                <span className="text-2xs font-medium text-ink-2">Đợt:</span>
-                <select
-                  value={targetBatchCycle}
-                  onChange={(e) => setTargetBatchCycle(e.target.value as ListingBatchCycle)}
-                  className="bg-transparent text-xs font-semibold text-ink focus:outline-none"
-                >
-                  <option value="BATCH_10">Đợt 10 hàng tháng</option>
-                  <option value="BATCH_20">Đợt 20 hàng tháng</option>
-                  <option value="BATCH_30">Đợt 30 hàng tháng</option>
-                  <option value="BATCH_ADHOC">Đợt bổ sung</option>
-                </select>
-              </div>
+        <div className="flex items-center gap-2 bg-sunken px-3 py-1 rounded-md border border-line">
+          <span className="text-2xs font-medium text-ink-2">Đợt:</span>
+          <select
+            value={targetBatchCycle}
+            onChange={(e) => setTargetBatchCycle(e.target.value as ListingBatchCycle)}
+            className="bg-transparent text-xs font-semibold text-ink focus:outline-none"
+          >
+            <option value="BATCH_10">Đợt 10 hàng tháng</option>
+            <option value="BATCH_20">Đợt 20 hàng tháng</option>
+            <option value="BATCH_30">Đợt 30 hàng tháng</option>
+            <option value="BATCH_ADHOC">Đợt bổ sung</option>
+          </select>
+        </div>
 
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Send}
-                onClick={handleTransferToListingBatch}
-                disabled={selectedKocsSummary.count === 0}
-              >
-                Đưa vào đợt duyệt ({selectedKocsSummary.count})
-              </Button>
-            </div>
-          </div>
-        }
-      >
-        <div className="-m-4 sm:-m-5 flex flex-col">
+        <Button
+          variant="primary"
+          size="sm"
+          icon={Send}
+          onClick={handleTransferToListingBatch}
+          disabled={selectedKocsSummary.count === 0}
+        >
+          Đưa vào đợt duyệt ({selectedKocsSummary.count})
+        </Button>
+      </div>
+    </div>
+  );
+
+  const bodyContent = (
+    <div className={inline ? 'flex flex-col' : '-m-4 sm:-m-5 flex flex-col'}>
           {/* Thanh chọn gian hàng & Định mức thiếu của Kế hoạch tháng */}
           <div className="p-4 sm:p-4 border-b border-line bg-sunken space-y-3">
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
@@ -1437,7 +1435,28 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
             </div>
           </div>
         </div>
-      </Modal>
+  );
+
+  return (
+    <>
+      {inline ? (
+        <Panel flush title="Đề xuất & Chấm điểm KOC cho Gian hàng (Thang 100 điểm)">
+          {bodyContent}
+          <div className="p-4 border-t border-line bg-surface">
+            {footerContent}
+          </div>
+        </Panel>
+      ) : (
+        <Modal
+          open={isOpen}
+          onClose={onClose}
+          size="3xl"
+          title="Đề xuất & Chấm điểm KOC cho Gian hàng (Thang 100 điểm)"
+          footer={footerContent}
+        >
+          {bodyContent}
+        </Modal>
+      )}
 
       {/* Modal con: Bảng bóc tách điểm số chi tiết & Lịch sử deal của 1 KOC */}
       <Modal

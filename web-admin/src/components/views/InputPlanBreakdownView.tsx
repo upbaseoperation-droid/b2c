@@ -1753,9 +1753,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG, PHIÊN BẢN & 5 BƯỚC LÊN TOPHEADER CẠNH TIÊU ĐỀ */}
       {/* ========================================================================= */}
-      <PageHeaderNav>
+      <div className="bg-surface border border-line rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-2 shrink-0">
-          <span className="text-slate-300 hidden sm:inline">|</span>
           <button
             type="button"
             onClick={() => {
@@ -1819,7 +1818,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </button>
           </div>
         </div>
-      </PageHeaderNav>
+      </div>
 
       {/* 1B. ĐẨY CÁC THAO TÁC TOÀN CỤC LÊN TOPHEADER (PAGE ACTIONS) */}
       <PageActions>

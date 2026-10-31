@@ -311,6 +311,8 @@ export function BrandProfilesView({
         onNotify={onNotify}
         initialTab={detailTab}
         currentUser={currentUser}
+        brandOptions={visible.map(v => ({ key: v.key, name: v.name }))}
+        onSelectBrandKey={k => setOpenKey(k)}
       />
     );
   }
