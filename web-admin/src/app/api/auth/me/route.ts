@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decodeSessionToken, encodeSessionToken, SESSION_COOKIE_NAME, getLarkConfig } from '@/lib/larkAuth';
 import { USERS } from '@/lib/mockData';
+import { effectiveUser } from '@/lib/server/accessPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,13 +12,25 @@ export async function GET(request: NextRequest) {
   const isStrict = request.nextUrl.searchParams.get('strict') === '1';
 
   if (sessionCookie) {
-    const user = decodeSessionToken(sessionCookie);
-    if (user) {
-      return NextResponse.json({
+    const rawUser = decodeSessionToken(sessionCookie);
+    if (rawUser) {
+      const user = (await effectiveUser(rawUser)) ?? rawUser;
+      const response = NextResponse.json({
         authenticated: true,
         user,
         larkConfigured: config.isConfigured
       });
+      if (user.role !== rawUser.role || user.departmentScope !== rawUser.departmentScope) {
+        const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+        response.cookies.set(SESSION_COOKIE_NAME, encodeSessionToken(user), {
+          httpOnly: true,
+          secure: (process.env.NODE_ENV as string) === 'production' && isHttps,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 7 * 24 * 60 * 60
+        });
+      }
+      return response;
     }
   }
 

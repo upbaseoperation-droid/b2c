@@ -5,6 +5,13 @@
  * đều đọc/ghi trực tiếp trên Supabase PostgreSQL, kèm cơ chế tự động fallback về ổ cứng
  * (.shared-data / .contract-data / .brand-data) nếu mạng gián đoạn (Zero-Crash Standalone).
  */
+function hasValidDatabaseUrl(): boolean {
+  const url = (process.env.DATABASE_URL || '').trim();
+  if (!url) return false;
+  if (url.includes('[YOUR-PASSWORD]') || url.includes('[YOUR-SUPABASE-PROJECT]')) return false;
+  return true;
+}
+
 export function isPostgresStorageEnabled(overrideEnvVar?: string): boolean {
   const globalMode = (process.env.STORAGE_MODE || '').trim().toLowerCase();
   if (globalMode === 'local') return false;
@@ -13,11 +20,11 @@ export function isPostgresStorageEnabled(overrideEnvVar?: string): boolean {
     const specificVal = (process.env[overrideEnvVar] || '').trim().toLowerCase();
     if (specificVal === 'local') return false;
     if (specificVal === 'postgres') {
-      return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
+      return hasValidDatabaseUrl();
     }
   }
 
-  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
+  return hasValidDatabaseUrl();
 }
 
 export function getStorageModeLabel(overrideEnvVar?: string): 'POSTGRES' | 'LOCAL_FALLBACK' {

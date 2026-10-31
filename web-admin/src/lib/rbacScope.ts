@@ -29,13 +29,20 @@ function planParticipantNames(plan: InputPlanBreakdownState): string[] {
  * Theo GEMINI.md:
  * - Cấp BOD Admin: Đỗ Văn Giang (CEO) — toàn quyền toàn hệ thống.
  * - Cấp Giám Đốc Marketing B2C (Lead B2C): Đặng Thị Yến Nhi — quản lý toàn bộ 69 gian hàng B2C và 42 brand.
- * - Các tài khoản được cấp quyền canViewAllBrands hoặc có nhãn 'ALL_BRANDS' / 'Tất cả nhãn hàng'.
+ * - Các tài khoản thuộc khối BOD / Business Operation hoặc được cấp quyền canViewAllBrands / 'ALL_BRANDS'.
  */
 export function isStaffGlobalAdminOrManager(user: UserProfile | null | undefined): boolean {
   if (!user) return false;
 
   // 1. Vai trò Quản trị viên cao nhất hoặc Giám đốc Marketing B2C
   if (user.role === 'ADMIN' || user.role === 'MANAGER') {
+    return true;
+  }
+
+  // 1b. Khối BOD / Business Operation (đảm bảo phiên đăng nhập cũ chưa kịp đồng bộ role vẫn có toàn quyền quản trị)
+  const ext = user as { departmentName?: string; teamName?: string };
+  const deptOrTitle = `${user.roleTitle || ''} ${ext.departmentName || ''} ${ext.teamName || ''}`.trim();
+  if (/\bbod\b|business operation|^operation$|ban giám đốc|tổng giám đốc/i.test(deptOrTitle)) {
     return true;
   }
 
@@ -91,7 +98,8 @@ function hasUserInPicField(pic: string | undefined | null, userNameLower: string
 
 function getUserScopeBase(user: UserProfile): UserScopeBase {
   const cached = userScopeCache.get(user);
-  const key = `${user.id}|${user.name || ''}|${user.email || ''}|${user.staffCode || ''}|${user.role}|${user.linkedEntityName || ''}|${(user.assignedBrands || []).join(',')}|${(user.allowedStoreNames || []).join(',')}|${(user.permissions || []).join(',')}`;
+  const ext = user as { departmentName?: string; teamName?: string };
+  const key = `${user.id}|${user.name || ''}|${user.email || ''}|${user.staffCode || ''}|${user.role}|${user.roleTitle || ''}|${ext.departmentName || ''}|${ext.teamName || ''}|${user.linkedEntityName || ''}|${(user.assignedBrands || []).join(',')}|${(user.allowedStoreNames || []).join(',')}|${(user.permissions || []).join(',')}`;
   if (cached && cached.key === key) {
     return cached;
   }

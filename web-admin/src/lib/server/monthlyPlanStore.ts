@@ -142,8 +142,20 @@ const memoryPlansById = new Map<string, MemoryPlanEntry>();
 const memoryMessagesByPlanId = new Map<string, Array<{ clientId: string; data: PlanChatMessage; postedAt: Date; createdAt: Date }>>();
 let memoryPlansSeeded = false;
 
+import { isPostgresStorageEnabled } from './dbStorageMode';
+
+let postgresUnreachableUntil = 0;
+const POSTGRES_RETRY_BACKOFF_MS = 30_000;
+
 function isPostgresMonthlyPlanEnabled(): boolean {
-  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+  if (!isPostgresStorageEnabled('MONTHLY_PLAN_STORAGE_MODE')) return false;
+  if (Date.now() < postgresUnreachableUntil) return false;
+  return true;
+}
+
+function markPostgresMonthlyPlanUnreachable(err: unknown) {
+  postgresUnreachableUntil = Date.now() + POSTGRES_RETRY_BACKOFF_MS;
+  console.warn('[monthlyPlanStore] PostgreSQL unreachable, falling back to in-memory seed store for 30s:', err instanceof Error ? err.message : err);
 }
 
 function toMemoryStored(entry: MemoryPlanEntry): StoredMonthlyPlan {
@@ -373,15 +385,22 @@ async function getStoredPlanByIdFast(id: string): Promise<StoredMonthlyPlan | nu
       // Fall through to full read
     }
   }
-  const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
-  if (!row || row.deletedAt) return null;
-  const stored = toStored(row);
-  if (cachedPlansState) {
-    cachedPlansState.byId.set(id, stored);
-    const idx = cachedPlansState.list.findIndex(item => item.plan.id === id);
-    if (idx >= 0) cachedPlansState.list[idx] = stored;
+  try {
+    const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
+    if (!row || row.deletedAt) return null;
+    const stored = toStored(row);
+    if (cachedPlansState) {
+      cachedPlansState.byId.set(id, stored);
+      const idx = cachedPlansState.list.findIndex(item => item.plan.id === id);
+      if (idx >= 0) cachedPlansState.list[idx] = stored;
+    }
+    return stored;
+  } catch (err) {
+    markPostgresMonthlyPlanUnreachable(err);
+    ensureMemoryPlansSeeded();
+    const mem = memoryPlansById.get(id);
+    return mem ? toMemoryStored(mem) : null;
   }
-  return stored;
 }
 
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
@@ -662,55 +681,69 @@ async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMon
       }
     }
 
-    let rows = await prisma.monthlyPlan.findMany({
-      where: { deletedAt: null },
-      include: planInclude,
-      orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
-    });
-    if (rows.length === 0 && actorForSeed?.role === 'ADMIN') {
-      const totalCount = await prisma.monthlyPlan.count();
-      if (totalCount === 0) {
-        await seedInitialPlans(actorForSeed);
-        rows = await prisma.monthlyPlan.findMany({
-          where: { deletedAt: null },
-          include: planInclude,
-          orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
-        });
-      }
-      hasVerifiedRealLarkPlans = true;
-    } else if (!hasVerifiedRealLarkPlans) {
-      hasVerifiedRealLarkPlans = true;
-      const existingById = new Map(rows.map(r => [r.id, r]));
-      const rowPlans = rows.map(r => toStored(r).plan);
-      // Gian đã có kế hoạch trong tháng (thường là bản nháp lập trong app): ghi bản Lark vào đúng kế hoạch đó, không tạo bản thứ hai
-      const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026].map(p => {
-        if (existingById.has(p.id)) return p;
-        const same = pickPlanForStoreMonth(rowPlans, p);
-        return same ? { ...p, id: same.id } : p;
+    try {
+      let rows = await prisma.monthlyPlan.findMany({
+        where: { deletedAt: null },
+        include: planInclude,
+        orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
       });
-      const staleOrMissingRealPlans = allRealPlans.filter(p => {
-        const existing = existingById.get(p.id);
-        if (!existing) return true;
-        const dbData = existing.data as unknown as InputPlanBreakdownState | null;
-        return Boolean(p.larkSyncedAt && dbData?.larkSyncedAt !== p.larkSyncedAt);
-      });
-      if (staleOrMissingRealPlans.length > 0) {
-        await syncRealLarkPlans(staleOrMissingRealPlans);
-        rows = await prisma.monthlyPlan.findMany({
-          where: { deletedAt: null },
-          include: planInclude,
-          orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+      if (rows.length === 0 && actorForSeed?.role === 'ADMIN') {
+        const totalCount = await prisma.monthlyPlan.count();
+        if (totalCount === 0) {
+          await seedInitialPlans(actorForSeed);
+          rows = await prisma.monthlyPlan.findMany({
+            where: { deletedAt: null },
+            include: planInclude,
+            orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+          });
+        }
+        hasVerifiedRealLarkPlans = true;
+      } else if (!hasVerifiedRealLarkPlans) {
+        hasVerifiedRealLarkPlans = true;
+        const existingById = new Map(rows.map(r => [r.id, r]));
+        const rowPlans = rows.map(r => toStored(r).plan);
+        // Gian đã có kế hoạch trong tháng (thường là bản nháp lập trong app): ghi bản Lark vào đúng kế hoạch đó, không tạo bản thứ hai
+        const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026].map(p => {
+          if (existingById.has(p.id)) return p;
+          const same = pickPlanForStoreMonth(rowPlans, p);
+          return same ? { ...p, id: same.id } : p;
         });
+        const staleOrMissingRealPlans = allRealPlans.filter(p => {
+          const existing = existingById.get(p.id);
+          if (!existing) return true;
+          const dbData = existing.data as unknown as InputPlanBreakdownState | null;
+          return Boolean(p.larkSyncedAt && dbData?.larkSyncedAt !== p.larkSyncedAt);
+        });
+        if (staleOrMissingRealPlans.length > 0) {
+          await syncRealLarkPlans(staleOrMissingRealPlans);
+          rows = await prisma.monthlyPlan.findMany({
+            where: { deletedAt: null },
+            include: planInclude,
+            orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+          });
+        }
       }
+      const list = rows.filter(r => !isDeprecatedMockPlanId(r.id)).map(toStored);
+      const byId = new Map(list.map(item => [item.plan.id, item]));
+      cachedPlansState = {
+        expiresAt: Date.now() + PLANS_CACHE_TTL_MS,
+        list,
+        byId
+      };
+      return list;
+    } catch (err) {
+      markPostgresMonthlyPlanUnreachable(err);
+      ensureMemoryPlansSeeded();
+      const list = Array.from(memoryPlansById.values())
+        .sort((a, b) => (b.plan.month || '').localeCompare(a.plan.month || '') || b.updatedAt.getTime() - a.updatedAt.getTime())
+        .map(toMemoryStored);
+      cachedPlansState = {
+        expiresAt: Date.now() + PLANS_CACHE_TTL_MS,
+        list,
+        byId: new Map(list.map(item => [item.plan.id, item])),
+      };
+      return list;
     }
-    const list = rows.filter(r => !isDeprecatedMockPlanId(r.id)).map(toStored);
-    const byId = new Map(list.map(item => [item.plan.id, item]));
-    cachedPlansState = {
-      expiresAt: Date.now() + PLANS_CACHE_TTL_MS,
-      list,
-      byId
-    };
-    return list;
   })().finally(() => {
     inflightPlansLoad = null;
   });
@@ -757,6 +790,7 @@ async function syncRealLarkPlans(plansToSync = [...REAL_MONTHLY_PLANS_OCT_2026, 
           const { working } = splitPlan(plan);
           return prisma.monthlyPlan.upsert({
             where: { id: plan.id },
+            select: { id: true },
             create: {
               id: plan.id,
               ...indexedColumns(plan),
@@ -886,7 +920,9 @@ export async function createMonthlyPlan(
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new PlanStoreError('EXISTS', `Kế hoạch ${plan.id} đã tồn tại.`);
     }
-    throw err;
+    if (err instanceof PlanStoreError) throw err;
+    markPostgresMonthlyPlanUnreachable(err);
+    return createMonthlyPlan(plan, actor, opts);
   }
 }
 
@@ -1037,127 +1073,134 @@ export async function saveMonthlyPlan(
   }
 
   let insertedMessages = 0;
-  const row = await prisma.$transaction(async tx => {
-    const existing = await tx.monthlyPlan.findUnique({ where: { id }, include: planInclude });
-    if (!existing || existing.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
-    const stored = toStored(existing).plan;
-    await assertPlanAccess(stored, actor, 'write');
-    await assertPlanAccess(plan, actor, 'write');
-    const { data: catalog } = await readMasterCatalog();
-    const positions = planPositionsWithCatalog(stored, actor, catalog);
-    const planStore = planStoreOf(stored, catalog);
+  let row: PlanRow;
+  try {
+    row = await prisma.$transaction(async tx => {
+      const existing = await tx.monthlyPlan.findUnique({ where: { id }, include: planInclude });
+      if (!existing || existing.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+      const stored = toStored(existing).plan;
+      await assertPlanAccess(stored, actor, 'write');
+      await assertPlanAccess(plan, actor, 'write');
+      const { data: catalog } = await readMasterCatalog();
+      const positions = planPositionsWithCatalog(stored, actor, catalog);
+      const planStore = planStoreOf(stored, catalog);
 
-    // Gửi duyệt: bảng phân rã phải hợp lệ và đã giải trình nếu lệch số bảng 4.1
-    if (['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(plan.status || '') && plan.status !== stored.status) {
-      const gate = checkBreakdownForSubmit(plan);
-      if (!gate.canSubmit) throw new PlanStoreError('INVALID', gate.reason || 'Kế hoạch chưa đủ điều kiện gửi duyệt.');
-    }
-
-    // Luồng duyệt: gian có Trưởng nhóm phải sơ duyệt trước khi lên Giám đốc
-    const nameKey = (v?: string) => (v || '').trim().toLowerCase();
-    const fromStatus = stored.status || 'DRAFT';
-    const toStatus = plan.status || 'DRAFT';
-    // Leader lấy từ Dữ liệu gốc lúc duyệt (không dùng bản chụp trên kế hoạch); gian không còn Leader thì trình thẳng Giám đốc
-    const leaderName = planStore ? storeLeader(planStore) : (stored.hasBookingLeader !== false ? stored.bookingLeader : undefined);
-    // Leader kiêm Booking chính: bỏ bước sơ duyệt
-    const leaderIsMain = Boolean(
-      leaderName &&
-        ((planStore && nameKey(leaderName) === nameKey(storeMainBooking(planStore))) ||
-          nameKey(leaderName) === nameKey(stored.primaryPic || stored.pic))
-    );
-    const isGlobalManager = isStaffGlobalAdminOrManager(actor);
-    const isPlanLeader = planStore ? positions.has('LEADER') : Boolean(leaderName) && nameKey(actor.name) === nameKey(leaderName);
-    if (['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(toStatus) && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !canSubmitPlanForApproval(positions, isGlobalManager)) {
-      throw new PlanStoreError('FORBIDDEN', 'Chỉ Booking chính, Dự phòng đang hiệu lực hoặc Quản lý được bấm chốt gửi duyệt kế hoạch.');
-    }
-    if (leaderName && !leaderIsMain && toStatus === 'PENDING_APPROVAL' && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !isGlobalManager) {
-      throw new PlanStoreError('INVALID', 'Gian có Trưởng nhóm: kế hoạch phải qua sơ duyệt trước khi lên Giám đốc.');
-    }
-    if (fromStatus === 'PENDING_PRE_APPROVAL' && toStatus === 'PENDING_APPROVAL' && !isGlobalManager && !isPlanLeader) {
-      throw new PlanStoreError('FORBIDDEN', 'Chỉ Trưởng nhóm của gian hàng hoặc quản lý được sơ duyệt.');
-    }
-    const isLeaderStep = isPlanLeader && fromStatus === 'PENDING_PRE_APPROVAL' && ['PENDING_APPROVAL', 'REVISION_REQUESTED'].includes(toStatus);
-    // Leader (không kiêm nhân sự thực thi trên gian) chỉ sơ duyệt, không sửa nội dung kế hoạch
-    if (!isGlobalManager && !canEditPlanContent(positions, false) && !isLeaderStep) {
-      throw new PlanStoreError('FORBIDDEN', 'Leader chỉ sơ duyệt kế hoạch; nội dung do nhân sự phụ trách gian hàng sửa.');
-    }
-    const isMainPlanOwner = isGlobalManager || positions.has('BOOKING_MAIN') || positions.has('BACKUP');
-    if (!isMainPlanOwner && !isLeaderStep) {
-      const changedHeader = PLAN_HEADER_TARGET_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
-      if (changedHeader.length) {
-        throw new PlanStoreError(
-          'FORBIDDEN',
-          `Booking cùng làm chỉ cập nhật phần phân rã thực thi, không sửa thông tin chung hoặc chỉ tiêu gốc của kế hoạch (${changedHeader.slice(0, 3).join(', ')}).`
-        );
+      // Gửi duyệt: bảng phân rã phải hợp lệ và đã giải trình nếu lệch số bảng 4.1
+      if (['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(plan.status || '') && plan.status !== stored.status) {
+        const gate = checkBreakdownForSubmit(plan);
+        if (!gate.canSubmit) throw new PlanStoreError('INVALID', gate.reason || 'Kế hoạch chưa đủ điều kiện gửi duyệt.');
       }
-    }
-    if (isLeaderStep && !canEditPlanContent(positions, false)) {
-      const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
-      if (changed.length) throw new PlanStoreError('FORBIDDEN', `Leader chỉ sơ duyệt, không sửa số liệu kế hoạch (${changed.slice(0, 3).join(', ')}).`);
-    }
 
-    if (existing.revision !== expectedRevision) {
-      throw new PlanStoreError(
-        'CONFLICT',
-        `Kế hoạch đã được ${existing.updatedBy || 'người khác'} cập nhật lúc ${existing.updatedAt.toLocaleString('vi-VN')}.`,
-        toStored(existing)
+      // Luồng duyệt: gian có Trưởng nhóm phải sơ duyệt trước khi lên Giám đốc
+      const nameKey = (v?: string) => (v || '').trim().toLowerCase();
+      const fromStatus = stored.status || 'DRAFT';
+      const toStatus = plan.status || 'DRAFT';
+      // Leader lấy từ Dữ liệu gốc lúc duyệt (không dùng bản chụp trên kế hoạch); gian không còn Leader thì trình thẳng Giám đốc
+      const leaderName = planStore ? storeLeader(planStore) : (stored.hasBookingLeader !== false ? stored.bookingLeader : undefined);
+      // Leader kiêm Booking chính: bỏ bước sơ duyệt
+      const leaderIsMain = Boolean(
+        leaderName &&
+          ((planStore && nameKey(leaderName) === nameKey(storeMainBooking(planStore))) ||
+            nameKey(leaderName) === nameKey(stored.primaryPic || stored.pic))
       );
-    }
+      const isGlobalManager = isStaffGlobalAdminOrManager(actor);
+      const isPlanLeader = planStore ? positions.has('LEADER') : Boolean(leaderName) && nameKey(actor.name) === nameKey(leaderName);
+      if (['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(toStatus) && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !canSubmitPlanForApproval(positions, isGlobalManager)) {
+        throw new PlanStoreError('FORBIDDEN', 'Chỉ Booking chính, Dự phòng đang hiệu lực hoặc Quản lý được bấm chốt gửi duyệt kế hoạch.');
+      }
+      if (leaderName && !leaderIsMain && toStatus === 'PENDING_APPROVAL' && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !isGlobalManager) {
+        throw new PlanStoreError('INVALID', 'Gian có Trưởng nhóm: kế hoạch phải qua sơ duyệt trước khi lên Giám đốc.');
+      }
+      if (fromStatus === 'PENDING_PRE_APPROVAL' && toStatus === 'PENDING_APPROVAL' && !isGlobalManager && !isPlanLeader) {
+        throw new PlanStoreError('FORBIDDEN', 'Chỉ Trưởng nhóm của gian hàng hoặc quản lý được sơ duyệt.');
+      }
+      const isLeaderStep = isPlanLeader && fromStatus === 'PENDING_PRE_APPROVAL' && ['PENDING_APPROVAL', 'REVISION_REQUESTED'].includes(toStatus);
+      // Leader (không kiêm nhân sự thực thi trên gian) chỉ sơ duyệt, không sửa nội dung kế hoạch
+      if (!isGlobalManager && !canEditPlanContent(positions, false) && !isLeaderStep) {
+        throw new PlanStoreError('FORBIDDEN', 'Leader chỉ sơ duyệt kế hoạch; nội dung do nhân sự phụ trách gian hàng sửa.');
+      }
+      const isMainPlanOwner = isGlobalManager || positions.has('BOOKING_MAIN') || positions.has('BACKUP');
+      if (!isMainPlanOwner && !isLeaderStep) {
+        const changedHeader = PLAN_HEADER_TARGET_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
+        if (changedHeader.length) {
+          throw new PlanStoreError(
+            'FORBIDDEN',
+            `Booking cùng làm chỉ cập nhật phần phân rã thực thi, không sửa thông tin chung hoặc chỉ tiêu gốc của kế hoạch (${changedHeader.slice(0, 3).join(', ')}).`
+          );
+        }
+      }
+      if (isLeaderStep && !canEditPlanContent(positions, false)) {
+        const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
+        if (changed.length) throw new PlanStoreError('FORBIDDEN', `Leader chỉ sơ duyệt, không sửa số liệu kế hoạch (${changed.slice(0, 3).join(', ')}).`);
+      }
 
-    plan = withApprovalLock(plan, fromStatus, toStatus);
-    if (needsApproveAccess(plan, stored, fromStatus, toStatus, isLeaderStep)) await assertPlanAccess(stored, actor, 'approve');
-    const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
-    const isManagerApplyingPending41 = isGlobalManager && Boolean(stored.pendingReference41) && !plan.pendingReference41;
-    if (existing.isVersionLocked && sameVersion && !isManagerApplyingPending41) {
-      if (!plan.isVersionLocked) {
+      if (existing.revision !== expectedRevision) {
         throw new PlanStoreError(
-          'LOCKED',
-          `Phiên bản ${existing.currentVersionCode} đã chốt. Muốn điều chỉnh phải để Growth tạo phiên bản mới.`,
+          'CONFLICT',
+          `Kế hoạch đã được ${existing.updatedBy || 'người khác'} cập nhật lúc ${existing.updatedAt.toLocaleString('vi-VN')}.`,
           toStored(existing)
         );
       }
-      const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
-      if (changed.length) {
-        throw new PlanStoreError(
-          'LOCKED',
-          `Phiên bản ${existing.currentVersionCode} đã chốt, không sửa được số liệu (${changed.join(', ')}). Cần Growth tạo phiên bản mới.`,
-          toStored(existing)
-        );
+
+      plan = withApprovalLock(plan, fromStatus, toStatus);
+      if (needsApproveAccess(plan, stored, fromStatus, toStatus, isLeaderStep)) await assertPlanAccess(stored, actor, 'approve');
+      const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
+      const isManagerApplyingPending41 = isGlobalManager && Boolean(stored.pendingReference41) && !plan.pendingReference41;
+      if (existing.isVersionLocked && sameVersion && !isManagerApplyingPending41) {
+        if (!plan.isVersionLocked) {
+          throw new PlanStoreError(
+            'LOCKED',
+            `Phiên bản ${existing.currentVersionCode} đã chốt. Muốn điều chỉnh phải để Growth tạo phiên bản mới.`,
+            toStored(existing)
+          );
+        }
+        const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
+        if (changed.length) {
+          throw new PlanStoreError(
+            'LOCKED',
+            `Phiên bản ${existing.currentVersionCode} đã chốt, không sửa được số liệu (${changed.join(', ')}). Cần Growth tạo phiên bản mới.`,
+            toStored(existing)
+          );
+        }
       }
-    }
 
-    const { working, versionSnapshots, discussions } = splitPlan(plan);
-    const knownSnapshots = new Set(existing.versionSnapshots.map(s => s.clientId));
-    const knownMessages = new Set(existing.discussions.map(d => d.clientId));
-    const newSnapshots = versionSnapshots.filter(s => s?.id && !knownSnapshots.has(s.id));
-    if (newSnapshots.length) await assertPlanAccess(stored, actor, 'approve');
-    const newMessages = discussions.filter(m => m?.id && !knownMessages.has(m.id));
+      const { working, versionSnapshots, discussions } = splitPlan(plan);
+      const knownSnapshots = new Set(existing.versionSnapshots.map(s => s.clientId));
+      const knownMessages = new Set(existing.discussions.map(d => d.clientId));
+      const newSnapshots = versionSnapshots.filter(s => s?.id && !knownSnapshots.has(s.id));
+      if (newSnapshots.length) await assertPlanAccess(stored, actor, 'approve');
+      const newMessages = discussions.filter(m => m?.id && !knownMessages.has(m.id));
 
-    // updateMany có điều kiện revision để chặn ghi đè trong trường hợp 2 request song song
-    const result = await tx.monthlyPlan.updateMany({
-      where: { id, revision: expectedRevision },
-      data: {
-        ...indexedColumns(plan),
-        data: working as unknown as Prisma.InputJsonValue,
-        revision: { increment: 1 },
-        updatedBy: actor.name
+      // updateMany có điều kiện revision để chặn ghi đè trong trường hợp 2 request song song
+      const result = await tx.monthlyPlan.updateMany({
+        where: { id, revision: expectedRevision },
+        data: {
+          ...indexedColumns(plan),
+          data: working as unknown as Prisma.InputJsonValue,
+          revision: { increment: 1 },
+          updatedBy: actor.name
+        }
+      });
+      if (result.count === 0) {
+        throw new PlanStoreError('CONFLICT', 'Kế hoạch vừa được người khác cập nhật.', toStored(existing));
       }
-    });
-    if (result.count === 0) {
-      throw new PlanStoreError('CONFLICT', 'Kế hoạch vừa được người khác cập nhật.', toStored(existing));
-    }
 
-    if (newSnapshots.length) {
-      await tx.monthlyPlanVersionSnapshot.createMany({ data: snapshotRows(id, newSnapshots), skipDuplicates: true });
-    }
-    if (newMessages.length) {
-      // Giữ tương thích: chấp nhận cả tin hệ thống (đổi trạng thái, chốt phiên bản) lẫn tin người dùng đi kèm payload kế hoạch
-      const inserted = await tx.monthlyPlanDiscussion.createMany({ data: discussionRows(id, newMessages), skipDuplicates: true });
-      insertedMessages = inserted.count;
-    }
+      if (newSnapshots.length) {
+        await tx.monthlyPlanVersionSnapshot.createMany({ data: snapshotRows(id, newSnapshots), skipDuplicates: true });
+      }
+      if (newMessages.length) {
+        // Giữ tương thích: chấp nhận cả tin hệ thống (đổi trạng thái, chốt phiên bản) lẫn tin người dùng đi kèm payload kế hoạch
+        const inserted = await tx.monthlyPlanDiscussion.createMany({ data: discussionRows(id, newMessages), skipDuplicates: true });
+        insertedMessages = inserted.count;
+      }
 
-    return tx.monthlyPlan.findUniqueOrThrow({ where: { id }, include: planInclude });
-  }, { timeout: 20000, maxWait: 15000 });
+      return tx.monthlyPlan.findUniqueOrThrow({ where: { id }, include: planInclude });
+    }, { timeout: 20000, maxWait: 15000 });
+  } catch (err) {
+    if (err instanceof PlanStoreError) throw err;
+    markPostgresMonthlyPlanUnreachable(err);
+    return saveMonthlyPlan(id, plan, expectedRevision, actor);
+  }
 
   // Phát tín hiệu sau khi transaction đã commit; hàm không bao giờ ném lỗi
   if (insertedMessages > 0) await notifyPlanMessages(id);
@@ -1189,8 +1232,15 @@ async function assertPlanExists(planId: string) {
   if (cachedPlansState && Date.now() < cachedPlansState.expiresAt && cachedPlansState.byId.has(planId)) {
     return;
   }
-  const plan = await prisma.monthlyPlan.findUnique({ where: { id: planId }, select: { id: true, deletedAt: true } });
-  if (!plan || plan.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  try {
+    const plan = await prisma.monthlyPlan.findUnique({ where: { id: planId }, select: { id: true, deletedAt: true } });
+    if (!plan || plan.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  } catch (err) {
+    if (err instanceof PlanStoreError) throw err;
+    markPostgresMonthlyPlanUnreachable(err);
+    ensureMemoryPlansSeeded();
+    if (!memoryPlansById.has(planId)) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  }
 }
 
 /**

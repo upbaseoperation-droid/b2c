@@ -217,8 +217,8 @@ export async function effectiveUser(user: UserProfile | null): Promise<UserProfi
   return userWithPolicy(user, policy, revision);
 }
 
-export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision = 1): UserProfile | null {
-  if (!revision) return user.canLogin === false ? null : user;
+export function userWithPolicy(user: UserProfile, policy: AccessPolicy, _revision = 1): UserProfile | null {
+  if (user.canLogin === false) return null;
   const sameEmail = (email?: string) => !!user.email && !!email && email.toLowerCase() === user.email.toLowerCase();
   const sameStaffCode = (code?: string) =>
     !!code &&
@@ -253,7 +253,7 @@ export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision
     const explicitlyAllowedByInternalStaff =
       staff?.status === 'ACTIVE' && staff.canLogin === true && policy.staffOverrides?.[master.id]?.canLogin !== false;
     if (!classified.canLogin && !explicitlyAllowedByInternalStaff) return null;
-    if (policy.staffOverrides?.[master.id]) {
+    if (!staff || policy.staffOverrides?.[master.id] || classified.role === 'ADMIN') {
       result = { ...result, role: classified.role, departmentScope: classified.departmentScope };
     }
   }
