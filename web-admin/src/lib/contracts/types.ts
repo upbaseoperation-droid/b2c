@@ -310,6 +310,8 @@ export interface ContractRecord {
   googleDocsUrl?: string;
   googleDocsId?: string;
   googleDocsSource?: 'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC';
+  /** Luồng Google Doc: DRAFT = đã trình draft, các bên đang sửa trên file; FINAL = B2C đã trình final, nội dung đã chốt. */
+  googleDocsStage?: 'DRAFT' | 'FINAL';
   googleDocsReviewRouting?: import('./googleDocsTypes').GoogleDocsReviewRouting;
   googleDocsComments?: import('./googleDocsTypes').GoogleDocCommentItem[];
   googleDocsAuditTrail?: import('./googleDocsTypes').GoogleDocsAuditTrail;

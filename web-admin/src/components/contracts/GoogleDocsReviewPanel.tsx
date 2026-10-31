@@ -52,9 +52,10 @@ export interface GoogleDocsReviewPanelProps {
   financeStep?: ReviewStepSummary;
   onLegalApprove?: () => void;
   canLegalApprove?: boolean;
+  /** Email tài khoản dịch vụ Google cần được chia sẻ file; rỗng khi máy chủ chưa kết nối Google. */
+  shareEmail?: string;
 }
 
-const BOT_EMAIL = 'bot-contract@upbase.vn';
 
 export function GoogleDocsReviewPanel({
   url,
@@ -76,13 +77,15 @@ export function GoogleDocsReviewPanel({
   financeStep,
   onLegalApprove,
   canLegalApprove = false,
+  shareEmail = '',
 }: GoogleDocsReviewPanelProps) {
   const [copiedBotEmail, setCopiedBotEmail] = useState(false);
-  const [activeTab, setActiveTab] = useState<'DIFFS' | 'COMMENTS'>('DIFFS');
+  // Mẫu của KOC không so với mẫu Upbase nên chỉ có phần bình luận.
+  const [activeTab, setActiveTab] = useState<'DIFFS' | 'COMMENTS'>(sourceType === 'KOC_CUSTOM_DOC' ? 'COMMENTS' : 'DIFFS');
 
   const handleCopyEmail = () => {
     if (navigator?.clipboard) {
-      navigator.clipboard.writeText(BOT_EMAIL);
+      navigator.clipboard.writeText(shareEmail);
       setCopiedBotEmail(true);
       setTimeout(() => setCopiedBotEmail(false), 2000);
     }
@@ -145,7 +148,7 @@ export function GoogleDocsReviewPanel({
                 disabled={syncingComments}
                 onClick={onSyncComments}
               >
-                {syncingComments ? 'Đang đồng bộ...' : 'Đồng bộ thảo luận'}
+                {syncingComments ? 'Đang đồng bộ…' : 'Đồng bộ từ Google Doc'}
               </Button>
             )}
             {canApproveWeSign && onApproveAndPushWeSign && (
@@ -155,23 +158,22 @@ export function GoogleDocsReviewPanel({
                 icon={CheckCircle2}
                 onClick={onApproveAndPushWeSign}
               >
-                Phê duyệt & Đẩy sang WeSign
+                Duyệt & đẩy WeSign
               </Button>
             )}
           </div>
         </div>
 
         {/* Hộp chỉ dẫn phân quyền Google Docs */}
-        <div className="rounded-lg border border-line bg-sunken/60 p-2.5 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
+        {shareEmail && <div className="rounded-lg border border-line bg-sunken/60 p-2.5 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Share2 className="w-3.5 h-3.5 text-accent shrink-0" />
             <span>
-              Quyền truy cập: Cần mở{' '}
-              <strong className="text-ink">&ldquo;Bất kỳ ai có liên kết đều có thể nhận xét&rdquo;</strong> hoặc
-              chia sẻ cho email bot hệ thống:{' '}
+              Chia sẻ file cho{' '}
               <code className="px-1.5 py-0.5 rounded bg-surface border border-line text-ink font-mono text-2xs">
-                {BOT_EMAIL}
-              </code>
+                {shareEmail}
+              </code>{' '}
+              (quyền Người nhận xét) để hệ thống đọc được bình luận và lịch sử sửa.
             </span>
           </div>
           <button
@@ -187,14 +189,17 @@ export function GoogleDocsReviewPanel({
             ) : (
               <>
                 <Copy className="w-3 h-3" />
-                <span>Sao chép email bot</span>
+                <span>Chép email</span>
               </>
             )}
           </button>
-        </div>
+        </div>}
 
         {/* Tóm tắt phân luồng thẩm định */}
-        {routing && (
+        {routing && sourceType === 'KOC_CUSTOM_DOC' && (
+          <p className="text-xs text-ink-2">Mẫu riêng của KOC: không so với mẫu Upbase. Pháp chế và Kế toán rà toàn bộ văn bản trên Google Doc.</p>
+        )}
+        {routing && sourceType !== 'KOC_CUSTOM_DOC' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
             <div className="rounded-lg border border-line bg-sunken/30 p-2.5">
               <span className="text-2xs text-ink-3 block">Tổng điều khoản sửa đổi</span>
@@ -224,9 +229,9 @@ export function GoogleDocsReviewPanel({
         )}
       </div>
 
-      {/* KHỐI TIẾN TRÌNH DUYỆT: PHÁP CHẾ (THAM VẤN & COMMENT) & KẾ TOÁN (DUYỆT FINAL) */}
+      {/* Tiến trình duyệt: Pháp chế duyệt trước, Kế toán duyệt sau rồi đẩy WeSign */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Cấp 1: Ban Pháp chế - Tham vấn & Comment tùy chỗ */}
+        {/* Bước 1: Pháp chế duyệt */}
         <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -234,8 +239,8 @@ export function GoogleDocsReviewPanel({
                 <Scale className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-ink block">1. Pháp chế (Tham vấn &amp; Comment)</span>
-                <span className="text-2xs text-ink-3">Nhận xét &amp; góp ý trên Google Docs theo từng điều khoản liên quan</span>
+                <span className="text-xs font-semibold text-ink block">Pháp chế duyệt</span>
+                <span className="text-2xs text-ink-3">Góp ý, sửa trực tiếp trên Google Doc rồi duyệt bản trình final</span>
               </div>
             </div>
             <Status
@@ -250,23 +255,20 @@ export function GoogleDocsReviewPanel({
               }
             >
               {legalStep?.status === 'APPROVED'
-                ? 'Đã tham vấn'
+                ? 'Đã duyệt'
                 : legalStep?.status === 'CHANGES'
-                ? 'Có lưu ý'
+                ? 'Yêu cầu sửa'
                 : legalStep?.status === 'REJECTED'
                 ? 'Từ chối'
-                : 'Comment tùy chỗ'}
+                : 'Chờ duyệt'}
             </Status>
           </div>
 
-          <p className="text-2xs text-ink-3">
-            Pháp chế vào xem tài liệu Google Docs và trao đổi comment trực tiếp tại các điều khoản cần lưu ý. Ý kiến này dùng để Kế toán tham khảo ra quyết định cuối cùng.
-          </p>
 
           {legalStep?.reviewerName && (
             <div className="text-2xs text-ink-2 pt-1 border-t border-line flex items-center justify-between">
               <span>
-                Người tham vấn: <strong className="text-ink">{legalStep.reviewerName}</strong>
+                Người duyệt: <strong className="text-ink">{legalStep.reviewerName}</strong>
               </span>
               {legalStep.decidedAt && <span>{formatDate(legalStep.decidedAt)}</span>}
             </div>
@@ -281,13 +283,13 @@ export function GoogleDocsReviewPanel({
           {canLegalApprove && onLegalApprove && legalStep?.status === 'PENDING' && (
             <div className="pt-1">
               <Button size="sm" variant="secondary" icon={Scale} onClick={onLegalApprove}>
-                Ghi nhận ý kiến Pháp chế
+                Pháp chế duyệt
               </Button>
             </div>
           )}
         </div>
 
-        {/* Cấp 2: Ban Tài chính - Kế toán: DUYỆT FINAL */}
+        {/* Bước 2: Kế toán duyệt và đẩy WeSign */}
         <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -295,8 +297,8 @@ export function GoogleDocsReviewPanel({
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-ink block">2. Kế toán (Phê duyệt Chốt &amp; Đẩy WeSign — FINAL)</span>
-                <span className="text-2xs text-ink-3">Cấp quyết định cuối cùng: Kiểm tra tài chính, chốt văn bản &amp; phát hành WeSign</span>
+                <span className="text-xs font-semibold text-ink block">Kế toán duyệt &amp; đẩy WeSign</span>
+                <span className="text-2xs text-ink-3">Duyệt sau Pháp chế; hệ thống xuất DOCX, PDF từ Google Doc để đẩy WeSign</span>
               </div>
             </div>
             <Status
@@ -311,23 +313,20 @@ export function GoogleDocsReviewPanel({
               }
             >
               {financeStep?.status === 'APPROVED'
-                ? 'Đã duyệt FINAL'
+                ? 'Đã duyệt'
                 : financeStep?.status === 'CHANGES'
                 ? 'Yêu cầu sửa'
                 : financeStep?.status === 'REJECTED'
                 ? 'Từ chối'
-                : 'Chờ Kế toán duyệt FINAL'}
+                : 'Chờ duyệt'}
             </Status>
           </div>
 
-          <p className="text-2xs text-ink-3">
-            Kế toán rà soát biểu giá, tiến độ thanh toán, thuế, STK và các comment thảo luận để chốt phê duyệt và đẩy hợp đồng sang WeSign.
-          </p>
 
           {financeStep?.reviewerName && (
             <div className="text-2xs text-ink-2 pt-1 border-t border-line flex items-center justify-between">
               <span>
-                Người duyệt FINAL: <strong className="text-ink">{financeStep.reviewerName}</strong>
+                Người duyệt: <strong className="text-ink">{financeStep.reviewerName}</strong>
               </span>
               {financeStep.decidedAt && <span>{formatDate(financeStep.decidedAt)}</span>}
             </div>
@@ -342,7 +341,7 @@ export function GoogleDocsReviewPanel({
           {canApproveWeSign && onApproveAndPushWeSign && (
             <div className="pt-1">
               <Button size="sm" variant="primary" icon={CheckCircle2} onClick={onApproveAndPushWeSign}>
-                Kế toán phê duyệt chốt &amp; Đẩy WeSign (FINAL)
+                Duyệt &amp; đẩy WeSign
               </Button>
             </div>
           )}
@@ -351,7 +350,7 @@ export function GoogleDocsReviewPanel({
 
       {/* Tabs chuyển đổi giữa Điều khoản sửa đổi và Lịch sử bình luận */}
       <div className="flex items-center gap-2 border-b border-line pb-2">
-        <button
+        {sourceType !== 'KOC_CUSTOM_DOC' && <button
           type="button"
           onClick={() => setActiveTab('DIFFS')}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
@@ -362,7 +361,7 @@ export function GoogleDocsReviewPanel({
         >
           <FileText className="w-3.5 h-3.5" />
           <span>Danh sách điều khoản sửa đổi ({diffs.length})</span>
-        </button>
+        </button>}
 
         <button
           type="button"
@@ -383,7 +382,7 @@ export function GoogleDocsReviewPanel({
         <div className="space-y-3">
           {diffs.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-6 text-center text-xs text-ink-3">
-              Không phát hiện điều khoản nào bị sửa đổi so với mẫu chuẩn.
+              {routing ? 'Không phát hiện điều khoản nào bị sửa đổi so với mẫu chuẩn.' : 'Chưa so với mẫu: hệ thống so khi B2C trình final, hoặc bấm Đồng bộ từ Google Doc.'}
             </div>
           ) : (
             diffs.map((diff, idx) => {
@@ -488,7 +487,9 @@ export function GoogleDocsReviewPanel({
                       {formatDate(c.createdAt)}
                     </span>
                   </div>
-                  {c.resolved && (
+                  {c.removedFromSourceAt ? (
+                    <span className="text-2xs text-warning-strong font-medium">Đã xóa trên file · lưu để audit</span>
+                  ) : c.resolved && (
                     <span className="inline-flex items-center gap-1 text-2xs text-positive font-medium">
                       <Check className="w-3 h-3" />
                       Đã giải quyết

@@ -78,7 +78,8 @@ export function ContractDetail({
   onAction: Action;
   onEdit: () => void;
   onOpen: (id: string) => void;
-  onCreateAcceptance: () => void;
+  /** Không truyền khi KOC chưa có deal: phụ lục và BBNT chỉ lập theo deal. */
+  onCreateAcceptance?: () => void;
   onCreateSow?: () => void;
   onBackToBooking?: () => void;
   onPrev?: () => void;
@@ -161,10 +162,15 @@ export function ContractDetail({
     };
   }, [record.id, record.revision, selectedVersion]);
 
+  const gdocsLegalPending = record.steps.some(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED');
   const canApproveGDocsFinance =
     Boolean(record.googleDocsUrl) &&
     (me.roles.includes('FINANCE') || me.roles.includes('LEAD')) &&
-    !record.signing.some(s => s.status === 'COMPLETED');
+    me.id !== record.ownerId &&
+    record.approval === 'IN_REVIEW' &&
+    record.googleDocsStage === 'FINAL' &&
+    !gdocsLegalPending &&
+    record.steps.some(s => s.role === 'FINANCE' && s.version === record.version && s.status === 'PENDING');
 
   // Nút chính: việc tiếp theo của người đang xem (Pháp chế duyệt trước -> Kế toán duyệt & Đẩy WeSign).
   // Lưu ý: Trên luồng Google Docs (record.googleDocsUrl), Pháp chế là tham vấn điều khoản, Kế toán là cấp duyệt FINAL không bị chặn bởi !isLegalDone.
@@ -172,7 +178,7 @@ export function ContractDetail({
     <Button variant="primary" icon={Scale} disabled={busy} onClick={() => setDialog('approve')}>
       Pháp chế duyệt điều khoản
     </Button>
-  ) : myStep?.role === 'FINANCE' && record.googleDocsUrl ? (
+  ) : canApproveGDocsFinance ? (
     <Button
       variant="primary"
       icon={CheckCircle2}
@@ -181,24 +187,17 @@ export function ContractDetail({
     >
       Kế toán duyệt &amp; Đẩy WeSign
     </Button>
-  ) : canApproveGDocsFinance && record.approval !== 'APPROVED' ? (
-    <Button
-      variant="primary"
-      icon={CheckCircle2}
-      disabled={busy}
-      onClick={() => setDialog('google_docs_finance')}
-    >
-      Kế toán duyệt &amp; Đẩy WeSign
-    </Button>
+  ) : canSubmit && record.googleDocsUrl && !record.googleDocsStage ? (
+    <Button variant="primary" icon={FileCheck2} disabled={busy} onClick={() => onAction({ action: 'SUBMIT_GOOGLE_DOCS_DRAFT' }, 'Đã trình draft')}>Trình draft</Button>
   ) : canSubmit ? (
-    <Button variant="primary" icon={FileCheck2} disabled={busy} onClick={() => setDialog('submit')}>Gửi duyệt</Button>
+    <Button variant="primary" icon={FileCheck2} disabled={busy} onClick={() => setDialog('submit')}>{record.googleDocsUrl ? 'Trình final' : 'Gửi duyệt'}</Button>
   ) : myStep ? (
     <Button variant="primary" disabled={busy} onClick={() => setDialog('approve')}>Duyệt</Button>
   ) : canStartSigning ? (
     <Button variant="primary" icon={Send} disabled={busy} onClick={() => setDialog('request_sign')}>Gửi ký WeSign (requestSign)</Button>
   ) : signing?.status === 'COMPLETED' && isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') ? (
     <Button variant="primary" icon={FilePlus2} onClick={onCreateSow}>Tạo phụ lục SOW</Button>
-  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !isFrameworkWithSow && !hasAcceptance && me.roles.includes('CREATOR') ? (
+  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !isFrameworkWithSow && !hasAcceptance && onCreateAcceptance && me.roles.includes('CREATOR') ? (
     <Button variant="primary" icon={FilePlus2} onClick={onCreateAcceptance}>Tạo biên bản nghiệm thu</Button>
   ) : null;
 
@@ -235,6 +234,7 @@ export function ContractDetail({
   );
 
   const [syncingGDocsComments, setSyncingGDocsComments] = useState(false);
+  const [gdocsError, setGdocsError] = useState('');
   const handleSyncGoogleDocsComments = async () => {
     setSyncingGDocsComments(true);
     try {
@@ -242,15 +242,16 @@ export function ContractDetail({
         '/api/contracts/google-docs/sync-comments',
         { contractId: record.id, url: record.googleDocsUrl }
       );
-      await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, `Đã đồng bộ ${res.comments.length} bình luận từ Google Docs`);
-    } catch {
-      // Không gián đoạn
+      await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, `Đã đồng bộ ${res.comments.length} bình luận từ Google Doc`);
+    } catch (err) {
+      setGdocsError((err as Error).message);
     } finally {
       setSyncingGDocsComments(false);
     }
   };
 
   const handleApproveAndPushWeSign = async (dataPayload: { note: string; partyAEmail?: string; partyBEmail?: string }) => {
+    setGdocsError('');
     const res = await contractApi<{ success: boolean; record: ContractRecord }>(
       '/api/contracts/google-docs/approve-and-push-wesign',
       {
@@ -261,7 +262,7 @@ export function ContractDetail({
       }
     );
     setDialog(null);
-    await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, 'Kế toán đã duyệt FINAL và đẩy sang WeSign thành công');
+    await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, 'Đã duyệt và xuất DOCX, PDF từ Google Doc để đẩy WeSign');
   };
 
 
@@ -416,7 +417,39 @@ export function ContractDetail({
         </div>
       </div>
 
-      {/* Thanh lộ trình 3 bước pháp lý chuẩn của Deal (Bấm chuyển nhanh giữa HĐNT -> SOW -> BBNT) */}
+      {record.googleDocsUrl && (() => {
+        const trail = record.googleDocsAuditTrail;
+        const finalAt = trail?.finalSnapshot?.at;
+        const message =
+          record.approval === 'APPROVED' || record.signing.length > 0
+            ? 'Đã duyệt xong. File đẩy WeSign là bản xuất từ Google Doc.'
+            : record.googleDocsStage === 'FINAL' && record.approval === 'IN_REVIEW'
+              ? `Đã trình final${finalAt ? ` lúc ${formatDate(finalAt)}` : ''}, chốt ${trail?.finalSnapshot?.commentsCount ?? 0} bình luận và ${trail?.finalSnapshot?.revisionCount ?? 0} phiên bản. ${gdocsLegalPending ? 'Chờ Pháp chế duyệt, sau đó Kế toán duyệt và đẩy WeSign.' : 'Chờ Kế toán duyệt và đẩy WeSign.'}`
+              : record.googleDocsStage
+                ? 'Đang trình draft: Pháp chế, Kế toán góp ý và sửa trực tiếp trên Google Doc. Sửa xong, bấm Trình final.'
+                : 'Chưa trình draft. Bấm Trình draft để Pháp chế, Kế toán vào Google Doc góp ý.';
+        return (
+          <div className="rounded-xl border border-line bg-surface px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-ink">
+                <span className="font-semibold">{record.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'Mẫu của KOC' : 'Mẫu Upbase có chỉnh sửa'} · </span>
+                {message}
+              </p>
+              {trail?.simulated && <p className="text-warning-strong">Dữ liệu giả lập: máy chủ chưa kết nối Google.</p>}
+              {gdocsError && <p role="alert" className="text-critical">{gdocsError}</p>}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <a href={record.googleDocsUrl} target="_blank" rel="noreferrer" className="font-medium text-accent hover:underline">Mở Google Doc ↗</a>
+              {trail?.exportedDocxUrl && <a href={trail.exportedDocxUrl} className="text-ink-2 hover:text-ink hover:underline">DOCX đẩy WeSign ↗</a>}
+              {trail?.exportedPdfUrl && <a href={trail.exportedPdfUrl} className="text-ink-2 hover:text-ink hover:underline">PDF đẩy WeSign ↗</a>}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Thanh lộ trình 3 bước pháp lý chuẩn của Deal (Bấm chuyển nhanh giữa HĐNT -> SOW -> BBNT).
+          HĐNT của KOC chưa có deal thì không hiện: phụ lục và BBNT chỉ có khi có deal. */}
+      {(!isFrameworkWithSow || onCreateSow || childRecords.length > 0) && (
       <div className="rounded-xl border border-line bg-surface px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {[
@@ -509,6 +542,7 @@ export function ContractDetail({
           </span>
         )}
       </div>
+      )}
 
       {/* Tiêu đề hồ sơ & Thanh tác vụ chính */}
       <header className="flex flex-wrap items-start justify-between gap-4 bg-surface border border-line rounded-xl px-4 py-3.5">
@@ -535,7 +569,7 @@ export function ContractDetail({
               Lấy thông tin Link Air &amp; cắt ảnh nghiệm thu{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
             </Button>
           )}
-          {isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') && (
+          {isFrameworkWithSow && onCreateSow && signing?.status !== 'COMPLETED' && me.roles.includes('CREATOR') && (
             <Button variant="secondary" size="sm" icon={FilePlus2} disabled={busy} onClick={onCreateSow}>
               Tạo phụ lục SOW
             </Button>
@@ -701,7 +735,7 @@ export function ContractDetail({
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 Phụ lục SOW đã ký đủ 2 bên — Cấu hình Deal ({record.dealCode || linkedDeal?.dealCode || 'Deal'}) đã khóa. Phát sinh mới sẽ lập Phụ lục bổ sung (PL-02).
               </span>
-              {!hasAcceptance && me.roles.includes('CREATOR') && (
+              {!hasAcceptance && onCreateAcceptance && me.roles.includes('CREATOR') && (
                 <Button size="sm" variant="secondary" icon={FilePlus2} onClick={onCreateAcceptance}>
                   Lập Biên bản nghiệm thu (BBNT)
                 </Button>
@@ -920,6 +954,7 @@ export function ContractDetail({
               financeStep={financeStep}
               canLegalApprove={Boolean(myStep?.role === 'LEGAL' && myStep.status === 'PENDING')}
               onLegalApprove={() => setDialog('approve')}
+              shareEmail={data.config.googleShareEmail}
             />
           )}
           <GoogleDocsFinanceApproveDialog
@@ -1364,7 +1399,7 @@ export function ContractDetail({
         data={data}
         busy={busy}
         onClose={() => setDialog(null)}
-        onSubmit={(ids, reqLegal) => onAction({ action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal }, 'Đã gửi duyệt').then(r => r && setDialog(null))}
+        onSubmit={(ids, reqLegal) => onAction({ action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal }, record.googleDocsUrl ? 'Đã trình final và chốt bản Google Doc' : 'Đã gửi duyệt').then(r => r && setDialog(null))}
       />
       <LinkDialog open={dialog === 'link'} version={record.version} busy={busy} onClose={() => setDialog(null)} onSubmit={documentId => onAction({ action: 'LINK_WESIGN', documentId, confirmed: true }, 'Đã liên kết luồng ký').then(r => r && setDialog(null))} />
       <RequestSignDialog
@@ -1637,7 +1672,7 @@ function SubmitDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title="Gửi duyệt hồ sơ"
+      title={record.googleDocsUrl ? 'Trình final hồ sơ Google Doc' : 'Gửi duyệt hồ sơ'}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Hủy</Button>
@@ -1646,7 +1681,7 @@ function SubmitDialog({
             disabled={busy || !ready}
             onClick={() => onSubmit(Object.values(picked).filter(Boolean), needLegal)}
           >
-            Gửi duyệt
+            {record.googleDocsUrl ? 'Trình final' : 'Gửi duyệt'}
           </Button>
         </>
       }

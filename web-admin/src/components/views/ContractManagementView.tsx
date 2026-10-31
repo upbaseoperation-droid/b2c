@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileText, FolderKanban, Plus, RefreshCw, Upload } from 'lucide-react';
+import { Download, FilePen, FileText, FolderKanban, Link2, Plus, RefreshCw } from 'lucide-react';
 import type { BookingDealItem, KocItem, LegalDocAttachment } from '../../lib/types';
 import { saveSyncedKocLegalAttachments } from '../koc/kocUtils';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
@@ -44,6 +44,7 @@ export interface ContractIntent {
 
 type Screen =
   | { mode: 'list' }
+  | { mode: 'deal_docs' }
   | { mode: 'legal_portal' }
   | { mode: 'finance_portal' }
   | { mode: 'finance_payment_portal' }
@@ -52,6 +53,11 @@ type Screen =
   | { mode: 'catalog' }
   | { mode: 'detail'; id: string }
   | { mode: 'form'; editId?: string; init?: ContractFormInit };
+const isDealDoc = (r: ContractRecord) => {
+  const doc = documentOfTemplate(r.templateId);
+  return doc === 'SOW' || doc === 'BBNT';
+};
+
 type Filter = 'ALL' | 'MINE' | 'REVIEW' | 'GOOGLE_DOCS' | 'SIGN' | 'DONE' | 'NEED_ACCEPTANCE';
 
 export function ContractManagementView({
@@ -108,6 +114,7 @@ export function ContractManagementView({
     setQuickViewDoc(null);
   }
   const [isContractReportOpen, setIsContractReportOpen] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     if (demoMode) enableBrowserDemo();
@@ -394,22 +401,36 @@ export function ContractManagementView({
     NEED_ACCEPTANCE: needAcceptance,
   };
 
+  // Tab "Hợp đồng" chỉ có hợp đồng nguyên tắc; phụ lục SOW và BBNT gắn theo deal nằm ở tab riêng.
+  const showDealDocs = screen.mode === 'deal_docs';
+  const tabRecords = useMemo(
+    () => (data?.records || []).filter(r => isDealDoc(r) === showDealDocs),
+    [data, showDealDocs],
+  );
+  const kocHasDeal = (kocId?: string) => Boolean(kocId && effectiveDeals.some(d => d.kocId === kocId));
   const searched = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (data?.records || []).filter(r => !q || `${r.title} ${r.brand} ${r.partner} ${r.dealCode || ''}`.toLowerCase().includes(q));
-  }, [data, search]);
+    return tabRecords.filter(r => !q || `${r.title} ${r.brand} ${r.partner} ${r.dealCode || ''}`.toLowerCase().includes(q));
+  }, [tabRecords, search]);
   const rows = searched.filter(matches[filter]);
   const pageSize = 20;
   const [pagedKey, setPagedKey] = useState('');
-  if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
+  if (`${search}|${filter}|${showDealDocs}` !== pagedKey) {
+    setPagedKey(`${search}|${filter}|${showDealDocs}`);
+    setPage(1);
+    if (showDealDocs ? filter === 'GOOGLE_DOCS' : filter === 'NEED_ACCEPTANCE') setFilter('ALL');
+  }
 
-  const chips = (['ALL', 'MINE', 'REVIEW', 'GOOGLE_DOCS', 'SIGN', 'DONE', 'NEED_ACCEPTANCE'] as Filter[]).map(key => ({
+  const chipKeys: Filter[] = showDealDocs
+    ? ['ALL', 'MINE', 'REVIEW', 'SIGN', 'DONE', 'NEED_ACCEPTANCE']
+    : ['ALL', 'MINE', 'REVIEW', 'GOOGLE_DOCS', 'SIGN', 'DONE'];
+  const chips = chipKeys.map(key => ({
     key,
     label: {
       ALL: 'Tất cả',
       MINE: 'Của tôi',
       REVIEW: 'Chờ tôi duyệt',
-      GOOGLE_DOCS: 'Google Docs / Sửa mẫu',
+      GOOGLE_DOCS: 'Mẫu KOC / sửa điều khoản',
       SIGN: 'Chờ ký',
       DONE: 'Đã ký',
       NEED_ACCEPTANCE: 'Cần lập nghiệm thu',
@@ -586,7 +607,7 @@ export function ContractManagementView({
             <span className="block text-ink-2 tabular-nums text-xs">
               {formatDate(r.updatedAt)}
             </span>
-            {isSigned && isHdnt ? (
+            {isSigned && isHdnt && kocHasDeal(r.kocId) ? (
               <button
                 type="button"
                 onClick={() =>
@@ -705,6 +726,7 @@ export function ContractManagementView({
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
     }}>
       {(screen.mode === 'list' ||
+        screen.mode === 'deal_docs' ||
         screen.mode === 'legal_portal' ||
         screen.mode === 'finance_portal' ||
         screen.mode === 'finance_payment_portal' ||
@@ -736,27 +758,9 @@ export function ContractManagementView({
               </Button>
             )}
             {canCreate && (
-              <>
-                <Button size="sm" variant="secondary" icon={Upload} onClick={() => setScreen({ mode: 'form', init: { isKocOwnForm: true } })}>
-                  Tải file (.docx)
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={FileText}
-                  onClick={() =>
-                    setScreen({
-                      mode: 'form',
-                      init: { docStage: 'SOW', kind: 'CONTRACT', templateId: 'IND-SOW' },
-                    })
-                  }
-                >
-                  Ký phụ lục SOW
-                </Button>
-                <Button size="sm" variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>
-                  Tạo hợp đồng
-                </Button>
-              </>
+              <Button size="sm" variant="primary" icon={Plus} onClick={() => setChooserOpen(true)}>
+                Tạo hợp đồng
+              </Button>
             )}
           </PageActions>
 
@@ -774,7 +778,9 @@ export function ContractManagementView({
                         ? 'FINANCE_PAYMENT_PORTAL'
                         : screen.mode === 'finance_reminders'
                           ? 'FINANCE_REMINDERS'
-                          : 'RECORDS'
+                          : screen.mode === 'deal_docs'
+                            ? 'DEAL_DOCS'
+                            : 'RECORDS'
             }
             onChange={v =>
               setScreen(
@@ -790,11 +796,14 @@ export function ContractManagementView({
                           ? { mode: 'finance_payment_portal' }
                           : v === 'FINANCE_REMINDERS'
                             ? { mode: 'finance_reminders' }
-                            : { mode: 'list' },
+                            : v === 'DEAL_DOCS'
+                              ? { mode: 'deal_docs' }
+                              : { mode: 'list' },
               )
             }
             items={[
-              { key: 'RECORDS', label: 'Hợp đồng', count: data.records.length },
+              { key: 'RECORDS', label: 'Hợp đồng', count: data.records.filter(r => !isDealDoc(r)).length },
+              { key: 'DEAL_DOCS', label: 'Phụ lục & BBNT', count: data.records.filter(isDealDoc).length },
               {
                 key: 'LEGAL_PORTAL',
                 label: 'Duyệt pháp chế',
@@ -948,14 +957,14 @@ export function ContractManagementView({
         />
       ) : screen.mode === 'form' ? (
         <ContractForm
-          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kocId || ''}-${screen.init?.legalProfileId || ''}-${screen.init?.kind || ''}-${screen.init?.docStage || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
+          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kocId || ''}-${screen.init?.legalProfileId || ''}-${screen.init?.kind || ''}-${screen.init?.docStage || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.source || 'std'}`}
           data={data}
           deals={effectiveDeals}
           kocs={kocs}
           record={screen.editId ? record : undefined}
           init={screen.init}
           busy={busy}
-          onCancel={() => setScreen(screen.editId ? { mode: 'detail', id: screen.editId } : { mode: 'list' })}
+          onCancel={() => setScreen(screen.editId ? { mode: 'detail', id: screen.editId } : screen.init?.docStage === 'SOW' || screen.init?.docStage === 'BBNT' ? { mode: 'deal_docs' } : { mode: 'list' })}
           onBackToBooking={intent?.fromBooking ? onBackToBooking : undefined}
           onQuickFrameworkCreated={() => { void refresh(); }}
           onSyncKocLegalAttachments={(kId, profId, attachments) => {
@@ -976,7 +985,7 @@ export function ContractManagementView({
               data={data}
               deals={effectiveDeals}
               busy={busy}
-              onBack={() => setScreen({ mode: 'list' })}
+              onBack={() => setScreen(isDealDoc(record) ? { mode: 'deal_docs' } : { mode: 'list' })}
               onBackToBooking={intent?.fromBooking ? onBackToBooking : undefined}
               onPrev={prevRec ? () => setScreen({ mode: 'detail', id: prevRec.id }) : undefined}
               onNext={nextRec ? () => setScreen({ mode: 'detail', id: nextRec.id }) : undefined}
@@ -984,8 +993,8 @@ export function ContractManagementView({
               onAction={act}
               onEdit={() => setScreen({ mode: 'form', editId: record.id })}
               onOpen={id => setScreen({ mode: 'detail', id })}
-              onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kocId: record.kocId, legalProfileId: record.legalProfileId, kind: 'ACCEPTANCE', docStage: 'BBNT', parentId: record.id } })}
-              onCreateSow={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kocId: record.kocId, legalProfileId: record.legalProfileId, kind: 'CONTRACT', docStage: 'SOW', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } })}
+              onCreateAcceptance={record.dealId || kocHasDeal(record.kocId) ? () => setScreen({ mode: 'form', init: { dealId: record.dealId, kocId: record.kocId, legalProfileId: record.legalProfileId, kind: 'ACCEPTANCE', docStage: 'BBNT', parentId: record.id } }) : undefined}
+              onCreateSow={kocHasDeal(record.kocId) ? () => setScreen({ mode: 'form', init: { dealId: record.dealId, kocId: record.kocId, legalProfileId: record.legalProfileId, kind: 'CONTRACT', docStage: 'SOW', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } }) : undefined}
               kocs={kocs}
             />
           );
@@ -994,27 +1003,29 @@ export function ContractManagementView({
         <div className="space-y-4">
           <StatRow size="sm">
             <Stat
-              label="Tổng hồ sơ pháp lý"
-              value={`${data.records.length} bộ`}
-              note={`${data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT').length} HĐNT · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW').length} SOW · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length} BBNT`}
+              label={showDealDocs ? 'Phụ lục & BBNT' : 'Hợp đồng nguyên tắc'}
+              value={`${tabRecords.length} bộ`}
+              note={showDealDocs
+                ? `${tabRecords.filter(r => documentOfTemplate(r.templateId) === 'SOW').length} SOW · ${tabRecords.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length} BBNT`
+                : `${tabRecords.filter(r => r.googleDocsSource === 'KOC_CUSTOM_DOC' || r.isKocOwnForm).length} theo mẫu của KOC`}
             />
             <Stat
               label="Đang chờ duyệt nội bộ"
-              value={`${data.records.filter(r => r.approval === 'IN_REVIEW').length} bộ`}
-              tone={data.records.some(waitingMe) ? 'warning' : undefined}
-              note={`${data.records.filter(waitingMe).length} hồ sơ chờ lượt duyệt của bạn`}
+              value={`${tabRecords.filter(r => r.approval === 'IN_REVIEW').length} bộ`}
+              tone={tabRecords.some(waitingMe) ? 'warning' : undefined}
+              note={`${tabRecords.filter(waitingMe).length} hồ sơ chờ lượt duyệt của bạn`}
             />
             <Stat
               label="Đang trình ký weSign"
-              value={`${data.records.filter(awaitingSign).length} bộ`}
-              tone={data.records.some(awaitingSign) ? 'warning' : undefined}
-              note="Ký số 2 bên Bên A & Bên B"
+              value={`${tabRecords.filter(awaitingSign).length} bộ`}
+              tone={tabRecords.some(awaitingSign) ? 'warning' : undefined}
+              note="Chờ Bên A và Bên B ký số"
             />
             <Stat
               label="Đã ký hoàn tất"
-              value={`${data.records.filter(done).length} bộ`}
+              value={`${tabRecords.filter(done).length} bộ`}
               tone="positive"
-              note={`${data.records.filter(needAcceptance).length} phụ lục SOW chờ lập BBNT`}
+              note={showDealDocs ? `${tabRecords.filter(needAcceptance).length} phụ lục SOW chờ lập BBNT` : 'Sẵn sàng lập phụ lục khi KOC có deal'}
             />
           </StatRow>
 
@@ -1032,18 +1043,25 @@ export function ContractManagementView({
               rowKey={r => r.id}
               onRowClick={r => setScreen({ mode: 'detail', id: r.id })}
               empty={
-                data.records.length === 0 ? (
-                  <EmptyState
-                    title="Chưa có hợp đồng nào"
-                    action={
-                      <div className="flex items-center gap-2">
-                        <Button variant="secondary" icon={FolderKanban} onClick={() => setScreen({ mode: 'catalog' })}>
-                          Xem danh mục mẫu hợp đồng
-                        </Button>
-                        {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
-                      </div>
-                    }
-                  />
+                tabRecords.length === 0 ? (
+                  showDealDocs ? (
+                    <EmptyState
+                      title="Chưa có phụ lục hay biên bản nghiệm thu nào"
+                      description="Phụ lục SOW và BBNT được lập từ deal của KOC: mở deal ở màn Booking rồi bấm HĐ."
+                    />
+                  ) : (
+                    <EmptyState
+                      title="Chưa có hợp đồng nào"
+                      action={
+                        <div className="flex items-center gap-2">
+                          <Button variant="secondary" icon={FolderKanban} onClick={() => setScreen({ mode: 'catalog' })}>
+                            Xem mẫu hợp đồng
+                          </Button>
+                          {canCreate && <Button variant="primary" icon={Plus} onClick={() => setChooserOpen(true)}>Tạo hợp đồng</Button>}
+                        </div>
+                      }
+                    />
+                  )
                 ) : (
                   <EmptyState title="Không có hồ sơ khớp" />
                 )
@@ -1053,6 +1071,56 @@ export function ContractManagementView({
           </Panel>
         </div>
       )}
+
+      {/* Bước đầu của việc ký hợp đồng: chọn mẫu Upbase hay mẫu của KOC */}
+      <Modal
+        open={chooserOpen}
+        onClose={() => setChooserOpen(false)}
+        title="Tạo hợp đồng với KOC"
+        footer={<Button variant="ghost" onClick={() => setChooserOpen(false)}>Hủy</Button>}
+      >
+        <div className="grid gap-2.5">
+          <p className="text-xs text-ink-2">
+            Chọn cách soạn hợp đồng nguyên tắc. Phụ lục SOW và biên bản nghiệm thu lập sau, từ deal của KOC.
+          </p>
+          {([
+            {
+              source: 'UPBASE_TEMPLATE',
+              icon: FileText,
+              title: 'Mẫu Upbase, giữ nguyên',
+              body: 'Mẫu theo hồ sơ pháp lý của KOC, hệ thống tự điền. Không cần Pháp chế duyệt.',
+            },
+            {
+              source: 'UPBASE_AMENDED',
+              icon: FilePen,
+              title: 'Mẫu Upbase, có chỉnh sửa',
+              body: 'Tự điền như trên, rồi sửa câu chữ trên Google Doc và dán link. Hồ sơ qua Pháp chế.',
+            },
+            {
+              source: 'GOOGLE_DOCS',
+              icon: Link2,
+              title: 'Mẫu của KOC',
+              body: 'Hợp đồng KOC tự soạn, khác hoàn toàn mẫu Upbase. Dán link Google Doc, Pháp chế và Kế toán rà soát trên file.',
+            },
+          ] as const).map(opt => (
+            <button
+              key={opt.source}
+              type="button"
+              onClick={() => {
+                setChooserOpen(false);
+                setScreen({ mode: 'form', init: { docStage: 'HDNT', kind: 'CONTRACT', source: opt.source } });
+              }}
+              className="flex items-start gap-3 rounded-lg border border-line bg-surface px-3.5 py-3 text-left transition-colors hover:border-accent hover:bg-accent-soft/30"
+            >
+              <opt.icon className="w-4 h-4 mt-0.5 shrink-0 text-accent" />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-ink">{opt.title}</span>
+                <span className="block text-xs text-ink-2 mt-0.5">{opt.body}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Modal>
 
       {/* Xem nhanh văn bản hợp đồng ngay từ bảng danh sách */}
       <Modal

@@ -349,6 +349,59 @@ function createInitialDemoRecords(): ContractRecord[] {
   ];
 }
 
+
+/** Bản giả lập: trình draft hồ sơ Google Doc. */
+function markDemoGoogleDocsDraft(record: ContractRecord, actor: { name: string; id: string; roles: string[] }) {
+  const now = new Date().toISOString();
+  record.googleDocsStage = 'DRAFT';
+  record.googleDocsAuditTrail = {
+    ...record.googleDocsAuditTrail,
+    syncedAt: record.googleDocsAuditTrail?.syncedAt || now,
+    commentsCount: record.googleDocsAuditTrail?.commentsCount || 0,
+    simulated: true,
+    draftSubmittedAt: now,
+    draftSubmittedBy: actor.name,
+  };
+}
+
+/** Bản giả lập: chốt Google Doc lúc trình final (không gọi Google). */
+function demoGoogleDocsFinal(record: ContractRecord, actorName: string) {
+  const now = new Date().toISOString();
+  const isKoc = record.googleDocsSource === 'KOC_CUSTOM_DOC';
+  const comments = record.googleDocsComments?.length
+    ? record.googleDocsComments
+    : [{ id: `demo-c-${Date.now()}`, author: 'Pháp chế (giả lập)', content: 'Điều 3: bổ sung thời hạn sử dụng hình ảnh KOC.', createdAt: now, resolved: true }];
+  const diffs = isKoc
+    ? []
+    : [{
+        clauseNumber: 'Điều 3',
+        title: 'Phí dịch vụ và thanh toán',
+        changeType: 'MODIFIED' as const,
+        targetRole: 'FINANCE' as const,
+        originalText: 'Thanh toán trong 07–10 ngày làm việc.',
+        modifiedText: 'Thanh toán trong 03 ngày làm việc (giả lập).',
+        explanation: 'Có thay đổi câu chữ so với mẫu chuẩn. Phân luồng thẩm định: Kế toán (TCKT).',
+      }];
+  record.googleDocsStage = 'FINAL';
+  record.googleDocsComments = comments;
+  record.googleDocsReviewRouting = {
+    requiresLegal: true,
+    requiresFinance: true,
+    legalClauses: [],
+    financeClauses: diffs.map(d => d.clauseNumber),
+    clauseDiffs: diffs,
+    summary: isKoc ? 'Mẫu riêng của KOC: không so với mẫu Upbase.' : `Phát hiện ${diffs.length} điều khoản có sửa đổi (giả lập).`,
+    analyzedAt: now,
+  };
+  record.googleDocsAuditTrail = {
+    ...record.googleDocsAuditTrail,
+    syncedAt: now,
+    commentsCount: comments.length,
+    simulated: true,
+    finalSnapshot: { at: now, by: actorName, title: record.title, hash: `demo-${Date.now()}`, paragraphs: [], commentsCount: comments.length, revisionCount: 0, simulated: true },
+  };
+}
+
 let memory: DemoState = { actorId: actors[0].id, records: createInitialDemoRecords() };
 let enabled = false;
 
@@ -580,40 +633,27 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       'Chỉ Kế toán (FINANCE) hoặc Trưởng bộ phận (LEAD) mới có thẩm quyền phê duyệt hồ sơ và đẩy sang WeSign.',
       403,
     );
-    const next = structuredClone(record);
+    requireCondition(
+      record.approval === 'IN_REVIEW' && record.googleDocsStage === 'FINAL',
+      'Hồ sơ chưa được trình final. B2C cần trình final trước khi Kế toán duyệt.',
+    );
+    requireCondition(
+      !record.steps.some(s => s.role === 'LEGAL' && s.version === record.version && s.status !== 'APPROVED'),
+      'Pháp chế chưa duyệt hồ sơ này.',
+    );
     const now = new Date().toISOString();
     const approvalNote =
-      typeof body?.note === 'string' && body.note.trim()
-        ? body.note.trim()
-        : 'Kế toán đã thẩm định các điều khoản tài chính & đối soát thảo luận trên Google Docs. Phê duyệt trình ký WeSign.';
-
-    for (const s of next.steps) {
-      if (s.status === 'PENDING') {
-        s.status = 'APPROVED';
-        s.decidedAt = now;
-        s.note = s.role === 'FINANCE' ? approvalNote : (s.note || 'Đã tham vấn trên Google Docs');
-      }
-    }
-    if (!next.steps.some(s => s.role === 'FINANCE')) {
-      next.steps.push({
-        role: 'FINANCE',
-        reviewerId: actor.id,
-        reviewerName: actor.name,
-        status: 'APPROVED',
-        note: approvalNote,
-        version: next.version,
-        decidedAt: now,
-      });
-    }
-    next.approval = 'APPROVED';
+      typeof body?.note === 'string' && body.note.trim() ? body.note.trim() : 'Kế toán duyệt bản Google Doc đã trình final và đẩy WeSign.';
+    const next = decideContract(record, actor, 'APPROVED', approvalNote);
     const commentsCount = next.googleDocsComments?.length || 0;
     next.googleDocsAuditTrail = {
+      ...next.googleDocsAuditTrail,
       syncedAt: now,
       commentsCount,
+      simulated: true,
       approvedByFinance: actor.name,
       approvedAtFinance: now,
-      approvedByLegal: next.googleDocsAuditTrail?.approvedByLegal,
-      approvedAtLegal: next.googleDocsAuditTrail?.approvedAtLegal,
+      approvedSnapshot: next.googleDocsAuditTrail?.finalSnapshot,
     };
     const template = templates.find(t => t.id === next.templateId) || templates[0];
     const meta = next.contractSystem || createStandaloneContractSystemMeta(next, template);
@@ -623,8 +663,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       partyBEmail: typeof body?.partyBEmail === 'string' ? body.partyBEmail : 'koc-partner@upbase.vn',
     });
     next.signing.push(attempt);
-    event(next, actor, 'APPROVED', approvalNote);
-    event(next, actor, 'FINANCE_APPROVE_AND_EXPORT', `Kế toán (${actor.name}) đã phê duyệt FINAL và đóng băng ${commentsCount} trao đổi Google Docs.`);
+    event(next, actor, 'FINANCE_APPROVE_AND_EXPORT', `Kế toán duyệt bản Google Doc (giả lập: chưa xuất được DOCX/PDF vì chưa kết nối Google).`);
     event(next, actor, 'WESIGN_SUBMITTED', `Đã tạo luồng ký số e-Contract trên WeSign (${meta.contractCode}).`);
     next.revision++;
     state.records[state.records.findIndex(r => r.id === next.id)] = next;
@@ -802,6 +841,10 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
   if (body.action === 'CREATE') {
     const record = createContract(parse(), actor);
     record.contractSystem = createStandaloneContractSystemMeta(record, template);
+    if (record.googleDocsUrl && body.submitGoogleDocsDraft === true) {
+      markDemoGoogleDocsDraft(record, actor);
+      event(record, actor, 'GOOGLE_DOCS_DRAFT', 'Đã trình draft: Pháp chế và Kế toán góp ý, sửa trực tiếp trên Google Doc.');
+    }
     state.records.push(record);
     write(state);
     return { record } as T;
@@ -844,8 +887,12 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       next.signing.push(attempt);
       event(next, actor, 'REQUEST_SIGN', `Đã xuất .docx từ Google Docs và gửi ký sang WeSign qua contract-system (Mã: ${meta.contractCode})`);
     }
+  } else if (body.action === 'SUBMIT_GOOGLE_DOCS_DRAFT') {
+    requireCondition(Boolean(record.googleDocsUrl), 'Hồ sơ không theo luồng Google Doc.');
+    markDemoGoogleDocsDraft(next, actor);
+    event(next, actor, 'GOOGLE_DOCS_DRAFT', 'Đã trình draft: Pháp chế và Kế toán góp ý, sửa trực tiếp trên Google Doc.');
   } else if (body.action === 'SUBMIT') {
-    if (!record.isKocOwnForm) {
+    if (!record.isKocOwnForm && record.googleDocsSource !== 'KOC_CUSTOM_DOC') {
       const payOption = resolvePaymentScheduleOption(record.values, record.templateId, template?.fields);
       const requiredFields = (template?.fields || []).filter(
         f => f.required && (payOption === 'TWO_TIMES' || !isTwoTimePaymentField(f)),
@@ -857,13 +904,17 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     }
     requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.');
     const normalizedReviewerIds = (body.reviewers as string[]).map(id => normalizeActorId(id) || id);
-    const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || template?.exemptLegalReview === false);
+    const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || record.googleDocsUrl || template?.exemptLegalReview === false);
     next = submitContract(
       record,
       actor,
       actors.filter(a => normalizedReviewerIds.includes(a.id)),
       { requireLegal: mandatoryLegal ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
     );
+    if (record.googleDocsUrl) {
+      demoGoogleDocsFinal(next, actor.name);
+      event(next, actor, 'GOOGLE_DOCS_FINAL', 'Đã trình final và chốt bản Google Doc (giả lập).');
+    }
   } else if (body.action === 'ADD_NOTE') {
     requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
     event(next, actor, 'NOTE', body.note.trim());

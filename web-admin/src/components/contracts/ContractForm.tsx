@@ -6,21 +6,19 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Building2, Camera, CheckCircle2, Columns2, CreditCard, FileScan, FileUp, RefreshCw, Scale, Search, ShieldCheck, Trash2, Upload, UserCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Building2, Camera, CheckCircle2, Columns2, Copy, CreditCard, FileScan, FileUp, Scale, Search, ShieldCheck, Trash2, Upload, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, LegalDocAttachment, OcrExtractedFields } from '../../lib/types';
 import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate, VideoAcceptanceInspectionMeta } from '../../lib/contracts/types';
-import { Button, Field, Input, Modal, Panel, Person, Segmented, Select, Status, StepMark, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Panel, Person, Segmented, Select, Status, Textarea } from '../ui';
 import { formatNumber } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
-import { GoogleDocsReviewPanel } from './GoogleDocsReviewPanel';
 import { LegalAttachmentsPanel } from './LegalAttachmentsPanel';
 import { extractGoogleDocId } from '../../lib/contracts/googleDocsService';
 import type { GoogleDocsReviewRouting, GoogleDocCommentItem } from '../../lib/contracts/googleDocsTypes';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import {
-  evaluateLegalProfileContractReadiness,
   getKocConnectedChannels,
   KOC_PLATFORM_LABEL,
   mergeLegalDocAttachments,
@@ -69,6 +67,11 @@ export interface ContractFormInit {
   parentId?: string;
   templateId?: string;
   isKocOwnForm?: boolean;
+  /**
+   * Cách tạo hợp đồng người dùng chọn ở bước đầu: mẫu Upbase giữ nguyên, mẫu Upbase có chỉnh sửa
+   * (sửa câu chữ trên Google Doc) hoặc Google Doc mẫu của KOC.
+   */
+  source?: 'UPBASE_TEMPLATE' | 'UPBASE_AMENDED' | 'GOOGLE_DOCS';
 }
 
 export interface ContractFormPayload {
@@ -89,7 +92,14 @@ export interface ContractFormPayload {
   googleDocsReviewRouting?: GoogleDocsReviewRouting;
   googleDocsComments?: GoogleDocCommentItem[];
   googleDocsAuditTrail?: import('../../lib/contracts/googleDocsTypes').GoogleDocsAuditTrail;
+  /** Tạo mới theo luồng Google Doc: lưu và trình draft luôn. */
+  submitGoogleDocsDraft?: boolean;
 }
+
+/** Một câu hướng dẫn ngắn đầu mỗi bước của form. */
+const StepHint = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-xs text-ink-2">{children}</p>
+);
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
   deal ? kocs.find(k => k.id === deal.kocId) || kocs.find(k => k.channelId.replace(/^@/, '').toLowerCase() === (deal.kocChannelId || '').replace(/^@/, '').toLowerCase()) : undefined;
@@ -292,7 +302,7 @@ export function ContractForm({
   );
   const [kocSearchQuery, setKocSearchQuery] = useState<string>('');
   const [docStage, setDocStage] = useState<ContractDocStage>(initialDocStage);
-  const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
+  const [kind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
     initialDocStage === 'BBNT'
       ? 'ACCEPTANCE'
       : record
@@ -362,7 +372,7 @@ export function ContractForm({
   const [parentId, setParentId] = useState(record?.parentId || init?.parentId || initialParent?.id || '');
   const [values, setValues] = useState<Record<string, string>>(record?.values || {});
   const [prefilled, setPrefilled] = useState<Set<string>>(new Set());
-  const [hasCustomTerms, setHasCustomTerms] = useState<boolean>(record?.hasCustomTerms ?? false);
+  const [hasCustomTerms, setHasCustomTerms] = useState<boolean>(record?.hasCustomTerms ?? init?.source === 'UPBASE_AMENDED');
   const [customTermsSummary, setCustomTermsSummary] = useState<string>(record?.customTermsSummary || '');
   const [internalNotes, setInternalNotes] = useState<string>(record?.internalNotes || '');
   const [template, setTemplate] = useState<LegalTemplate | null>(null);
@@ -385,24 +395,20 @@ export function ContractForm({
       : initialResolvedProfile?.legalAttachments || initialDeal?.legalProfileSnapshot?.legalAttachments || []
   );
 
-  const [sourceMode, setSourceMode] = useState<'UPBASE_TEMPLATE' | 'GOOGLE_DOCS' | 'KOC_DOCX'>(() => {
+  const [sourceMode] = useState<'UPBASE_TEMPLATE' | 'GOOGLE_DOCS' | 'KOC_DOCX'>(() => {
     if (record?.googleDocsUrl) return 'GOOGLE_DOCS';
     if (record?.isKocOwnForm ?? init?.isKocOwnForm) return 'KOC_DOCX';
+    if (!record && (init?.source === 'GOOGLE_DOCS' || init?.source === 'UPBASE_AMENDED')) return 'GOOGLE_DOCS';
     return 'UPBASE_TEMPLATE';
   });
   const [googleDocsUrl, setGoogleDocsUrl] = useState<string>(record?.googleDocsUrl || '');
-  const [googleDocsSource, setGoogleDocsSource] = useState<'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC'>(
-    record?.googleDocsSource || 'TEMPLATE_AMENDED'
+  const [googleDocsSource] = useState<'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC'>(
+    record?.googleDocsSource || (init?.source === 'GOOGLE_DOCS' ? 'KOC_CUSTOM_DOC' : 'TEMPLATE_AMENDED')
   );
-  const [googleDocsRouting, setGoogleDocsRouting] = useState<GoogleDocsReviewRouting | null>(
-    record?.googleDocsReviewRouting || null
-  );
-  const [googleDocsComments, setGoogleDocsComments] = useState<GoogleDocCommentItem[]>(
-    record?.googleDocsComments || []
-  );
-  const [inspectingGDocs, setInspectingGDocs] = useState<boolean>(false);
-  const [gdocsInspectError, setGdocsInspectError] = useState<string>('');
-  const [isKocOwnForm, setIsKocOwnForm] = useState<boolean>(record?.isKocOwnForm ?? init?.isKocOwnForm ?? false);
+  // Phân luồng và bình luận do máy chủ ghi lúc trình final; form chỉ giữ nguyên khi sửa hồ sơ.
+  const googleDocsRouting = record?.googleDocsReviewRouting || null;
+  const googleDocsComments = record?.googleDocsComments || [];
+  const [isKocOwnForm] = useState<boolean>(record?.isKocOwnForm ?? init?.isKocOwnForm ?? false);
   const [customFile, setCustomFile] = useState<{
     filename: string;
     base64?: string;
@@ -422,6 +428,13 @@ export function ContractForm({
       (initialDeal?.totalValue ? formatMoneyInput(String(initialDeal.totalValue)) : ''),
   );
   const kocDocxInputRef = useRef<HTMLInputElement | null>(null);
+  // Luồng "mẫu của KOC": hợp đồng nằm trên Google Doc KOC gửi, không có trường của mẫu Upbase.
+  const isKocGoogleDoc = sourceMode === 'GOOGLE_DOCS' && googleDocsSource === 'KOC_CUSTOM_DOC';
+  const isKocForm = isKocOwnForm || isKocGoogleDoc;
+  // Mẫu Upbase có chỉnh sửa: vẫn điền theo mẫu, câu chữ sửa trên Google Doc rồi dán link để so với mẫu gốc.
+  const isAmendedGoogleDoc = sourceMode === 'GOOGLE_DOCS' && googleDocsSource === 'TEMPLATE_AMENDED';
+  const usesTemplateFields = !isKocForm;
+  const [botEmailCopied, setBotEmailCopied] = useState(false);
 
   const parentRecord = useMemo(() => data.records.find(r => r.id === parentId), [data.records, parentId]);
   const parentTemplate = useMemo(
@@ -600,8 +613,9 @@ export function ContractForm({
   }, [templateId]);
 
   const fields = uniqueFields(template);
+  // Mẫu đã tự điền theo hồ sơ pháp lý: mặc định chỉ hiện các ô cần xem lại.
   const [fieldFilterMode, setFieldFilterMode] = useState<'ALL' | 'NEEDS_ATTENTION'>(() =>
-    init?.dealId || record?.dealId ? 'NEEDS_ATTENTION' : 'ALL',
+    !record || init?.dealId || record?.dealId ? 'NEEDS_ATTENTION' : 'ALL',
   );
   const [isContextPickerExpanded, setIsContextPickerExpanded] = useState<boolean>(
     () => !Boolean(init?.dealId || init?.kocId || record?.dealId || record?.kocId),
@@ -1136,73 +1150,6 @@ export function ContractForm({
     }
   };
 
-  const chooseDocStage = (nextStage: ContractDocStage) => {
-    const nextKind: 'CONTRACT' | 'ACCEPTANCE' = nextStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT';
-    setDocStage(nextStage);
-    setKind(nextKind);
-    setTitle(formatStageTitle(nextStage, koc, deal, partner, brand));
-    if (nextStage === 'HDNT' && !brand.trim()) {
-      setBrand('UPBASE');
-    }
-    let nextParent: ContractRecord | undefined;
-    if (nextStage === 'BBNT') {
-      nextParent = findBestParentForAcceptance(deal, koc);
-      setParentId(nextParent?.id || '');
-    } else if (nextStage === 'SOW') {
-      nextParent = findFrameworkForKoc(koc, deal, selectedLegalProfileId);
-      setParentId(nextParent?.id || '');
-    } else {
-      setParentId('');
-    }
-    const freshJobs = buildDealSowJobTables(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
-    const freshBd = aggregateMultiJobAcceptanceBreakdown({
-      jobs: freshJobs,
-      deal: dealWithActiveProfile || deal,
-      koc,
-      parentRecord: nextParent || parentRecord,
-    });
-    setDraftJobTables(freshJobs);
-    setActiveJobTableIdx(0);
-    setDraftVideoFee(freshJobs[0]?.videoFeeNetVnd ?? freshBd.videoItem.feeNetVnd);
-    setDraftAddons(freshJobs[0]?.addonItems ?? freshBd.addonItems);
-    setDraftAdvanceAmount(freshBd.financials.advanceAmount);
-    setDraftProductName(freshJobs[0]?.productName ?? freshBd.videoItem.productName);
-    setDraftAirDate(freshJobs[0]?.airDate || deal?.postedDate || deal?.deadlinePost || freshBd.videoItem.airDate || '');
-    const nextTpl = templateFor(koc, nextKind, dealWithActiveProfile || deal, data.templates, nextStage);
-    if (nextTpl !== templateId) {
-      setTemplate(null);
-      setValues({});
-      setTemplateId(nextTpl);
-    } else if (template) {
-      const nextParentTpl = nextParent ? data.templates.find(t => t.id === nextParent.templateId) : undefined;
-      const result = prefill(fields, {}, {
-        koc,
-        deal: dealWithActiveProfile || deal,
-        brand: nextStage === 'HDNT' && !brand.trim() ? 'UPBASE' : brand,
-        existingRecords: data.records,
-        parentRecord: nextParent,
-        parentFields: nextParentTpl ? uniqueFields(nextParentTpl) : [],
-        legalProfileId: selectedLegalProfileId || undefined,
-        ctvAcceptedDeals,
-      });
-      const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, freshBd);
-      synced[SOW_JOBS_META_KEY] = JSON.stringify(freshJobs);
-      setValues(synced);
-      setPrefilled(new Set(result.filled));
-    }
-  };
-
-  const switchSourceMode = (nextOwnForm: boolean) => {
-    setIsKocOwnForm(nextOwnForm);
-    if (nextOwnForm) {
-      setHasCustomTerms(true);
-      if (!templateId) {
-        const fallback = deal ? templateFor(koc, kind, deal, data.templates) : (data.templates.find(t => t.kind === kind)?.id || 'IND-HD');
-        setTemplateId(fallback);
-      }
-    }
-  };
-
   const handleKocDocxSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1680,7 +1627,7 @@ export function ContractForm({
   const numericTotal = useMemo(() => {
     const netField = fields.find(f => f.source === 'netTotal') || fields.find(f => f.source === 'lineTotal');
     const raw =
-      (isKocOwnForm ? customContractValue : '') ||
+      (isKocForm ? customContractValue : '') ||
       (netField ? values[netField.key] : '') ||
       values['token:[Tổng tiền trước thuế/sau thuế]'] ||
       values['token:[Thù lao trọn gói]'] ||
@@ -1692,7 +1639,7 @@ export function ContractForm({
       deal?.totalValue || dealRecord?.paymentAmount || dealRecord?.contractAmount || 0
     );
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackAmount;
-  }, [values, fields, deal, isKocOwnForm, customContractValue]);
+  }, [values, fields, deal, isKocForm, customContractValue]);
 
   const numericAdvance = useMemo(() => {
     const advField = fields.find(f => f.source === 'advanceAmount');
@@ -1708,17 +1655,22 @@ export function ContractForm({
       deal: dealWithActiveProfile || deal,
       totalValue: numericTotal,
       advanceAmount: numericAdvance,
-      hasCustomTerms: isKocOwnForm || hasCustomTerms,
-      isKolForm: isKocOwnForm || selectedTpl?.scope === 'KOC_CUSTOM',
+      hasCustomTerms: isKocForm || hasCustomTerms,
+      isKolForm: isKocForm || selectedTpl?.scope === 'KOC_CUSTOM',
       availableTemplates: data.templates,
     });
-  }, [koc, dealWithActiveProfile, deal, numericTotal, numericAdvance, hasCustomTerms, isKocOwnForm, templateId, data.templates]);
+  }, [koc, dealWithActiveProfile, deal, numericTotal, numericAdvance, hasCustomTerms, isKocForm, templateId, data.templates]);
 
   const hasInheritedMasterContract = Boolean(
     parentId ||
       activeLegalProfile?.frameworkContractCode?.trim() ||
       deal?.masterContractCode?.trim() ||
       values['token:[Ngày HĐNT]']?.trim(),
+  );
+
+  const profileHasFramework = Boolean(
+    activeLegalProfile &&
+      (findFrameworkForKoc(koc, deal, activeLegalProfile.id) || activeLegalProfile.frameworkContractStatus === 'ĐÃ_KÝ'),
   );
 
   const canSubmitForm =
@@ -1728,7 +1680,47 @@ export function ContractForm({
     (isHdnt || Boolean(brand.trim())) &&
     Boolean(partner.trim()) &&
     (!isKocOwnForm || Boolean(customFile)) &&
+    (!(isKocGoogleDoc || isAmendedGoogleDoc) || Boolean(extractGoogleDocId(googleDocsUrl))) &&
     (!isSow || hasInheritedMasterContract);
+
+  const shareEmail = data.config.googleShareEmail || '';
+  const googleDocIdValid = Boolean(extractGoogleDocId(googleDocsUrl));
+  const renderGoogleDocLink = () => (
+    <>
+      {shareEmail ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-ink-2">Chia sẻ file cho:</span>
+          <span className="font-code font-medium text-ink">{shareEmail}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={botEmailCopied ? CheckCircle2 : Copy}
+            onClick={() => {
+              navigator.clipboard?.writeText(shareEmail).then(() => setBotEmailCopied(true)).catch(() => undefined);
+            }}
+          >
+            {botEmailCopied ? 'Đã chép' : 'Chép email'}
+          </Button>
+        </div>
+      ) : (
+        <p className="text-xs text-warning-strong">
+          Máy chủ chưa kết nối Google: hồ sơ vẫn lưu được nhưng bình luận và bản chốt sẽ là dữ liệu giả lập.
+        </p>
+      )}
+      <Field
+        label="Link Google Doc hợp đồng *"
+        htmlFor="ct-gdoc-url"
+        error={googleDocsUrl.trim() && !googleDocIdValid ? 'Link chưa đúng dạng Google Doc (docs.google.com/document/d/…).' : undefined}
+      >
+        <Input
+          id="ct-gdoc-url"
+          value={googleDocsUrl}
+          onChange={e => setGoogleDocsUrl(e.target.value)}
+          placeholder="https://docs.google.com/document/d/…"
+        />
+      </Field>
+    </>
+  );
 
   return (
     <form
@@ -1749,7 +1741,7 @@ export function ContractForm({
                 sowAdvanceAmount: String(paymentScheduleOption === 'TWO_TIMES' ? draftAdvanceAmount : 0),
               }
             : values;
-        const nextValues = isKocOwnForm && customContractValue.trim()
+        const nextValues = isKocForm && customContractValue.trim()
           ? { ...baseValues, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
           : baseValues;
         onSave({
@@ -1762,7 +1754,7 @@ export function ContractForm({
           dealId: deal?.id,
           dealCode: deal?.dealCode,
           kocId: koc?.id,
-          hasCustomTerms: isKocOwnForm ? true : hasCustomTerms,
+          hasCustomTerms: isKocForm || isAmendedGoogleDoc ? true : hasCustomTerms,
           customTermsSummary: customTermsSummary.trim() || undefined,
           internalNotes: internalNotes.trim() || undefined,
           isKocOwnForm,
@@ -1778,6 +1770,7 @@ export function ContractForm({
           googleDocsSource: sourceMode === 'GOOGLE_DOCS' ? googleDocsSource : undefined,
           googleDocsReviewRouting: sourceMode === 'GOOGLE_DOCS' ? (googleDocsRouting || undefined) : undefined,
           googleDocsComments: sourceMode === 'GOOGLE_DOCS' ? googleDocsComments : undefined,
+          submitGoogleDocsDraft: !editing && (isKocGoogleDoc || isAmendedGoogleDoc) ? true : undefined,
         });
       }}
     >
@@ -1799,9 +1792,17 @@ export function ContractForm({
                 ? `Soạn Phụ lục SOW${deal?.dealCode ? ` · ${deal.dealCode}` : ''}`
                 : kind === 'ACCEPTANCE'
                   ? `Lập Biên bản nghiệm thu${deal?.dealCode ? ` · ${deal.dealCode}` : ''}`
-                  : 'Tạo hợp đồng'}
+                  : isKocGoogleDoc
+                    ? 'Tạo hợp đồng · mẫu của KOC'
+                    : isAmendedGoogleDoc || hasCustomTerms
+                      ? 'Tạo hợp đồng · mẫu Upbase có chỉnh sửa'
+                      : 'Tạo hợp đồng · mẫu Upbase'}
           </h2>
-          {isKocOwnForm ? (
+          {isKocGoogleDoc ? (
+            <Status tone={googleDocIdValid ? 'positive' : 'warning'}>
+              {googleDocIdValid ? 'Đã có link Google Doc' : 'Chưa có link Google Doc'}
+            </Status>
+          ) : isKocOwnForm ? (
             <span className="rounded-md bg-accent/15 px-2 py-0.5 text-2xs font-medium text-accent">
               {customFile ? `Tệp KOC: ${customFile.filename}` : 'Chưa chọn tệp .docx KOC'}
             </span>
@@ -1814,22 +1815,12 @@ export function ContractForm({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {kind === 'ACCEPTANCE' && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Camera}
-              onClick={() => setScreenshotModalOpen(true)}
-            >
-              Lấy thông tin Link Air &amp; cắt ảnh nghiệm thu{acceptanceScreenshots.length > 0 ? ` (${acceptanceScreenshots.length})` : ''}
-            </Button>
-          )}
-          {!isKocOwnForm && (
+          {usesTemplateFields && (
             <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
               Đọc ảnh CCCD / ĐKKD
             </Button>
           )}
-          {template && (
+          {template && !isKocGoogleDoc && (
             <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
               {showSplitPreview ? 'Ẩn bản xem A4' : 'Xem bản A4 song song'}
             </Button>
@@ -1838,68 +1829,12 @@ export function ContractForm({
           <Button size="sm" variant="primary" type="submit" disabled={!canSubmitForm}>
             {editing
               ? 'Lưu phiên bản mới'
-              : isSow
-                ? 'Lưu Phụ lục SOW & Chuyển bước ký'
-                : 'Lưu nháp'}
+              : isKocGoogleDoc || isAmendedGoogleDoc
+                ? 'Lưu & trình draft'
+                : isSow
+                  ? 'Lưu Phụ lục SOW & Chuyển bước ký'
+                  : 'Lưu nháp'}
           </Button>
-        </div>
-      </div>
-
-      {/* Thanh giai đoạn văn bản & Nguồn mẫu */}
-      <div className="rounded-xl border border-line bg-surface p-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-          {[
-            {
-              step: 'HDNT' as const,
-              idx: 1,
-              label: '1. Hợp đồng nguyên tắc',
-              done: Boolean(parentId || activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()),
-            },
-            {
-              step: 'SOW' as const,
-              idx: 2,
-              label: '2. Phụ lục SOW',
-              done: deal?.contractAppendixStatus === 'ĐÃ_KÝ',
-            },
-            {
-              step: 'BBNT' as const,
-              idx: 3,
-              label: '3. Biên bản nghiệm thu',
-              done: false,
-            },
-          ].map((item, i) => {
-            const activeStage = docStage === 'HD' ? 'HDNT' : docStage;
-            const isActive = activeStage === item.step;
-            const markState = isActive ? 'active' : item.done ? 'done' : 'idle';
-            return (
-              <React.Fragment key={item.step}>
-                {i > 0 && <span className="text-ink-3 text-xs px-0.5">→</span>}
-                <button
-                  type="button"
-                  disabled={editing}
-                  onClick={() => !editing && chooseDocStage(item.step)}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                    isActive
-                      ? 'bg-ink text-surface font-semibold shadow-xs'
-                      : 'text-ink-2 hover:bg-sunken hover:text-ink border border-transparent'
-                  }`}
-                >
-                  <StepMark done={markState !== 'idle'} label={item.idx} />
-                  <span>{item.label}</span>
-                </button>
-              </React.Fragment>
-            );
-          })}
-        </div>
-        <div>
-          <Segmented
-            value={isKocOwnForm ? 'KOC_DOCX' : 'UPBASE_TEMPLATE'}
-            onChange={v => switchSourceMode(v === 'KOC_DOCX')}
-            items={[
-              { key: 'UPBASE_TEMPLATE', label: 'Soạn theo mẫu hệ thống' },
-              { key: 'KOC_DOCX', label: 'Tải lên file riêng KOC (.docx)' },
-            ]}
-          />
         </div>
       </div>
 
@@ -1931,9 +1866,9 @@ export function ContractForm({
 
       {loadError && <p role="alert" className="text-xs text-critical">{loadError}</p>}
 
-      <div className={`grid grid-cols-1 gap-5 items-start ${template && showSplitPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
+      <div className={`grid grid-cols-1 gap-5 items-start ${template && showSplitPreview && !isKocGoogleDoc ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
         <div className="grid gap-4 min-w-0">
-          {(kocLegalNotes || primaryKocTemplate) && (
+          {usesTemplateFields && (kocLegalNotes || primaryKocTemplate) && (
             <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3 space-y-1.5 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-warning-strong flex items-center gap-1.5">
@@ -1960,16 +1895,14 @@ export function ContractForm({
           )}
 
           <Panel
-            title="Thông tin hợp đồng"
-            actions={
-              koc ? (
-                <Button size="sm" variant="secondary" icon={RefreshCw} onClick={refreshSystemPrefill}>
-                  Đồng bộ lại từ hồ sơ
-                </Button>
-              ) : undefined
-            }
+            title="Bước 1 · Chọn Bên B ký"
           >
             <div className="space-y-4">
+              <StepHint>
+                {isSow || kind === 'ACCEPTANCE'
+                  ? 'Chọn KOC, hồ sơ pháp lý và deal mà văn bản này thuộc về.'
+                  : 'Chọn KOC rồi chọn hồ sơ pháp lý dùng để ký: cá nhân, hộ kinh doanh hoặc công ty.'}
+              </StepHint>
               {/* 1. Chủ thể Bên B: KOC & Hồ sơ pháp lý */}
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <Field label="KOC / Nhà sáng tạo *" htmlFor="ct-koc">
@@ -2058,168 +1991,17 @@ export function ContractForm({
                             </span>
                           </>
                         )}
+                        {isHdnt && !editing && profileHasFramework && (
+                          <>
+                            <span>·</span>
+                            <Status tone="warning">Đã có HĐNT</Status>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
                 </Field>
               </div>
-
-              {koc && kocLegalProfiles.length > 1 && (
-                <div className="p-3 rounded-xl border border-line bg-sunken/40 space-y-2">
-                  <span className="text-2xs font-semibold text-ink block">
-                    Chọn nhanh hồ sơ pháp lý ký hợp đồng ({kocLegalProfiles.length} hồ sơ pháp lý của {koc.stageName}):
-                  </span>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {kocLegalProfiles.map(prof => {
-                      const isSel = prof.id === (activeLegalProfile?.id || selectedLegalProfileId);
-                      const readiness = evaluateLegalProfileContractReadiness(prof, koc);
-                      const fwMatch = findFrameworkForKoc(koc, deal, prof.id);
-                      const hasFw = Boolean(fwMatch || prof.frameworkContractStatus === 'ĐÃ_KÝ');
-                      return (
-                        <button
-                          key={prof.id}
-                          type="button"
-                          onClick={() => chooseLegalProfile(prof.id)}
-                          className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border text-left text-2xs transition-colors ${
-                            isSel
-                              ? 'border-primary bg-surface font-semibold text-ink'
-                              : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            <span className="font-mono text-ink">{prof.profileCode}</span>
-                            <span className="truncate">{prof.holderName}</span>
-                            <Status
-                              tone={
-                                prof.legalType === 'COMPANY'
-                                  ? 'info'
-                                  : prof.legalType === 'HOUSEHOLD'
-                                    ? 'warning'
-                                    : 'neutral'
-                              }
-                            >
-                              {LEGAL_TYPE_LABEL[prof.legalType]}
-                            </Status>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Status tone={hasFw ? 'positive' : 'warning'}>
-                              {hasFw ? 'Đã có HĐNT' : 'Chưa có HĐNT'}
-                            </Status>
-                            <Status tone={readiness.ready ? 'positive' : 'warning'}>
-                              {readiness.ready ? 'Đủ trường' : `Thiếu ${readiness.missingFields.length}`}
-                            </Status>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {koc && getKocConnectedChannels(koc).length > 0 && (
-                <div className="p-3 rounded-xl border border-line bg-sunken/40 space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-2xs font-semibold text-ink">
-                      Tài khoản kênh của KOC kết nối với hợp đồng ({getKocConnectedChannels(koc).length} kênh — bấm để chọn 1 kênh hoặc đa kênh):
-                    </span>
-                    {getKocConnectedChannels(koc).length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const channelField = fields.find(f => f.source === 'channelLink');
-                          if (!channelField) return;
-                          const allUrls = getKocConnectedChannels(koc)
-                            .map(
-                              c =>
-                                c.url ||
-                                (c.platform === 'TIKTOK'
-                                  ? `https://www.tiktok.com/@${c.handle}`
-                                  : c.handle),
-                            )
-                            .join(' ; ');
-                          setValue(channelField, allUrls);
-                        }}
-                        className="text-2xs font-medium text-accent hover:underline"
-                      >
-                        Đưa tất cả kênh vào hợp đồng
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {getKocConnectedChannels(koc).map(ch => {
-                      const chUrl =
-                        ch.url ||
-                        (ch.platform === 'TIKTOK'
-                          ? `https://www.tiktok.com/@${ch.handle}`
-                          : ch.handle);
-                      const channelField = fields.find(f => f.source === 'channelLink');
-                      const curLinkVal = channelField ? values[channelField.key] || '' : '';
-                      const isIncluded =
-                        curLinkVal.toLowerCase().includes(ch.handle.toLowerCase()) ||
-                        (!curLinkVal && ch.isPrimary);
-                      return (
-                        <button
-                          key={`${ch.platform}::${ch.handle}`}
-                          type="button"
-                          onClick={() => {
-                            if (!channelField) return;
-                            const parts = curLinkVal
-                              .split(/\s*[,;\n]\s*/)
-                              .map(s => s.trim())
-                              .filter(Boolean);
-                            const existsIdx = parts.findIndex(p =>
-                              p.toLowerCase().includes(ch.handle.toLowerCase()),
-                            );
-                            let nextParts: string[];
-                            if (existsIdx >= 0) {
-                              nextParts =
-                                parts.length > 1
-                                  ? parts.filter((_, idx) => idx !== existsIdx)
-                                  : parts;
-                            } else {
-                              nextParts = [...parts, chUrl];
-                            }
-                            setValue(channelField, nextParts.join(' ; '));
-                          }}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-2xs font-mono transition-colors ${
-                            isIncluded
-                              ? 'border-primary bg-surface text-ink font-semibold'
-                              : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
-                          }`}
-                          title="Bấm để thêm/bớt kênh này vào ô Link kênh trên hợp đồng"
-                        >
-                          <span>{KOC_PLATFORM_LABEL[ch.platform]}:</span>
-                          <span>@{ch.handle}</span>
-                          {ch.platform === 'TIKTOK' && !ch.isPrimary && (
-                            <span className="font-sans text-ink-3">({ch.roleLabel || 'Kênh phụ'})</span>
-                          )}
-                          {ch.platform === 'TIKTOK' && ch.isPrimary && (
-                            <span className="font-sans text-positive">(Kênh chính)</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Tệp đính kèm CCCD & ĐKKD của Hồ sơ pháp lý Bên B lưu trên Cloudflare R2 */}
-              <LegalAttachmentsPanel
-                attachments={legalAttachments}
-                onChange={nextAttachments => {
-                  setLegalAttachments(nextAttachments);
-                  if (koc?.id) {
-                    const targetProfId = activeLegalProfile?.id || selectedLegalProfileId;
-                    saveSyncedKocLegalAttachments(koc.id, targetProfId, nextAttachments);
-                    onSyncKocLegalAttachments?.(koc.id, targetProfId, nextAttachments);
-                  }
-                }}
-                entitySlug={koc?.channelId || koc?.id || partner || 'koc-legal'}
-                legalType={activeLegalProfile?.legalType || 'INDIVIDUAL'}
-                editable
-                onExtractOcrFields={(extracted, docLabel) => applyOcrFields(extracted, docLabel)}
-                title="Đính kèm CCCD & Giấy phép ĐKKD vào Hồ sơ pháp lý (Cloudflare R2)"
-              />
 
               {/* 2. Gắn kết Booking / Job & HĐNT gốc (cho SOW hoặc BBNT) */}
               {(isSow || kind === 'ACCEPTANCE') && (
@@ -2339,62 +2121,105 @@ export function ContractForm({
                 </div>
               )}
 
-              {/* 3. Mẫu hợp đồng & Tên hồ sơ */}
-              <div className="grid gap-3.5 sm:grid-cols-2">
-                <Field label="Mẫu hợp đồng" htmlFor="ct-template">
-                  <div
-                    id="ct-template"
-                    className="h-9 px-3 rounded-lg border border-line bg-sunken/70 flex items-center justify-between text-xs"
-                  >
-                    <span className="font-semibold text-ink truncate">
-                      {template?.name || templateId}
-                    </span>
-                    <span className="font-code text-2xs font-semibold text-accent px-1.5 py-0.5 rounded bg-surface border border-line shrink-0">
-                      {templateId}
-                    </span>
-                  </div>
-                </Field>
+              {(!isHdnt || !activeLegalProfile) && (
+                <div className="grid gap-3.5 sm:grid-cols-2">
+                  {!isHdnt && (
+                    <Field label="Nhãn hàng *" htmlFor="ct-brand">
+                      <Input
+                        id="ct-brand"
+                        required
+                        maxLength={120}
+                        list="ct-brands"
+                        value={brand}
+                        onChange={e => setBrand(e.target.value)}
+                        placeholder="Tên nhãn hàng"
+                      />
+                      <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
+                    </Field>
+                  )}
+                  {!activeLegalProfile && (
+                    <Field label="Tên Bên B *" htmlFor="ct-partner">
+                      <Input
+                        id="ct-partner"
+                        required
+                        maxLength={180}
+                        value={partner}
+                        onChange={e => setPartner(e.target.value)}
+                        placeholder="Tên đối tác Bên B"
+                      />
+                    </Field>
+                  )}
+                </div>
+              )}
+            </div>
+          </Panel>
 
-                <Field label="Tên hồ sơ *" htmlFor="ct-title">
-                  <Input
-                    id="ct-title"
-                    required
-                    maxLength={180}
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    placeholder="Nhập tên hồ sơ..."
-                  />
-                </Field>
+          {isKocGoogleDoc ? (
+            <Panel
+              title="Bước 2 · Dán link Google Doc của KOC"
+            >
+              <div className="space-y-4">
+                <StepHint>
+                  Chia sẻ file cho email bên dưới (quyền Người nhận xét) rồi dán link. Mẫu của KOC không so với mẫu Upbase.
+                </StepHint>
+                {renderGoogleDocLink()}
+
+                <div className="grid gap-3.5 sm:grid-cols-2">
+                  <Field label="Tên hồ sơ *" htmlFor="ct-title">
+                    <Input
+                      id="ct-title"
+                      required
+                      maxLength={180}
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      placeholder="Nhập tên hồ sơ..."
+                    />
+                  </Field>
+                  <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-koc-total">
+                    <Input
+                      id="ct-koc-total"
+                      inputMode="numeric"
+                      className="tabular-nums"
+                      value={customContractValue}
+                      onChange={e => setCustomContractValue(formatMoneyInput(e.target.value))}
+                      placeholder="Giá trị ghi trên hợp đồng KOC"
+                    />
+                  </Field>
+                </div>
               </div>
-
-              {/* 4. Nhãn hàng & Đối tác Bên B */}
-              <div className="grid gap-3.5 sm:grid-cols-2">
-                <Field label="Nhãn hàng *" htmlFor="ct-brand">
-                  <Input
-                    id="ct-brand"
-                    required={!isHdnt}
-                    maxLength={120}
-                    list="ct-brands"
-                    value={brand}
-                    onChange={e => setBrand(e.target.value)}
-                    placeholder={isHdnt ? 'UPBASE' : 'Tên nhãn hàng'}
-                  />
-                  <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
-                </Field>
-
-                <Field label="Đối tác Bên B" htmlFor="ct-partner">
-                  <Input
-                    id="ct-partner"
-                    required
-                    maxLength={180}
-                    value={partner}
-                    readOnly={Boolean(activeLegalProfile)}
-                    onChange={e => setPartner(e.target.value)}
-                    className={activeLegalProfile ? 'bg-sunken/60 font-semibold text-ink' : undefined}
-                    placeholder="Tên đối tác bên B"
-                  />
-                </Field>
-              </div>
+            </Panel>
+          ) : (
+            <Panel
+              title="Bước 2 · Nội dung hợp đồng"
+            >
+              <div className="space-y-4">
+                <StepHint>
+                  {isKocOwnForm
+                    ? 'Hồ sơ cũ theo file Word của KOC. Đổi file nếu KOC gửi bản mới.'
+                    : 'Mẫu chọn theo hồ sơ pháp lý của KOC và đã tự điền từ hồ sơ. Chỉ cần xem các ô còn trống bên dưới hoặc bấm vào chữ trên bản A4.'}
+                </StepHint>
+                <div className="grid gap-3.5 sm:grid-cols-2">
+                  {!isKocOwnForm && (
+                    <Field label="Mẫu hợp đồng" htmlFor="ct-template">
+                      <div
+                        id="ct-template"
+                        className="h-9 px-3 rounded-lg border border-line bg-sunken/70 flex items-center text-xs"
+                      >
+                        <span className="font-semibold text-ink truncate">{template?.name || templateId}</span>
+                      </div>
+                    </Field>
+                  )}
+                  <Field label="Tên hồ sơ *" htmlFor="ct-title">
+                    <Input
+                      id="ct-title"
+                      required
+                      maxLength={180}
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      placeholder="Nhập tên hồ sơ..."
+                    />
+                  </Field>
+                </div>
 
               {isKocOwnForm && (
                 <>
@@ -2446,61 +2271,114 @@ export function ContractForm({
                 </>
               )}
 
-              {/* 5. Tùy chọn sửa đổi hợp đồng */}
-              <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-ink">Điều khoản hợp đồng</span>
-                    <Status tone={hasCustomTerms || isKocOwnForm ? 'warning' : 'positive'}>
-                      {hasCustomTerms || isKocOwnForm
-                        ? 'Bắt buộc qua Pháp chế thẩm định'
-                        : 'Miễn duyệt Pháp chế (BR-02)'}
-                    </Status>
+              {koc && getKocConnectedChannels(koc).length > 0 && (
+                <div className="p-3 rounded-xl border border-line bg-sunken/40 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-2xs font-semibold text-ink">
+                      Tài khoản kênh của KOC kết nối với hợp đồng ({getKocConnectedChannels(koc).length} kênh — bấm để chọn 1 kênh hoặc đa kênh):
+                    </span>
+                    {getKocConnectedChannels(koc).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const channelField = fields.find(f => f.source === 'channelLink');
+                          if (!channelField) return;
+                          const allUrls = getKocConnectedChannels(koc)
+                            .map(
+                              c =>
+                                c.url ||
+                                (c.platform === 'TIKTOK'
+                                  ? `https://www.tiktok.com/@${c.handle}`
+                                  : c.handle),
+                            )
+                            .join(' ; ');
+                          setValue(channelField, allUrls);
+                        }}
+                        className="text-2xs font-medium text-accent hover:underline"
+                      >
+                        Đưa tất cả kênh vào hợp đồng
+                      </button>
+                    )}
                   </div>
-                  <div className="text-2xs text-ink-2">
-                    Luồng duyệt: <span className="text-accent font-semibold">{ruleEval.reviewStream.streamName}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getKocConnectedChannels(koc).map(ch => {
+                      const chUrl =
+                        ch.url ||
+                        (ch.platform === 'TIKTOK'
+                          ? `https://www.tiktok.com/@${ch.handle}`
+                          : ch.handle);
+                      const channelField = fields.find(f => f.source === 'channelLink');
+                      const curLinkVal = channelField ? values[channelField.key] || '' : '';
+                      const isIncluded =
+                        curLinkVal.toLowerCase().includes(ch.handle.toLowerCase()) ||
+                        (!curLinkVal && ch.isPrimary);
+                      return (
+                        <button
+                          key={`${ch.platform}::${ch.handle}`}
+                          type="button"
+                          onClick={() => {
+                            if (!channelField) return;
+                            const parts = curLinkVal
+                              .split(/\s*[,;\n]\s*/)
+                              .map(s => s.trim())
+                              .filter(Boolean);
+                            const existsIdx = parts.findIndex(p =>
+                              p.toLowerCase().includes(ch.handle.toLowerCase()),
+                            );
+                            let nextParts: string[];
+                            if (existsIdx >= 0) {
+                              nextParts =
+                                parts.length > 1
+                                  ? parts.filter((_, idx) => idx !== existsIdx)
+                                  : parts;
+                            } else {
+                              nextParts = [...parts, chUrl];
+                            }
+                            setValue(channelField, nextParts.join(' ; '));
+                          }}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-2xs font-mono transition-colors ${
+                            isIncluded
+                              ? 'border-primary bg-surface text-ink font-semibold'
+                              : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
+                          }`}
+                          title="Bấm để thêm/bớt kênh này vào ô Link kênh trên hợp đồng"
+                        >
+                          <span>{KOC_PLATFORM_LABEL[ch.platform]}:</span>
+                          <span>@{ch.handle}</span>
+                          {ch.platform === 'TIKTOK' && !ch.isPrimary && (
+                            <span className="font-sans text-ink-3">({ch.roleLabel || 'Kênh phụ'})</span>
+                          )}
+                          {ch.platform === 'TIKTOK' && ch.isPrimary && (
+                            <span className="font-sans text-positive">(Kênh chính)</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
 
-                {!isKocOwnForm && (
-                  <Segmented
-                    value={hasCustomTerms ? 'CUSTOM' : 'STANDARD'}
-                    onChange={v => setHasCustomTerms(v === 'CUSTOM')}
-                    items={[
-                      { key: 'STANDARD', label: 'Giữ nguyên mẫu chuẩn' },
-                      { key: 'CUSTOM', label: 'Có sửa đổi / bổ sung điều khoản' },
-                    ]}
-                  />
-                )}
+              {/* Tệp đính kèm CCCD & ĐKKD của Hồ sơ pháp lý Bên B lưu trên Cloudflare R2 */}
+              <LegalAttachmentsPanel
+                attachments={legalAttachments}
+                onChange={nextAttachments => {
+                  setLegalAttachments(nextAttachments);
+                  if (koc?.id) {
+                    const targetProfId = activeLegalProfile?.id || selectedLegalProfileId;
+                    saveSyncedKocLegalAttachments(koc.id, targetProfId, nextAttachments);
+                    onSyncKocLegalAttachments?.(koc.id, targetProfId, nextAttachments);
+                  }
+                }}
+                entitySlug={koc?.channelId || koc?.id || partner || 'koc-legal'}
+                legalType={activeLegalProfile?.legalType || 'INDIVIDUAL'}
+                editable
+                onExtractOcrFields={(extracted, docLabel) => applyOcrFields(extracted, docLabel)}
+                title="Đính kèm CCCD & Giấy phép ĐKKD vào Hồ sơ pháp lý (Cloudflare R2)"
+              />
 
-                {(hasCustomTerms || isKocOwnForm) && (
-                  <div className="grid gap-3 md:grid-cols-2 pt-2 border-t border-line">
-                    <Field
-                      label={isKocOwnForm ? 'Điểm lưu ý trong mẫu KOC *' : 'Nội dung điều khoản sửa đổi / bổ sung *'}
-                      htmlFor="ct-custom-terms"
-                    >
-                      <Textarea
-                        id="ct-custom-terms"
-                        rows={2}
-                        value={customTermsSummary}
-                        onChange={e => setCustomTermsSummary(e.target.value)}
-                        placeholder={isKocOwnForm ? 'Tóm tắt điều khoản thanh toán, phạt, bản quyền...' : 'Ghi rõ điều khoản cần sửa đổi hoặc bổ sung...'}
-                      />
-                    </Field>
-                    <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
-                      <Textarea
-                        id="ct-notes"
-                        rows={2}
-                        value={internalNotes}
-                        onChange={e => setInternalNotes(e.target.value)}
-                        placeholder="Ghi chú trao đổi nội bộ..."
-                      />
-                    </Field>
-                  </div>
-                )}
               </div>
-            </div>
-          </Panel>
+            </Panel>
+          )}
 
           {(kind === 'ACCEPTANCE' || isSow) && (
             <Panel
@@ -3037,7 +2915,7 @@ export function ContractForm({
             </Panel>
           )}
 
-          {!isKocOwnForm && template && (
+          {usesTemplateFields && template && (
             <div className="rounded-xl border border-line bg-surface p-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
               <div className="flex flex-wrap items-center gap-2">
                 <Status tone={missingTotalCount === 0 ? 'positive' : 'warning'}>
@@ -3065,7 +2943,7 @@ export function ContractForm({
             </div>
           )}
 
-          {!isKocOwnForm && template && kind === 'CONTRACT' && !isSow && !isHdnt && templateId !== 'CTV-HDNT' && (
+          {usesTemplateFields && template && kind === 'CONTRACT' && !isSow && !isHdnt && templateId !== 'CTV-HDNT' && (
             <Panel title="Mục 3.3. Thanh toán phí dịch vụ — Lựa chọn phương thức thanh toán">
               <div className="space-y-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -3093,7 +2971,7 @@ export function ContractForm({
             </Panel>
           )}
 
-          {!isKocOwnForm && template && groups.map(g => {
+          {usesTemplateFields && template && groups.map(g => {
             const visibleFields =
               fieldFilterMode === 'NEEDS_ATTENTION'
                 ? g.fields.filter(isFieldNeedsAttention)
@@ -3137,6 +3015,77 @@ export function ContractForm({
               </Panel>
             );
           })}
+
+          <Panel
+            title={isKocForm ? 'Bước 3 · Ghi chú cho Pháp chế' : hasCustomTerms || isAmendedGoogleDoc ? 'Bước 3 · Bản đã chỉnh sửa' : 'Bước 3 · Ghi chú'}
+            actions={
+              <Status tone={hasCustomTerms || isKocForm || isAmendedGoogleDoc ? 'warning' : 'positive'}>
+                {hasCustomTerms || isKocForm || isAmendedGoogleDoc ? 'Cần Pháp chế duyệt' : 'Không cần Pháp chế duyệt'}
+              </Status>
+            }
+          >
+            <div className="space-y-3">
+              <StepHint>
+                {isKocForm
+                  ? 'Mẫu của KOC luôn qua Pháp chế. Tóm tắt các điểm cần xem: thanh toán, phạt, bản quyền hình ảnh.'
+                  : isAmendedGoogleDoc
+                    ? 'Tải bản Word ở khung A4, mở bằng Google Docs, chia sẻ cho email bên dưới rồi dán link. Khi trình final, hệ thống so với mẫu và chỉ ra điều khoản bị sửa.'
+                    : hasCustomTerms
+                      ? 'Ghi rõ điều khoản đã sửa so với mẫu. Hồ sơ sẽ qua Pháp chế.'
+                      : 'Mẫu giữ nguyên nên không cần Pháp chế duyệt.'}
+              </StepHint>
+              {isAmendedGoogleDoc && renderGoogleDocLink()}
+              {!(hasCustomTerms || isKocForm || isAmendedGoogleDoc) && (
+                <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
+                  <Textarea
+                    id="ct-notes"
+                    rows={2}
+                    value={internalNotes}
+                    onChange={e => setInternalNotes(e.target.value)}
+                    placeholder="Ghi chú trao đổi nội bộ..."
+                  />
+                </Field>
+              )}
+              {(hasCustomTerms || isKocForm || isAmendedGoogleDoc) && (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field
+                    label={isKocForm ? 'Điểm cần lưu ý trong mẫu KOC *' : 'Điều khoản sửa đổi / bổ sung *'}
+                    htmlFor="ct-custom-terms"
+                  >
+                    <Textarea
+                      id="ct-custom-terms"
+                      rows={2}
+                      value={customTermsSummary}
+                      onChange={e => setCustomTermsSummary(e.target.value)}
+                      placeholder={isKocForm ? 'Tóm tắt điều khoản thanh toán, phạt, bản quyền...' : 'Ghi rõ điều khoản cần sửa đổi hoặc bổ sung...'}
+                    />
+                  </Field>
+                  <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
+                    <Textarea
+                      id="ct-notes"
+                      rows={2}
+                      value={internalNotes}
+                      onChange={e => setInternalNotes(e.target.value)}
+                      placeholder="Ghi chú trao đổi nội bộ..."
+                    />
+                  </Field>
+                </div>
+              )}
+              {(isKocGoogleDoc || isAmendedGoogleDoc) && !editing && (
+                <ol className="text-2xs text-ink-2 list-decimal pl-4 space-y-0.5">
+                  <li>Lưu &amp; trình draft: Pháp chế, Kế toán được báo để vào Google Doc góp ý và sửa trực tiếp.</li>
+                  <li>Sửa xong, mở hồ sơ bấm Trình final: hệ thống chốt nội dung, bình luận và lịch sử sửa để lưu audit.</li>
+                  <li>Pháp chế duyệt, rồi Kế toán duyệt: hệ thống xuất DOCX, PDF từ Google Doc để đẩy WeSign.</li>
+                </ol>
+              )}
+              <p className="text-2xs text-ink-3">
+                {ruleEval.reviewStream.streamName && (
+                  <>Luồng duyệt: <span className="text-ink-2 font-medium">{ruleEval.reviewStream.streamName}</span>. </>
+                )}
+                {isKocGoogleDoc || isAmendedGoogleDoc ? '' : 'Lưu nháp xong, mở hồ sơ để gửi duyệt và trình ký.'}
+              </p>
+            </div>
+          </Panel>
 
           {(kind === 'ACCEPTANCE' || acceptanceScreenshots.length > 0) && (
             <Panel
@@ -3264,7 +3213,7 @@ export function ContractForm({
           )}
         </div>
 
-        {template && showSplitPreview && (
+        {template && showSplitPreview && !isKocGoogleDoc && (
           <div className="xl:sticky xl:top-4 min-w-0">
             <ContractDocumentViewer
               title={title || (isKocOwnForm && customFile ? customFile.filename : template.name)}
@@ -3293,9 +3242,11 @@ export function ContractForm({
           <Button variant="primary" type="submit" disabled={!canSubmitForm}>
             {editing
               ? 'Lưu phiên bản mới'
-              : isSow
-                ? 'Lưu Phụ lục SOW & Chuyển bước ký'
-                : 'Lưu nháp'}
+              : isKocGoogleDoc || isAmendedGoogleDoc
+                ? 'Lưu & trình draft'
+                : isSow
+                  ? 'Lưu Phụ lục SOW & Chuyển bước ký'
+                  : 'Lưu nháp'}
           </Button>
         </div>
       )}

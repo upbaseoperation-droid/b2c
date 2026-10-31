@@ -20,6 +20,7 @@ import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
 import { isTwoTimePaymentField, resolvePaymentScheduleOption } from '@/lib/contracts/contractRules';
 import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, LegalDocAttachment, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
+import { captureGoogleDocForRecord, googleDocsShareEmail } from '@/lib/contracts/googleDocsServer';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 function failure(error: unknown) { return NextResponse.json({ error: error instanceof ContractError ? error.message : 'Không thể xử lý hồ sơ. Kiểm tra cấu hình và thử lại.' }, { status: error instanceof ContractError ? eStatus(error) : 503, headers: { 'Cache-Control': 'no-store' } }); }
@@ -42,11 +43,25 @@ export async function GET(req: NextRequest) {
           ai: aiConfigured(),
           wesign: wesignConfigured(),
           contractSystem: contractSystemConfigured(),
+          googleShareEmail: await googleDocsShareEmail().catch(() => ''),
         },
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) { return failure(error); }
+}
+/** Trình draft: báo Pháp chế, Kế toán vào Google Doc góp ý và sửa trực tiếp trước khi B2C trình final. */
+function markGoogleDocsDraft(record: ContractRecord, actor: ContractActor) {
+  const now = new Date().toISOString();
+  record.googleDocsStage = 'DRAFT';
+  record.googleDocsAuditTrail = {
+    ...record.googleDocsAuditTrail,
+    syncedAt: record.googleDocsAuditTrail?.syncedAt || now,
+    commentsCount: record.googleDocsAuditTrail?.commentsCount || 0,
+    draftSubmittedAt: now,
+    draftSubmittedBy: actor.name,
+  };
+  event(record, actor, 'GOOGLE_DOCS_DRAFT', 'Đã trình draft: Pháp chế và Kế toán góp ý, sửa trực tiếp trên Google Doc.');
 }
 async function parseInput(body: Record<string, unknown>, actor: ContractActor, existing?: ContractRecord) {
   const title = typeof body.title === 'string' ? body.title.trim() : ''; const brand = typeof body.brand === 'string' ? body.brand.trim() : ''; const partner = typeof body.partner === 'string' ? body.partner.trim() : '';
@@ -142,6 +157,7 @@ export async function POST(req: NextRequest) {
         createStandaloneContractSystemMeta(draft, template, parentContractCode),
       );
       await archiveTemplate(input.templateId, input.templateHash);
+      if (draft.googleDocsUrl && body.submitGoogleDocsDraft === true) markGoogleDocsDraft(draft, actor);
       const saved = await saveContract(draft); await syncContractToJob(saved).catch(() => 0); return NextResponse.json({ record: saved });
     }
     requireCondition(typeof body.id === 'string', 'Thiếu mã hồ sơ.');
@@ -157,10 +173,15 @@ export async function POST(req: NextRequest) {
         createStandaloneContractSystemMeta(next, template, parentCode),
       );
     }
+    else if (body.action === 'SUBMIT_GOOGLE_DOCS_DRAFT') {
+      requireCondition(Boolean(record.googleDocsUrl) && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval), 'Hồ sơ không ở trạng thái trình draft được.');
+      requireCondition(record.ownerId === actor.id || actor.roles.includes('LEAD'), 'Chỉ người tạo hồ sơ được trình draft.', 403);
+      markGoogleDocsDraft(next, actor);
+    }
     else if (body.action === 'SUBMIT') {
       const { template } = await loadTemplate(record.templateId, record.templateHash);
       requireCondition(template.hash === record.templateHash, 'Mẫu nguồn đã thay đổi.', 409);
-      if (!record.isKocOwnForm) {
+      if (!record.isKocOwnForm && record.googleDocsSource !== 'KOC_CUSTOM_DOC') {
         const payOption = resolvePaymentScheduleOption(record.values, record.templateId, template.fields);
         const requiredFields = template.fields.filter(f => f.required && (payOption === 'TWO_TIMES' || !isTwoTimePaymentField(f)));
         requireCondition(requiredFields.every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
@@ -168,10 +189,33 @@ export async function POST(req: NextRequest) {
       requireCondition(Array.isArray(body.reviewers) && body.reviewers.every(id => typeof id === 'string'), 'Cần chọn người duyệt.');
       const reviewers = configuredActors().filter(a => (body.reviewers as string[]).includes(a.id));
       requireCondition(reviewers.length === body.reviewers.length, 'Người duyệt chưa được cấp quyền.');
-      const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || template.exemptLegalReview === false);
+      const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || record.googleDocsUrl || template.exemptLegalReview === false);
       next = submitContract(record, actor, reviewers, {
         requireLegal: mandatoryLegal ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined),
       });
+      if (record.googleDocsUrl) {
+        // Trình final: chốt nội dung, bình luận và lịch sử sửa của Google Doc; Pháp chế, Kế toán duyệt trên bản này.
+        const capture = await captureGoogleDocForRecord(record, actor.name);
+        const now = new Date().toISOString();
+        next.googleDocsStage = 'FINAL';
+        next.googleDocsComments = capture.comments;
+        next.googleDocsReviewRouting = capture.routing;
+        next.googleDocsAuditTrail = {
+          ...next.googleDocsAuditTrail,
+          syncedAt: now,
+          commentsCount: capture.comments.length,
+          revisions: capture.revisions,
+          simulated: capture.simulated || undefined,
+          finalSnapshot: capture.snapshot,
+          approvedSnapshot: undefined,
+        };
+        event(
+          next,
+          actor,
+          'GOOGLE_DOCS_FINAL',
+          `Đã trình final và chốt bản Google Doc (${capture.comments.length} bình luận, ${capture.revisions.length} phiên bản${record.googleDocsSource === 'KOC_CUSTOM_DOC' ? '' : `, ${capture.routing.clauseDiffs.length} điều khoản khác mẫu`})${capture.simulated ? ' – giả lập' : ''}.`,
+        );
+      }
     } else if (body.action === 'ADD_NOTE') {
       requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
       event(next, actor, 'NOTE', (body.note as string).trim());

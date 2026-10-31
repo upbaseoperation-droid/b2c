@@ -114,11 +114,8 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
   requireCondition(decision === 'APPROVED' || note.trim(), 'Cần nêu lý do yêu cầu sửa hoặc từ chối.');
   if (decision === 'APPROVED' && index > 0) {
     const previousPending = record.steps.slice(0, index).find(s => s.status !== 'APPROVED');
-    // Luồng Google Docs: Kế toán là người duyệt cuối cùng (FINAL); bước Pháp chế là tham vấn / comment theo điều khoản, không chặn Kế toán
-    const isAdvisoryLegal = previousPending?.role === 'LEGAL' && Boolean(record.googleDocsUrl || record.hasCustomTerms);
-    if (!isAdvisoryLegal) {
-      requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
-    }
+    // Mọi luồng, kể cả Google Doc: Pháp chế duyệt xong thì Kế toán mới duyệt.
+    requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
   }
   const next = structuredClone(record);
   Object.assign(next.steps[index], {
