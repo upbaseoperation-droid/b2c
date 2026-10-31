@@ -717,18 +717,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const footerItems = FOOTER_ITEMS.filter((f) => allowedSet.has(f.key));
 
-  // Quản lý trạng thái đóng/mở độc lập cho từng Menu Level 2 có chứa Sub-menu Level 3
+  // Quản lý trạng thái đóng/mở độc lập cho từng Menu Level 2 có chứa Sub-menu Level 3 (Mặc định thu gọn toàn bộ)
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({
     'group-dashboard': false,
-    'group-plan': true,
+    'group-plan': false,
     'group-delegation': false,
     'group-koc-discovery': false,
-    'group-booking': true,
-    'group-contracts': true,
+    'group-booking': false,
+    'group-contracts': false,
     'group-lark-settlement': false,
     'group-ctv-directory': false,
-    'group-master-data': true,
-    'group-rbac': true,
+    'group-master-data': false,
+    'group-rbac': false,
   });
 
   React.useEffect(() => {

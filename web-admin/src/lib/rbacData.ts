@@ -2038,6 +2038,11 @@ export function getSavedRoleDataScope(): Record<UserRole, DataScope> {
 }
 
 const CORE_SYNCED_ROLE_TABS: TabKey[] = [
+  'dashboard-bi',
+  'dashboard-brand',
+  'dashboard-team-sla',
+  'ads-report',
+  'dashboard-staff',
   'tiktok-crawler',
   'market-research',
   'task-delegation',
@@ -2050,20 +2055,21 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'lark-settlement',
 ];
 
+const DASHBOARD_ANY_KEYS: TabKey[] = [
+  'dashboard-bi',
+  'dashboard-brand',
+  'dashboard-store',
+  'dashboard-video',
+  'dashboard-air-sync',
+  'dashboard-team-sla',
+  'dashboard-staff',
+  'dashboard-finance',
+  'ads-report',
+];
+
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
   if (HIDDEN_SYSTEM_SCREENS.includes(tab)) return false;
-  if (
-    (tab === 'multi-platform-booking' || tab === 'livestream-booking' || (tab === 'lark-settlement' && role !== 'BRAND_PARTNER' && role !== 'KOC_PARTNER' && role !== 'CTV_PARTNER')) &&
-    (isTabAllowedForRole(role, 'koc-listing') || (tab === 'lark-settlement' && isTabAllowedForRole(role, 'self-channel-hub')))
-  ) {
-    return true;
-  }
-  if (CORE_SYNCED_ROLE_TABS.includes(tab) && ROLE_ALLOWED_TABS[role]?.includes(tab)) {
-    return true;
-  }
-  const map = getSavedRoleAllowedTabs();
-  const allowed = map[role] || ROLE_ALLOWED_TABS[role];
-  if (!allowed) return false;
+  const allowed = getAllowedTabsForRole(role);
   if (allowed.includes(tab)) return true;
   const canonical = TAB_ALIASES[tab];
   return canonical ? allowed.includes(canonical) : false;
@@ -2081,6 +2087,14 @@ export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   }
   if (base.includes('self-channel-hub') && role !== 'CTV_PARTNER' && !base.includes('lark-settlement')) {
     base.push('lark-settlement');
+  }
+  if (base.some((t) => DASHBOARD_ANY_KEYS.includes(t))) {
+    if (!base.includes('dashboard-brand')) base.push('dashboard-brand');
+    if (!base.includes('dashboard-team-sla')) base.push('dashboard-team-sla');
+    if (!base.includes('ads-report') && role !== 'BRAND_PARTNER') base.push('ads-report');
+    if (['ADMIN', 'MANAGER', 'LEADER'].includes(role) && !base.includes('dashboard-staff')) {
+      base.push('dashboard-staff');
+    }
   }
   for (const coreTab of CORE_SYNCED_ROLE_TABS) {
     if (ROLE_ALLOWED_TABS[role]?.includes(coreTab) && !base.includes(coreTab)) {

@@ -62,6 +62,11 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
   // Các màn hình nghiệp vụ cốt lõi mới mở rộng cho nhân sự & quản lý cần luôn đồng bộ theo ROLE_ALLOWED_TABS
   // nếu bản ghi cũ chưa cập nhật
   const CORE_ROLE_SYNCED_SCREENS: TabKey[] = [
+    'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-team-sla',
+    'ads-report',
+    'dashboard-staff',
     'tiktok-crawler',
     'market-research',
     'task-delegation',
