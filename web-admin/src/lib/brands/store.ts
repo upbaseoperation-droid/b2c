@@ -48,16 +48,6 @@ function buildDefaultWorkflowRules(m: BrandDetail, actor: string): BrandWorkflow
   const operatingModel = realFiles?.operatingModel
     || (isStrategic ? 'SPLIT_RESOURCE' : 'FULLSTACK_CONTENT_BOOKING');
 
-  const isMomBaby = /mẹ|bé|sữa|dinh dưỡng/i.test(m.category);
-  const isHealth = /sức khỏe|thực phẩm|dược/i.test(m.category);
-
-  // Theo khảo sát nhân sự B2C: Một số nhãn cho phép tự duyệt KL1-KL3, chỉ trình duyệt từ KL4+; nhãn FOC tự duyệt
-  const kocApprovalMode = budget === 0
-    ? 'NONE_AUTO'
-    : /kutieskin|eupc|clio|ziaja|fresh|l-occitane|nucos|meracine/i.test(bKey)
-      ? 'KL4_PLUS_ONLY'
-      : 'ALL';
-
   const requiresSpark = m.stores?.some(s => s.requiresSparkAds) ?? true;
 
   return {
@@ -67,40 +57,25 @@ function buildDefaultWorkflowRules(m: BrandDetail, actor: string): BrandWorkflow
     brandApproverName: m.contactPerson && !/Đại diện/i.test(m.contactPerson)
       ? m.contactPerson
       : (actor || 'Đặng Thị Yến Nhi'),
-    kocApprovalMode,
+    kocApprovalMode: 'ALL',
     requireScriptApproval: projectTier !== 'TIER_C_FULLSTACK',
     requireDemoApproval: true,
     autoAirAfterHours: 72,
     maxFreeRevisions: 2,
-    sampleSender: /babe|ekseption|talaypu/i.test(bKey) ? 'BRAND_DIRECT' : 'UPBASE_WAREHOUSE',
+    sampleSender: 'UPBASE_WAREHOUSE',
     samplePrepSlaHours: 48,
-    defaultSamplePolicy: /doji|miuusilver/i.test(bKey) ? 'LOAN_RETURN' : 'GIFT',
+    defaultSamplePolicy: 'GIFT',
     requiresAdsCode: requiresSpark,
-    adsCodeDurationDays: isStrategic ? 90 : 60,
+    adsCodeDurationDays: 60,
     requireRawVideoHandover: true,
-    repostAllowedChannels: [
-      'TikTok Official của nhãn',
-      'Shopee Video & Trang sản phẩm (PDP/SIS)',
-      'Chèn trong phiên Livestream gian hàng',
-    ],
+    repostAllowedChannels: [],
     minVideoRetentionDays: 90,
-    exclusivityDays: isStrategic ? 15 : 0,
-    allowExtraFeeForAdsOrCrosspost: isStrategic,
-    preferredKocNiches: isMomBaby
-      ? ['Mẹ bỉm sữa & Gia đình', 'Bác sĩ Nhi / Dược sĩ', 'Review đồ mẹ & bé']
-      : isHealth
-        ? ['Dược sĩ / Bác sĩ chuyên khoa', 'Chăm sóc sức khỏe gia đình', 'Lifestyle lành mạnh']
-        : ['Beauty Reviewer', 'Bác sĩ Da liễu / Chuyên gia', 'Haul & Routine chăm sóc cá nhân'],
-    kocSelectionCriteria:
-      'Ưu tiên kênh có tệp người xem thật tại Việt Nam, lịch sử ra đơn ổn định trên TikTok Shop/Shopee, không dính gậy vi phạm chính sách sàn và không nhận bài đối thủ cạnh tranh trực tiếp trong vòng 7 ngày.',
-    targetAudienceDemographics: isMomBaby
-      ? 'Khán giả Nữ ≥ 75%, độ tuổi 22–38 (mẹ bầu & mẹ bỉm sữa tại Việt Nam)'
-      : isHealth
-        ? 'Khán giả Nữ & Nam 25–45 tuổi quan tâm chăm sóc sức khỏe chủ động'
-        : 'Khán giả Nữ ≥ 70%, độ tuổi 18–34 mua sắm trên TikTok Shop & Shopee Mall',
-    kocPersonaAndVisualCriteria: isMomBaby
-      ? 'Mẹ bỉm có em bé thật hoặc Bác sĩ/Dược sĩ; bối cảnh phòng ngủ/phòng khách gia đình gọn gàng, sáng sủa; giọng nói ấm áp, chân thực.'
-      : 'Da thật khỏe hoặc đúng tình trạng sản phẩm xử lý; quay cận cảnh kết cấu dưới ánh sáng tự nhiên, không dùng filter làm bệt màu; giọng đọc rõ ràng.',
+    exclusivityDays: 0,
+    allowExtraFeeForAdsOrCrosspost: false,
+    preferredKocNiches: [],
+    kocSelectionCriteria: '',
+    targetAudienceDemographics: '',
+    kocPersonaAndVisualCriteria: '',
     blacklistedKocs: [],
     handoverFrom: realFiles?.handoverFrom,
     handoverTo: realFiles?.handoverTo || m.brandPicName,
@@ -158,27 +133,27 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       title: `Canva Brief định hướng sản phẩm & hình ảnh ${kb.brandName}`,
       category: 'BRIEF' as const,
       url: realFiles.canvaBriefUrl,
-      note: `Tài liệu Brief sản phẩm thực tế từ danh mục 3.5 (${realFiles.storeCode})`,
+      note: '',
       addedBy: realFiles.handoverTo || master?.accountPic || 'Phòng B2C',
       addedAt: '2026-10-01T08:45:00.000Z',
       storage: 'LINK' as const,
     }] : []),
     ...(realFiles?.bookingSheetUrl ? [{
       id: `doc-sheet-${bKey}`,
-      title: `File Booking Google Sheet — ${realFiles.storeCode}`,
+      title: `File Booking Google Sheet — ${kb.brandName}`,
       category: 'BRIEF' as const,
       url: realFiles.bookingSheetUrl,
-      note: `Bảng theo dõi danh sách KOC và tiến độ booking của gian hàng ${realFiles.storeCode}`,
+      note: '',
       addedBy: realFiles.handoverTo || master?.accountPic || 'Phòng B2C',
       addedAt: '2026-10-01T09:10:00.000Z',
       storage: 'LINK' as const,
     }] : []),
     ...(realFiles?.operationFileUrl ? [{
       id: `doc-ops-${bKey}`,
-      title: `File vận hành gian hàng — ${realFiles.storeCode}`,
+      title: `File vận hành gian hàng — ${kb.brandName}`,
       category: 'OTHER' as const,
       url: realFiles.operationFileUrl,
-      note: 'Bảng tổng hợp kế hoạch và theo dõi vận hành hàng tháng của nhãn.',
+      note: '',
       addedBy: realFiles.handoverTo || master?.accountPic || 'Phòng B2C',
       addedAt: '2026-10-01T09:20:00.000Z',
       storage: 'LINK' as const,
@@ -421,27 +396,27 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
       title: `Canva Brief định hướng sản phẩm & hình ảnh ${m.name}`,
       category: 'BRIEF' as const,
       url: realFiles.canvaBriefUrl,
-      note: `Link Canva Brief sản phẩm thực tế từ bảng 3.5 Danh sách file brand (${realFiles.storeCode}).`,
+      note: '',
       addedBy: realFiles.handoverTo || actor,
       addedAt: '2026-10-01T09:00:00.000Z',
       storage: 'LINK' as const,
     }] : []),
     ...(realFiles?.bookingSheetUrl ? [{
       id: `doc-sheet-${bKey}`,
-      title: `File Booking Google Sheet — ${realFiles.storeCode}`,
+      title: `File Booking Google Sheet — ${m.name}`,
       category: 'BRIEF' as const,
       url: realFiles.bookingSheetUrl,
-      note: `Bảng quản lý danh sách KOC và theo dõi booking gian hàng ${realFiles.storeCode}.`,
+      note: '',
       addedBy: realFiles.handoverTo || actor,
       addedAt: '2026-10-01T09:30:00.000Z',
       storage: 'LINK' as const,
     }] : []),
     ...(realFiles?.operationFileUrl ? [{
       id: `doc-ops-${bKey}`,
-      title: `File vận hành gian hàng — ${realFiles.storeCode}`,
+      title: `File vận hành gian hàng — ${m.name}`,
       category: 'OTHER' as const,
       url: realFiles.operationFileUrl,
-      note: `File vận hành tổng hợp kế hoạch và báo cáo của gian hàng ${realFiles.storeCode}.`,
+      note: '',
       addedBy: realFiles.handoverTo || actor,
       addedAt: '2026-10-01T10:00:00.000Z',
       storage: 'LINK' as const,
@@ -451,7 +426,7 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
       title: `Hồ sơ bàn giao dự án ${m.name} (${realFiles.handoverFrom || 'B2C'} → ${realFiles.handoverTo || actor})`,
       category: 'OTHER' as const,
       url: realFiles.handoverFileUrl,
-      note: `Tài liệu bàn giao lịch sử triển khai và tệp KOC của nhãn ${m.name}.`,
+      note: '',
       addedBy: realFiles.handoverFrom || actor,
       addedAt: '2026-09-28T10:00:00.000Z',
       storage: 'LINK' as const,
@@ -667,6 +642,25 @@ function canonical(v: unknown): string {
 }
 const sameJson = (a: unknown, b: unknown) => canonical(a) === canonical(b);
 
+/** Làm sạch tiêu đề chứa mã E2E nội bộ và gỡ dòng mô tả tự sinh của tài liệu bảng 3.5. */
+function cleanRealDoc(d: BrandDocument, brandName: string): BrandDocument {
+  const cleanTitle = d.title
+    .replace(/\s*—\s*[^—]*_E2E-[A-Z0-9]+/gi, ` — ${brandName}`)
+    .replace(/_TikTok_E2E-[A-Z0-9]+/gi, '')
+    .replace(/_E2E-[A-Z0-9]+/gi, '');
+  const isSlopNote = Boolean(
+    d.note &&
+      /(danh mục 3\.5|bảng 3\.5|tiến độ booking của gian hàng|theo dõi booking gian hàng|tổng hợp kế hoạch và|bàn giao lịch sử triển khai|_E2E-)/i.test(
+        d.note,
+      ),
+  );
+  return {
+    ...d,
+    title: cleanTitle,
+    note: REAL_DOC_ID.test(d.id) || isSlopNote ? '' : d.note,
+  };
+}
+
 /** Chỉ giữ phần có nguồn thật: tên pháp nhân, người liên hệ từ Dữ liệu gốc, link tệp bảng 3.5, quy tắc vận hành mặc định. */
 function realOnlySeed(legacy: BrandProfile, master?: BrandDetail): BrandProfile {
   const companyName = realText(master?.companyName);
@@ -677,7 +671,7 @@ function realOnlySeed(legacy: BrandProfile, master?: BrandDetail): BrandProfile 
     revision: 1,
     entity: companyName || contactPerson ? { companyName, taxCode: '', contactPerson, originCountry: '' } : undefined,
     workflowRules: legacy.workflowRules,
-    documents: legacy.documents.filter(d => REAL_DOC_ID.test(d.id)),
+    documents: legacy.documents.filter(d => REAL_DOC_ID.test(d.id)).map(d => cleanRealDoc(d, legacy.brandName)),
   };
 }
 
@@ -713,7 +707,7 @@ export function stripGeneratedContent(cur: BrandProfile, legacy: BrandProfile, r
     faqs: withoutSeeded(cur.faqs, legacy.faqs, real.faqs),
     legal: withoutSeeded(cur.legal, legacy.legal, real.legal),
     ratecard: sameJson(cur.ratecard, legacy.ratecard) ? real.ratecard : cur.ratecard,
-    documents: withoutSeeded(cur.documents, legacy.documents, real.documents),
+    documents: withoutSeeded(cur.documents, legacy.documents, real.documents).map(d => cleanRealDoc(d, cur.brandName)),
     history,
   };
 }

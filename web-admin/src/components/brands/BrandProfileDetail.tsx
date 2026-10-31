@@ -14,7 +14,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Cloud,
   Download,
   ExternalLink,
   Eye,
@@ -81,7 +80,6 @@ import { ContentAngleSetupView } from '../views/ContentAngleSetupView';
 import { ProductCatalogView } from '../views/ProductCatalogView';
 import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
 import { listAllCatalogProducts, type BrandProductCatalog } from '../../lib/productCatalog';
-import { CloudflareR2SetupModal } from './CloudflareR2SetupPanel';
 import { StandardBriefPreviewModal } from './StandardBriefPreviewModal';
 import { BrandGuidelineExtractModal } from './BrandGuidelineExtractModal';
 import { StoreRoster } from './StoreRoster';
@@ -227,7 +225,9 @@ export function BrandProfileDetail({
     onMonthChange?.(next);
   };
 
-  const [activeTab, setActiveTab] = useState<BrandDetailTab>(initialTab || 'STORES');
+  const [activeTab, setActiveTab] = useState<BrandDetailTab>(
+    initialTab && initialTab !== 'STORES' ? initialTab : 'OVERVIEW',
+  );
   const [selectedAngleProductId, setSelectedAngleProductId] = useState<string>('ALL');
   const [liveCatalog, setLiveCatalog] = useState<BrandProductCatalog | null>(null);
 
@@ -291,7 +291,6 @@ export function BrandProfileDetail({
   const [docFilter, setDocFilter] = useState<'ALL' | BrandDocCategory>('ALL');
   const [docSearch, setDocSearch] = useState('');
   const [previewDoc, setPreviewDoc] = useState<BrandDocument | null>(null);
-  const [r2SetupOpen, setR2SetupOpen] = useState(false);
   const quickFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const saveDialog = async (section: BrandSection, data: unknown) => {
@@ -767,21 +766,6 @@ export function BrandProfileDetail({
         Brief 5 phần
       </Button>
       <ActionMenu items={moreActions} />
-      {(onDrilldownToBooking || onOpenBooking) && (
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={() => {
-            if (onDrilldownToBooking) {
-              onDrilldownToBooking({ brandName: row.name, month: activeMonth });
-            } else {
-              onOpenBooking?.();
-            }
-          }}
-        >
-          Booking ({dealCount})
-        </Button>
-      )}
     </div>
   );
 
@@ -803,9 +787,9 @@ export function BrandProfileDetail({
         </div>
       )}
 
-      {/* 2. ĐỊNH DANH → KỲ SỐ LIỆU → 4 CHỈ SỐ */}
+      {/* 2. ĐỊNH DANH THƯƠNG HIỆU & NHÂN SỰ PHỤ TRÁCH */}
       <section className="bg-surface border border-line rounded-xl overflow-hidden">
-        <div className="px-4 pt-4 pb-3 flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
+        <div className="px-4 py-3.5 flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
           <div className="flex items-start gap-3 min-w-0">
             <span className="shrink-0 inline-flex mt-0.5" style={sharedTo('brand-avatar')}>
               <BrandAvatar name={row.name} id={row.master?.id} code={row.master?.code} size={40} rounded="lg" />
@@ -843,87 +827,6 @@ export function BrandProfileDetail({
             </div>
           </dl>
         </div>
-
-        <div className="px-4 py-2 border-t border-line flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center gap-2 text-2xs text-ink-3">
-              <Calendar className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
-              <span>Số liệu</span>
-              <select
-                value={activeMonth}
-                onChange={e => handleMonthChange(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-ink focus:outline-none cursor-pointer"
-                aria-label="Chọn tháng số liệu của thương hiệu"
-              >
-                {PROFILE_MONTH_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {isOverbudget && <Status tone="critical">Vượt ngân sách</Status>}
-            {isUnbudgetedSpend && <Status tone="warning">Chi ngoài kế hoạch</Status>}
-          </div>
-          {row.saved && p.updatedBy && (
-            <span className="text-2xs text-ink-3">
-              Cập nhật {dateTime(p.updatedAt)} · {p.updatedBy} · v{p.revision}
-            </span>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border-t border-line">
-          {currentBrandReport.hasData ? (
-            <>
-              <Kpi
-                label="NMV"
-                value={formatVndShort(currentBrandReport.reportNmv)}
-                target={currentBrandReport.planNmv > 0 ? formatVndShort(currentBrandReport.planNmv) : undefined}
-                note={currentBrandReport.planNmv > 0 ? `Đạt ${currentBrandReport.nmvAchievementPct}% mục tiêu` : 'Chưa có mục tiêu NMV'}
-                progress={currentBrandReport.planNmv > 0 ? { value: currentBrandReport.reportNmv, max: currentBrandReport.planNmv } : undefined}
-              />
-              <Kpi
-                label="Chi Net"
-                value={formatVndShort(currentBrandReport.reportSpentNet)}
-                target={currentBrandReport.planBudgetNet > 0 ? formatVndShort(currentBrandReport.planBudgetNet) : undefined}
-                tone={isOverbudget || isUnbudgetedSpend ? 'critical' : undefined}
-                note={
-                  isUnbudgetedSpend
-                    ? 'Có chi nhưng chưa có ngân sách'
-                    : currentBrandReport.planBudgetNet > 0
-                      ? `Đã dùng ${currentBrandReport.budgetBurnPct}% ngân sách`
-                      : 'Chưa có ngân sách'
-                }
-                progress={currentBrandReport.planBudgetNet > 0 ? { value: currentBrandReport.reportSpentNet, max: currentBrandReport.planBudgetNet, invert: true } : undefined}
-              />
-              <Kpi
-                label="Video lên sóng"
-                value={formatNumber(currentBrandReport.reportAiredCount)}
-                target={currentBrandReport.planTotalVideos > 0 ? `${formatNumber(currentBrandReport.planTotalVideos)} video` : undefined}
-                note={`${formatNumber(dealCount)} deal · ${formatNumber(currentBrandReport.reportTotalViews)} lượt xem · ${formatNumber(currentBrandReport.reportTotalOrders)} đơn`}
-                progress={currentBrandReport.planTotalVideos > 0 ? { value: currentBrandReport.reportAiredCount, max: currentBrandReport.planTotalVideos } : undefined}
-              />
-            </>
-          ) : (
-            <div className="col-span-2 lg:col-span-3 bg-surface px-4 py-3 grid content-center gap-0.5">
-              <span className="text-xs font-medium text-ink-2">Chưa có dữ liệu {activeMonthOption?.shortLabel || activeMonth}</span>
-              <span className="text-2xs text-ink-3">Chưa có kế hoạch, booking hay số liệu thực tế cho tháng này.</span>
-            </div>
-          )}
-          <Kpi
-            label="Hồ sơ thương hiệu"
-            value={`${row.done}/${row.total}`}
-            target="mục"
-            tone={expiredLegalCount > 0 ? 'critical' : missing.length > 0 ? 'warning' : 'positive'}
-            note={
-              expiredLegalCount > 0
-                ? `${expiredLegalCount} văn bản pháp lý hết hạn`
-                : missing.length > 0
-                  ? `Thiếu ${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ` và ${missing.length - 4} mục khác` : ''}`
-                  : 'Đủ thông tin cho KOC và người duyệt'
-            }
-          />
-        </div>
       </section>
 
       {/* 3. CÁC PHÂN KHU NGHIỆP VỤ */}
@@ -931,13 +834,7 @@ export function BrandProfileDetail({
         value={activeTab}
         onChange={setActiveTab}
         items={[
-          { key: 'STORES', label: 'Kế hoạch', count: `${dealCount} deal` },
           { key: 'OVERVIEW', label: 'Định vị' },
-          {
-            key: 'WORKFLOW',
-            label: 'Quy tắc',
-            count: p.workflowRules?.kocApprovalMode === 'KL4_PLUS_ONLY' ? 'KL4+' : p.workflowRules?.kocApprovalMode === 'NONE_AUTO' ? 'Tự chủ' : 'Duyệt 100%',
-          },
           { key: 'PRODUCTS', label: 'Sản phẩm', count: `${effectiveProductCount} SKU` },
           {
             key: 'COMPLIANCE',
@@ -945,6 +842,7 @@ export function BrandProfileDetail({
             count: (p.contentRules?.banned.length || 0) + p.legal.length + p.faqs.length,
             tone: expiredLegalCount > 0 ? 'critical' : 'default',
           },
+          { key: 'WORKFLOW', label: 'Quy tắc' },
           { key: 'FILES', label: 'Tài liệu', count: p.documents.length },
         ]}
       />
@@ -1375,16 +1273,6 @@ export function BrandProfileDetail({
           {/* Danh sách tài liệu thương hiệu */}
           <Panel
             title={`Kho tài liệu & tệp thương hiệu ${row.name}`}
-            actions={
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={Cloud}
-                onClick={() => setR2SetupOpen(true)}
-              >
-                Cấu hình Cloudflare R2
-              </Button>
-            }
             flush
           >
             <div className="p-4 border-b border-line">
@@ -1412,6 +1300,18 @@ export function BrandProfileDetail({
                     d.fileKey && (/^(PDF|PNG|JPG|JPEG|WEBP|GIF|SVG)$/i.test(ext) || /^(application\/pdf|image\/)/i.test(d.mimeType || '')),
                   );
 
+                  const displayTitle = d.title
+                    .replace(/\s*—\s*[^—]*_E2E-[A-Z0-9]+/gi, ` — ${row.name}`)
+                    .replace(/_TikTok_E2E-[A-Z0-9]+/gi, '')
+                    .replace(/_E2E-[A-Z0-9]+/gi, '');
+                  const isSlopNote = Boolean(
+                    d.note &&
+                      /(danh mục 3\.5|bảng 3\.5|tiến độ booking của gian hàng|theo dõi booking gian hàng|tổng hợp kế hoạch và|bàn giao lịch sử triển khai|_E2E-)/i.test(
+                        d.note,
+                      ),
+                  );
+                  const displayNote = isSlopNote ? '' : d.note;
+
                   return (
                     <div key={d.id} className="px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas/50 transition-colors">
                       <div className="flex items-start gap-3 min-w-0">
@@ -1421,7 +1321,7 @@ export function BrandProfileDetail({
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <a href={d.url} target="_blank" rel="noreferrer" className="text-xs font-medium text-ink hover:text-accent hover:underline break-words">
-                              {d.title}
+                              {displayTitle}
                             </a>
                             <span className="text-2xs text-ink-3">
                               · {DOC_CATEGORY_LABEL[d.category]} · {d.fileKey ? 'Tệp đính kèm' : 'Liên kết ngoài'}
@@ -1433,7 +1333,7 @@ export function BrandProfileDetail({
                             <span>· Tải lên bởi <strong className="text-ink-2 font-medium">{d.addedBy}</strong></span>
                             {d.addedAt && <span>· {dateTime(d.addedAt)}</span>}
                           </div>
-                          {d.note && <p className="text-xs text-ink-2 mt-1">{d.note}</p>}
+                          {displayNote && <p className="text-xs text-ink-2 mt-1">{displayNote}</p>}
                           {d.extractedContent && (
                             <p className="text-xs text-ink mt-1 rounded bg-canvas border border-line px-3 py-2 whitespace-pre-line">
                               {d.extractedContent}
@@ -2519,12 +2419,6 @@ export function BrandProfileDetail({
         }}
         onCancel={() => setRemoving(null)}
         onOpenChange={o => !o && setRemoving(null)}
-      />
-
-      <CloudflareR2SetupModal
-        open={r2SetupOpen}
-        onClose={() => setR2SetupOpen(false)}
-        onNotify={onNotify}
       />
 
       <StandardBriefPreviewModal
